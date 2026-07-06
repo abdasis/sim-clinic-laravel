@@ -23,4 +23,8 @@ return [
     'remove' => 'Hapus',
     'home' => 'Beranda',
     'central' => 'Pusat',
+    'platform' => 'Platform',
+    'admin_panel' => 'Panel Admin',
+    'logout' => 'Keluar',
+    'account' => 'Akun',
 ];
