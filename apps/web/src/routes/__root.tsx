@@ -2,11 +2,13 @@ import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
+  useRouterState,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
+import { TooltipProvider } from '#/components/ui/tooltip.tsx'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
@@ -45,6 +47,14 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  // Route admin punya chrome sendiri (sidebar-08); skip Header/Footer publik
+  // untuk menghindari layout ganda. /central/login tetap publik.
+  // ponytail: deteksi via prefix; ganti ke flag route jika admin bertambah kompleks
+  const isAdmin =
+    /^\/[^/]+\/clinic(\/|$)/.test(pathname) ||
+    (pathname.startsWith('/central/') && pathname !== '/central/login')
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -52,9 +62,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-        <Header />
-        {children}
-        <Footer />
+        <TooltipProvider>
+          {!isAdmin ? <Header /> : null}
+          {children}
+          {!isAdmin ? <Footer /> : null}
+        </TooltipProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',

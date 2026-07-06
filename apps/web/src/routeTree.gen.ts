@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as CentralRouteRouteImport } from './routes/central/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvitationsTokenRouteImport } from './routes/invitations/$token'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -46,6 +47,11 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CentralRouteRoute = CentralRouteRouteImport.update({
+  id: '/central',
+  path: '/central',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -67,9 +73,9 @@ const DemoDataTableRoute = DemoDataTableRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const CentralLoginRoute = CentralLoginRouteImport.update({
-  id: '/central/login',
-  path: '/central/login',
-  getParentRoute: () => rootRouteImport,
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => CentralRouteRoute,
 } as any)
 const TenantLoginRoute = TenantLoginRouteImport.update({
   id: '/$tenant/login',
@@ -82,9 +88,9 @@ const TenantClinicRouteRoute = TenantClinicRouteRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const CentralTenantsIndexRoute = CentralTenantsIndexRouteImport.update({
-  id: '/central/tenants/',
-  path: '/central/tenants/',
-  getParentRoute: () => rootRouteImport,
+  id: '/tenants/',
+  path: '/tenants/',
+  getParentRoute: () => CentralRouteRoute,
 } as any)
 const TenantUsersIndexRoute = TenantUsersIndexRouteImport.update({
   id: '/$tenant/users/',
@@ -181,6 +187,7 @@ const TenantClinicPatientsIdEditRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/central': typeof CentralRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/register': typeof RegisterRoute
   '/$tenant/clinic': typeof TenantClinicRouteRouteWithChildren
@@ -209,6 +216,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/central': typeof CentralRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/register': typeof RegisterRoute
   '/$tenant/clinic': typeof TenantClinicRouteRouteWithChildren
@@ -238,6 +246,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/central': typeof CentralRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/register': typeof RegisterRoute
   '/$tenant/clinic': typeof TenantClinicRouteRouteWithChildren
@@ -268,6 +277,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/central'
     | '/about'
     | '/register'
     | '/$tenant/clinic'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/central'
     | '/about'
     | '/register'
     | '/$tenant/clinic'
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/central'
     | '/about'
     | '/register'
     | '/$tenant/clinic'
@@ -353,16 +365,15 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CentralRouteRoute: typeof CentralRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   RegisterRoute: typeof RegisterRoute
   TenantClinicRouteRoute: typeof TenantClinicRouteRouteWithChildren
   TenantLoginRoute: typeof TenantLoginRoute
-  CentralLoginRoute: typeof CentralLoginRoute
   DemoDataTableRoute: typeof DemoDataTableRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   InvitationsTokenRoute: typeof InvitationsTokenRoute
   TenantUsersIndexRoute: typeof TenantUsersIndexRoute
-  CentralTenantsIndexRoute: typeof CentralTenantsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -379,6 +390,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/central': {
+      id: '/central'
+      path: '/central'
+      fullPath: '/central'
+      preLoaderRoute: typeof CentralRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -411,10 +429,10 @@ declare module '@tanstack/react-router' {
     }
     '/central/login': {
       id: '/central/login'
-      path: '/central/login'
+      path: '/login'
       fullPath: '/central/login'
       preLoaderRoute: typeof CentralLoginRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof CentralRouteRoute
     }
     '/$tenant/login': {
       id: '/$tenant/login'
@@ -432,10 +450,10 @@ declare module '@tanstack/react-router' {
     }
     '/central/tenants/': {
       id: '/central/tenants/'
-      path: '/central/tenants'
+      path: '/tenants'
       fullPath: '/central/tenants/'
       preLoaderRoute: typeof CentralTenantsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof CentralRouteRoute
     }
     '/$tenant/users/': {
       id: '/$tenant/users/'
@@ -552,6 +570,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface CentralRouteRouteChildren {
+  CentralLoginRoute: typeof CentralLoginRoute
+  CentralTenantsIndexRoute: typeof CentralTenantsIndexRoute
+}
+
+const CentralRouteRouteChildren: CentralRouteRouteChildren = {
+  CentralLoginRoute: CentralLoginRoute,
+  CentralTenantsIndexRoute: CentralTenantsIndexRoute,
+}
+
+const CentralRouteRouteWithChildren = CentralRouteRoute._addFileChildren(
+  CentralRouteRouteChildren,
+)
+
 interface TenantClinicRouteRouteChildren {
   TenantClinicMedicalRecordsNewRoute: typeof TenantClinicMedicalRecordsNewRoute
   TenantClinicPatientsNewRoute: typeof TenantClinicPatientsNewRoute
@@ -593,16 +625,15 @@ const TenantClinicRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CentralRouteRoute: CentralRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   RegisterRoute: RegisterRoute,
   TenantClinicRouteRoute: TenantClinicRouteRouteWithChildren,
   TenantLoginRoute: TenantLoginRoute,
-  CentralLoginRoute: CentralLoginRoute,
   DemoDataTableRoute: DemoDataTableRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   InvitationsTokenRoute: InvitationsTokenRoute,
   TenantUsersIndexRoute: TenantUsersIndexRoute,
-  CentralTenantsIndexRoute: CentralTenantsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
