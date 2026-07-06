@@ -48,7 +48,7 @@ function CentralLoginPage() {
       setAuth(res.data.token, res.data.user)
       toast.success(t("auth.login_success"))
       if (typeof window !== "undefined") {
-        window.location.href = res.meta.redirect_to
+        window.location.href = `${res.meta.redirect_to}/clinic`
       }
     },
     onError: (err: ApiError) => {
