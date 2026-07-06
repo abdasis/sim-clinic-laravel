@@ -15,4 +15,10 @@ return [
     'no_data' => 'Tidak ada data',
     'success' => 'Berhasil',
     'error' => 'Terjadi kesalahan',
+    'ok' => 'OK',
+    'close' => 'Tutup',
+    'print' => 'Cetak',
+    'back' => 'Kembali',
+    'add' => 'Tambah',
+    'remove' => 'Hapus',
 ];

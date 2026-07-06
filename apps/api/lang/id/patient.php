@@ -16,4 +16,12 @@ return [
     'gender_male' => 'Laki-laki',
     'gender_female' => 'Perempuan',
     'gender_other' => 'Lainnya',
+    'edit' => 'Ubah Pasien',
+    'treatments' => 'Riwayat Treatment',
+    'duplicate_title' => 'Peringatan Duplikat',
+    'duplicate_body' => 'Nomor telepon ini sudah terdaftar untuk pasien lain. Data tetap disimpan.',
+    'history_type' => [
+        'booking' => 'Booking',
+        'treatment' => 'Treatment',
+    ],
 ];
