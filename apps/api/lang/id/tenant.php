@@ -2,6 +2,8 @@
 
 return [
     'tenant' => 'Tenant',
+    'tenants' => 'Tenant',
+    'users' => 'Pengguna',
     'company_name' => 'Nama Perusahaan',
     'phone' => 'Telepon',
     'slug' => 'Slug',

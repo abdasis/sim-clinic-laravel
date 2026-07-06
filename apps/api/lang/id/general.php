@@ -21,4 +21,6 @@ return [
     'back' => 'Kembali',
     'add' => 'Tambah',
     'remove' => 'Hapus',
+    'home' => 'Beranda',
+    'central' => 'Pusat',
 ];

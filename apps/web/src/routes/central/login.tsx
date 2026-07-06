@@ -61,7 +61,7 @@ function CentralLoginPage() {
     <main className="page-wrap px-4 py-12">
       <ClinicBreadcrumb
         items={[
-          { label: t("tenant.tenant"), to: "/central/login" },
+          { label: t("general.central"), to: "/central/login" },
           { label: t("auth.login") },
         ]}
       />

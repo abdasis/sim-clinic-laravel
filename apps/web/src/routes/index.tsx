@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useTrans } from '#/hooks/use-trans.ts'
 
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
+  const { t } = useTrans()
   return (
     <main className="page-wrap px-4 pb-8 pt-14">
       <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
@@ -17,6 +19,18 @@ function App() {
           structure, and the essentials you need to build from scratch.
         </p>
         <div className="flex flex-wrap gap-3">
+          <a
+            href="/register"
+            className="rounded-full border border-transparent bg-[var(--lagoon-deep)] px-5 py-2.5 text-sm font-semibold text-white no-underline transition hover:-translate-y-0.5 hover:opacity-90"
+          >
+            {t('auth.register')}
+          </a>
+          <a
+            href="/central/login"
+            className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
+          >
+            {t('auth.login')}
+          </a>
           <a
             href="/about"
             className="rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-[var(--lagoon-deep)] no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"

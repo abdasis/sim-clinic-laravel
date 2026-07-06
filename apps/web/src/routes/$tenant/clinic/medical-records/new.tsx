@@ -115,7 +115,7 @@ function NewMedicalRecordPage() {
     },
     onSuccess: () => {
       toast.success(t("medical_record.created"))
-      navigate({ to: "/$tenant/clinic/medical-records", params: { tenant } })
+      navigate({ to: "/$tenant/clinic/bookings", params: { tenant } })
     },
     onError: (err: ApiError) => {
       applyServerErrors(form, err.errors)
