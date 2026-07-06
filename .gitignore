@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+dist/
+build/
+.svelte-kit/
+.cache/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Laravel
+apps/api/storage/app/public/
+apps/api/storage/logs/
+apps/api/storage/framework/cache/data/
+apps/api/storage/framework/sessions/
+apps/api/storage/framework/views/
+apps/api/bootstrap/cache/
+
+# TanStack Start generated
+apps/web/.output/
+apps/web/.vinxi/
+apps/web/.tanstack/

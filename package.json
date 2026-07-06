@@ -1,0 +1,18 @@
+{
+  "name": "sim-clinic-laravel",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "bun run --filter web dev",
+    "dev:api": "cd apps/api && php artisan serve --port=8000",
+    "build:web": "bun run --filter web build",
+    "migrate": "cd apps/api && php artisan migrate",
+    "dev": "concurrently -n api,web -c blue,green \"bun:dev:api\" \"bun:dev:web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
