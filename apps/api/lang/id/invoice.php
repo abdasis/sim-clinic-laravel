@@ -14,4 +14,7 @@ return [
     'payment_method' => 'Metode Pembayaran',
     'print' => 'Cetak',
     'issued_at' => 'Diterbitkan',
+    'payments' => 'Rincian Pembayaran',
+    'paid_amount' => 'Sudah Dibayar',
+    'outstanding' => 'Sisa Bayar',
 ];

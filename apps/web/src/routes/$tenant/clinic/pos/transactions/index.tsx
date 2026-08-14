@@ -31,7 +31,7 @@ import { formatCurrency } from "#/lib/format.ts"
 // Tiga keadaan yang sama dengan enum backend.
 const PAYMENT_STATUS_OPTIONS = ["unpaid", "partially_paid", "paid"] as const
 
-export const Route = createFileRoute("/$tenant/clinic/pos/transactions")({
+export const Route = createFileRoute("/$tenant/clinic/pos/transactions/")({
   component: TransactionsPage,
 })
 
@@ -90,7 +90,7 @@ function CancelAction({ tenant, id }: { tenant: string; id: number }) {
 }
 
 function TransactionsPage() {
-  const { tenant } = useParams({ from: "/$tenant/clinic/pos/transactions" })
+  const { tenant } = useParams({ from: "/$tenant/clinic/pos/transactions/" })
   const { t } = useTrans()
 
   const columns = useMemo<ColumnDef<TransactionRow>[]>(

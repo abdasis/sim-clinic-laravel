@@ -13,4 +13,7 @@ return [
     'movements' => 'Riwayat Pergerakan Stok',
     'record' => 'Catat Pergerakan Stok',
     'recorded' => 'Pergerakan stok berhasil dicatat.',
+    'insufficient_stock' => 'Stok produk tidak mencukupi.',
+    'empty_movements' => 'Belum ada mutasi stok.',
+    'related_transaction' => 'Transaksi Terkait',
 ];

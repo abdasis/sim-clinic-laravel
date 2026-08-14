@@ -14,6 +14,7 @@ interface FormInputProps<T extends FieldValues> {
   label: string
   placeholder?: string
   type?: string
+  disabled?: boolean
 }
 
 export function FormInput<T extends FieldValues>({
@@ -22,6 +23,7 @@ export function FormInput<T extends FieldValues>({
   label,
   placeholder,
   type = "text",
+  disabled,
 }: FormInputProps<T>) {
   return (
     <FormField
@@ -31,7 +33,13 @@ export function FormInput<T extends FieldValues>({
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input type={type} placeholder={placeholder} {...field} value={field.value ?? ""} />
+            <Input
+              type={type}
+              placeholder={placeholder}
+              disabled={disabled}
+              {...field}
+              value={field.value ?? ""}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

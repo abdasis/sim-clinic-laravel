@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Actions\Inventory\RecordStockMovementAction;
 use App\Enums\StockMovementType;
 use App\Models\Product;
 use App\Models\StockMovement;
@@ -22,27 +23,22 @@ class StockService
         ?Model $related = null,
     ): StockMovement {
         return DB::transaction(function () use ($product, $type, $quantity, $note, $related): StockMovement {
+            // Baris dikunci lebih dulu supaya dua mutasi bersamaan tidak
+            // menghitung saldo dari angka yang sama.
             $locked = Product::whereKey($product->id)->lockForUpdate()->first();
 
             $newBalance = $type->isInbound()
                 ? $locked->stock_balance + $quantity
                 : $locked->stock_balance - $quantity;
 
-            $movement = StockMovement::create([
-                'tenant_id' => $locked->tenant_id,
-                'product_id' => $locked->id,
-                'type' => $type,
-                'quantity' => $quantity,
-                'balance_after' => $newBalance,
-                'related_type' => $related?->getMorphClass(),
-                'related_id' => $related?->getKey(),
-                'note' => $note,
-                'created_at' => now(),
-            ]);
+            // Stok fisik tidak bisa minus; menolak di sini menutup semua
+            // jalur sekaligus — penyesuaian manual maupun penjualan POS.
+            if (! $type->isInbound() && $newBalance < 0) {
+                abort(422, __('inventory.insufficient_stock'));
+            }
 
-            $locked->update(['stock_balance' => $newBalance]);
-
-            return $movement;
+            return app(RecordStockMovementAction::class)
+                ->handle($locked, $type, $quantity, $newBalance, $note, $related);
         });
     }
 }

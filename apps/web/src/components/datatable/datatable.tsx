@@ -10,6 +10,7 @@ import {
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { DataTableToolbar } from "#/components/datatable/datatable-toolbar.tsx"
 import { DataTablePagination } from "#/components/datatable/datatable-pagination.tsx"
+import { useTrans } from "#/hooks/use-trans.ts"
 import type { DataTableMeta, FacetedOption } from "#/types/data-table.ts"
 
 interface DataTableProps<TData> {
@@ -18,6 +19,8 @@ interface DataTableProps<TData> {
   searchPlaceholder?: string
   faceted?: Array<{ columnId: string; title: string; options: FacetedOption[] }>
   meta?: DataTableMeta
+  /** Pesan saat tabel kosong; default memakai teks umum "Tidak ada data". */
+  emptyMessage?: string
 }
 
 export function DataTable<TData>({
@@ -26,7 +29,9 @@ export function DataTable<TData>({
   searchPlaceholder,
   faceted,
   meta,
+  emptyMessage,
 }: DataTableProps<TData>) {
+  const { t } = useTrans()
   const rows = table.getRowModel().rows
   const columnCount = table.getAllColumns().length
 
@@ -65,8 +70,11 @@ export function DataTable<TData>({
               ))
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columnCount} className="h-24 text-center">
-                  No results
+                <TableCell
+                  colSpan={columnCount}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  {emptyMessage ?? t("general.no_data")}
                 </TableCell>
               </TableRow>
             ) : (

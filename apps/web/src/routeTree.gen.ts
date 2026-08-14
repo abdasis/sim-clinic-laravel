@@ -34,7 +34,6 @@ import { Route as TenantClinicMedicalRecordsNewRouteImport } from './routes/$ten
 import { Route as TenantClinicPatientsIndexRouteImport } from './routes/$tenant/clinic/patients/index'
 import { Route as TenantClinicPatientsNewRouteImport } from './routes/$tenant/clinic/patients/new'
 import { Route as TenantClinicPosIndexRouteImport } from './routes/$tenant/clinic/pos/index'
-import { Route as TenantClinicPosTransactionsRouteImport } from './routes/$tenant/clinic/pos/transactions'
 import { Route as TenantClinicProductsIndexRouteImport } from './routes/$tenant/clinic/products/index'
 import { Route as TenantClinicReportsIndexRouteImport } from './routes/$tenant/clinic/reports/index'
 import { Route as TenantClinicServicesIndexRouteImport } from './routes/$tenant/clinic/services/index'
@@ -46,6 +45,8 @@ import { Route as TenantClinicPatientsIdEditRouteImport } from './routes/$tenant
 import { Route as TenantClinicPatientsIdHistoryRouteImport } from './routes/$tenant/clinic/patients/$id/history'
 import { Route as TenantClinicPatientsIdMedicalRecordsRouteImport } from './routes/$tenant/clinic/patients/$id/medical-records'
 import { Route as TenantClinicPosInvoicesIdRouteImport } from './routes/$tenant/clinic/pos/invoices/$id'
+import { Route as TenantClinicPosTransactionsIndexRouteImport } from './routes/$tenant/clinic/pos/transactions/index'
+import { Route as TenantClinicPosTransactionsIdRouteImport } from './routes/$tenant/clinic/pos/transactions/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -180,12 +181,6 @@ const TenantClinicPosIndexRoute = TenantClinicPosIndexRouteImport.update({
   path: '/pos/',
   getParentRoute: () => TenantClinicRouteRoute,
 } as any)
-const TenantClinicPosTransactionsRoute =
-  TenantClinicPosTransactionsRouteImport.update({
-    id: '/pos/transactions',
-    path: '/pos/transactions',
-    getParentRoute: () => TenantClinicRouteRoute,
-  } as any)
 const TenantClinicProductsIndexRoute =
   TenantClinicProductsIndexRouteImport.update({
     id: '/products/',
@@ -251,6 +246,18 @@ const TenantClinicPosInvoicesIdRoute =
     path: '/pos/invoices/$id',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
+const TenantClinicPosTransactionsIndexRoute =
+  TenantClinicPosTransactionsIndexRouteImport.update({
+    id: '/pos/transactions/',
+    path: '/pos/transactions/',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
+const TenantClinicPosTransactionsIdRoute =
+  TenantClinicPosTransactionsIdRouteImport.update({
+    id: '/pos/transactions/$id',
+    path: '/pos/transactions/$id',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -272,7 +279,6 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
   '/$tenant/clinic/medical-records/new': typeof TenantClinicMedicalRecordsNewRoute
   '/$tenant/clinic/patients/new': typeof TenantClinicPatientsNewRoute
-  '/$tenant/clinic/pos/transactions': typeof TenantClinicPosTransactionsRoute
   '/$tenant/clinic/bookings/': typeof TenantClinicBookingsIndexRoute
   '/$tenant/clinic/company-profile/': typeof TenantClinicCompanyProfileIndexRoute
   '/$tenant/clinic/inventory/': typeof TenantClinicInventoryIndexRoute
@@ -289,7 +295,9 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/patients/$id/history': typeof TenantClinicPatientsIdHistoryRoute
   '/$tenant/clinic/patients/$id/medical-records': typeof TenantClinicPatientsIdMedicalRecordsRoute
   '/$tenant/clinic/pos/invoices/$id': typeof TenantClinicPosInvoicesIdRoute
+  '/$tenant/clinic/pos/transactions/$id': typeof TenantClinicPosTransactionsIdRoute
   '/$tenant/clinic/company-profile/$entity/': typeof TenantClinicCompanyProfileEntityIndexRoute
+  '/$tenant/clinic/pos/transactions/': typeof TenantClinicPosTransactionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -310,7 +318,6 @@ export interface FileRoutesByTo {
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
   '/$tenant/clinic/medical-records/new': typeof TenantClinicMedicalRecordsNewRoute
   '/$tenant/clinic/patients/new': typeof TenantClinicPatientsNewRoute
-  '/$tenant/clinic/pos/transactions': typeof TenantClinicPosTransactionsRoute
   '/$tenant/clinic/bookings': typeof TenantClinicBookingsIndexRoute
   '/$tenant/clinic/company-profile': typeof TenantClinicCompanyProfileIndexRoute
   '/$tenant/clinic/inventory': typeof TenantClinicInventoryIndexRoute
@@ -327,7 +334,9 @@ export interface FileRoutesByTo {
   '/$tenant/clinic/patients/$id/history': typeof TenantClinicPatientsIdHistoryRoute
   '/$tenant/clinic/patients/$id/medical-records': typeof TenantClinicPatientsIdMedicalRecordsRoute
   '/$tenant/clinic/pos/invoices/$id': typeof TenantClinicPosInvoicesIdRoute
+  '/$tenant/clinic/pos/transactions/$id': typeof TenantClinicPosTransactionsIdRoute
   '/$tenant/clinic/company-profile/$entity': typeof TenantClinicCompanyProfileEntityIndexRoute
+  '/$tenant/clinic/pos/transactions': typeof TenantClinicPosTransactionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -350,7 +359,6 @@ export interface FileRoutesById {
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
   '/$tenant/clinic/medical-records/new': typeof TenantClinicMedicalRecordsNewRoute
   '/$tenant/clinic/patients/new': typeof TenantClinicPatientsNewRoute
-  '/$tenant/clinic/pos/transactions': typeof TenantClinicPosTransactionsRoute
   '/$tenant/clinic/bookings/': typeof TenantClinicBookingsIndexRoute
   '/$tenant/clinic/company-profile/': typeof TenantClinicCompanyProfileIndexRoute
   '/$tenant/clinic/inventory/': typeof TenantClinicInventoryIndexRoute
@@ -367,7 +375,9 @@ export interface FileRoutesById {
   '/$tenant/clinic/patients/$id/history': typeof TenantClinicPatientsIdHistoryRoute
   '/$tenant/clinic/patients/$id/medical-records': typeof TenantClinicPatientsIdMedicalRecordsRoute
   '/$tenant/clinic/pos/invoices/$id': typeof TenantClinicPosInvoicesIdRoute
+  '/$tenant/clinic/pos/transactions/$id': typeof TenantClinicPosTransactionsIdRoute
   '/$tenant/clinic/company-profile/$entity/': typeof TenantClinicCompanyProfileEntityIndexRoute
+  '/$tenant/clinic/pos/transactions/': typeof TenantClinicPosTransactionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -391,7 +401,6 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/medical-records/$recordId'
     | '/$tenant/clinic/medical-records/new'
     | '/$tenant/clinic/patients/new'
-    | '/$tenant/clinic/pos/transactions'
     | '/$tenant/clinic/bookings/'
     | '/$tenant/clinic/company-profile/'
     | '/$tenant/clinic/inventory/'
@@ -408,7 +417,9 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/patients/$id/history'
     | '/$tenant/clinic/patients/$id/medical-records'
     | '/$tenant/clinic/pos/invoices/$id'
+    | '/$tenant/clinic/pos/transactions/$id'
     | '/$tenant/clinic/company-profile/$entity/'
+    | '/$tenant/clinic/pos/transactions/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -429,7 +440,6 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/medical-records/$recordId'
     | '/$tenant/clinic/medical-records/new'
     | '/$tenant/clinic/patients/new'
-    | '/$tenant/clinic/pos/transactions'
     | '/$tenant/clinic/bookings'
     | '/$tenant/clinic/company-profile'
     | '/$tenant/clinic/inventory'
@@ -446,7 +456,9 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/patients/$id/history'
     | '/$tenant/clinic/patients/$id/medical-records'
     | '/$tenant/clinic/pos/invoices/$id'
+    | '/$tenant/clinic/pos/transactions/$id'
     | '/$tenant/clinic/company-profile/$entity'
+    | '/$tenant/clinic/pos/transactions'
   id:
     | '__root__'
     | '/'
@@ -468,7 +480,6 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/medical-records/$recordId'
     | '/$tenant/clinic/medical-records/new'
     | '/$tenant/clinic/patients/new'
-    | '/$tenant/clinic/pos/transactions'
     | '/$tenant/clinic/bookings/'
     | '/$tenant/clinic/company-profile/'
     | '/$tenant/clinic/inventory/'
@@ -485,7 +496,9 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/patients/$id/history'
     | '/$tenant/clinic/patients/$id/medical-records'
     | '/$tenant/clinic/pos/invoices/$id'
+    | '/$tenant/clinic/pos/transactions/$id'
     | '/$tenant/clinic/company-profile/$entity/'
+    | '/$tenant/clinic/pos/transactions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -680,13 +693,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicPosIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
-    '/$tenant/clinic/pos/transactions': {
-      id: '/$tenant/clinic/pos/transactions'
-      path: '/pos/transactions'
-      fullPath: '/$tenant/clinic/pos/transactions'
-      preLoaderRoute: typeof TenantClinicPosTransactionsRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
     '/$tenant/clinic/products/': {
       id: '/$tenant/clinic/products/'
       path: '/products'
@@ -764,6 +770,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicPosInvoicesIdRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
+    '/$tenant/clinic/pos/transactions/': {
+      id: '/$tenant/clinic/pos/transactions/'
+      path: '/pos/transactions'
+      fullPath: '/$tenant/clinic/pos/transactions/'
+      preLoaderRoute: typeof TenantClinicPosTransactionsIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/pos/transactions/$id': {
+      id: '/$tenant/clinic/pos/transactions/$id'
+      path: '/pos/transactions/$id'
+      fullPath: '/$tenant/clinic/pos/transactions/$id'
+      preLoaderRoute: typeof TenantClinicPosTransactionsIdRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
   }
 }
 
@@ -788,7 +808,6 @@ interface TenantClinicRouteRouteChildren {
   TenantClinicMedicalRecordsRecordIdRoute: typeof TenantClinicMedicalRecordsRecordIdRoute
   TenantClinicMedicalRecordsNewRoute: typeof TenantClinicMedicalRecordsNewRoute
   TenantClinicPatientsNewRoute: typeof TenantClinicPatientsNewRoute
-  TenantClinicPosTransactionsRoute: typeof TenantClinicPosTransactionsRoute
   TenantClinicBookingsIndexRoute: typeof TenantClinicBookingsIndexRoute
   TenantClinicCompanyProfileIndexRoute: typeof TenantClinicCompanyProfileIndexRoute
   TenantClinicInventoryIndexRoute: typeof TenantClinicInventoryIndexRoute
@@ -805,7 +824,9 @@ interface TenantClinicRouteRouteChildren {
   TenantClinicPatientsIdHistoryRoute: typeof TenantClinicPatientsIdHistoryRoute
   TenantClinicPatientsIdMedicalRecordsRoute: typeof TenantClinicPatientsIdMedicalRecordsRoute
   TenantClinicPosInvoicesIdRoute: typeof TenantClinicPosInvoicesIdRoute
+  TenantClinicPosTransactionsIdRoute: typeof TenantClinicPosTransactionsIdRoute
   TenantClinicCompanyProfileEntityIndexRoute: typeof TenantClinicCompanyProfileEntityIndexRoute
+  TenantClinicPosTransactionsIndexRoute: typeof TenantClinicPosTransactionsIndexRoute
 }
 
 const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
@@ -815,7 +836,6 @@ const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
     TenantClinicMedicalRecordsRecordIdRoute,
   TenantClinicMedicalRecordsNewRoute: TenantClinicMedicalRecordsNewRoute,
   TenantClinicPatientsNewRoute: TenantClinicPatientsNewRoute,
-  TenantClinicPosTransactionsRoute: TenantClinicPosTransactionsRoute,
   TenantClinicBookingsIndexRoute: TenantClinicBookingsIndexRoute,
   TenantClinicCompanyProfileIndexRoute: TenantClinicCompanyProfileIndexRoute,
   TenantClinicInventoryIndexRoute: TenantClinicInventoryIndexRoute,
@@ -835,8 +855,10 @@ const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
   TenantClinicPatientsIdMedicalRecordsRoute:
     TenantClinicPatientsIdMedicalRecordsRoute,
   TenantClinicPosInvoicesIdRoute: TenantClinicPosInvoicesIdRoute,
+  TenantClinicPosTransactionsIdRoute: TenantClinicPosTransactionsIdRoute,
   TenantClinicCompanyProfileEntityIndexRoute:
     TenantClinicCompanyProfileEntityIndexRoute,
+  TenantClinicPosTransactionsIndexRoute: TenantClinicPosTransactionsIndexRoute,
 }
 
 const TenantClinicRouteRouteWithChildren =

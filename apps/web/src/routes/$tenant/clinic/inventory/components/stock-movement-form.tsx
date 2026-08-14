@@ -20,7 +20,8 @@ interface ProductOption {
 const schema = z.object({
   product_id: z.string().min(1),
   type: z.string().min(1),
-  quantity: z.coerce.number().gte(0),
+  // Mutasi nol tidak mengubah apa pun; backend menolaknya dengan gt:0.
+  quantity: z.coerce.number().gt(0),
   note: z.string().optional(),
 })
 
@@ -69,6 +70,13 @@ export function StockMovementForm({ tenant, onProductChange }: Props) {
     },
     onError: (err: ApiError) => {
       applyServerErrors(form, err.errors)
+
+      // Penolakan saldo negatif datang sebagai 422 tanpa daftar field;
+      // tanpa ini pesannya hanya lewat di toast dan formnya tampak baik saja.
+      if (!err.errors) {
+        form.setError("quantity", { type: "server", message: err.message })
+      }
+
       toast.error(err.message)
     },
   })

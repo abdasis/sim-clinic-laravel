@@ -13,7 +13,7 @@ import {
 } from "#/components/ui/table.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
-import { formatCurrency } from "#/lib/format.ts"
+import { formatCurrency, formatDateTime } from "#/lib/format.ts"
 
 export const Route = createFileRoute("/$tenant/clinic/pos/invoices/$id")({
   component: InvoicePage,
@@ -27,16 +27,27 @@ interface InvoiceItem {
   subtotal: string
 }
 
+interface InvoicePayment {
+  id: number
+  method: string
+  method_label?: string | null
+  amount: string
+  paid_at?: string | null
+}
+
 interface InvoiceData {
   id: number
   invoice_number: string
   subtotal: string
+  paid_amount: string
+  outstanding_amount: string
   payment_status: string
   created_at?: string
   patient_name?: string | null
   cashier_name?: string | null
   clinic_name?: string | null
   items: InvoiceItem[]
+  payments?: InvoicePayment[]
 }
 
 function InvoicePage() {
@@ -132,6 +143,49 @@ function InvoicePage() {
             <span className="text-lg font-semibold tabular-nums">
               {formatCurrency(Number(invoice.subtotal))}
             </span>
+          </div>
+
+          {invoice.payments && invoice.payments.length > 0 ? (
+            <div className="space-y-2 border-t pt-4">
+              <p className="text-sm font-semibold">{t("invoice.payments")}</p>
+              <ul className="space-y-1 text-sm">
+                {invoice.payments.map((payment) => (
+                  <li
+                    key={payment.id}
+                    className="flex items-center justify-between gap-4"
+                  >
+                    <span className="text-muted-foreground">
+                      {payment.method_label ?? payment.method}
+                      {payment.paid_at
+                        ? ` · ${formatDateTime(payment.paid_at)}`
+                        : ""}
+                    </span>
+                    <span className="tabular-nums">
+                      {formatCurrency(Number(payment.amount))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className="space-y-1 border-t pt-4 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">
+                {t("invoice.paid_amount")}
+              </span>
+              <span className="tabular-nums">
+                {formatCurrency(Number(invoice.paid_amount ?? 0))}
+              </span>
+            </div>
+            {Number(invoice.outstanding_amount ?? 0) > 0 ? (
+              <div className="flex items-center justify-between font-medium">
+                <span>{t("invoice.outstanding")}</span>
+                <span className="tabular-nums text-destructive">
+                  {formatCurrency(Number(invoice.outstanding_amount))}
+                </span>
+              </div>
+            ) : null}
           </div>
         </div>
       )}
