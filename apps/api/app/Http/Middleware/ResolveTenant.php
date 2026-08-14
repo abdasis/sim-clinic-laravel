@@ -25,6 +25,11 @@ class ResolveTenant
 
         app()->instance('tenant', $tenant);
 
+        // Argumen controller diteruskan Laravel berdasarkan posisi, bukan nama.
+        // Tanpa ini {tenant} ikut terkirim sebagai argumen pertama sehingga
+        // setiap method yang menerima model dari route menolak dengan TypeError.
+        $request->route()->forgetParameter('tenant');
+
         return $next($request);
     }
 }
