@@ -52,7 +52,7 @@ class TenantRegistrationService
             app(LogAuditAction::class)->handle('tenant.registered', $tenant, $user, [
                 'slug' => $slug,
                 'email' => $user->email,
-            ], $tenant);
+            ], 'Tenant baru '.$tenant->name.' terdaftar dengan admin '.$user->email.'.', $tenant);
 
             return ['tenant' => $tenant, 'user' => $user];
         });

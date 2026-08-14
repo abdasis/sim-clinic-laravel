@@ -91,11 +91,14 @@ class UserController extends Controller
             'role' => ['required', 'in:member,tenant_admin'],
         ]);
 
+        $oldRole = $user->role;
+
         $user->update(['role' => $validated['role']]);
 
         app(LogAuditAction::class)->handle('user.role_changed', $user, auth()->user(), [
-            'role' => $validated['role'],
-        ], app('tenant'));
+            'old_role' => $oldRole->value,
+            'new_role' => $validated['role'],
+        ], 'Peran pengguna '.$user->name.' ('.$user->email.') diubah dari '.$oldRole->label().' ke '.$user->role->label().'.', app('tenant'));
 
         return response()->json([
             'data' => new UserResource($user),

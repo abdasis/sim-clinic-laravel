@@ -34,7 +34,7 @@ class InvitationService
         app(LogAuditAction::class)->handle('user.invited', $invitation, null, [
             'email' => $email,
             'role' => $role,
-        ], $tenant);
+        ], 'Undangan dikirim ke '.$email.' sebagai '.$role.'.', $tenant);
 
         return $invitation;
     }
@@ -62,7 +62,7 @@ class InvitationService
 
         app(LogAuditAction::class)->handle('user.joined', $user, $user, [
             'email' => $user->email,
-        ], $invitation->tenant);
+        ], 'Pengguna '.$user->email.' bergabung via undangan.', $invitation->tenant);
 
         return $user;
     }

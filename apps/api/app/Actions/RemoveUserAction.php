@@ -28,6 +28,6 @@ class RemoveUserAction
 
         app(LogAuditAction::class)->handle('user.removed', $user, auth()->user(), [
             'email' => $user->email,
-        ], $user->tenant);
+        ], 'Keanggotaan pengguna '.$user->name.' ('.$user->email.') dinonaktifkan.', $user->tenant);
     }
 }

@@ -56,11 +56,14 @@ class PlatformTenantController extends Controller
     {
         $this->assertPlatformAdmin();
 
+        $oldStatus = $tenant->status;
+
         $tenant->update(['status' => $request->validated('status')]);
 
         app(LogAuditAction::class)->handle('tenant.status_changed', $tenant, auth()->user(), [
-            'status' => $request->validated('status'),
-        ], $tenant);
+            'old_status' => $oldStatus->value,
+            'new_status' => $request->validated('status'),
+        ], 'Status tenant '.$tenant->name.' diubah dari '.$oldStatus->label().' ke '.$tenant->status->label().'.', $tenant);
 
         return response()->json([
             'data' => new TenantResource($tenant),

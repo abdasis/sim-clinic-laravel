@@ -69,7 +69,7 @@ class StaffController extends Controller
             'clinic_role' => $request->validated('clinic_role'),
         ]);
 
-        app(LogAuditAction::class)->handle('staff.created', $staff);
+        app(LogAuditAction::class)->handle('staff.created', $staff, null, [], 'Staf baru '.$staff->name.' ('.$staff->email.') ditambahkan sebagai '.$staff->clinic_role?->label().'.');
 
         return response()->json([
             'data' => new StaffResource($staff),
@@ -93,9 +93,14 @@ class StaffController extends Controller
             }
         }
 
+        $oldRole = $staff->clinic_role;
+
         $staff->update(['clinic_role' => $newRole]);
 
-        app(LogAuditAction::class)->handle('staff.role_changed', $staff);
+        app(LogAuditAction::class)->handle('staff.role_changed', $staff, null, [
+            'old_role' => $oldRole?->value,
+            'new_role' => $newRole->value,
+        ], 'Peran staf '.$staff->name.' diubah dari '.$oldRole?->label().' ke '.$newRole->label().'.');
 
         return response()->json([
             'data' => new StaffResource($staff),
@@ -120,7 +125,7 @@ class StaffController extends Controller
 
         $staff->update(['status' => UserStatus::Inactive]);
 
-        app(LogAuditAction::class)->handle('staff.deactivated', $staff);
+        app(LogAuditAction::class)->handle('staff.deactivated', $staff, null, [], 'Staf '.$staff->name.' ('.$staff->email.') dinonaktifkan.');
 
         return response()->json([
             'data' => new StaffResource($staff),

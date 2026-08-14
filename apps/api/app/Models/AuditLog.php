@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class AuditLog extends Model
 {
-    protected $fillable = ['tenant_id', 'action', 'subject_type', 'subject_id', 'causer_id', 'properties'];
+    protected $fillable = ['tenant_id', 'action', 'description', 'subject_type', 'subject_id', 'causer_id', 'properties'];
 
     protected function casts(): array
     {

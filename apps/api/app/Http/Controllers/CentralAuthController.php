@@ -34,7 +34,7 @@ class CentralAuthController extends Controller
 
         app(LogAuditAction::class)->handle('user.login', $user, $user, [
             'ip_address' => $request->ip(),
-        ], $tenant);
+        ], 'Pengguna '.$user->email.' berhasil masuk.', $tenant);
 
         return response()->json([
             'data' => [
