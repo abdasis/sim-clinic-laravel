@@ -7,6 +7,7 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
 import type { ChatChannel } from "#/hooks/use-company-profile.ts"
+import { normalizeWhatsapp } from "./cta-link.tsx"
 import { useContentText } from "./locale-context.tsx"
 
 interface ChatWidgetProps {
@@ -25,6 +26,11 @@ export function ChatWidget({ channels, fallbackLabel }: ChatWidgetProps) {
   if (!channel?.url) return null
 
   const label = text(channel.label) ?? fallbackLabel
+  // Kolom kanal chat bebas teks; admin kerap mengisi nomor, bukan tautan.
+  const href =
+    channel.type === "whatsapp" && !/^https?:\/\//i.test(channel.url)
+      ? `https://wa.me/${normalizeWhatsapp(channel.url)}`
+      : channel.url
 
   return (
     <Tooltip>
@@ -35,7 +41,7 @@ export function ChatWidget({ channels, fallbackLabel }: ChatWidgetProps) {
           aria-label={label}
           className="fixed right-5 bottom-5 z-40 size-11 rounded-full shadow-sm transition-transform hover:scale-105 active:scale-95"
         >
-          <a href={channel.url} target="_blank" rel="noreferrer noopener">
+          <a href={href} target="_blank" rel="noreferrer noopener">
             <MessageCircle className="size-5" />
           </a>
         </Button>

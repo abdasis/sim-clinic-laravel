@@ -39,7 +39,7 @@ export function CtaLink({
   return (
     <Button asChild variant={variant} size={size} className={className}>
       <a
-        href={isInternal ? internalHref(tenant, url) : url}
+        href={ctaHref(tenant, type, url)}
         {...(isInternal ? {} : { target: "_blank", rel: "noreferrer noopener" })}
       >
         {caption}
@@ -51,4 +51,29 @@ export function CtaLink({
 /** Path yang diatur admin selalu relatif terhadap tenant-nya. */
 export function internalHref(tenant: string, value: string): string {
   return `/${tenant}${value.startsWith("/") ? value : `/${value}`}`
+}
+
+/**
+ * Terjemahkan `cta_url` sesuai jenisnya. Untuk WhatsApp, kolomnya kerap
+ * diisi nomor telepon biasa alih-alih tautan penuh — keduanya diterima.
+ */
+export function ctaHref(
+  tenant: string,
+  type: string | null | undefined,
+  url: string,
+): string {
+  if (type === "route_internal") return internalHref(tenant, url)
+
+  if (type === "whatsapp" && !/^https?:\/\//i.test(url)) {
+    return `https://wa.me/${normalizeWhatsapp(url)}`
+  }
+
+  return url
+}
+
+/** wa.me menolak spasi, tanda hubung, dan awalan 0 — normalkan ke 62. */
+export function normalizeWhatsapp(value: string): string {
+  const digits = value.replace(/\D/g, "")
+
+  return digits.startsWith("0") ? `62${digits.slice(1)}` : digits
 }
