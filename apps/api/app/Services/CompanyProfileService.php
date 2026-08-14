@@ -2,6 +2,13 @@
 
 namespace App\Services;
 
+use App\Actions\CompanyProfile\CreateCompanyContentAction;
+use App\Actions\CompanyProfile\DeleteCompanyContentAction;
+use App\Actions\CompanyProfile\ReorderCompanyContentAction;
+use App\Actions\CompanyProfile\ToggleCompanyContentActiveAction;
+use App\Actions\CompanyProfile\UpdateCompanyContentAction;
+use App\Actions\CompanyProfile\UpdateCompanyProfileSettingsAction;
+use App\Actions\CompanyProfile\UploadCompanyMediaAction;
 use App\Enums\CompanyNavPosition;
 use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
@@ -14,6 +21,9 @@ use App\Models\CompanyTreatment;
 use App\Models\CompanyValueProp;
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -75,6 +85,68 @@ class CompanyProfileService
                 ->keyBy(fn (CompanyContentSection $section) => $section->section_key->value)
                 ->all(),
         ];
+    }
+
+    /**
+     * @param  class-string<Model>  $modelClass
+     * @param  array<string, mixed>  $data
+     */
+    public function create(string $modelClass, string $entity, array $data): Model
+    {
+        return app(CreateCompanyContentAction::class)->handle($modelClass, $entity, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function update(Model $record, string $entity, array $data): Model
+    {
+        return app(UpdateCompanyContentAction::class)->handle($record, $entity, $data);
+    }
+
+    public function delete(Model $record, string $entity): void
+    {
+        app(DeleteCompanyContentAction::class)->handle($record, $entity);
+    }
+
+    public function toggleActive(Model $record, string $entity): Model
+    {
+        return app(ToggleCompanyContentActiveAction::class)->handle($record, $entity);
+    }
+
+    /**
+     * @param  class-string<Model>  $modelClass
+     * @param  array<int, int>  $ids
+     */
+    public function reorder(string $modelClass, string $entity, array $ids): void
+    {
+        // Urutan hanya bermakna sebagai satu kesatuan; gagal di tengah akan
+        // meninggalkan daftar setengah tertata.
+        DB::transaction(fn () => app(ReorderCompanyContentAction::class)
+            ->handle($modelClass, $entity, $ids));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function updateSettings(Tenant $tenant, array $data): CompanyProfileSetting
+    {
+        return app(UpdateCompanyProfileSettingsAction::class)->handle($tenant->id, $data);
+    }
+
+    public function togglePublish(Tenant $tenant): CompanyProfileSetting
+    {
+        $current = CompanyProfileSetting::query()
+            ->where('tenant_id', $tenant->id)
+            ->value('is_published');
+
+        return app(UpdateCompanyProfileSettingsAction::class)
+            ->handle($tenant->id, ['is_published' => ! $current]);
+    }
+
+    public function uploadMedia(Tenant $tenant, string $entity, UploadedFile $file): string
+    {
+        return app(UploadCompanyMediaAction::class)->handle($tenant->id, $entity, $file);
     }
 
     /**

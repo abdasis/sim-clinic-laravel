@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Http\Requests\CompanyProfile;
+
+use App\Support\LocaleText;
+use Illuminate\Validation\Rule;
+
+class SettingsRequest extends CompanyContentRequest
+{
+    public function rules(): array
+    {
+        return [
+            ...$this->translatableRules('site_name', required: false),
+            'logo_path' => ['nullable', 'string', 'max:255'],
+            'copyright_text' => ['nullable', 'string', 'max:255'],
+            'default_locale' => ['sometimes', Rule::in(LocaleText::SUPPORTED)],
+            'is_published' => ['sometimes', 'boolean'],
+
+            'chat_channels' => ['nullable', 'array'],
+            'chat_channels.*.type' => ['required', 'string', 'max:50'],
+            'chat_channels.*.url' => ['required', 'string', 'max:255'],
+            'chat_channels.*.label' => ['nullable', 'array'],
+
+            'social_links' => ['nullable', 'array'],
+            'social_links.*.platform' => ['required', 'string', 'max:50'],
+            'social_links.*.url' => ['required', 'url', 'max:255'],
+            'social_links.*.icon' => ['nullable', 'string', 'max:50'],
+
+            'marketplace_links' => ['nullable', 'array'],
+            'marketplace_links.*.name' => ['required', 'string', 'max:50'],
+            'marketplace_links.*.url' => ['required', 'url', 'max:255'],
+            'marketplace_links.*.icon' => ['nullable', 'string', 'max:50'],
+        ];
+    }
+}

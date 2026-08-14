@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CentralAuthController;
+use App\Http\Controllers\CompanyContentController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
@@ -115,6 +116,23 @@ Route::prefix('{tenant}/clinic')
         Route::delete('medical-records/{medicalRecord}', [MedicalRecordController::class, 'destroy']);
         Route::post('medical-records/{medicalRecord}/treatments', [MedicalRecordController::class, 'addTreatment']);
         Route::post('medical-records/{medicalRecord}/photos', [MedicalRecordController::class, 'addPhoto']);
+
+        // Company profile CMS (spec 010)
+        Route::prefix('company-profile')->group(function (): void {
+            Route::get('settings', [CompanyContentController::class, 'settings']);
+            Route::put('settings', [CompanyContentController::class, 'updateSettings']);
+            Route::post('settings/publish', [CompanyContentController::class, 'togglePublish']);
+            Route::post('media', [CompanyContentController::class, 'upload']);
+
+            // {entity} dibatasi daftar di CompanyContentRegistry; nilai lain 404.
+            Route::post('{entity}/reorder', [CompanyContentController::class, 'reorder']);
+            Route::post('{entity}/{content}/toggle', [CompanyContentController::class, 'toggle']);
+            Route::get('{entity}', [CompanyContentController::class, 'index']);
+            Route::post('{entity}', [CompanyContentController::class, 'store']);
+            Route::get('{entity}/{content}', [CompanyContentController::class, 'show']);
+            Route::put('{entity}/{content}', [CompanyContentController::class, 'update']);
+            Route::delete('{entity}/{content}', [CompanyContentController::class, 'destroy']);
+        });
 
         // US8 Reports
         Route::get('reports/revenue', [ReportController::class, 'revenue']);
