@@ -43,7 +43,7 @@ Route::middleware(['auth:sanctum', 'permission.team'])->prefix('central')->group
 // =========================================================================
 // Auth tenant-scoped (spec 001) — resolve tenant, tanpa auth untuk login
 // =========================================================================
-Route::prefix('{tenant}')->middleware(['resolve.tenant', 'permission.team'])->group(function (): void {
+Route::prefix('{tenant}')->middleware(['resolve.tenant', 'ensure.tenant.active', 'permission.team'])->group(function (): void {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 });
