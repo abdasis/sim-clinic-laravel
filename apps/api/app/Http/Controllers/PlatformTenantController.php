@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\LogAuditAction;
 use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\UpdateTenantStatusRequest;
 use App\Http\Resources\TenantResource;
 use App\Models\Tenant;
+use App\Services\PlatformTenantService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -52,18 +52,11 @@ class PlatformTenantController extends Controller
         ]);
     }
 
-    public function status(UpdateTenantStatusRequest $request, Tenant $tenant): JsonResponse
+    public function status(UpdateTenantStatusRequest $request, Tenant $tenant, PlatformTenantService $service): JsonResponse
     {
         $this->assertPlatformAdmin();
 
-        $oldStatus = $tenant->status;
-
-        $tenant->update(['status' => $request->validated('status')]);
-
-        app(LogAuditAction::class)->handle('tenant.status_changed', $tenant, auth()->user(), [
-            'old_status' => $oldStatus->value,
-            'new_status' => $request->validated('status'),
-        ], 'Status tenant '.$tenant->name.' diubah dari '.$oldStatus->label().' ke '.$tenant->status->label().'.', $tenant);
+        $service->changeStatus($tenant, $request->validated('status'));
 
         return response()->json([
             'data' => new TenantResource($tenant),
