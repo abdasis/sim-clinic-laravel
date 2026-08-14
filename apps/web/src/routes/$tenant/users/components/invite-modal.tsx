@@ -23,12 +23,13 @@ import type { ApiError } from "#/lib/api.ts"
 const schema = z.object({
   email: z.string().email(),
   role: z.enum(["member", "tenant_admin"]),
+  clinic_role: z.string().optional(),
 })
 
 type Values = z.infer<typeof schema>
 
 interface InviteResponse {
-  data: { invitation: { id: number; email: string; token?: string } }
+  data: { token: string }
 }
 
 export function InviteModal({ tenant }: { tenant: string }) {
@@ -36,16 +37,20 @@ export function InviteModal({ tenant }: { tenant: string }) {
   const [open, setOpen] = useState(false)
   const qc = useQueryClient()
   const form = useForm(schema, {
-    defaultValues: { email: "", role: "member" },
+    defaultValues: { email: "", role: "member", clinic_role: "" },
   })
 
   const mutation = useMutation({
     mutationFn: (values: Values) =>
-      apiPost<InviteResponse>(`/${tenant}/users/invite`, values),
+      apiPost<InviteResponse>(`/${tenant}/users/invite`, {
+        ...values,
+        // Kosong berarti tanpa peran klinik; jangan kirim string kosong.
+        clinic_role: values.clinic_role || undefined,
+      }),
     onSuccess: (res) => {
-      const token = res.data.invitation.token
-      toast.success(t("tenant.invited"), token ? { description: token } : undefined)
+      toast.success(t("tenant.invited"), { description: res.data.token })
       qc.invalidateQueries({ queryKey: ["users"] })
+      qc.invalidateQueries({ queryKey: ["invitations"] })
       setOpen(false)
       form.reset()
     },
@@ -82,6 +87,18 @@ export function InviteModal({ tenant }: { tenant: string }) {
               options={[
                 { label: t("tenant.role.member"), value: "member" },
                 { label: t("tenant.role.tenant_admin"), value: "tenant_admin" },
+              ]}
+            />
+            <FormSelect
+              control={form.control}
+              name="clinic_role"
+              label={t("staff.clinic_role")}
+              options={[
+                { label: t("tenant.no_clinic_role"), value: "" },
+                { label: t("clinic.role.admin"), value: "admin" },
+                { label: t("clinic.role.doctor"), value: "doctor" },
+                { label: t("clinic.role.therapist"), value: "therapist" },
+                { label: t("clinic.role.cashier"), value: "cashier" },
               ]}
             />
             <DialogFooter>

@@ -13,6 +13,7 @@ import {
 import { Form } from "#/components/ui/form.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
+import { FormPassword } from "#/components/forms/form-password.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
@@ -83,11 +84,13 @@ export function StaffFormModal({ tenant }: { tenant: string }) {
                 { label: t("clinic.role.cashier"), value: "cashier" },
               ]}
             />
-            <FormInput
+            <FormPassword
               control={form.control}
               name="password"
               label={t("staff.password")}
-              type="password"
+              description={t("auth.password_hint")}
+              showLabel={t("auth.show_password")}
+              hideLabel={t("auth.hide_password")}
             />
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>{t("general.save")}</FormSubmit>

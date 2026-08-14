@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "#/components/ui/card.tsx"
 import { Form } from "#/components/ui/form.tsx"
-import { FormInput } from "#/components/forms/form-input.tsx"
+import { FormPassword } from "#/components/forms/form-password.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
@@ -98,11 +98,13 @@ function InvitationPage() {
                     {invitation.data?.data.email}
                   </p>
                 </div>
-                <FormInput
+                <FormPassword
                   control={form.control}
                   name="password"
                   label={t("auth.password")}
-                  type="password"
+                  description={t("auth.password_hint")}
+                  showLabel={t("auth.show_password")}
+                  hideLabel={t("auth.hide_password")}
                 />
                 <FormSubmit loading={mutation.isPending}>
                   {t("general.save")}

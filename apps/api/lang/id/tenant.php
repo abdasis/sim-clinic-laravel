@@ -18,6 +18,7 @@ return [
     'slug_reserved' => 'Nama perusahaan menghasilkan slug yang sudah dipakai sistem. Silakan gunakan nama lain.',
     'status_changed' => 'Status tenant berhasil diperbarui.',
     'invite' => 'Undang Pengguna',
+    'no_clinic_role' => 'Tanpa peran klinik',
     'invited' => 'Undangan berhasil dikirim.',
     'email_exists' => 'Email sudah terdaftar di tenant ini.',
     'invitation_invalid' => 'Undangan tidak valid atau sudah kedaluwarsa.',

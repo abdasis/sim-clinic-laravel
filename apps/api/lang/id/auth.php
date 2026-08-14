@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'password_hint' => 'Minimal 8 karakter, kombinasi huruf dan angka.',
+    'show_password' => 'Lihat kata sandi',
+    'hide_password' => 'Sembunyikan kata sandi',
     'login' => 'Masuk',
     'logout' => 'Keluar',
     'register' => 'Daftar',

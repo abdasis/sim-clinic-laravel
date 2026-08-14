@@ -33,6 +33,7 @@ import type { ApiError } from "#/lib/api.ts"
 import { getAuthUser } from "#/lib/auth.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { InviteModal } from "./components/invite-modal.tsx"
+import { PendingInvitations } from "./components/pending-invitations.tsx"
 
 export const Route = createFileRoute("/$tenant/users/")({
   component: UsersPage,
@@ -199,6 +200,7 @@ function UsersPage() {
         searchPlaceholder={t("general.search")}
         meta={meta}
       />
+      {isAdmin ? <PendingInvitations tenant={tenant} /> : null}
     </div>
   )
 }
