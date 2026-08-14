@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\SyncTenantClinicRolesAction;
 use App\Enums\ClinicRole;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
@@ -12,6 +13,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Data demo klinik (spec 002, T014): 1 tenant demo, 4 staf (1 per peran),
@@ -28,6 +30,9 @@ class ClinicDemoSeeder extends Seeder
 
         app()->instance('tenant', $tenant);
 
+        app(SyncTenantClinicRolesAction::class)->handle($tenant->id);
+        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
+
         $staff = [
             ['name' => 'Admin Klinik', 'email' => 'admin@demo.test', 'clinic_role' => ClinicRole::Admin],
             ['name' => 'dr. Sari', 'email' => 'dokter@demo.test', 'clinic_role' => ClinicRole::Doctor],
@@ -36,7 +41,7 @@ class ClinicDemoSeeder extends Seeder
         ];
 
         foreach ($staff as $s) {
-            User::query()->firstOrCreate(
+            $user = User::query()->firstOrCreate(
                 ['email' => $s['email']],
                 [
                     'tenant_id' => $tenant->id,
@@ -47,6 +52,8 @@ class ClinicDemoSeeder extends Seeder
                     'clinic_role' => $s['clinic_role'],
                 ],
             );
+
+            $user->syncRoles([$s['clinic_role']->value]);
         }
 
         $patients = [

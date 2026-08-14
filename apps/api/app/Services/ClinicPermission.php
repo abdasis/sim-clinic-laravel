@@ -13,9 +13,12 @@ use App\Enums\ClinicRole;
 class ClinicPermission
 {
     /**
+     * Sumber tunggal matriks peran klinik — dipakai Gate clinic.access dan
+     * RolesAndPermissionsSeeder agar role spatie selalu sinkron dengan matriks.
+     *
      * @var array<string, array<string, string>> role => [module => 'r'|'rw']
      */
-    private const MATRIX = [
+    public const MATRIX = [
         'admin' => [
             'staff' => 'rw', 'service' => 'rw', 'patient' => 'rw', 'booking' => 'rw',
             'medical_record' => 'rw', 'product' => 'rw', 'inventory' => 'rw',

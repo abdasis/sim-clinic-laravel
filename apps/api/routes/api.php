@@ -35,7 +35,7 @@ Route::get('/user', fn (Request $request) => $request->user())->middleware('auth
 // =========================================================================
 // Central platform (spec 001) — auth:sanctum, platform admin
 // =========================================================================
-Route::middleware('auth:sanctum')->prefix('central')->group(function (): void {
+Route::middleware(['auth:sanctum', 'permission.team'])->prefix('central')->group(function (): void {
     Route::get('/tenants', [PlatformTenantController::class, 'index']);
     Route::patch('/tenants/{tenant}/status', [PlatformTenantController::class, 'status']);
 });
@@ -43,14 +43,14 @@ Route::middleware('auth:sanctum')->prefix('central')->group(function (): void {
 // =========================================================================
 // Auth tenant-scoped (spec 001) — resolve tenant, tanpa auth untuk login
 // =========================================================================
-Route::prefix('{tenant}')->middleware('resolve.tenant')->group(function (): void {
+Route::prefix('{tenant}')->middleware(['resolve.tenant', 'permission.team'])->group(function (): void {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 });
 
 // Manajemen user tenant (spec 001)
 Route::prefix('{tenant}')
-    ->middleware(['resolve.tenant', 'ensure.tenant.active', 'auth:sanctum'])
+    ->middleware(['resolve.tenant', 'ensure.tenant.active', 'permission.team', 'auth:sanctum'])
     ->group(function (): void {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users/invite', [UserController::class, 'invite']);
@@ -62,7 +62,7 @@ Route::prefix('{tenant}')
 // Klinik (spec 002) — tenant-scoped
 // =========================================================================
 Route::prefix('{tenant}/clinic')
-    ->middleware(['resolve.tenant', 'ensure.tenant.active', 'auth:sanctum'])
+    ->middleware(['resolve.tenant', 'ensure.tenant.active', 'permission.team', 'auth:sanctum'])
     ->group(function (): void {
         // US1 Staff
         Route::get('staff', [StaffController::class, 'index']);

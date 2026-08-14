@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureTenantActive;
 use App\Http\Middleware\ResolveTenant;
+use App\Http\Middleware\SetPermissionTeamId;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'resolve.tenant' => ResolveTenant::class,
             'ensure.tenant.active' => EnsureTenantActive::class,
+            'permission.team' => SetPermissionTeamId::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
