@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import {
   createFileRoute,
   Outlet,
@@ -61,7 +62,7 @@ function ClinicLayout() {
     { key: "users", label: t("tenant.users"), roles: ["admin"], icon: UserCog },
     { key: "services", label: t("service.title"), roles: ["admin", "doctor", "therapist"], icon: Stethoscope },
     { key: "patients", label: t("patient.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulse },
-    { key: "bookings", label: t("booking.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: Calendar },
+    { key: "bookings", label: t("booking.title"), roles: ["admin", "doctor", "therapist"], icon: Calendar },
     { key: "medical-records", label: t("medical_record.title"), roles: ["admin", "doctor", "therapist"], icon: FileText },
     { key: "products", label: t("product.title"), roles: ["admin"], icon: Package },
     { key: "inventory", label: t("inventory.title"), roles: ["admin"], icon: Boxes },
@@ -90,6 +91,14 @@ function ClinicLayout() {
       url: `${base}/${child.key}`,
     })),
   }))
+
+  // Shell tidak punya halaman index; arahkan ke modul pertama yang boleh diakses.
+  const landing = navMain[0]?.url
+  useEffect(() => {
+    if (pathname.replace(/\/$/, "") === base && landing) {
+      navigate({ to: landing, replace: true })
+    }
+  }, [pathname, base, landing, navigate])
 
   const sidebarUser: SidebarUser = {
     name: user?.name ?? "Guest",

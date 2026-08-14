@@ -62,6 +62,7 @@ function TenantLoginPage() {
     <main className="page-wrap px-4 py-12">
       <ClinicBreadcrumb
         items={[
+          { label: t("general.home"), to: "/" },
           { label: tenant, to: "/$tenant/login", params: { tenant } },
           { label: t("auth.login") },
         ]}
