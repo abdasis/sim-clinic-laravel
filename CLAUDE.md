@@ -79,14 +79,22 @@ Route groups in `routes/api.php`:
 ### Layering — Controller → Service → Action
 
 - **Controller** (`app/Http/Controllers`): `$this->authorize(...)`, resolves FormRequest, calls Service or Action, returns `*Resource` wrapped as `{ data, meta }`. Uses `InteractsWithDataTable` trait to parse server-side DataTable query params (`page, per_page, sort, direction, search, filter[column]`).
-- **Service** (`app/Services`): orchestrates a use case, may call multiple Actions and cross-cutting infra (`InvoiceService`, `StockService`, `ReportService`, `TransactionService`, `BookingOverlapService`, `InvitationService`, `TenantRegistrationService`). `ClinicPermission` is the permission matrix (not a use-case service).
-- **Action** (`app/Actions`): one concrete unit of work in `execute()`/`handle()`. May inject Repository/Model/FormRequest/event/log and call other Actions (one-directional, no cycles). **Never inject a Service into an Action.** Examples: `LogAuditAction`, `PayTransactionAction`, `CancelTransactionAction`, `UploadMedicalPhotoAction`, `ArchiveServiceAction`, `RemoveUserAction`.
+- **Service** (`app/Services`): orchestrates a use case, may call multiple Actions and cross-cutting infra (`InvoiceService`, `StockService`, `ReportService`, `TransactionService`, `BookingOverlapService`, `InvitationService`, `TenantRegistrationService`). `ClinicPermission` is the permission matrix (not a use-case service). **Service DILARANG menyentuh DB langsung** (Eloquent write, `DB::`, raw SQL) — setiap operasi yang menyentuh DB WAJIB melalui Action. Service hanya orkestrasi: memanggil Action, mengelola transaction boundary, cross-cutting infra.
+- **Action** (`app/Actions`): one concrete unit of work in `execute()`/`handle()`. May inject Repository/Model/FormRequest/event/log and call other Actions (one-directional, no cycles). **Never inject a Service into an Action.** Examples: `LogAuditAction`, `PayTransactionAction`, `CancelTransactionAction`, `UploadMedicalPhotoAction`, `ArchiveServiceAction`, `RemoveUserAction`. **Folder per entity**: `app/Actions/<Entity>/<ActionName>Action.php` (mis. `app/Actions/Booking/CreateBookingAction.php`), namespace `App\Actions\<Entity>\<Action>`. Cross-cutting Action (audit, dll) boleh flat di root `app/Actions/`.
 
 ### Audit log
 
-Currently native: `App\Models\AuditLog` (plain model, `properties` cast `array`) + `LogAuditAction::handle(action, subject, causer, context, tenant)` which does `AuditLog::create([...])` manually. `spatie/laravel-activitylog` is **not** installed. Every data-changing action calls `LogAuditAction` — narrative action strings like `user.login`, `tenant.registered`, `staff.created`. Tenant/causer default from container/auth when omitted.
+Target: `spatie/laravel-activitylog` with custom `App\Models\Activity extends Spatie\Activitylog\Models\Activity` (`$table = 'audit_logs'`), `activity()->causedBy()->performedOn()->withProperties()->log()` API. `LogAuditAction` becomes a wrapper keeping the same signature. `tenant_id` moves from an explicit column to `properties->tenant_id`.
 
-Target design (in `docs/erd/audit_logs.md`): migrate to `spatie/laravel-activitylog` with custom `App\Models\Activity extends Spatie\Activitylog\Models\Activity` (`$table = 'audit_logs'`), `activity()->causedBy()->performedOn()->withProperties()->log()` API. `LogAuditAction` becomes a wrapper keeping the same signature. `tenant_id` moves from an explicit column to `properties->tenant_id`. Add spatie when model-event auto-log / `activity()` helper is needed — until then native is enough.
+**WAJIB untuk setiap Action yang mengubah data:**
+- Log activity via spatie `activity()` (atau wrapper `LogAuditAction`) — naratif + informatif.
+- `withProperties` WAJIB menyimpan **semua atribut** yang di-create/update: untuk create → full attributes; untuk update → diff nilai lama + baru (`old`/`new`).
+- Narasi Indonesia semi-formal friendly (lihat contoh di `lang/id`), bukan kode robotik.
+
+**WAJIB untuk exception:**
+- Setiap exception yang ditangkap (catch / try) WAJIB `Log::error('deskripsi kontekstual', ['exception' => $e, ...context])` sebelum re-throw/handle. Tidak ada exception yang ditelan diam-diam tanpa log.
+
+Currently native (transisi): `App\Models\AuditLog` + `LogAuditAction::handle(action, subject, causer, context, tenant)` dengan kolom `description` naratif. Migrasi ke spatie saat `activity()` helper / model-event auto-log dibutuhkan — lihat `docs/erd/audit_logs.md`.
 
 ### i18n
 

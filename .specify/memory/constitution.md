@@ -143,6 +143,14 @@ konvensi berikut:
   (subject), kapan, dan deskripsi naratif. Bukan kode robotik
   "update record id=5", melainkan "Memperbarui data pendaftaran siswa
   Budi (id: 5) — status berubah dari 'menunggu' ke 'disetujui'".
+- **SEMUA Action WAJIB log activity via `spatie/laravel-activitylog`**.
+  Setiap Action yang mengubah data memanggil `activity()` (atau wrapper
+  `LogAuditAction`). `withProperties` WAJIB menyimpan semua atribut yang
+  di-create/update — update sertakan nilai lama + baru (old/new), create
+  sertakan full attributes.
+- **Exception WAJIB di-log via Laravel `Log`** (`Log::error`/`Log::warning`).
+  Setiap exception yang ditangkap WAJIB di-log dengan konteks sebelum
+  re-throw/handle. Dilarang menelan exception diam-diam tanpa log.
 
 Rasional: otorisasi DB-driven mencegah drift antara kode dan kebijakan
 operasional; audit naratif membuat log dapat dibaca manusia dan berguna
