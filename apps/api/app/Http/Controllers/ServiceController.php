@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\ArchiveServiceAction;
+use App\Enums\ServiceStatus;
 use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\ServiceRequest;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
+use App\Services\ServiceCatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -25,8 +26,11 @@ class ServiceController extends Controller
         if ($params['search']) {
             $query->where('name', 'like', '%'.$params['search'].'%');
         }
-        if (($params['filters']['status'] ?? null)) {
-            $query->where('status', $params['filters']['status']);
+        // Katalog default hanya menampilkan layanan aktif; arsip diminta eksplisit.
+        $status = $params['filters']['status'] ?? ServiceStatus::Active->value;
+
+        if ($status !== 'all') {
+            $query->where('status', $status);
         }
         if ($params['sort']) {
             $query->orderBy($params['sort'], $params['direction']);
@@ -47,11 +51,11 @@ class ServiceController extends Controller
         ]);
     }
 
-    public function store(ServiceRequest $request): JsonResponse
+    public function store(ServiceRequest $request, ServiceCatalogService $catalog): JsonResponse
     {
         $this->authorize('create', Service::class);
 
-        $service = Service::create($request->validated());
+        $service = $catalog->create($request->validated());
 
         return response()->json([
             'data' => new ServiceResource($service),
@@ -66,11 +70,11 @@ class ServiceController extends Controller
         return response()->json(['data' => new ServiceResource($service), 'meta' => []]);
     }
 
-    public function update(ServiceRequest $request, Service $service): JsonResponse
+    public function update(ServiceRequest $request, Service $service, ServiceCatalogService $catalog): JsonResponse
     {
         $this->authorize('update', $service);
 
-        $service->update($request->validated());
+        $catalog->update($service, $request->validated());
 
         return response()->json([
             'data' => new ServiceResource($service),
@@ -78,11 +82,11 @@ class ServiceController extends Controller
         ]);
     }
 
-    public function destroy(Service $service, ArchiveServiceAction $action): JsonResponse
+    public function destroy(Service $service, ServiceCatalogService $catalog): JsonResponse
     {
         $this->authorize('delete', $service);
 
-        $action->handle($service);
+        $catalog->archive($service);
 
         return response()->json([
             'data' => new ServiceResource($service->fresh()),

@@ -1,5 +1,5 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
@@ -8,7 +8,9 @@ import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
-import { ServiceFormModal } from "./components/service-form-modal.tsx"
+import { ServiceActionsCell } from "./components/service-actions-cell.tsx"
+import { ServiceFormDialog } from "./components/service-form-dialog.tsx"
+import { Button } from "#/components/ui/button.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/services/")({
   component: ServicesPage,
@@ -17,6 +19,7 @@ export const Route = createFileRoute("/$tenant/clinic/services/")({
 interface ServiceRow {
   id: number
   name: string
+  description?: string | null
   price: string
   status: string
   status_label: string
@@ -25,6 +28,7 @@ interface ServiceRow {
 function ServicesPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/services/" })
   const { t } = useTrans()
+  const [createOpen, setCreateOpen] = useState(false)
 
   const columns = useMemo<ColumnDef<ServiceRow>[]>(
     () => [
@@ -33,10 +37,25 @@ function ServicesPage() {
       {
         accessorKey: "status",
         header: t("service.status"),
-        cell: ({ row }) => <Badge>{row.original.status_label}</Badge>,
+        cell: ({ row }) => (
+          <Badge
+            variant={row.original.status === "archived" ? "secondary" : "default"}
+          >
+            {row.original.status_label}
+          </Badge>
+        ),
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <div className="flex justify-end">
+            <ServiceActionsCell tenant={tenant} service={row.original} />
+          </div>
+        ),
       },
     ],
-    [t],
+    [t, tenant],
   )
 
   const { table, isLoading, meta } = useDataTable<ServiceRow>({
@@ -64,8 +83,13 @@ function ServicesPage() {
       />
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("service.title")}</h1>
-        <ServiceFormModal tenant={tenant} />
+        <Button onClick={() => setCreateOpen(true)}>{t("service.add")}</Button>
       </div>
+      <ServiceFormDialog
+        tenant={tenant}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
       <DataTable
         table={table}
         isLoading={isLoading}
