@@ -11,7 +11,7 @@ import {
 import { Badge } from "#/components/ui/badge.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
-import { formatCurrency } from "./format.ts"
+import { formatCurrency } from "#/lib/format.ts"
 
 interface CatalogRow {
   id: number

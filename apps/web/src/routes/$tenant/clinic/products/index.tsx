@@ -4,6 +4,10 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
+import {
+  ARCHIVABLE_STATUS_VARIANTS,
+  StatusBadge,
+} from "#/components/ui/status-badge.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
@@ -53,11 +57,11 @@ function ProductsPage() {
         accessorKey: "status",
         header: t("product.status"),
         cell: ({ row }) => (
-          <Badge
-            variant={row.original.status === "archived" ? "secondary" : "default"}
-          >
-            {row.original.status_label}
-          </Badge>
+          <StatusBadge
+            status={row.original.status}
+            label={row.original.status_label}
+            variantMap={ARCHIVABLE_STATUS_VARIANTS}
+          />
         ),
       },
       {

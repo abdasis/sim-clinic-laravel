@@ -5,9 +5,12 @@ import {
   NativeSelect,
   NativeSelectOption,
 } from "#/components/ui/native-select.tsx"
-import { Badge } from "#/components/ui/badge.tsx"
+import {
+  PAYMENT_STATUS_VARIANTS,
+  StatusBadge,
+} from "#/components/ui/status-badge.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { formatCurrency } from "./format.ts"
+import { formatCurrency } from "#/lib/format.ts"
 
 export interface PaymentData {
   method: string
@@ -28,6 +31,12 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
   const [amount, setAmount] = useState<number>(0)
 
   const covers = amount >= total && total > 0
+  const outstanding = Math.max(0, total - amount)
+
+  // Cerminkan tiga keadaan yang sama dengan backend agar kasir tahu
+  // transaksi akan tercatat sebagai cicilan, bukan lunas.
+  const paymentStatus =
+    amount <= 0 ? "unpaid" : covers ? "paid" : "partially_paid" 
 
   useEffect(() => {
     onChange({ method, amount, covers })
@@ -62,16 +71,32 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
         />
       </div>
 
-      <div className="flex items-center justify-between border-t pt-3">
-        <span className="text-sm text-muted-foreground">{t("pos.total")}</span>
-        <span className="font-semibold tabular-nums">{formatCurrency(total)}</span>
+      <div className="space-y-1 border-t pt-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">{t("pos.total")}</span>
+          <span className="font-semibold tabular-nums">
+            {formatCurrency(total)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            {t("pos.paid_amount")}
+          </span>
+          <span className="tabular-nums">{formatCurrency(amount)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            {t("pos.outstanding")}
+          </span>
+          <span className="tabular-nums">{formatCurrency(outstanding)}</span>
+        </div>
       </div>
       <div className="flex justify-end">
-        <Badge variant={covers ? "default" : "secondary"}>
-          {covers
-            ? t("clinic.payment_status.paid")
-            : t("clinic.payment_status.unpaid")}
-        </Badge>
+        <StatusBadge
+          status={paymentStatus}
+          label={t(`clinic.payment_status.${paymentStatus}`)}
+          variantMap={PAYMENT_STATUS_VARIANTS}
+        />
       </div>
     </div>
   )

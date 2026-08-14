@@ -3,9 +3,13 @@ import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
-import { Badge } from "#/components/ui/badge.tsx"
+import {
+  ARCHIVABLE_STATUS_VARIANTS,
+  StatusBadge,
+} from "#/components/ui/status-badge.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { formatCurrency } from "#/lib/format.ts"
 import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { ServiceActionsCell } from "./components/service-actions-cell.tsx"
@@ -33,16 +37,24 @@ function ServicesPage() {
   const columns = useMemo<ColumnDef<ServiceRow>[]>(
     () => [
       { accessorKey: "name", header: t("service.name") },
-      { accessorKey: "price", header: t("service.price") },
+      {
+        accessorKey: "price",
+        header: t("service.price"),
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {formatCurrency(Number(row.original.price))}
+          </span>
+        ),
+      },
       {
         accessorKey: "status",
         header: t("service.status"),
         cell: ({ row }) => (
-          <Badge
-            variant={row.original.status === "archived" ? "secondary" : "default"}
-          >
-            {row.original.status_label}
-          </Badge>
+          <StatusBadge
+            status={row.original.status}
+            label={row.original.status_label}
+            variantMap={ARCHIVABLE_STATUS_VARIANTS}
+          />
         ),
       },
       {

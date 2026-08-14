@@ -1,20 +1,23 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
+import { z } from "zod"
 import { useCallback, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card.tsx"
 import { Button } from "#/components/ui/button.tsx"
-import { Label } from "#/components/ui/label.tsx"
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "#/components/ui/native-select.tsx"
+import { Form } from "#/components/ui/form.tsx"
+import { FormCombobox } from "#/components/forms/form-combobox.tsx"
+import { useForm } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 import { TransactionItemList, type LineItem } from "./components/transaction-item-list.tsx"
 import { PaymentPanel, type PaymentData } from "./components/payment-panel.tsx"
+
+const patientSchema = z.object({
+  patient_id: z.string().min(1),
+})
 
 export const Route = createFileRoute("/$tenant/clinic/pos/")({
   component: PosPage,
@@ -34,7 +37,12 @@ function PosPage() {
   const { t } = useTrans()
   const qc = useQueryClient()
 
-  const [patientId, setPatientId] = useState<string>("")
+  // Pasien wajib diisi; validasinya ikut skema supaya pesannya konsisten
+  // dengan form lain, bukan alert manual.
+  const patientForm = useForm(patientSchema, {
+    defaultValues: { patient_id: "" },
+  })
+  const patientId = patientForm.watch("patient_id")
   const [items, setItems] = useState<LineItem[]>([])
   const [total, setTotal] = useState(0)
   const [payment, setPayment] = useState<PaymentData>({
@@ -86,7 +94,7 @@ function PosPage() {
       qc.invalidateQueries({ queryKey: ["transactions"] })
       setItems([])
       setTotal(0)
-      setPatientId("")
+      patientForm.reset({ patient_id: "" })
     },
     onError: (err: ApiError) => {
       toast.error(err.message)
@@ -130,21 +138,19 @@ function PosPage() {
             <CardTitle className="text-base">{t("pos.add_transaction")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="space-y-1.5">
-              <Label>{t("pos.patient")}</Label>
-              <NativeSelect
-                className="w-full"
-                value={patientId}
-                onChange={(e) => setPatientId(e.target.value)}
-              >
-                <NativeSelectOption value="">{t("pos.patient")}</NativeSelectOption>
-                {patients.data?.data.map((p) => (
-                  <NativeSelectOption key={p.id} value={String(p.id)}>
-                    {p.name}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-            </div>
+            <Form {...patientForm}>
+              <FormCombobox
+                control={patientForm.control}
+                name="patient_id"
+                label={t("pos.patient")}
+                placeholder={t("general.search")}
+                emptyLabel={t("general.no_data")}
+                options={(patients.data?.data ?? []).map((p) => ({
+                  label: p.name,
+                  value: String(p.id),
+                }))}
+              />
+            </Form>
             <TransactionItemList tenant={tenant} onChange={handleItems} />
           </CardContent>
         </Card>

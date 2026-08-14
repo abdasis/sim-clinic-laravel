@@ -13,7 +13,7 @@ import {
 } from "#/components/ui/table.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
-import { formatCurrency } from "../components/format.ts"
+import { formatCurrency } from "#/lib/format.ts"
 
 export const Route = createFileRoute("/$tenant/clinic/pos/invoices/$id")({
   component: InvoicePage,

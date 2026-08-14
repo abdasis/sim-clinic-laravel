@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'payment_status' => 'Status Bayar',
     'outstanding' => 'Sisa Bayar',
     'paid_amount' => 'Sudah Dibayar',
     'booking_not_done' => 'Booking hanya dapat ditagih setelah kunjungannya selesai.',

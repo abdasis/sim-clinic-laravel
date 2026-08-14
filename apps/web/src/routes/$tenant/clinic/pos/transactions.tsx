@@ -6,7 +6,10 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
-import { Badge } from "#/components/ui/badge.tsx"
+import {
+  PAYMENT_STATUS_VARIANTS,
+  StatusBadge,
+} from "#/components/ui/status-badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import {
   AlertDialog,
@@ -23,7 +26,7 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
-import { formatCurrency } from "./components/format.ts"
+import { formatCurrency } from "#/lib/format.ts"
 
 export const Route = createFileRoute("/$tenant/clinic/pos/transactions")({
   component: TransactionsPage,
@@ -34,6 +37,8 @@ interface TransactionRow {
   invoice_number: string
   patient_name: string | null
   subtotal: string
+  paid_amount: string
+  outstanding_amount: number
   payment_status: string
   payment_status_label: string
 }
@@ -99,13 +104,35 @@ function TransactionsPage() {
         cell: ({ row }) => formatCurrency(Number(row.original.subtotal)),
       },
       {
-        accessorKey: "payment_status",
-        header: t("clinic.payment_status.paid"),
+        accessorKey: "paid_amount",
+        header: t("pos.paid_amount"),
         cell: ({ row }) => (
-          <Badge variant={row.original.payment_status === "paid" ? "default" : "secondary"}>
-            {row.original.payment_status_label ??
-              t(`clinic.payment_status.${row.original.payment_status}`)}
-          </Badge>
+          <span className="tabular-nums">
+            {formatCurrency(Number(row.original.paid_amount))}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "outstanding_amount",
+        header: t("pos.outstanding"),
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {formatCurrency(Number(row.original.outstanding_amount))}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "payment_status",
+        header: t("pos.payment_status"),
+        cell: ({ row }) => (
+          <StatusBadge
+            status={row.original.payment_status}
+            label={
+              row.original.payment_status_label ??
+              t(`clinic.payment_status.${row.original.payment_status}`)
+            }
+            variantMap={PAYMENT_STATUS_VARIANTS}
+          />
         ),
       },
       {
