@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\CancelTransactionAction;
+use App\Actions\Transaction\CancelTransactionAction;
+use App\Actions\Transaction\SoftDeleteTransactionAction;
 use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\TransactionRequest;
 use App\Http\Resources\TransactionResource;
@@ -65,7 +66,7 @@ class TransactionController extends Controller
         $this->authorize('view', $transaction);
 
         return response()->json([
-            'data' => new TransactionResource($transaction->load('items', 'patient')),
+            'data' => new TransactionResource($transaction->load('items', 'patient', 'payments')),
             'meta' => [],
         ]);
     }
@@ -79,6 +80,18 @@ class TransactionController extends Controller
         return response()->json([
             'data' => new TransactionResource($transaction->fresh()->load('items', 'patient')),
             'meta' => ['message' => __('pos.cancelled')],
+        ]);
+    }
+
+    public function destroy(Transaction $transaction, SoftDeleteTransactionAction $action): JsonResponse
+    {
+        $this->authorize('delete', $transaction);
+
+        $action->handle($transaction);
+
+        return response()->json([
+            'data' => new TransactionResource($transaction),
+            'meta' => ['message' => __('pos.deleted')],
         ]);
     }
 }

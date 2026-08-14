@@ -12,7 +12,7 @@ class InvoiceService
 {
     public function render(Transaction $transaction): array
     {
-        $transaction->loadMissing('items', 'payments', 'patient', 'cashier', 'invoice');
+        $transaction->loadMissing('items', 'payments', 'patient', 'cashier');
 
         $tenant = app()->bound('tenant') ? app('tenant') : null;
 
@@ -24,7 +24,7 @@ class InvoiceService
             'payments' => $transaction->payments,
             'subtotal' => $transaction->subtotal,
             'invoice_number' => $transaction->invoice_number,
-            'issued_at' => $transaction->invoice?->issued_at ?? $transaction->created_at,
+            'issued_at' => $transaction->issued_at ?? $transaction->created_at,
         ];
     }
 }

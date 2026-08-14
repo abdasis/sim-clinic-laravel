@@ -94,7 +94,7 @@ Route::prefix('{tenant}/clinic')
         Route::get('transactions/{transaction}/invoice', [InvoiceController::class, 'show']);
         Route::post('transactions/{transaction}/payments', [PaymentController::class, 'store']);
         Route::post('transactions/{transaction}/cancel', [TransactionController::class, 'cancel']);
-        Route::apiResource('transactions', TransactionController::class)->only(['index', 'store', 'show']);
+        Route::apiResource('transactions', TransactionController::class)->only(['index', 'store', 'show', 'destroy']);
 
         // US7 Medical Records
         Route::post('medical-records', [MedicalRecordController::class, 'store']);

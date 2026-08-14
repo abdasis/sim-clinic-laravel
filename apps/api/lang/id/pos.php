@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'outstanding' => 'Sisa Bayar',
+    'paid_amount' => 'Sudah Dibayar',
+    'booking_not_done' => 'Booking hanya dapat ditagih setelah kunjungannya selesai.',
+    'deleted' => 'Transaksi berhasil dihapus.',
+    'already_cancelled' => 'Transaksi ini sudah dibatalkan sebelumnya.',
     'title' => 'Kasir (POS)',
     'patient' => 'Pasien',
     'items' => 'Item',

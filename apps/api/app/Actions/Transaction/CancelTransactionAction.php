@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Actions;
+namespace App\Actions\Transaction;
+
+use App\Actions\LogAuditAction;
 
 use App\Enums\StockMovementType;
 use App\Models\Transaction;
@@ -15,7 +17,12 @@ class CancelTransactionAction
 {
     public function handle(Transaction $transaction): Transaction
     {
-        return DB::transaction(function () use ($transaction): Transaction {
+        // Membatalkan dua kali akan mengembalikan stok berlipat.
+        if ($transaction->cancelled_at !== null) {
+            abort(409, __('pos.already_cancelled'));
+        }
+
+        $transaction = DB::transaction(function () use ($transaction): Transaction {
             $transaction->loadMissing('items.product');
 
             foreach ($transaction->items as $item) {
@@ -34,5 +41,19 @@ class CancelTransactionAction
 
             return $transaction;
         });
+
+        app(LogAuditAction::class)->handle(
+            'pos.transaction.cancelled',
+            $transaction,
+            auth()->user(),
+            [
+                'invoice_number' => $transaction->invoice_number,
+                'old' => ['cancelled_at' => null],
+                'new' => ['cancelled_at' => $transaction->cancelled_at?->toIso8601String()],
+            ],
+            'Membatalkan transaksi '.$transaction->invoice_number.'.',
+        );
+
+        return $transaction;
     }
 }

@@ -34,6 +34,10 @@ trait InteractsWithTenant
         $this->seed(RolesAndPermissionsSeeder::class);
         app(SyncTenantClinicRolesAction::class)->handle($tenant->id);
 
+        // Tiru ResolveTenant supaya BelongsToTenant mengisi tenant_id dan
+        // TenantScope aktif, sama seperti saat request sungguhan.
+        app()->instance('tenant', $tenant);
+
         return $tenant;
     }
 

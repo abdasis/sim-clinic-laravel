@@ -22,6 +22,7 @@ return [
         'debit' => 'Debit',
     ],
     'payment_status' => [
+        'partially_paid' => 'Dibayar Sebagian',
         'unpaid' => 'Belum Lunas',
         'paid' => 'Lunas',
     ],

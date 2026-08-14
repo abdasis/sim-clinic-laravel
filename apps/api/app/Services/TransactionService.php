@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Actions\LogAuditAction;
 use App\Enums\PaymentStatus;
 use App\Enums\StockMovementType;
 use App\Models\Product;
@@ -19,17 +20,20 @@ class TransactionService
 {
     public function create(array $data): Transaction
     {
-        return DB::transaction(function () use ($data): Transaction {
+        $transaction = DB::transaction(function () use ($data): Transaction {
             $lines = $this->buildLines($data['items'] ?? []);
             $subtotal = array_sum(array_column($lines, 'subtotal'));
 
             $transaction = Transaction::create([
-                'patient_id' => $data['patient_id'] ?? null,
+                'patient_id' => $data['patient_id'],
                 'booking_id' => $data['booking_id'] ?? null,
                 'cashier_id' => Auth::id(),
+                // Nomor diambil di dalam transaction agar barisnya terkunci.
                 'invoice_number' => Transaction::generateInvoiceNumber(),
                 'subtotal' => $subtotal,
+                'paid_amount' => 0,
                 'payment_status' => PaymentStatus::Unpaid,
+                'issued_at' => now(),
             ]);
 
             foreach ($lines as $line) {
@@ -53,10 +57,18 @@ class TransactionService
                 }
             }
 
-            $transaction->invoice()->create(['issued_at' => now()]);
-
             return $transaction->load('items', 'patient');
         });
+
+        app(LogAuditAction::class)->handle(
+            'pos.transaction.created',
+            $transaction,
+            Auth::user(),
+            ['attributes' => $transaction->getAttributes()],
+            'Mencatat transaksi '.$transaction->invoice_number.'.',
+        );
+
+        return $transaction;
     }
 
     /**
