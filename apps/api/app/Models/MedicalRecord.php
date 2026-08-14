@@ -5,16 +5,19 @@ namespace App\Models;
 use App\Concerns\BelongsToTenant;
 use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[ScopedBy([TenantScope::class])]
 class MedicalRecord extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'deleted_at',
         'tenant_id',
         'booking_id',
         'patient_id',
@@ -24,6 +27,13 @@ class MedicalRecord extends Model
         'assessment',
         'plan',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'deleted_at' => 'datetime',
+        ];
+    }
 
     public function booking(): BelongsTo
     {

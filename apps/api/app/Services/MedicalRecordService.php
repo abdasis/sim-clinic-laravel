@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Actions\MedicalRecord\AddTreatmentRecordAction;
 use App\Actions\MedicalRecord\CreateMedicalRecordAction;
+use App\Actions\MedicalRecord\SoftDeleteMedicalRecordAction;
+use App\Actions\MedicalRecord\UpdateMedicalRecordAction;
 use App\Actions\MedicalRecord\UploadMedicalPhotoAction;
 use App\Enums\BookingStatus;
 use App\Enums\MedicalPhotoType;
@@ -51,6 +53,19 @@ class MedicalRecordService
         }
 
         return app(AddTreatmentRecordAction::class)->handle($record, $data, $serviceName);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function update(MedicalRecord $record, array $data): MedicalRecord
+    {
+        return app(UpdateMedicalRecordAction::class)->handle($record, $data);
+    }
+
+    public function softDelete(MedicalRecord $record): MedicalRecord
+    {
+        return app(SoftDeleteMedicalRecordAction::class)->handle($record);
     }
 
     public function addPhoto(MedicalRecord $record, UploadedFile $file, MedicalPhotoType $type): MedicalPhoto

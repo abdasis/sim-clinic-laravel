@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'history' => 'Riwayat Rekam Medis',
+    'deleted' => 'Rekam medis berhasil dihapus.',
+    'updated' => 'Rekam medis berhasil diperbarui.',
     'title' => 'Rekam Medis',
     'booking' => 'Booking',
     'subjective' => 'Subjective',

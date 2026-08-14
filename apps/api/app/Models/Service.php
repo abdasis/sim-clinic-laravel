@@ -6,13 +6,14 @@ use App\Concerns\BelongsToTenant;
 use App\Enums\ServiceStatus;
 use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[ScopedBy([TenantScope::class])]
 class Service extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasFactory;
 
     protected $fillable = ['tenant_id', 'name', 'description', 'price', 'status'];
 

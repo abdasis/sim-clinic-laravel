@@ -4,10 +4,13 @@ namespace Tests\Feature;
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Models\MedicalPhoto;
+use App\Models\MedicalRecord;
 use App\Models\Patient;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\StockMovement;
+use App\Models\TreatmentRecord;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -81,6 +84,64 @@ class ForeignKeyRestrictTest extends TestCase
         $product->delete();
     }
 
+    public function test_patient_with_medical_record_cannot_be_force_deleted(): void
+    {
+        $record = $this->makeMedicalRecord();
+
+        $this->expectException(QueryException::class);
+
+        Patient::withTrashed()->find($record->patient_id)->forceDelete();
+    }
+
+    public function test_booking_with_medical_record_cannot_be_deleted(): void
+    {
+        $record = $this->makeMedicalRecord();
+
+        $this->expectException(QueryException::class);
+
+        Booking::find($record->booking_id)->delete();
+    }
+
+    public function test_medical_record_with_treatment_cannot_be_force_deleted(): void
+    {
+        $record = $this->makeMedicalRecord();
+        TreatmentRecord::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'medical_record_id' => $record->id,
+        ]);
+
+        $this->expectException(QueryException::class);
+
+        $record->forceDelete();
+    }
+
+    public function test_medical_record_with_photo_cannot_be_force_deleted(): void
+    {
+        $record = $this->makeMedicalRecord();
+        MedicalPhoto::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'medical_record_id' => $record->id,
+        ]);
+
+        $this->expectException(QueryException::class);
+
+        $record->forceDelete();
+    }
+
+    public function test_medical_record_soft_delete_keeps_its_children(): void
+    {
+        $record = $this->makeMedicalRecord();
+        $treatment = TreatmentRecord::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'medical_record_id' => $record->id,
+        ]);
+
+        $record->delete();
+
+        $this->assertSoftDeleted('medical_records', ['id' => $record->id]);
+        $this->assertDatabaseHas('treatment_records', ['id' => $treatment->id]);
+    }
+
     public function test_unreferenced_master_data_can_still_be_deleted(): void
     {
         $product = Product::factory()->create(['tenant_id' => $this->tenant->id]);
@@ -102,6 +163,18 @@ class ForeignKeyRestrictTest extends TestCase
 
         $this->assertSoftDeleted('patients', ['id' => $patient->id]);
         $this->assertDatabaseHas('bookings', ['id' => $booking->id]);
+    }
+
+    private function makeMedicalRecord(): MedicalRecord
+    {
+        $booking = $this->makeBooking();
+
+        return MedicalRecord::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'booking_id' => $booking->id,
+            'patient_id' => $booking->patient_id,
+            'author_id' => auth()->id(),
+        ]);
     }
 
     private function makeBooking(): Booking

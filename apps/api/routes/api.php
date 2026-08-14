@@ -77,7 +77,7 @@ Route::prefix('{tenant}/clinic')
 
         // US3 Patient
         Route::get('patients/{patient}/history', [PatientController::class, 'history']);
-        Route::get('patients/{patient}/treatments', [MedicalRecordController::class, 'patientTreatments']);
+        Route::get('patients/{patient}/medical-records', [MedicalRecordController::class, 'patientRecords']);
         Route::apiResource('patients', PatientController::class);
 
         // US4 Booking
@@ -97,7 +97,11 @@ Route::prefix('{tenant}/clinic')
         Route::apiResource('transactions', TransactionController::class)->only(['index', 'store', 'show', 'destroy']);
 
         // US7 Medical Records
+        Route::get('medical-records', [MedicalRecordController::class, 'index']);
         Route::post('medical-records', [MedicalRecordController::class, 'store']);
+        Route::get('medical-records/{medicalRecord}', [MedicalRecordController::class, 'show']);
+        Route::patch('medical-records/{medicalRecord}', [MedicalRecordController::class, 'update']);
+        Route::delete('medical-records/{medicalRecord}', [MedicalRecordController::class, 'destroy']);
         Route::post('medical-records/{medicalRecord}/treatments', [MedicalRecordController::class, 'addTreatment']);
         Route::post('medical-records/{medicalRecord}/photos', [MedicalRecordController::class, 'addPhoto']);
 

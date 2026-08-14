@@ -28,4 +28,9 @@ class MedicalRecordPolicy
     {
         return $user->can('medical_record.manage');
     }
+
+    public function delete(User $user): bool
+    {
+        return $user->can('medical_record.manage');
+    }
 }

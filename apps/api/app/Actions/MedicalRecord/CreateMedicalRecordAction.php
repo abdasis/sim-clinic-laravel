@@ -32,7 +32,7 @@ class CreateMedicalRecordAction
             $record,
             $author,
             ['attributes' => $record->getAttributes()],
-            'Menulis rekam medis untuk '.($booking->patient?->name ?? 'pasien').'.',
+            'Mengisi rekam medis pasien '.($booking->patient?->name ?? 'pasien').'.',
         );
 
         return $record;

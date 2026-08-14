@@ -51,7 +51,9 @@ function PatientTreatmentsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["patient-treatments", tenant, id],
     queryFn: () =>
-      apiGet<{ data: RecordRow[] }>(`/${tenant}/clinic/patients/${id}/treatments`),
+      apiGet<{ data: RecordRow[] }>(
+        `/${tenant}/clinic/patients/${id}/medical-records`,
+      ),
   })
 
   const records = data?.data ?? []
