@@ -9,7 +9,7 @@ use App\Http\Requests\BookingScheduleRequest;
 use App\Http\Requests\UpdateBookingStatusRequest;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
-use App\Services\BookingOverlapService;
+use App\Services\BookingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -50,19 +50,14 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(BookingRequest $request): JsonResponse
+    public function store(BookingRequest $request, BookingService $service): JsonResponse
     {
         $this->authorize('create', Booking::class);
 
-        $booking = Booking::create([
-            ...$request->validated(),
-            'status' => BookingStatus::Pending,
-        ]);
-
-        $warnings = app(BookingOverlapService::class)->detect($booking);
+        [$booking, $warnings] = $service->create($request->validated());
 
         return response()->json([
-            'data' => new BookingResource($booking->load('patient', 'service', 'assignee')),
+            'data' => new BookingResource($booking),
             'meta' => [
                 'overlap_warnings' => $warnings,
                 'message' => __('booking.created'),
@@ -80,35 +75,29 @@ class BookingController extends Controller
         ]);
     }
 
-    public function update(BookingRequest $request, Booking $booking): JsonResponse
+    public function update(BookingRequest $request, Booking $booking, BookingService $service): JsonResponse
     {
         $this->authorize('update', $booking);
 
-        $booking->update($request->validated());
+        [$booking, $warnings] = $service->update($booking, $request->validated());
 
         return response()->json([
-            'data' => new BookingResource($booking->load('patient', 'service', 'assignee')),
-            'meta' => ['message' => __('booking.updated')],
+            'data' => new BookingResource($booking),
+            'meta' => [
+                'overlap_warnings' => $warnings,
+                'message' => __('booking.updated'),
+            ],
         ]);
     }
 
-    public function updateStatus(UpdateBookingStatusRequest $request, Booking $booking): JsonResponse
+    public function updateStatus(UpdateBookingStatusRequest $request, Booking $booking, BookingService $service): JsonResponse
     {
         $this->authorize('update', $booking);
 
-        $target = BookingStatus::from($request->validated('status'));
-
-        if (! $booking->status->canTransitionTo($target)) {
-            abort(422, __('clinic.invalid_transition'));
-        }
-
-        $booking->update([
-            'status' => $target,
-            'status_changed_at' => now(),
-        ]);
+        $booking = $service->changeStatus($booking, $request->validated('status'));
 
         return response()->json([
-            'data' => new BookingResource($booking->load('patient', 'service', 'assignee')),
+            'data' => new BookingResource($booking),
             'meta' => ['message' => __('booking.status_updated')],
         ]);
     }
@@ -141,11 +130,11 @@ class BookingController extends Controller
         return response()->json(['data' => $data, 'meta' => []]);
     }
 
-    public function destroy(Booking $booking): JsonResponse
+    public function destroy(Booking $booking, BookingService $service): JsonResponse
     {
         $this->authorize('delete', $booking);
 
-        $booking->delete();
+        $service->delete($booking);
 
         return response()->json([
             'data' => null,
