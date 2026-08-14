@@ -2,14 +2,17 @@
 
 namespace App\Actions;
 
-use App\Models\AuditLog;
+use App\Models\Activity;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Catat audit log (spec 001, FR-028).
+ * Catat audit log (spec 001, FR-028) via spatie/laravel-activitylog.
  * Dipakai lintas story: tenant.registered, user.login, staff.created, dst.
+ *
+ * Pemetaan: $action -> event + log_name, $description -> description (narasi),
+ * $tenant -> properties->tenant_id (docs/erd/audit_logs.md).
  */
 class LogAuditAction
 {
@@ -20,19 +23,34 @@ class LogAuditAction
         array $context = [],
         ?string $description = null,
         ?Tenant $tenant = null,
-    ): AuditLog {
+    ): ?Activity {
         $tenant ??= app()->bound('tenant') ? app('tenant') : null;
         $causer ??= auth()->user();
 
-        return AuditLog::create([
-            'tenant_id' => $tenant?->id,
-            'action' => $action,
-            'description' => $description ?? $this->fallbackDescription($action, $subject),
-            'subject_type' => $subject ? $subject::class : null,
-            'subject_id' => $subject?->getKey(),
-            'causer_id' => $causer?->id,
-            'properties' => $context,
-        ]);
+        if ($tenant !== null && ! array_key_exists('tenant_id', $context)) {
+            $context['tenant_id'] = $tenant->id;
+        }
+
+        $logger = activity($this->logName($action))
+            ->event($action)
+            ->causedBy($causer)
+            ->withProperties($context);
+
+        if ($subject !== null) {
+            $logger->performedOn($subject);
+        }
+
+        $activity = $logger->log($description ?? $this->fallbackDescription($action, $subject));
+
+        return $activity instanceof Activity ? $activity : null;
+    }
+
+    /**
+     * Namespace modul diambil dari prefix action (user.login -> user).
+     */
+    private function logName(string $action): ?string
+    {
+        return str_contains($action, '.') ? strtok($action, '.') : null;
     }
 
     /**
