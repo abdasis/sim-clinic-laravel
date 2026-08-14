@@ -32,6 +32,7 @@ bun install && bun run dev
 # Tests
 cd apps/api && php artisan test                          # sqlite :memory: per phpunit.xml
 cd apps/api && php artisan test --filter=ExampleTest     # single test
+docker compose exec db createdb -U postgres sim_clinic_laravel_test   # sekali saja
 cd apps/api && php artisan test -c phpunit.pgsql.xml     # PostgreSQL — WAJIB sebelum rilis
 cd apps/web && bun run test                              # vitest
 
