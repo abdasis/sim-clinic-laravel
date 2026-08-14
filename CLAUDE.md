@@ -32,6 +32,7 @@ bun install && bun run dev
 # Tests
 cd apps/api && php artisan test                          # sqlite :memory: per phpunit.xml
 cd apps/api && php artisan test --filter=ExampleTest     # single test
+cd apps/api && php artisan test -c phpunit.pgsql.xml     # PostgreSQL — WAJIB sebelum rilis
 cd apps/web && bun run test                              # vitest
 
 # Lint / typecheck
@@ -39,6 +40,8 @@ cd apps/api && vendor/bin/pint
 cd apps/web && npx tsc --noEmit --incremental
 cd apps/web && bun run generate-routes                   # regen TanStack route tree (tsr)
 ```
+
+Migration foreign key RESTRICT dilewati di SQLite (SQLite tidak mendukung drop FK), jadi `ForeignKeyRestrictTest` hanya berjalan lewat `phpunit.pgsql.xml`. Jalankan suite PostgreSQL sebelum rilis agar constraint skema produksi benar-benar teruji.
 
 Do NOT auto-run `bun run dev` / `bun run build` / `composer run dev` — tell the user to run them.
 
