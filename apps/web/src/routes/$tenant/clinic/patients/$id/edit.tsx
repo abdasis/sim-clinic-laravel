@@ -1,7 +1,16 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "#/components/ui/alert-dialog.tsx"
 import { Form } from "#/components/ui/form.tsx"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
@@ -17,6 +26,10 @@ import {
   type PatientValues,
 } from "../components/patient-form.tsx"
 
+interface UpdatePatientResponse {
+  meta?: { duplicate_warning?: boolean; duplicate_patient_id?: number }
+}
+
 export const Route = createFileRoute("/$tenant/clinic/patients/$id/edit")({
   component: EditPatientPage,
 })
@@ -27,6 +40,10 @@ function EditPatientPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const form = useForm(patientSchema, { defaultValues: patientDefaults })
+  const [showDuplicate, setShowDuplicate] = useState(false)
+
+  const goToList = () =>
+    navigate({ to: "/$tenant/clinic/patients", params: { tenant } })
 
   const { data } = useQuery({
     queryKey: ["patients", tenant, id],
@@ -42,11 +59,19 @@ function EditPatientPage() {
 
   const mutation = useMutation({
     mutationFn: (values: PatientValues) =>
-      apiPut(`/${tenant}/clinic/patients/${id}`, values),
-    onSuccess: () => {
+      apiPut<UpdatePatientResponse>(`/${tenant}/clinic/patients/${id}`, values),
+    onSuccess: (res) => {
       toast.success(t("patient.updated"))
       qc.invalidateQueries({ queryKey: ["patients"] })
-      navigate({ to: "/$tenant/clinic/patients", params: { tenant } })
+
+      // Nomor ganda hanya diperingatkan; perubahan tetap tersimpan.
+      if (res.meta?.duplicate_warning) {
+        setShowDuplicate(true)
+
+        return
+      }
+
+      goToList()
     },
     onError: (err: ApiError) => {
       applyServerErrors(form, err.errors)
@@ -86,6 +111,22 @@ function EditPatientPage() {
           </Form>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showDuplicate} onOpenChange={setShowDuplicate}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("patient.duplicate_title")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("patient.duplicate_warning")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={goToList}>
+              {t("general.ok")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

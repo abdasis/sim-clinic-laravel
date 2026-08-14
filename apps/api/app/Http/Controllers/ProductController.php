@@ -7,6 +7,7 @@ use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Services\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -25,8 +26,11 @@ class ProductController extends Controller
         if ($params['search']) {
             $query->where('name', 'like', '%'.$params['search'].'%');
         }
-        if (($params['filters']['status'] ?? null)) {
-            $query->where('status', $params['filters']['status']);
+        // Master produk default hanya menampilkan yang aktif; arsip diminta eksplisit.
+        $status = $params['filters']['status'] ?? ServiceStatus::Active->value;
+
+        if ($status !== 'all') {
+            $query->where('status', $status);
         }
         if ($params['sort']) {
             $query->orderBy($params['sort'], $params['direction']);
@@ -47,11 +51,11 @@ class ProductController extends Controller
         ]);
     }
 
-    public function store(ProductRequest $request): JsonResponse
+    public function store(ProductRequest $request, ProductService $service): JsonResponse
     {
         $this->authorize('create', Product::class);
 
-        $product = Product::create($request->validated());
+        $product = $service->create($request->validated());
 
         return response()->json([
             'data' => new ProductResource($product),
@@ -66,11 +70,11 @@ class ProductController extends Controller
         return response()->json(['data' => new ProductResource($product), 'meta' => []]);
     }
 
-    public function update(ProductRequest $request, Product $product): JsonResponse
+    public function update(ProductRequest $request, Product $product, ProductService $service): JsonResponse
     {
         $this->authorize('update', $product);
 
-        $product->update($request->validated());
+        $service->update($product, $request->validated());
 
         return response()->json([
             'data' => new ProductResource($product),
@@ -78,11 +82,11 @@ class ProductController extends Controller
         ]);
     }
 
-    public function destroy(Product $product): JsonResponse
+    public function destroy(Product $product, ProductService $service): JsonResponse
     {
         $this->authorize('delete', $product);
 
-        $product->update(['status' => ServiceStatus::Archived]);
+        $service->archive($product);
 
         return response()->json([
             'data' => new ProductResource($product->fresh()),

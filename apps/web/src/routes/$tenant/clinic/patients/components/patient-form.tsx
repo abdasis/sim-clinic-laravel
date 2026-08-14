@@ -13,6 +13,7 @@ export const patientSchema = z.object({
   phone: z.string().min(1),
   whatsapp: z.string().optional(),
   address: z.string().optional(),
+  notes: z.string().optional(),
 })
 
 export type PatientValues = z.infer<typeof patientSchema>
@@ -24,6 +25,7 @@ export const patientDefaults: PatientValues = {
   phone: "",
   whatsapp: "",
   address: "",
+  notes: "",
 }
 
 export function PatientFormFields({
@@ -60,6 +62,11 @@ export function PatientFormFields({
         control={control}
         name="address"
         label={t("patient.address")}
+      />
+      <FormTextarea
+        control={control}
+        name="notes"
+        label={t("patient.notes")}
       />
     </div>
   )

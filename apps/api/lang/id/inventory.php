@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'movement_recorded' => 'Mutasi stok berhasil dicatat.',
+    'created_at' => 'Waktu',
+    'history' => 'Riwayat Stok',
+    'product' => 'Produk',
     'title' => 'Inventaris',
     'type' => 'Jenis Pergerakan',
     'quantity' => 'Jumlah',

@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'status_all' => 'Semua',
+    'status_archived' => 'Arsip',
+    'status_active' => 'Aktif',
+    'archive_confirm' => 'Produk yang diarsipkan tidak lagi muncul di daftar aktif dan tidak bisa dipilih saat transaksi baru. Riwayat stok dan penjualannya tetap tersimpan.',
+    'archive' => 'Arsipkan',
+    'edit' => 'Ubah Produk',
     'title' => 'Produk',
     'name' => 'Nama Produk',
     'unit' => 'Satuan',

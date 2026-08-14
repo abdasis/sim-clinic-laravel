@@ -1,5 +1,5 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
@@ -8,6 +8,8 @@ import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
+import { Button } from "#/components/ui/button.tsx"
+import { ProductActionsCell } from "./components/product-actions-cell.tsx"
 import { ProductFormModal } from "./components/product-form-modal.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/products/")({
@@ -19,6 +21,8 @@ interface ProductRow {
   name: string
   unit: string
   stock_balance: number
+  min_threshold: number
+  price: string
   status: string
   status_label: string
   is_low_stock: boolean
@@ -27,6 +31,7 @@ interface ProductRow {
 function ProductsPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/products/" })
   const { t } = useTrans()
+  const [createOpen, setCreateOpen] = useState(false)
 
   const columns = useMemo<ColumnDef<ProductRow>[]>(
     () => [
@@ -47,10 +52,25 @@ function ProductsPage() {
       {
         accessorKey: "status",
         header: t("product.status"),
-        cell: ({ row }) => <Badge>{row.original.status_label}</Badge>,
+        cell: ({ row }) => (
+          <Badge
+            variant={row.original.status === "archived" ? "secondary" : "default"}
+          >
+            {row.original.status_label}
+          </Badge>
+        ),
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <div className="flex justify-end">
+            <ProductActionsCell tenant={tenant} product={row.original} />
+          </div>
+        ),
       },
     ],
-    [t],
+    [t, tenant],
   )
 
   const { table, isLoading, meta } = useDataTable<ProductRow>({
@@ -78,8 +98,13 @@ function ProductsPage() {
       />
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("product.title")}</h1>
-        <ProductFormModal tenant={tenant} />
+        <Button onClick={() => setCreateOpen(true)}>{t("product.add")}</Button>
       </div>
+      <ProductFormModal
+        tenant={tenant}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
       <DataTable
         table={table}
         isLoading={isLoading}
