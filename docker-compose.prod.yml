@@ -1,0 +1,93 @@
+# Project name EXPLICIT — repo dirs share basename "repo"; without this,
+# docker compose infers project "repo" for every stack and they collide
+# (recreating each other's containers). Isolate sim-clinic here.
+name: sim-clinic
+
+services:
+  # Laravel API (PHP-FPM)
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: sim-clinic-api
+    restart: unless-stopped
+    env_file:
+      - apps/api/.env
+    volumes:
+      - api-public:/var/www/api/public
+      - api-storage:/var/www/api/storage
+      - api-bootstrap:/var/www/api/bootstrap/cache
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sim-clinic
+
+  # TanStack Start Web (Node SSR)
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    container_name: sim-clinic-web
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+    volumes:
+      - web-public:/app/public
+    depends_on:
+      - api
+    networks:
+      - sim-clinic
+
+  # Nginx reverse proxy
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx.Dockerfile
+    container_name: sim-clinic-nginx
+    restart: unless-stopped
+    ports:
+      - "3010:80"
+    volumes:
+      - api-public:/var/www/api/public:ro
+      - api-storage:/var/www/api/storage:ro
+      - web-public:/var/www/web-assets:ro
+    depends_on:
+      api:
+        condition: service_started
+      web:
+        condition: service_started
+    networks:
+      - sim-clinic
+
+  # PostgreSQL 16
+  db:
+    image: postgres:16-alpine
+    container_name: sim-clinic-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sim_clinic
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-simclinic_prod_2026}
+      POSTGRES_DB: sim_clinic_laravel
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sim_clinic -d sim_clinic_laravel"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - sim-clinic
+
+volumes:
+  pgdata:
+  api-public:
+  api-storage:
+  api-bootstrap:
+  web-public:
+
+networks:
+  sim-clinic:
+    driver: bridge

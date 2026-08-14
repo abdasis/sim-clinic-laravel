@@ -9,6 +9,8 @@ return [
     'allowed_origins' => [
         'http://localhost:3001',
         'http://127.0.0.1:3001',
+        'https://mebaclinic.com',
+        'https://www.mebaclinic.com',
     ],
 
     'allowed_origins_patterns' => [],
