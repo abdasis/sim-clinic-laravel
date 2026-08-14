@@ -60,8 +60,7 @@ function PatientTreatmentsPage() {
     <div>
       <ClinicBreadcrumb
         items={[
-          { label: tenant, to: "/$tenant/clinic/services", params: { tenant } },
-          { label: t("clinic.clinic") },
+          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
           { label: t("patient.title"), to: "/$tenant/clinic/patients", params: { tenant } },
           { label: t("medical_record.treatments") },
         ]}

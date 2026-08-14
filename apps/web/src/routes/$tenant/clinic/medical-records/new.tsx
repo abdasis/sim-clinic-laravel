@@ -127,8 +127,7 @@ function NewMedicalRecordPage() {
     <div>
       <ClinicBreadcrumb
         items={[
-          { label: tenant, to: "/$tenant/clinic/services", params: { tenant } },
-          { label: t("clinic.clinic") },
+          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
           { label: t("medical_record.title") },
           { label: t("general.create") },
         ]}

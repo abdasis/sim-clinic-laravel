@@ -56,10 +56,13 @@ function InvoicePage() {
       <div className="print:hidden">
         <ClinicBreadcrumb
           items={[
-            { label: tenant, to: "/$tenant/clinic/services", params: { tenant } },
-            { label: t("clinic.clinic") },
-            { label: t("pos.title"), to: "/$tenant/clinic/pos", params: { tenant } },
-            { label: t("invoice.title") },
+            { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
+            {
+              label: t("pos.transactions"),
+              to: "/$tenant/clinic/pos/transactions",
+              params: { tenant },
+            },
+            { label: data?.data.invoice_number ?? t("invoice.title") },
           ]}
         />
       </div>
