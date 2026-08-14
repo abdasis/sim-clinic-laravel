@@ -5,9 +5,9 @@ import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { useAuthUser } from "#/hooks/use-auth-user.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
-import { getAuthUser } from "#/lib/auth.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { StaffFormModal } from "./components/staff-form-modal.tsx"
 import { StaffActionsCell } from "./components/staff-actions-cell.tsx"
@@ -29,6 +29,7 @@ export interface StaffRow {
 function StaffPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/staff/" })
   const { t } = useTrans()
+  const authUser = useAuthUser()
 
   const columns = useMemo<ColumnDef<StaffRow>[]>(
     () => [
@@ -65,7 +66,8 @@ function StaffPage() {
     columns,
   })
 
-  if (getAuthUser()?.clinic_role !== "admin") {
+  // ponytail: guard role setelah mount — useAuthUser null saat SSR & first client render, update setelah mount (mencegah hydration mismatch dari localStorage).
+  if (authUser?.clinic_role !== "admin") {
     return (
       <div className="text-sm text-muted-foreground">{t("clinic.forbidden")}</div>
     )

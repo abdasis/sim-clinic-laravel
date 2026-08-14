@@ -1,3 +1,4 @@
+import { Fragment } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   Breadcrumb,
@@ -25,20 +26,20 @@ export function ClinicBreadcrumb({ items }: { items: Crumb[] }) {
         {items.map((item, index) => {
           const isLast = index === items.length - 1
           return (
-            <BreadcrumbItem key={index}>
-              {isLast || !item.to ? (
-                <BreadcrumbPage>{item.label}</BreadcrumbPage>
-              ) : (
-                <>
+            <Fragment key={index}>
+              <BreadcrumbItem>
+                {isLast || !item.to ? (
+                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                ) : (
                   <BreadcrumbLink asChild>
                     <Link to={item.to} params={item.params}>
                       {item.label}
                     </Link>
                   </BreadcrumbLink>
-                  <BreadcrumbSeparator />
-                </>
-              )}
-            </BreadcrumbItem>
+                )}
+              </BreadcrumbItem>
+              {!isLast ? <BreadcrumbSeparator /> : null}
+            </Fragment>
           )
         })}
       </BreadcrumbList>

@@ -28,8 +28,11 @@ import {
   SidebarTrigger,
 } from "#/components/ui/sidebar.tsx"
 import { Separator } from "#/components/ui/separator.tsx"
+import { useAuthUser } from "#/hooks/use-auth-user.ts"
+import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { clearAuth, getAuthUser } from "#/lib/auth.ts"
+import { clearAuth } from "#/lib/auth.ts"
+import { ShellSkeleton } from "#/components/shell-skeleton.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic")({
   component: ClinicLayout,
@@ -51,9 +54,11 @@ interface NavItem {
 function ClinicLayout() {
   const { tenant } = useParams({ from: "/$tenant/clinic" })
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const { t } = useTrans()
+  const { t, ready } = useTrans()
   const navigate = useNavigate()
-  const user = getAuthUser()
+  // ponytail: render sidebar setelah mount; auth dari localStorage tak bisa dibaca server, jadi SSR & first client render pakai shell identik (mencegah hydration mismatch).
+  const mounted = useIsMounted()
+  const user = useAuthUser()
   const role = user?.clinic_role ?? ""
 
   const base = `/${tenant}/clinic`
@@ -112,23 +117,28 @@ function ClinicLayout() {
     navigate({ to: "/$tenant/login", params: { tenant } })
   }
 
+  // ponytail: skeleton saat terjemahan belum siap; tidak baca localStorage jadi aman SSR & first paint.
+  if (!ready) return <ShellSkeleton navCount={visible.length || 8} />
+
   return (
     <SidebarProvider>
-      <AppSidebar
-        brandTitle={tenant}
-        brandSubtitle={t("clinic.clinic")}
-        brandTo={navMain[0]?.url ?? base}
-        groupLabel={t("clinic.clinic")}
-        navMain={navMain}
-        user={sidebarUser}
-        onLogout={handleLogout}
-      />
+      {mounted ? (
+        <AppSidebar
+          brandTitle={tenant}
+          brandSubtitle={t("clinic.clinic")}
+          brandTo={navMain[0]?.url ?? base}
+          groupLabel={t("clinic.clinic")}
+          navMain={navMain}
+          user={sidebarUser}
+          onLogout={handleLogout}
+        />
+      ) : null}
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger />
+        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+          {mounted ? <SidebarTrigger /> : null}
           <Separator orientation="vertical" className="mr-1 h-4" />
           <h1 className="text-sm font-semibold">
-            {sectionTitle(pathname, base, visible) ?? tenant}
+            {mounted ? (sectionTitle(pathname, base, visible) ?? tenant) : tenant}
           </h1>
         </header>
         <main className="flex-1 p-4">

@@ -13,9 +13,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
+import { useAuthUser } from "#/hooks/use-auth-user.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
-import { getAuthUser, hasPlatformRole } from "#/lib/auth.ts"
+import { hasPlatformRole } from "#/lib/auth.ts"
 import { StatTile } from "./components/stat-tile.tsx"
 
 export const Route = createFileRoute("/central/")({
@@ -41,7 +42,8 @@ function useTenantCount(status?: string) {
 function CentralDashboardPage() {
   const { t } = useTrans()
   const navigate = useNavigate()
-  const user = getAuthUser()
+  // ponytail: null saat SSR & first client render, update setelah mount — mencegah hydration mismatch dari localStorage.
+  const user = useAuthUser()
 
   const total = useTenantCount()
   const active = useTenantCount("active")

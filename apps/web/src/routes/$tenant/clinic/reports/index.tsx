@@ -11,8 +11,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "#/components/ui/tabs.tsx"
+import { useAuthUser } from "#/hooks/use-auth-user.ts"
+import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { getAuthUser } from "#/lib/auth.ts"
 import { apiGet } from "#/lib/api.ts"
 import { RevenueSummary } from "./components/revenue-summary.tsx"
 import type { RevenueData } from "./components/revenue-summary.tsx"
@@ -35,7 +36,9 @@ interface ReportResponse {
 function ReportsPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/reports/" })
   const { t } = useTrans()
-  const isAdmin = getAuthUser()?.clinic_role === "admin"
+  // ponytail: render null saat belum mount, guard role setelah mount — SSR & first client render identik kosong (mencegah hydration mismatch dari localStorage).
+  const mounted = useIsMounted()
+  const isAdmin = useAuthUser()?.clinic_role === "admin"
 
   const [tab, setTab] = useState<ReportTab>("revenue")
   const [from, setFrom] = useState("")
@@ -52,6 +55,7 @@ function ReportsPage() {
     enabled: !!applied && isAdmin,
   })
 
+  if (!mounted) return null
   if (!isAdmin) {
     return (
       <div>

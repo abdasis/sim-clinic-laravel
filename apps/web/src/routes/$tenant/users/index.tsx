@@ -27,10 +27,11 @@ import {
   AlertDialogTitle,
 } from "#/components/ui/alert-dialog.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { useAuthUser } from "#/hooks/use-auth-user.ts"
+import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPatch, apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
-import { getAuthUser } from "#/lib/auth.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { InviteModal } from "./components/invite-modal.tsx"
 import { PendingInvitations } from "./components/pending-invitations.tsx"
@@ -133,7 +134,9 @@ function UserRowActions({ tenant, user }: { tenant: string; user: UserRow }) {
 function UsersPage() {
   const { tenant } = useParams({ from: "/$tenant/users/" })
   const { t } = useTrans()
-  const isAdmin = getAuthUser()?.role === "tenant_admin"
+  // ponytail: render null saat belum mount, guard role setelah mount — SSR & first client render identik kosong (mencegah hydration mismatch dari localStorage).
+  const mounted = useIsMounted()
+  const isAdmin = useAuthUser()?.role === "tenant_admin"
 
   const columns = useMemo<ColumnDef<UserRow>[]>(() => {
     const base: ColumnDef<UserRow>[] = [
@@ -181,6 +184,8 @@ function UsersPage() {
       }),
     columns,
   })
+
+  if (!mounted) return null
 
   return (
     <div>

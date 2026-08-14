@@ -8,8 +8,11 @@ import {
   SidebarTrigger,
 } from "#/components/ui/sidebar.tsx"
 import { Separator } from "#/components/ui/separator.tsx"
+import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { clearAuth, getAuthUser } from "#/lib/auth.ts"
+import { useAuthUser } from "#/hooks/use-auth-user.ts"
+import { clearAuth } from "#/lib/auth.ts"
+import { ShellSkeleton } from "#/components/shell-skeleton.tsx"
 
 export const Route = createFileRoute("/central")({
   component: CentralLayout,
@@ -17,7 +20,7 @@ export const Route = createFileRoute("/central")({
 
 function CentralLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const { t } = useTrans()
+  const { t, ready } = useTrans()
   const navigate = useNavigate()
 
   // Halaman login tetap standalone tanpa chrome sidebar.
@@ -25,7 +28,9 @@ function CentralLayout() {
     return <Outlet />
   }
 
-  const authUser = getAuthUser()
+  // ponytail: render sidebar setelah mount; auth dari localStorage tak bisa dibaca server, jadi SSR & first client render pakai shell identik.
+  const mounted = useIsMounted()
+  const authUser = useAuthUser()
   const user: SidebarUser = {
     name: authUser?.name ?? "Guest",
     email: authUser?.email ?? "-",
@@ -52,20 +57,25 @@ function CentralLayout() {
     navigate({ to: "/central/login" })
   }
 
+  // ponytail: skeleton saat terjemahan belum siap; tidak baca localStorage jadi aman SSR & first paint.
+  if (!ready) return <ShellSkeleton navCount={2} />
+
   return (
     <SidebarProvider>
-      <AppSidebar
-        brandTitle={t("general.central")}
-        brandSubtitle={t("general.admin_panel")}
-        brandTo="/central"
-        groupLabel={t("general.platform")}
-        navMain={navMain}
-        user={user}
-        onLogout={handleLogout}
-      />
+      {mounted ? (
+        <AppSidebar
+          brandTitle={t("general.central")}
+          brandSubtitle={t("general.admin_panel")}
+          brandTo="/central"
+          groupLabel={t("general.platform")}
+          navMain={navMain}
+          user={user}
+          onLogout={handleLogout}
+        />
+      ) : null}
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger />
+        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+          {mounted ? <SidebarTrigger /> : null}
           <Separator orientation="vertical" className="mr-1 h-4" />
           <h1 className="text-sm font-semibold">{sectionTitle(pathname, t)}</h1>
         </header>

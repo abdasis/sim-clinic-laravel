@@ -21,6 +21,7 @@ import { Route as CentralLoginRouteImport } from './routes/central/login'
 import { Route as DemoDataTableRouteImport } from './routes/demo/data-table'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as InvitationsTokenRouteImport } from './routes/invitations/$token'
+import { Route as TenantClinicIndexRouteImport } from './routes/$tenant/clinic/index'
 import { Route as TenantTreatmentSlugRouteImport } from './routes/$tenant/treatment/$slug'
 import { Route as TenantUsersIndexRouteImport } from './routes/$tenant/users/index'
 import { Route as CentralTenantsIndexRouteImport } from './routes/central/tenants/index'
@@ -107,6 +108,11 @@ const InvitationsTokenRoute = InvitationsTokenRouteImport.update({
   id: '/invitations/$token',
   path: '/invitations/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const TenantClinicIndexRoute = TenantClinicIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TenantClinicRouteRoute,
 } as any)
 const TenantTreatmentSlugRoute = TenantTreatmentSlugRouteImport.update({
   id: '/$tenant/treatment/$slug',
@@ -273,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/$tenant/': typeof TenantIndexRoute
   '/central/': typeof CentralIndexRoute
   '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
+  '/$tenant/clinic/': typeof TenantClinicIndexRoute
   '/$tenant/users/': typeof TenantUsersIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
@@ -303,7 +310,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/register': typeof RegisterRoute
-  '/$tenant/clinic': typeof TenantClinicRouteRouteWithChildren
   '/$tenant/login': typeof TenantLoginRoute
   '/central/login': typeof CentralLoginRoute
   '/demo/data-table': typeof DemoDataTableRoute
@@ -312,6 +318,7 @@ export interface FileRoutesByTo {
   '/$tenant': typeof TenantIndexRoute
   '/central': typeof CentralIndexRoute
   '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
+  '/$tenant/clinic': typeof TenantClinicIndexRoute
   '/$tenant/users': typeof TenantUsersIndexRoute
   '/central/tenants': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
@@ -353,6 +360,7 @@ export interface FileRoutesById {
   '/$tenant/': typeof TenantIndexRoute
   '/central/': typeof CentralIndexRoute
   '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
+  '/$tenant/clinic/': typeof TenantClinicIndexRoute
   '/$tenant/users/': typeof TenantUsersIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
@@ -395,6 +403,7 @@ export interface FileRouteTypes {
     | '/$tenant/'
     | '/central/'
     | '/$tenant/treatment/$slug'
+    | '/$tenant/clinic/'
     | '/$tenant/users/'
     | '/central/tenants/'
     | '/$tenant/clinic/company-profile/settings'
@@ -425,7 +434,6 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/register'
-    | '/$tenant/clinic'
     | '/$tenant/login'
     | '/central/login'
     | '/demo/data-table'
@@ -434,6 +442,7 @@ export interface FileRouteTypes {
     | '/$tenant'
     | '/central'
     | '/$tenant/treatment/$slug'
+    | '/$tenant/clinic'
     | '/$tenant/users'
     | '/central/tenants'
     | '/$tenant/clinic/company-profile/settings'
@@ -474,6 +483,7 @@ export interface FileRouteTypes {
     | '/$tenant/'
     | '/central/'
     | '/$tenant/treatment/$slug'
+    | '/$tenant/clinic/'
     | '/$tenant/users/'
     | '/central/tenants/'
     | '/$tenant/clinic/company-profile/settings'
@@ -601,6 +611,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/invitations/$token'
       preLoaderRoute: typeof InvitationsTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/$tenant/clinic/': {
+      id: '/$tenant/clinic/'
+      path: '/'
+      fullPath: '/$tenant/clinic/'
+      preLoaderRoute: typeof TenantClinicIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
     }
     '/$tenant/treatment/$slug': {
       id: '/$tenant/treatment/$slug'
@@ -804,6 +821,7 @@ const CentralRouteRouteWithChildren = CentralRouteRoute._addFileChildren(
 )
 
 interface TenantClinicRouteRouteChildren {
+  TenantClinicIndexRoute: typeof TenantClinicIndexRoute
   TenantClinicCompanyProfileSettingsRoute: typeof TenantClinicCompanyProfileSettingsRoute
   TenantClinicMedicalRecordsRecordIdRoute: typeof TenantClinicMedicalRecordsRecordIdRoute
   TenantClinicMedicalRecordsNewRoute: typeof TenantClinicMedicalRecordsNewRoute
@@ -830,6 +848,7 @@ interface TenantClinicRouteRouteChildren {
 }
 
 const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
+  TenantClinicIndexRoute: TenantClinicIndexRoute,
   TenantClinicCompanyProfileSettingsRoute:
     TenantClinicCompanyProfileSettingsRoute,
   TenantClinicMedicalRecordsRecordIdRoute:
@@ -881,3 +900,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
