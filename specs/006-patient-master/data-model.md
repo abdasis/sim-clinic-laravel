@@ -92,17 +92,22 @@ Data pasien klinik. Tenant-scoped. Soft delete untuk nonaktifkan.
 
 Otorisasi via `PatientPolicy` → Gate `clinic.access` ['patient', 'r'|'w']. `PatientPolicy` saat ini tidak punya `delete` method — tambah `delete(User)` delegasi `clinic.access` ['patient', 'w'] untuk route `destroy`.
 
+> `ponytail:` Konstitusi v1.1.0 (VI) mewajibkan role dinamis pakai `spatie/laravel-permission`. Role klinik (admin/doctor/therapist/cashier) bersifat **statik & fixed** — tidak DB-driven, tidak diassign runtime via CRUD role, tidak multi-role per user dalam satu tenant — sehingga exception konstitusi VI berlaku: enum `ClinicRole` + Gate matrix `ClinicPermission::MATRIX`. `SyncTenantClinicRolesAction` sudah menjembatani matriks ini ke spatie `Role`/`Permission` per tenant (seed + saat tenant dibuat) sebagai fondasi migrasi. **Upgrade path**: saat role jadi dinamis/CRUD-able (admin bisa buat role baru, assign multi-role), WAJIB migrasi penuh ke spatie `HasRoles` + `assignRole()`/`hasRole()`/`can()`, dan `PatientPolicy` beralih dari Gate `clinic.access` ke `$user->can('patient.manage')` (permission spatie `{module}.manage`). Saat itu, hapus `ponytail:` ini.
+
 ## Activity log
 
-Setiap aksi ubah-data → `LogAuditAction` (spatie/laravel-activitylog, tabel `audit_logs`):
+Setiap aksi ubah-data via **Controller→Service→Action** (CLAUDE.md): Controller panggil `PatientService` (orkestrasi, no DB) → Service panggil Action (`app/Actions/Patient/`) → Action lakukan DB write + `LogAuditAction` (spatie/laravel-activitylog, tabel `audit_logs`). DB write WAJIB di Action, bukan di Controller/Service (konstitusi v1.1.0 VI + CLAUDE.md). Read (index/show/history) di Controller (read exception). Validasi via `PatientRequest` (no inline validation).
 
-| Aksi | event/log_name | Deskripsi naratif |
-|------|----------------|-------------------|
-| store | `patient.created` | "Membuat pasien {name}" |
-| update | `patient.updated` | "Memperbarui pasien {name}" |
-| destroy (deactivate) | `patient.deactivated` | "Menonaktifkan pasien {name}" |
+| Aksi | Action | event/log_name | `withProperties` | Deskripsi naratif |
+|------|--------|----------------|------------------|-------------------|
+| store | `CreatePatientAction` | `patient.created` | `tenant_id` + **full attributes** (`$patient->getAttributes()`) | "Membuat pasien {name}" |
+| update | `UpdatePatientAction` | `patient.updated` | `tenant_id` + **`old` (nilai sebelum update) + `new` (nilai setelah update)** diff field yang diubah | "Memperbarui pasien {name}" |
+| destroy (deactivate) | `DeactivatePatientAction` | `patient.deactivated` | `tenant_id` + **`old` (`deleted_at:null`) + `new` (`deleted_at:{timestamp}`)** | "Menonaktifkan pasien {name}" |
 
-Properties: `tenant_id` (auto dari container). Causer: auth user (auto).
+- Causer: auth user (auto via `LogAuditAction` fallback `auth()->user()`).
+- `tenant_id`: auto dari container (`app('tenant')`) bila tidak disupply.
+- **`withProperties` WAJIB** simpan semua atribut yang di-create/update — create→full, update/deactivate→old+new (konstitusi VI). `$context` argumen `LogAuditAction` dialirkan ke spatie `withProperties()`.
+- **Exception ditangkap WAJIB `Log::error`** (`Log::error('deskripsi kontekstual', ['exception' => $e, 'patient_id' => …])`) sebelum re-throw/handle. Tidak menelan exception diam-diam (konstitusi VI). MVP: ketiga Action single-write tanpa `DB::transaction`; bila Action membungkus try/catch, wajib log.
 
 ## Migration changes
 

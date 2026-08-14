@@ -8,7 +8,7 @@
 
 ## Summary
 
-Revisi/penyempurnaan modul master pasien klinik yang sudah sebagian terimplementasi. Lima gap utama dipenuhi: (1) `Patient` ditambah soft delete (`SoftDeletes` trait + kolom `deleted_at` + index `(tenant_id, deleted_at)`) untuk aksi nonaktifkan (FR-025/026); (2) FK `bookings/medical_records/transactions → patients` diubah ke `restrictOnDelete` via migration (FR-027); (3) route `destroy` ditambahkan kembali sebagai aksi **nonaktifkan** (soft delete) via `DeactivatePatientAction` + `LogAuditAction` narasi "Menonaktifkan pasien {name}" (FR-029); hard-delete permanen tidak diekspos endpoint — DB restrict jadi penjaga FR-027; (4) activity log naratif untuk create/update/deactivate (FR-029); (5) FE: perbaikan breadcrumb (self-link bug di `index` & `history`), tambah field `notes` di form, tambah row-actions "Ubah"+"Nonaktifkan" mirror `StaffActionsCell`, duplicate-warning di halaman edit, nama pasien di breadcrumb riwayat. Komponen form eksisting (`FormInput/FormDatePicker/FormSelect/FormTextarea/FormSubmit/useForm`) tercover semua field pasien (7 field > 5 → halaman terpisah, bukan modal) — **tidak ada form komponen baru** di `components/forms/`. Riwayat pasien (FR-022) tetap dapat diakses walau pasien dinonaktifkan (route `history` resolve `withTrashed`).
+Revisi/penyempurnaan modul master pasien klinik yang sudah sebagian terimplementasi. Enam gap utama dipenuhi: (1) `Patient` ditambah soft delete (`SoftDeletes` trait + kolom `deleted_at` + index `(tenant_id, deleted_at)`) untuk aksi nonaktifkan (FR-025/026); (2) FK `bookings/medical_records/transactions → patients` diubah ke `restrictOnDelete` via migration (FR-027); (3) route `destroy` ditambahkan kembali sebagai aksi **nonaktifkan** (soft delete) via `DeactivatePatientAction` + `LogAuditAction` narasi "Menonaktifkan pasien {name}" dengan `withProperties` old/new (FR-029); hard-delete permanen tidak diekspos endpoint — DB restrict jadi penjaga FR-027; (4) **Layering Controller→Service→Action** (konstitusi v1.1.0 VI + CLAUDE.md baru): `PatientService` orkestrasi (no DB) memanggil `Create/Update/DeactivatePatientAction` (folder `app/Actions/Patient/`) masing-masing satu use case; Action log via `LogAuditAction` dengan `withProperties` (create→full attributes, update→old+new, deactivate→old+new) naratif (FR-029); Controller hanya authorize + resolve `PatientRequest` + panggil Service + response, **tidak menyentuh DB & tidak langsung ke Action**; validasi via FormRequest (no inline validation); read (index/show/history) di Controller (read exception); (5) FE: perbaikan breadcrumb (self-link bug di `index` & `history`), tambah field `notes` di form (`FormTextarea` reuse), tambah row-actions "Ubah"+"Nonaktifkan" mirror `StaffActionsCell` (`components/datatable/` reuse), duplicate-warning di halaman edit, nama pasien di breadcrumb riwayat; (6) permission: `ClinicPermission::MATRIX` + Gate `clinic.access` dengan `ponytail:` exception konstitusi VI (role fixed, bukan DB-driven) — `SyncTenantClinicRolesAction` sudah jembatan ke spatie Role/Permission. Komponen form eksisting (`FormInput/FormDatePicker/FormSelect/FormTextarea/FormSubmit/useForm`) tercover semua field pasien (7 field > 5 → halaman terpisah, bukan modal) — **tidak ada form komponen baru** di `components/forms/`. Riwayat pasien (FR-022) tetap dapat diakses walau pasien dinonaktifkan (route `history` resolve `withTrashed`).
 
 ## Technical Context
 
@@ -28,7 +28,7 @@ Revisi/penyempurnaan modul master pasien klinik yang sudah sebagian terimplement
 
 **Performance Goals**: Daftar pasien aktif tampil <1 detik untuk 500 pasien per klinik (SC-002). Paginasi server-side max per_page 100.
 
-**Constraints**: Class PHP <=300 baris, method <=100 baris (konstitusi V). File komponen React <=300 baris. Isolasi tenant otomatis via `BelongsToTenant`+`TenantScope` (konstitusi III). Teks UI via i18n (konstitusi V).
+**Constraints**: Class PHP <=300 baris, method <=100 baris (konstitusi V). File komponen React <=300 baris. Isolasi tenant otomatis via `BelongsToTenant`+`TenantScope` (konstitusi III). Teks UI via i18n (konstitusi V). **Layering Controller→Service→Action** (CLAUDE.md: Controller WAJIB via Service, dilarang langsung ke Action; Service DILARANG sentuh DB, WAJIB via Action; read exception: Controller boleh query read langsung). **DB write WAJIB via Action** (konstitusi v1.1.0 VI). **Action ubah-data WAJIB log via `activity()`/`LogAuditAction`** dengan `withProperties` (create→full, update→old+new). **Validasi WAJIB via FormRequest** (dilarang inline validation di Controller). **Exception ditangkap WAJIB `Log::error`**. Folder per entity `app/Actions/<Entity>/`. Permission: role dinamis WAJIB spatie; role statik fixed boleh enum+Gate matrix **dengan `ponytail:`** (konstitusi VI).
 
 **Scale/Scope**: Revisi 1 entitas eksisting + 3 FK + ~5 file FE. Tanpa entity/tabel baru.
 
@@ -38,14 +38,14 @@ Revisi/penyempurnaan modul master pasien klinik yang sudah sebagian terimplement
 
 | Prinsip | Status | Catatan |
 |---------|--------|---------|
-| I. Clean Code | LULUS | Reuse `LogAuditAction`, `DeactivatePatientAction` (mirror `RemoveUserAction`/`ArchiveServiceAction`), form components eksisting. Tidak ada duplikasi. Method `PatientController` tetap <100 baris. |
-| II. TDD | LULUS | Test task ditulis lebih dulu oleh `zahiira` (R8): feature controller (CRUD+deactivate+duplicate+tenant isolation), FK restrict, soft-delete+history accessibility, validation. Red-Green-Refactor. |
+| I. Clean Code | LULUS | Reuse `LogAuditAction` (satu pintu audit), `PatientService` orkestrasi tipis, tiga Action tipis masing-masing satu responsibility (`Create/Update/DeactivatePatientAction`, mirror `ArchiveServiceAction`/`RemoveUserAction`), form & datatable components eksisting (reuse). Controller kembali ke authorize+resolve FormRequest+panggil Service+response (<100 baris/method). Tidak ada duplikasi. |
+| II. TDD | LULUS | Test task ditulis lebih dulu oleh `zahiira` (R8): feature controller (CRUD+deactivate+duplicate+tenant isolation+withProperties), **action unit tests** (`withProperties` create→full/update→old+new/deactivate→old+new + exception `Log::error`), **service unit test** (orkestrasi panggil Action + duplikat), FK restrict, soft-delete+history accessibility, validation. Red-Green-Refactor. |
 | III. Multi-Tenant Isolation | LULUS | `Patient` pakai `BelongsToTenant`+`TenantScope` (sudah ada). Soft delete tidak menambah query lintas-tenant. Test tenant isolation. |
-| IV. Simplicity (YAGNI) | LULUS | Tidak buat endpoint hard-delete (R3), tidak buat form komponen baru (R7), `DeactivatePatientAction` tipis (soft delete + log). Form pasien 7 field > 5 → halaman terpisah sesuai aturan form design (bukan modal over-engineering). |
-| V. Bounded Size | LULUS | Semua file dalam batas. `patient-actions-cell.tsx` mirror `StaffActionsCell` (~110 baris). `patient-form.tsx` +7 field tetap <300 baris. |
-| VI. Permission & Activity Log | LULUS | `LogAuditAction` (spatie wrapper) untuk audit naratif create/update/deactivate. Permission via Gate matrix statik `ClinicPermission` (exception konstitusi VI: role fixed, sudah dicatat spec 001 R2). |
+| IV. Simplicity (YAGNI) | LULUS | Tidak buat endpoint hard-delete (R3), tidak buat form/datatable komponen baru (R7 — semua field & tabel tercover komponen eksisting), tiga Action tipis (single write + log, tanpa `DB::transaction` multi-write). `PatientService` tipis (orkestrasi panggil Action + duplikat detection) — wajib ada demi layering CLAUDE.md, bukan over-engineering. Form pasien 7 field > 5 → halaman terpisah sesuai aturan form design. |
+| V. Bounded Size | LULUS | Semua file dalam batas. `patient-actions-cell.tsx` mirror `StaffActionsCell` (~110 baris). `patient-form.tsx` +1 field `notes` tetap <300 baris. Tiga Action masing-masing <50 baris. `PatientService` <80 baris. Controller method tetap <100 baris. |
+| VI. Permission & Activity Log | LULUS | **Layering Controller→Service→Action** + **DB write via Action** (`Create/Update/DeactivatePatientAction`) + **log via `LogAuditAction`** (spatie `activity()`) dengan **`withProperties` old/new** (create→full, update→old+new, deactivate→old+new) naratif (FR-029). Validasi via `PatientRequest` (no inline validation). Read exception: index/show/history di Controller. Exception ditangkap → `Log::error`. Permission via Gate matrix statik `ClinicPermission` + `SyncTenantClinicRolesAction` sinkron ke spatie — **`ponytail:` exception konstitusi VI** (role fixed; migrasi penuh ke spatie `hasRole`/`can` saat role jadi dinamis). |
 
-**Post-Phase 1 re-check**: desain data-model & contracts tidak menambah pelanggaran. `restrictOnDelete` memperkuat integritas (mendukung III + riwayat utuh). Soft delete menjaga data historis (R6 spirit). Tidak ada Complexity Tracking entry.
+**Post-Phase 1 re-check**: desain data-model & contracts tidak menambah pelanggaran; justru memperkuat kepatuhan konstitusi v1.1.0 + CLAUDE.md baru — `withProperties` old/new di contracts (VI), Controller→Service→Action + DB write via Action dijabarkan di data-model (VI), validasi via FormRequest, `ponytail:` permission exception dicatat (VI). `restrictOnDelete` memperkuat integritas (III + riwayat utuh). Soft delete menjaga data historis (R6 spirit). Tidak ada Complexity Tracking entry.
 
 ## Project Structure
 
@@ -74,12 +74,21 @@ apps/api/
 │       └── PatientFactory.php                                   # NEW (R8, untuk test)
 ├── app/
 │   ├── Actions/
-│   │   └── DeactivatePatientAction.php                          # NEW (R3): soft delete + LogAuditAction
+│   │   └── Patient/                                             # NEW folder per entity (R3, R4)
+│   │       ├── CreatePatientAction.php                          # NEW (R4): Patient::create + LogAuditAction withProperties full
+│   │       ├── UpdatePatientAction.php                          # NEW (R4): update + LogAuditAction withProperties old/new
+│   │       └── DeactivatePatientAction.php                      # NEW (R3): soft delete + LogAuditAction withProperties old/new
+│   ├── Services/
+│   │   └── PatientService.php                                   # NEW (R4): orkestrasi create/update/deactivate → panggil Action + duplicate detection (no DB write)
 │   ├── Models/
 │   │   └── Patient.php                                          # EDIT: +SoftDeletes, +deleted_at fillable/cast (R1)
+│   ├── Policies/
+│   │   └── PatientPolicy.php                                    # EDIT: +delete(User) delegasi clinic.access ['patient','w'] (R3)
 │   └── Http/
 │       ├── Controllers/
-│       │   └── PatientController.php                            # EDIT: +destroy (R3), +LogAuditAction store/update (R4), history withTrashed (R5), +duplicate on update
+│       │   └── PatientController.php                            # EDIT: +destroy (R3); store/update/destroy → panggil PatientService (R4, Controller→Service→Action, no direct DB/Action); index/show/history read langsung (read exception) + history/show withTrashed (R5)
+│       ├── Requests/
+│       │   └── PatientRequest.php                               # EDIT: pastikan semua validasi field (name/phone/birth_date/gender/whatsapp/address/notes) di sini, no inline validation di Controller
 │       └── Resources/
 │           └── PatientResource.php                              # EDIT: +deleted_at (status nonaktif indicator)
 └── lang/id/
@@ -99,7 +108,7 @@ apps/web/src/
     └── forms/                                                   # NO CHANGE — semua form komponen sudah ada & reusable
 ```
 
-**Structure Decision**: Monorepo `apps/api` + `apps/web` sesuai eksisting. File baru minimal: 1 migration FK, 1 Action, 1 factory (test), 1 komponen FE (`patient-actions-cell.tsx`). Edit: 2 migration/model BE, 1 controller, 1 resource, 1 lang, 5 file FE. Tidak ada folder/package/form-komponen baru.
+**Structure Decision**: Monorepo `apps/api` + `apps/web` sesuai eksisting. File baru minimal: 1 migration FK, 1 Service (`PatientService`), 3 Action (folder per entity `app/Actions/Patient/`), 1 factory (test), 1 komponen FE (`patient-actions-cell.tsx`). Edit: 1 migration + 1 model + 1 policy + 1 controller + 1 request + 1 resource + 1 lang BE, 5 file FE. Tidak ada package/form-komponen baru. Layering konsisten Controller→Service→Action; DB write hanya di Action (konstitusi v1.1.0 VI + CLAUDE.md).
 
 ## Complexity Tracking
 

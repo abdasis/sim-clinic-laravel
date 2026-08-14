@@ -2,7 +2,9 @@
 
 **Date**: 2026-08-14 | **Data model**: [data-model.md](../data-model.md)
 
-Semua endpoint tenant-scoped, prefix `/{tenant}/clinic`, middleware `resolve.tenant` + `ensure.tenant.active` + `auth:sanctum`. Otorisasi `PatientPolicy` → Gate `clinic.access`. Response shape `{ data, meta }`; error `{ message, errors }` (422) / `{ message }` (403/404).
+Semua endpoint tenant-scoped, prefix `/{tenant}/clinic`, middleware `resolve.tenant` + `ensure.tenant.active` + `auth:sanctum`. Otorisasi `PatientPolicy` → Gate `clinic.access` (`ponytail:` exception konstitusi v1.1.0 VI — role klinik statik fixed; lihat [data-model.md](../data-model.md#permission)). Response shape `{ data, meta }`; error `{ message, errors }` (422) / `{ message }` (403/404).
+
+**Layering (konstitusi v1.1.0 VI + CLAUDE.md)**: Controller→Service→Action. Controller `authorize` + resolve `PatientRequest` + panggil `PatientService` + bentuk response — **tidak menyentuh DB & tidak langsung ke Action**. `PatientService` orkestrasi (panggil Action + duplicate detection, no DB write). DB write (create/update/deactivate) WAJIB via Action di `app/Actions/Patient/` (`Create/Update/DeactivatePatientAction`). Setiap Action ubah-data WAJIB log via `LogAuditAction` (`activity()`) dengan `withProperties` — create→full attributes, update→old+new, deactivate→old+new. Validasi WAJIB via `PatientRequest` (dilarang inline validation di Controller). Read (index/show/history) di Controller langsung (read exception). Exception ditangkap WAJIB `Log::error` sebelum re-throw.
 
 ## Endpoints
 
@@ -70,7 +72,7 @@ Semua endpoint tenant-scoped, prefix `/{tenant}/clinic`, middleware `resolve.ten
 - `address` nullable|string
 - `notes` nullable|string
 
-**Side effect**: `LogAuditAction` event `patient.created`, narasi "Membuat pasien Siti Aminah".
+**Side effect**: Controller→`PatientService::create`→`CreatePatientAction` (`app/Actions/Patient/`) → `Patient::create()` + `LogAuditAction` event `patient.created`, narasi "Membuat pasien Siti Aminah", `withProperties` = `tenant_id` + **full attributes**. Duplicate detection di Service. DB write di Action (konstitusi v1.1.0 VI).
 
 **Duplicate detection (FR-021/023)**: bila `phone` sama dengan pasien lain di tenant → tetap 201 (tidak ditolak), `meta.duplicate_warning=true` + `meta.duplicate_patient_id={id lama}`.
 
@@ -95,7 +97,7 @@ Semua endpoint tenant-scoped, prefix `/{tenant}/clinic`, middleware `resolve.ten
 
 **Body**: sama dengan create (validasi sama untuk field yang dikirim).
 
-**Side effect**: `LogAuditAction` event `patient.updated`, narasi "Memperbarui pasien {name}".
+**Side effect**: Controller→`PatientService::update`→`UpdatePatientAction` (`app/Actions/Patient/`) → `$patient->update()` + `LogAuditAction` event `patient.updated`, narasi "Memperbarui pasien {name}", `withProperties` = `tenant_id` + **`old` (nilai sebelum) + `new` (nilai setelah)**. Duplicate detection di Service. DB write di Action (konstitusi v1.1.0 VI).
 
 **Duplicate detection (FR-021)**: bila `phone` baru sama dengan pasien lain di tenant → tetap 200, `meta.duplicate_warning=true` + `meta.duplicate_patient_id`.
 
@@ -108,7 +110,7 @@ Semua endpoint tenant-scoped, prefix `/{tenant}/clinic`, middleware `resolve.ten
 
 **Permission**: `patient` `w` (admin, doctor, cashier). `PatientPolicy::delete` delegasi `clinic.access` ['patient', 'w'].
 
-**Behavior**: tidak hard-delete. Memanggil `DeactivatePatientAction` → `$patient->delete()` (soft delete, set `deleted_at`) + `LogAuditAction` event `patient.deactivated`, narasi "Menonaktifkan pasien {name}".
+**Behavior**: tidak hard-delete. Controller→`PatientService::deactivate`→`DeactivatePatientAction` (`app/Actions/Patient/`) → `$patient->delete()` (soft delete, set `deleted_at`) + `LogAuditAction` event `patient.deactivated`, narasi "Menonaktifkan pasien {name}", `withProperties` = `tenant_id` + **`old` (`deleted_at:null`) + `new` (`deleted_at:{timestamp}`)**. DB write di Action (konstitusi v1.1.0 VI).
 
 **Response 200**: `{ "data": PatientResource(deleted_at terisi), "meta": { "message": "Pasien berhasil dinonaktifkan." } }`
 
@@ -168,6 +170,9 @@ Semua endpoint tenant-scoped, prefix `/{tenant}/clinic`, middleware `resolve.ten
 
 - Hapus `->except(['destroy'])` pada `apiResource('patients')` ATAU daftar `Route::delete('patients/{patient}', [PatientController::class, 'destroy'])` eksplisit — agar `destroy` (nonaktifkan) tersedia.
 - `history`/`show` binding resolve `withTrashed` (R5) — implementasi di Controller method (query `Patient::withTrashed()->findOrFail($id)` dengan TenantScope aktif) atau explicit route binding.
+- `PatientController::store/update/destroy` panggil `PatientService` (R4) → Service panggil `Create/Update/DeactivatePatientAction` — tidak ada `Patient::create()`/`->update()`/`->delete()` di Controller/Service (Controller→Service→Action).
+- `index`/`show`/`history` query read langsung di Controller (read exception CLAUDE.md) — `history`/`show` resolve `withTrashed`.
+- Validasi field pasien WAJIB via `PatientRequest` (`app/Http/Requests`), dilarang inline validation di Controller.
 
 ## Tidak ada kontrak entity baru
 
