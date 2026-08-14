@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,6 +17,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Tenant wajib sudah ter-resolve sebelum route model binding berjalan;
+        // tanpa ini TenantScope belum aktif saat model dicari, sehingga
+        // data tenant lain bisa terambil lewat ID di URL.
+        $middleware->prependToPriorityList(
+            SubstituteBindings::class,
+            ResolveTenant::class,
+        );
+
         $middleware->alias([
             'resolve.tenant' => ResolveTenant::class,
             'ensure.tenant.active' => EnsureTenantActive::class,
