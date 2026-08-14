@@ -12,7 +12,7 @@ Pergerakan stok produk (Inventory + Kasir, US6/US5).
 | type | enum(StockMovementType: in, out_manual, sold_pos, rollback) | not null | R7 |
 | quantity | integer | not null | positif untuk `in`/`rollback`; positif tapi mengurangi saldo untuk `out_manual`/`sold_pos` |
 | balance_after | integer | not null | saldo setelah mutasi (audit) |
-| related_type | string(255) | nullable | morph: `Transaction::class` untuk sold_pos/rollback |
+| related_type | string(255) | nullable | morph alias, mis. `transaction` untuk sold_pos/rollback |
 | related_id | bigint unsigned | nullable | |
 | note | string(255) | nullable | keterangan/alasan (FR-061, FR-062) |
 | created_at | timestamp | | |
@@ -22,6 +22,19 @@ Pergerakan stok produk (Inventory + Kasir, US6/US5).
 - `(tenant_id, product_id, created_at)` — riwayat per produk (FR-064).
 - `(related_type, related_id)` — reverse lookup mutasi per transaksi (sold_pos/rollback). Pakai helper migration `nullableMorphs('related')` yang sekaligus buat kolom + composite index ini.
 - Hanya `created_at` (tidak `updated_at`) — mutasi immutable.
+
+Kolom morph menyimpan **alias**, bukan nama kelas penuh. Petanya ditegakkan
+`Relation::enforceMorphMap()` di `AppServiceProvider`, dan mencakup seluruh
+model yang bisa jadi subject/causer activity log — bukan hanya `Transaction`
+— karena peta yang ditegakkan menolak model di luar daftar. Memindahkan atau
+mengganti nama model karena itu tidak membuat baris lama nyasar.
+
+## Guard saldo
+
+Saldo negatif ditolak `StockService::adjust()` sebelum mutasi dicatat
+(422 `inventory.insufficient_stock`). Penjagaan ada di satu tempat sehingga
+berlaku untuk semua jalur: penyesuaian manual lewat controller maupun
+`sold_pos` dari `TransactionService`.
 
 ## Relasi
 

@@ -36,6 +36,13 @@ Line item penjualan (Kasir/POS, US5 + R6).
 ## Business Rules
 
 - Salah satu `product_id`/`service_id` terisi (item = produk ATAU layanan).
+  Ditegakkan database lewat CHECK `((product_id IS NULL) <> (service_id IS NULL))`,
+  bukan hanya FormRequest — seeder, tinker, dan impor pun tidak bisa
+  menembusnya.
+
+  ponytail: CHECK dan alter FK dilewati di SQLite (tidak mendukung keduanya
+  lewat ALTER), jadi `TransactionItemIntegrityTest` di-skip di sana.
+  Jalankan `phpunit.pgsql.xml` sebelum rilis.
 - `name` & `unit_price` snapshot agar transaksi lama tetap utuh walau master diubah (R6, FR-056).
 - Stok produk di-check (FR-053) & adjust (FR-052) saat simpan transaksi via `StockService` (StockMovement type `sold_pos`).
 

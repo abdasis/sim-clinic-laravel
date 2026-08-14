@@ -36,6 +36,7 @@ import {
   PaymentHistory,
   type PaymentRow,
 } from "../components/payment-history.tsx"
+import { TransactionStockImpact } from "../components/transaction-stock-impact.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/pos/transactions/$id")({
   component: TransactionDetailPage,
@@ -211,6 +212,17 @@ function TransactionDetailPage() {
             </CardHeader>
             <CardContent className="px-0">
               <PaymentHistory payments={data.payments ?? []} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {t("pos.stock_impact")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-0">
+              <TransactionStockImpact tenant={tenant} transactionId={id} />
             </CardContent>
           </Card>
         </div>
