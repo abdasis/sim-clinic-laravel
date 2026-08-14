@@ -7,7 +7,6 @@ use App\Enums\StockMovementType;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Transaction;
-use App\Models\TransactionItem;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 

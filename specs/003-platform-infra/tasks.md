@@ -220,5 +220,11 @@ Dengan multiple developer:
 - [Story] label = traceability ke spec.md
 - Sebagian besar BE Langkah 1 sudah ada — task hanya delta net-new + hardening (lihat plan.md "Summary")
 - Test SKIPPED iterasi ini (user: "fokus fungsi skip test") — `ponytail: tambah test TDD di iterasi berikutnya sebelum push/merge` (Konstitusi II)
+- Status implementasi: seluruh task 003 sudah dikerjakan. Verifikasi dilakukan
+  manual lewat `php artisan tinker` dan request HTTP ke `php artisan serve`,
+  bukan test otomatis. Cakupan yang belum bertest: migrasi audit log ke spatie,
+  isolasi role per tenant, guard admin terakhir, soft-delete staf, dan hardening
+  slug registrasi. `ponytail: tulis feature test untuk kelima area itu di
+  iterasi berikutnya sebelum merge ke rilis`.
 - Setiap perubahan BE: jalankan `php -l` (user). Setiap perubahan FE: `npx tsc --noEmit --incremental` + `bun run generate-routes` bila route baru (user). Tidak auto-run dev/build.
 - Commit setelah task/kelompok logis selesai. Commit message Conventional Commits, tanpa AI marker.
