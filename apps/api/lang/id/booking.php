@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'conflict' => 'Bentrokan',
+    'patient_locked_note' => 'Pasien terkunci karena rekam medis sudah ada.',
+    'patient_immutable' => 'Pasien tidak dapat diubah karena rekam medis sudah ada.',
+    'edit' => 'Ubah Booking',
     'title' => 'Booking',
     'patient' => 'Pasien',
     'service' => 'Layanan',

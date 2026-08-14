@@ -15,11 +15,13 @@ class UpdateBookingAction
      */
     public function handle(Booking $booking, array $attributes): Booking
     {
+        $this->guardPatientImmutability($booking, $attributes);
+
         $old = $booking->only(array_keys($attributes));
 
         $booking->update($attributes);
 
-        $booking->load('patient', 'service', 'assignee');
+        $booking->load('patient', 'service', 'assignee', 'medicalRecord');
 
         app(LogAuditAction::class)->handle(
             'booking.updated',
@@ -30,5 +32,26 @@ class UpdateBookingAction
         );
 
         return $booking;
+    }
+
+    /**
+     * Lapis kedua setelah FormRequest: pemanggilan langsung dari service atau
+     * command tetap tidak boleh memindahkan booking yang sudah punya rekam medis.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function guardPatientImmutability(Booking $booking, array $attributes): void
+    {
+        if (! isset($attributes['patient_id'])) {
+            return;
+        }
+
+        if ((int) $attributes['patient_id'] === $booking->patient_id) {
+            return;
+        }
+
+        if ($booking->medicalRecord()->exists()) {
+            abort(422, __('booking.patient_immutable'));
+        }
     }
 }

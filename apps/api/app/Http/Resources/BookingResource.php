@@ -19,6 +19,11 @@ class BookingResource extends JsonResource
             'assignee_name' => $this->whenLoaded('assignee', fn () => $this->assignee?->name),
             'start_at' => $this->start_at?->toIso8601String(),
             'end_at' => $this->end_at?->toIso8601String(),
+            // whenLoaded() mengembalikan null saat relasi ter-load tapi kosong,
+            // sehingga tidak bisa dipakai untuk flag boolean.
+            'has_medical_record' => $this->relationLoaded('medicalRecord')
+                ? $this->medicalRecord !== null
+                : false,
             'status' => $this->status,
             'status_label' => $this->status?->label(),
             'notes' => $this->notes,

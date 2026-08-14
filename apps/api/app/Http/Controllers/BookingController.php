@@ -70,7 +70,7 @@ class BookingController extends Controller
         $this->authorize('view', $booking);
 
         return response()->json([
-            'data' => new BookingResource($booking->load('patient', 'service', 'assignee')),
+            'data' => new BookingResource($booking->load('patient', 'service', 'assignee', 'medicalRecord')),
             'meta' => [],
         ]);
     }

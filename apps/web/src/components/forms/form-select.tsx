@@ -1,6 +1,7 @@
 import type { Control, FieldPath, FieldValues } from "react-hook-form"
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -22,6 +23,9 @@ interface FormSelectProps<T extends FieldValues> {
   label: string
   options: SelectOption[]
   placeholder?: string
+  disabled?: boolean
+  /** Keterangan kecil di bawah field, mis. alasan field terkunci. */
+  description?: string
 }
 
 export function FormSelect<T extends FieldValues>({
@@ -30,6 +34,8 @@ export function FormSelect<T extends FieldValues>({
   label,
   options,
   placeholder,
+  disabled,
+  description,
 }: FormSelectProps<T>) {
   return (
     <FormField
@@ -39,7 +45,7 @@ export function FormSelect<T extends FieldValues>({
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <NativeSelect {...field} value={field.value ?? ""}>
+            <NativeSelect {...field} value={field.value ?? ""} disabled={disabled}>
               {placeholder ? <NativeSelectOption value="">{placeholder}</NativeSelectOption> : null}
               {options.map((opt) => (
                 <NativeSelectOption key={opt.value} value={opt.value}>
@@ -48,6 +54,7 @@ export function FormSelect<T extends FieldValues>({
               ))}
             </NativeSelect>
           </FormControl>
+          {description ? <FormDescription>{description}</FormDescription> : null}
           <FormMessage />
         </FormItem>
       )}

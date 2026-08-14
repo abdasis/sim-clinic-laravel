@@ -17,7 +17,7 @@ import { ScheduleGrid } from "#/components/schedule/schedule-grid.tsx"
 import type { ScheduleBooking } from "#/components/schedule/schedule-grid.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
-import { BookingFormModal } from "./components/booking-form-modal.tsx"
+import { BookingFormDialog } from "./components/booking-form-dialog.tsx"
 import { BookingStatusAction } from "./components/booking-status-action.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/bookings/")({
@@ -42,6 +42,8 @@ function BookingsPage() {
   const { t } = useTrans()
   const [view, setView] = useState<View>("day")
   const [date, setDate] = useState(() => format(new Date(), "yyyy-MM-dd"))
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | undefined>(undefined)
 
   const { from, to } = computeRange(date, view)
 
@@ -56,12 +58,14 @@ function BookingsPage() {
 
   const bookings = data?.data ?? []
 
+  // Bentrokan: penanggung jawab sama dan rentang waktunya saling menimpa.
+  const conflictingIds = findConflictingIds(bookings)
+
   return (
     <div>
       <ClinicBreadcrumb
         items={[
-          { label: tenant, to: "/$tenant/clinic/services", params: { tenant } },
-          { label: t("clinic.clinic") },
+          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
           { label: t("booking.title") },
         ]}
       />
@@ -92,9 +96,23 @@ function BookingsPage() {
               {t("booking.view_week")}
             </Button>
           </div>
-          <BookingFormModal tenant={tenant} />
+          <Button
+            onClick={() => {
+              setEditingId(undefined)
+              setFormOpen(true)
+            }}
+          >
+            {t("booking.add")}
+          </Button>
         </div>
       </div>
+
+      <BookingFormDialog
+        tenant={tenant}
+        bookingId={editingId}
+        open={formOpen}
+        onOpenChange={setFormOpen}
+      />
 
       {isLoading ? (
         <Card className="items-center justify-center py-10">
@@ -131,9 +149,22 @@ function BookingsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {conflictingIds.has(booking.id) ? (
+                  <Badge variant="destructive">{t("booking.conflict")}</Badge>
+                ) : null}
                 <Badge variant="outline">
                   {t(`clinic.booking_status.${booking.status}`)}
                 </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingId(booking.id)
+                    setFormOpen(true)
+                  }}
+                >
+                  {t("general.edit")}
+                </Button>
                 <BookingStatusAction tenant={tenant} booking={booking} />
               </div>
             </div>
@@ -142,4 +173,33 @@ function BookingsPage() {
       </Card>
     </div>
   )
+}
+
+/**
+ * Dua booking dianggap bentrok bila penanggung jawabnya sama dan rentang
+ * waktunya saling menimpa. Booking batal tidak dihitung.
+ */
+function findConflictingIds(bookings: ScheduleBooking[]): Set<number> {
+  const conflicting = new Set<number>()
+  const active = bookings.filter((b) => b.status !== "cancelled")
+
+  for (let i = 0; i < active.length; i++) {
+    for (let j = i + 1; j < active.length; j++) {
+      const a = active[i]
+      const b = active[j]
+
+      if (a.assignee_id !== b.assignee_id) continue
+
+      const overlap =
+        parseISO(a.start_at) < parseISO(b.end_at) &&
+        parseISO(a.end_at) > parseISO(b.start_at)
+
+      if (overlap) {
+        conflicting.add(a.id)
+        conflicting.add(b.id)
+      }
+    }
+  }
+
+  return conflicting
 }

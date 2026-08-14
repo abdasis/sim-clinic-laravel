@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -8,17 +8,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "#/components/ui/dialog.tsx"
 import { Form } from "#/components/ui/form.tsx"
-import { Button } from "#/components/ui/button.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
 import type { SelectOption } from "#/components/forms/form-select.tsx"
 import { FormDatePicker } from "#/components/forms/form-date-picker.tsx"
+import { FormTextarea } from "#/components/forms/form-textarea.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { apiGet, apiPost } from "#/lib/api.ts"
+import { apiGet, apiPost, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 
 interface OptionRow {
@@ -45,6 +44,7 @@ const schema = z.object({
   assignee_id: z.string().min(1),
   start_at: z.string().min(1),
   end_at: z.string().min(1),
+  notes: z.string().optional(),
 })
 
 type Values = z.infer<typeof schema>
@@ -55,19 +55,77 @@ function toOptions(rows: OptionRow[]): SelectOption[] {
   return rows.map((row) => ({ label: row.name, value: String(row.id) }))
 }
 
-export function BookingFormModal({ tenant }: { tenant: string }) {
+export interface BookingFormValues {
+  id: number
+  patient_id: number
+  service_id: number
+  assignee_id: number
+  start_at: string
+  end_at: string
+  notes?: string | null
+  has_medical_record?: boolean
+}
+
+interface BookingFormDialogProps {
+  tenant: string
+  /** Diisi untuk mode ubah; kosong berarti mode tambah. */
+  bookingId?: number
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+const emptyValues: Values = {
+  patient_id: "",
+  service_id: "",
+  assignee_id: "",
+  start_at: "",
+  end_at: "",
+  notes: "",
+}
+
+export function BookingFormDialog({
+  tenant,
+  bookingId,
+  open,
+  onOpenChange,
+}: BookingFormDialogProps) {
   const { t } = useTrans()
-  const [open, setOpen] = useState(false)
   const qc = useQueryClient()
-  const form = useForm(schema, {
-    defaultValues: {
-      patient_id: "",
-      service_id: "",
-      assignee_id: "",
-      start_at: "",
-      end_at: "",
-    },
+  const isEdit = bookingId !== undefined
+
+  // Daftar jadwal hanya mengirim data ringkas; detail lengkap termasuk
+  // has_medical_record hanya tersedia lewat endpoint show.
+  const detail = useQuery({
+    queryKey: ["bookings", tenant, bookingId],
+    queryFn: () =>
+      apiGet<{ data: BookingFormValues }>(
+        `/${tenant}/clinic/bookings/${bookingId}`,
+      ),
+    enabled: open && isEdit,
   })
+
+  const booking = detail.data?.data
+
+  // Rekam medis terikat pada pasiennya, jadi pasien dikunci setelah ditulis.
+  const patientLocked = booking?.has_medical_record === true
+  const form = useForm(schema, { defaultValues: emptyValues })
+
+  useEffect(() => {
+    if (!open) return
+
+    form.reset(
+      booking
+        ? {
+            patient_id: String(booking.patient_id),
+            service_id: String(booking.service_id),
+            assignee_id: String(booking.assignee_id),
+            start_at: booking.start_at,
+            end_at: booking.end_at,
+            notes: booking.notes ?? "",
+          }
+        : emptyValues,
+    )
+  }, [open, booking, form])
 
   const patients = useQuery({
     queryKey: ["patients", tenant, "options"],
@@ -99,16 +157,22 @@ export function BookingFormModal({ tenant }: { tenant: string }) {
   )
 
   const mutation = useMutation({
-    mutationFn: (values: Values) =>
-      apiPost<BookingResponse>(`/${tenant}/clinic/bookings`, {
+    mutationFn: (values: Values) => {
+      const payload = {
         patient_id: Number(values.patient_id),
         service_id: Number(values.service_id),
         assignee_id: Number(values.assignee_id),
         start_at: values.start_at,
         end_at: values.end_at,
-      }),
+        notes: values.notes || undefined,
+      }
+
+      return isEdit
+        ? apiPut<BookingResponse>(`/${tenant}/clinic/bookings/${bookingId}`, payload)
+        : apiPost<BookingResponse>(`/${tenant}/clinic/bookings`, payload)
+    },
     onSuccess: (res) => {
-      toast.success(t("booking.created"))
+      toast.success(isEdit ? t("booking.updated") : t("booking.created"))
       const warnings = res.meta?.overlap_warnings ?? []
       if (warnings.length > 0) {
         toast.warning(t("clinic.overlap_warning"), {
@@ -118,7 +182,8 @@ export function BookingFormModal({ tenant }: { tenant: string }) {
         })
       }
       qc.invalidateQueries({ queryKey: ["bookings-schedule"] })
-      setOpen(false)
+      qc.invalidateQueries({ queryKey: ["bookings"] })
+      onOpenChange(false)
       form.reset()
     },
     onError: (err: ApiError) => {
@@ -128,13 +193,10 @@ export function BookingFormModal({ tenant }: { tenant: string }) {
   })
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>{t("booking.add")}</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("booking.add")}</DialogTitle>
+          <DialogTitle>{isEdit ? t("booking.edit") : t("booking.add")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -147,6 +209,8 @@ export function BookingFormModal({ tenant }: { tenant: string }) {
               label={t("booking.patient")}
               placeholder={t("general.search")}
               options={toOptions(patients.data?.data ?? [])}
+              disabled={patientLocked}
+              description={patientLocked ? t("booking.patient_locked_note") : undefined}
             />
             <FormSelect
               control={form.control}
@@ -173,6 +237,11 @@ export function BookingFormModal({ tenant }: { tenant: string }) {
               name="end_at"
               label={t("booking.end_at")}
               withTime
+            />
+            <FormTextarea
+              control={form.control}
+              name="notes"
+              label={t("booking.notes")}
             />
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>

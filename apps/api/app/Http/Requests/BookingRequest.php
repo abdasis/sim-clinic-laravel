@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\ClinicRole;
+use App\Models\Booking;
 use App\Models\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -41,6 +42,31 @@ class BookingRequest extends FormRequest
                 $validator->errors()->add('assignee_id', __('booking.invalid_assignee'));
             }
         });
+
+        $validator->after(function (Validator $validator): void {
+            if ($this->patientIsBeingReassignedAfterMedicalRecord()) {
+                $validator->errors()->add('patient_id', __('booking.patient_immutable'));
+            }
+        });
+    }
+
+    /**
+     * Rekam medis terikat pada pasiennya; memindahkan booking ke pasien lain
+     * setelah rekam medis ditulis akan membuat riwayat klinis salah orang.
+     */
+    private function patientIsBeingReassignedAfterMedicalRecord(): bool
+    {
+        $booking = $this->route('booking');
+
+        if (! $booking instanceof Booking || $this->input('patient_id') === null) {
+            return false;
+        }
+
+        if ((int) $this->input('patient_id') === $booking->patient_id) {
+            return false;
+        }
+
+        return $booking->medicalRecord()->exists();
     }
 
     public function attributes(): array
