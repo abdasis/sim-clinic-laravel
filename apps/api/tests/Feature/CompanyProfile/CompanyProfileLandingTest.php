@@ -79,7 +79,10 @@ class CompanyProfileLandingTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'is_active' => false,
         ]);
-        CompanyPromo::factory()->expired()->create(['tenant_id' => $this->tenant->id]);
+        CompanyPromo::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'is_active' => false,
+        ]);
 
         $this->getJson($this->profileUrl())
             ->assertOk()
@@ -99,29 +102,30 @@ class CompanyProfileLandingTest extends TestCase
             ->assertJsonCount(1, 'data.navigation.footer');
     }
 
-    public function test_content_is_returned_in_the_requested_language(): void
+    public function test_content_is_sent_as_a_language_map(): void
     {
         CompanyProfileSetting::factory()->create([
             'tenant_id' => $this->tenant->id,
-            'tagline' => ['id' => 'Halo', 'en' => 'Hello'],
+            'site_name' => ['id' => 'Halo', 'en' => 'Hello'],
         ]);
 
+        // Frontend yang memilih bahasanya, jadi kedua versi ikut terkirim.
         $this->getJson($this->profileUrl())
-            ->assertJsonPath('data.settings.tagline', 'Halo');
-
-        $this->getJson($this->profileUrl('locale=en'))
-            ->assertJsonPath('data.settings.tagline', 'Hello');
+            ->assertJsonPath('data.settings.site_name.id', 'Halo')
+            ->assertJsonPath('data.settings.site_name.en', 'Hello');
     }
 
-    public function test_missing_translation_falls_back_to_indonesian(): void
+    public function test_requested_locale_is_reported_in_meta(): void
     {
         CompanyProfileSetting::factory()->create([
             'tenant_id' => $this->tenant->id,
-            'tagline' => ['id' => 'Hanya Indonesia'],
+            'default_locale' => 'id',
         ]);
 
-        $this->getJson($this->profileUrl('locale=en'))
-            ->assertJsonPath('data.settings.tagline', 'Hanya Indonesia');
+        $this->getJson($this->profileUrl())->assertJsonPath('meta.locale', 'id');
+        $this->getJson($this->profileUrl('locale=en'))->assertJsonPath('meta.locale', 'en');
+        // Nilai asing tidak boleh lolos jadi petunjuk render.
+        $this->getJson($this->profileUrl('locale=fr'))->assertJsonPath('meta.locale', 'id');
     }
 
     public function test_landing_never_shows_another_tenants_content(): void

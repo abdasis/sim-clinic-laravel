@@ -17,8 +17,9 @@ class CompanyBrand extends Model
     protected $fillable = [
         'tenant_id',
         'name',
+        'description',
         'logo_path',
-        'url',
+        'external_url',
         'sort_order',
         'is_active',
     ];
@@ -26,6 +27,8 @@ class CompanyBrand extends Model
     protected function casts(): array
     {
         return [
+            'name' => 'array',
+            'description' => 'array',
             'is_active' => 'boolean',
         ];
     }

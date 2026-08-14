@@ -24,13 +24,13 @@ class CompanyContentSection extends Model
     protected $fillable = [
         'tenant_id',
         'section_key',
-        'layout',
         'title',
         'body',
         'image_path',
         'cta_label',
+        'cta_url',
         'cta_type',
-        'cta_value',
+        'layout_type',
         'is_active',
     ];
 
@@ -38,7 +38,7 @@ class CompanyContentSection extends Model
     {
         return [
             'section_key' => CompanySectionKey::class,
-            'layout' => CompanySectionLayout::class,
+            'layout_type' => CompanySectionLayout::class,
             'cta_type' => CompanyCtaType::class,
             'title' => 'array',
             'body' => 'array',

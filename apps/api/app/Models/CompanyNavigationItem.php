@@ -18,12 +18,13 @@ class CompanyNavigationItem extends Model
 
     protected $fillable = [
         'tenant_id',
-        'position',
         'label',
+        'url',
         'link_type',
-        'link_value',
+        'position',
         'sort_order',
         'is_active',
+        'is_cta',
     ];
 
     protected function casts(): array
@@ -33,6 +34,7 @@ class CompanyNavigationItem extends Model
             'link_type' => CompanyLinkType::class,
             'label' => 'array',
             'is_active' => 'boolean',
+            'is_cta' => 'boolean',
         ];
     }
 }

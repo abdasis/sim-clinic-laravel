@@ -15,20 +15,17 @@ class CompanyTreatmentFactory extends Factory
 
     public function definition(): array
     {
-        $name = fake()->randomElement(['Facial Glow', 'Chemical Peeling', 'Laser Rejuvenation']);
+        $title = fake()->randomElement(['Facial Glow', 'Chemical Peeling', 'Laser Rejuvenation']);
 
         return [
             'service_id' => null,
             'slug' => fake()->unique()->slug(2),
-            'name' => ['id' => $name, 'en' => $name],
-            'excerpt' => ['id' => fake()->sentence(), 'en' => fake()->sentence()],
-            'description' => [
-                'id' => CompanyValuePropFactory::richText(fake()->paragraph()),
-                'en' => CompanyValuePropFactory::richText(fake()->paragraph()),
-            ],
+            'title' => ['id' => $title, 'en' => $title],
+            'description' => ['id' => fake()->sentence(), 'en' => fake()->sentence()],
             'image_path' => 'company-profile/treatments/'.fake()->uuid().'.jpg',
             'badge' => null,
-            'price_label' => 'Mulai '.fake()->numberBetween(150, 900).'rb',
+            'category_tags' => ['rejuvenation'],
+            'detail_url' => null,
             'sort_order' => 0,
             'is_active' => true,
         ];

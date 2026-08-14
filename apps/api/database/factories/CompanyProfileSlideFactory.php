@@ -20,8 +20,8 @@ class CompanyProfileSlideFactory extends Factory
             'subtitle' => ['id' => fake()->sentence(), 'en' => fake()->sentence()],
             'image_path' => 'company-profile/slides/'.fake()->uuid().'.jpg',
             'cta_label' => ['id' => 'Booking Sekarang', 'en' => 'Book Now'],
+            'cta_url' => '/booking',
             'cta_type' => CompanyCtaType::RouteInternal,
-            'cta_value' => '/booking',
             'sort_order' => 0,
             'is_active' => true,
         ];

@@ -70,6 +70,7 @@ return [
     'read_more' => 'Read more',
     'view_all_treatments' => 'View all treatments',
     'language' => 'Language',
+    'since_year' => 'Customer since :year',
 
     'created' => 'Content added.',
     'updated' => 'Content updated.',

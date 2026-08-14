@@ -26,6 +26,8 @@ use Illuminate\Database\Seeder;
  */
 class CompanyProfileDemoSeeder extends Seeder
 {
+    private const WHATSAPP = 'https://wa.me/6281234567890';
+
     public function run(): void
     {
         $tenant = Tenant::query()->where('slug', 'demo')->first();
@@ -54,30 +56,22 @@ class CompanyProfileDemoSeeder extends Seeder
         CompanyProfileSetting::query()->updateOrCreate(
             ['tenant_id' => $tenantId],
             [
-                'is_published' => true,
-                'brand_name' => ['id' => 'Klinik Cantik Demo', 'en' => 'Demo Beauty Clinic'],
-                'tagline' => [
-                    'id' => 'Rawat kulitmu, tenang dan terukur.',
-                    'en' => 'Care for your skin, calmly and precisely.',
-                ],
-                'phone' => '021-5550123',
-                'whatsapp' => '081234567890',
-                'email' => 'halo@klinikcantik.test',
-                'address' => [
-                    'id' => 'Jl. Melati No. 12, Jakarta Selatan',
-                    'en' => 'Jl. Melati No. 12, South Jakarta',
-                ],
+                'site_name' => ['id' => 'Klinik Cantik Demo', 'en' => 'Demo Beauty Clinic'],
+                'copyright_text' => 'Klinik Cantik Demo',
+                'chat_channels' => [[
+                    'type' => 'whatsapp',
+                    'url' => self::WHATSAPP,
+                    'label' => ['id' => 'Chat WhatsApp', 'en' => 'Chat on WhatsApp'],
+                ]],
                 'social_links' => [
-                    'instagram' => 'https://instagram.com/klinikcantikdemo',
-                    'tiktok' => 'https://tiktok.com/@klinikcantikdemo',
+                    ['platform' => 'instagram', 'url' => 'https://instagram.com/klinikcantikdemo', 'icon' => 'instagram'],
+                    ['platform' => 'tiktok', 'url' => 'https://tiktok.com/@klinikcantikdemo', 'icon' => 'tiktok'],
                 ],
-                'meta_title' => ['id' => 'Klinik Cantik Demo', 'en' => 'Demo Beauty Clinic'],
-                'meta_description' => [
-                    'id' => 'Perawatan wajah dan kulit oleh dokter berpengalaman.',
-                    'en' => 'Face and skin treatments by experienced doctors.',
+                'marketplace_links' => [
+                    ['name' => 'Tokopedia', 'url' => 'https://tokopedia.com/klinikcantikdemo', 'icon' => 'shopping-bag'],
                 ],
-                'chat_widget_enabled' => true,
-                'chat_widget_number' => '081234567890',
+                'default_locale' => 'id',
+                'is_published' => true,
             ],
         );
     }
@@ -85,22 +79,23 @@ class CompanyProfileDemoSeeder extends Seeder
     private function seedNavigation(int $tenantId): void
     {
         $items = [
-            ['#keunggulan', ['id' => 'Keunggulan', 'en' => 'Highlights'], CompanyNavPosition::Header, 1],
-            ['#treatment', ['id' => 'Treatment', 'en' => 'Treatments'], CompanyNavPosition::Header, 2],
-            ['#promo', ['id' => 'Promo', 'en' => 'Promos'], CompanyNavPosition::Header, 3],
-            ['#testimoni', ['id' => 'Testimoni', 'en' => 'Testimonials'], CompanyNavPosition::Header, 4],
-            ['#booking', ['id' => 'Booking', 'en' => 'Booking'], CompanyNavPosition::Footer, 1],
-            ['#estore', ['id' => 'Belanja Produk', 'en' => 'Shop Products'], CompanyNavPosition::Footer, 2],
+            ['#keunggulan', ['id' => 'Keunggulan', 'en' => 'Highlights'], CompanyNavPosition::Header, 1, false],
+            ['#treatment', ['id' => 'Treatment', 'en' => 'Treatments'], CompanyNavPosition::Header, 2, false],
+            ['#promo', ['id' => 'Promo', 'en' => 'Promos'], CompanyNavPosition::Header, 3, false],
+            ['#booking', ['id' => 'Online Booking', 'en' => 'Online Booking'], CompanyNavPosition::Header, 4, true],
+            ['#testimoni', ['id' => 'Testimoni', 'en' => 'Testimonials'], CompanyNavPosition::Footer, 1, false],
+            ['#estore', ['id' => 'Belanja Produk', 'en' => 'Shop Products'], CompanyNavPosition::Footer, 2, false],
         ];
 
-        foreach ($items as [$link, $label, $position, $order]) {
+        foreach ($items as [$url, $label, $position, $order, $isCta]) {
             CompanyNavigationItem::query()->updateOrCreate(
-                ['tenant_id' => $tenantId, 'link_value' => $link, 'position' => $position],
+                ['tenant_id' => $tenantId, 'url' => $url, 'position' => $position],
                 [
                     'label' => $label,
                     'link_type' => CompanyLinkType::AnchorSection,
                     'sort_order' => $order,
                     'is_active' => true,
+                    'is_cta' => $isCta,
                 ],
             );
         }
@@ -129,8 +124,8 @@ class CompanyProfileDemoSeeder extends Seeder
                     'subtitle' => $subtitle,
                     'image_path' => 'company-profile/demo/hero-'.$order.'.jpg',
                     'cta_label' => ['id' => 'Booking Sekarang', 'en' => 'Book Now'],
+                    'cta_url' => self::WHATSAPP,
                     'cta_type' => CompanyCtaType::Whatsapp,
-                    'cta_value' => '081234567890',
                     'is_active' => true,
                 ],
             );
@@ -151,7 +146,7 @@ class CompanyProfileDemoSeeder extends Seeder
                 [
                     'icon' => $icon,
                     'title' => $title,
-                    'description' => $this->richTextPair($description),
+                    'description' => $description,
                     'is_active' => true,
                 ],
             );
@@ -161,21 +156,20 @@ class CompanyProfileDemoSeeder extends Seeder
     private function seedTreatments(int $tenantId): void
     {
         $treatments = [
-            ['facial-glow', ['id' => 'Facial Glow', 'en' => 'Facial Glow'], ['id' => 'Membersihkan dan mencerahkan wajah dalam 60 menit.', 'en' => 'Cleanses and brightens your face in 60 minutes.'], CompanyTreatmentBadge::Featured, 'Mulai 250rb'],
-            ['chemical-peeling', ['id' => 'Chemical Peeling', 'en' => 'Chemical Peeling'], ['id' => 'Meratakan tekstur kulit dan menyamarkan bekas jerawat.', 'en' => 'Evens skin texture and fades acne scars.'], null, 'Mulai 400rb'],
-            ['laser-rejuvenation', ['id' => 'Laser Rejuvenation', 'en' => 'Laser Rejuvenation'], ['id' => 'Meremajakan kulit dengan waktu pemulihan singkat.', 'en' => 'Rejuvenates skin with short downtime.'], CompanyTreatmentBadge::Current, 'Mulai 900rb'],
+            ['facial-glow', ['id' => 'Facial Glow', 'en' => 'Facial Glow'], ['id' => 'Membersihkan dan mencerahkan wajah dalam 60 menit.', 'en' => 'Cleanses and brightens your face in 60 minutes.'], CompanyTreatmentBadge::Featured, ['facial', 'rejuvenation']],
+            ['chemical-peeling', ['id' => 'Chemical Peeling', 'en' => 'Chemical Peeling'], ['id' => 'Meratakan tekstur kulit dan menyamarkan bekas jerawat.', 'en' => 'Evens skin texture and fades acne scars.'], null, ['acne']],
+            ['laser-rejuvenation', ['id' => 'Laser Rejuvenation', 'en' => 'Laser Rejuvenation'], ['id' => 'Meremajakan kulit dengan waktu pemulihan singkat.', 'en' => 'Rejuvenates skin with short downtime.'], CompanyTreatmentBadge::Current, ['laser', 'rejuvenation']],
         ];
 
-        foreach ($treatments as $index => [$slug, $name, $excerpt, $badge, $price]) {
+        foreach ($treatments as $index => [$slug, $title, $description, $badge, $tags]) {
             CompanyTreatment::query()->updateOrCreate(
                 ['tenant_id' => $tenantId, 'slug' => $slug],
                 [
-                    'name' => $name,
-                    'excerpt' => $excerpt,
-                    'description' => $this->richTextPair($excerpt),
+                    'title' => $title,
+                    'description' => $description,
                     'image_path' => 'company-profile/demo/'.$slug.'.jpg',
                     'badge' => $badge,
-                    'price_label' => $price,
+                    'category_tags' => $tags,
                     'sort_order' => $index + 1,
                     'is_active' => true,
                 ],
@@ -195,8 +189,8 @@ class CompanyProfileDemoSeeder extends Seeder
                 ]),
                 'image_path' => 'company-profile/demo/promo-berdua.jpg',
                 'cta_label' => ['id' => 'Ambil Promo', 'en' => 'Claim Promo'],
+                'cta_url' => self::WHATSAPP,
                 'cta_type' => CompanyCtaType::Whatsapp,
-                'cta_value' => '081234567890',
                 'is_active' => true,
             ],
         );
@@ -204,12 +198,19 @@ class CompanyProfileDemoSeeder extends Seeder
 
     private function seedBrands(int $tenantId): void
     {
-        foreach (['Dermalogica', 'La Roche-Posay', 'SkinCeuticals'] as $index => $name) {
+        $brands = [
+            ['Dermalogica', ['id' => 'Perawatan kulit profesional.', 'en' => 'Professional skincare.']],
+            ['La Roche-Posay', ['id' => 'Direkomendasikan dermatolog.', 'en' => 'Dermatologist recommended.']],
+            ['SkinCeuticals', ['id' => 'Formula berbasis riset.', 'en' => 'Research-backed formulas.']],
+        ];
+
+        foreach ($brands as $index => [$name, $description]) {
             CompanyBrand::query()->updateOrCreate(
-                ['tenant_id' => $tenantId, 'name' => $name],
+                ['tenant_id' => $tenantId, 'sort_order' => $index + 1],
                 [
+                    'name' => ['id' => $name, 'en' => $name],
+                    'description' => $description,
                     'logo_path' => 'company-profile/demo/brand-'.($index + 1).'.png',
-                    'sort_order' => $index + 1,
                     'is_active' => true,
                 ],
             );
@@ -219,17 +220,16 @@ class CompanyProfileDemoSeeder extends Seeder
     private function seedTestimonials(int $tenantId): void
     {
         $testimonials = [
-            ['Nadia P.', ['id' => 'Pasien Facial', 'en' => 'Facial Patient'], ['id' => 'Kulit terasa jauh lebih halus setelah tiga kali datang. Dokternya sabar menjelaskan.', 'en' => 'My skin feels much smoother after three visits. The doctor explains everything patiently.']],
-            ['Rangga S.', ['id' => 'Pasien Laser', 'en' => 'Laser Patient'], ['id' => 'Prosesnya cepat dan tidak menakutkan seperti yang saya bayangkan.', 'en' => 'The procedure was quick and far less scary than I imagined.']],
+            ['Nadia P.', 2022, ['id' => 'Kulit terasa jauh lebih halus setelah tiga kali datang. Dokternya sabar menjelaskan.', 'en' => 'My skin feels much smoother after three visits. The doctor explains everything patiently.']],
+            ['Rangga S.', 2024, ['id' => 'Prosesnya cepat dan tidak menakutkan seperti yang saya bayangkan.', 'en' => 'The procedure was quick and far less scary than I imagined.']],
         ];
 
-        foreach ($testimonials as $index => [$author, $role, $quote]) {
+        foreach ($testimonials as $index => [$author, $since, $quote]) {
             CompanyTestimonial::query()->updateOrCreate(
                 ['tenant_id' => $tenantId, 'author_name' => $author],
                 [
-                    'author_role' => $role,
                     'quote' => $this->richTextPair($quote),
-                    'rating' => 5,
+                    'since_year' => $since,
                     'sort_order' => $index + 1,
                     'is_active' => true,
                 ],
@@ -256,7 +256,7 @@ class CompanyProfileDemoSeeder extends Seeder
                 ['id' => 'Pilih jadwal yang pas, kami konfirmasi lewat WhatsApp.', 'en' => 'Pick a time that suits you; we confirm over WhatsApp.'],
                 ['id' => 'Booking Sekarang', 'en' => 'Book Now'],
                 CompanyCtaType::Whatsapp,
-                '081234567890',
+                self::WHATSAPP,
             ],
             [
                 CompanySectionKey::EstoreCta,
@@ -269,16 +269,16 @@ class CompanyProfileDemoSeeder extends Seeder
             ],
         ];
 
-        foreach ($sections as [$key, $layout, $title, $body, $ctaLabel, $ctaType, $ctaValue]) {
+        foreach ($sections as [$key, $layout, $title, $body, $ctaLabel, $ctaType, $ctaUrl]) {
             CompanyContentSection::query()->updateOrCreate(
                 ['tenant_id' => $tenantId, 'section_key' => $key],
                 [
-                    'layout' => $layout,
                     'title' => $title,
                     'body' => $this->richTextPair($body),
                     'cta_label' => $ctaLabel,
+                    'cta_url' => $ctaUrl,
                     'cta_type' => $ctaType,
-                    'cta_value' => $ctaValue,
+                    'layout_type' => $layout,
                     'is_active' => true,
                 ],
             );

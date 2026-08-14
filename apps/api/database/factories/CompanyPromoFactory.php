@@ -23,21 +23,10 @@ class CompanyPromoFactory extends Factory
             ],
             'image_path' => 'company-profile/promos/'.fake()->uuid().'.jpg',
             'cta_label' => ['id' => 'Ambil Promo', 'en' => 'Claim Promo'],
+            'cta_url' => 'https://wa.me/6281234567890',
             'cta_type' => CompanyCtaType::Whatsapp,
-            'cta_value' => fake()->numerify('08##########'),
-            'starts_at' => null,
-            'ends_at' => null,
             'sort_order' => 0,
             'is_active' => true,
         ];
-    }
-
-    /** Promo yang masanya sudah lewat. */
-    public function expired(): static
-    {
-        return $this->state(fn () => [
-            'starts_at' => now()->subMonth(),
-            'ends_at' => now()->subDay(),
-        ]);
     }
 }

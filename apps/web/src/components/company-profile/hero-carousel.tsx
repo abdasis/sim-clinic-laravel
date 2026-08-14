@@ -11,6 +11,7 @@ import {
 import { cn } from "#/lib/utils.ts"
 import type { CompanySlide } from "#/hooks/use-company-profile.ts"
 import { CtaLink } from "./cta-link.tsx"
+import { useContentText } from "./locale-context.tsx"
 
 const ROTATE_MS = 6000
 
@@ -24,6 +25,7 @@ interface HeroCarouselProps {
  * slide yang lompat saat sedang dibaca lebih mengganggu daripada membantu.
  */
 export function HeroCarousel({ tenant, slides }: HeroCarouselProps) {
+  const text = useContentText()
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -63,43 +65,47 @@ export function HeroCarousel({ tenant, slides }: HeroCarouselProps) {
     >
       <Carousel setApi={setApi} opts={{ loop: true }}>
         <CarouselContent>
-          {slides.map((slide) => (
-            <CarouselItem key={slide.id}>
-              <div className="relative h-[380px] w-full overflow-hidden sm:h-[460px]">
-                {slide.image_url ? (
-                  <img
-                    src={slide.image_url}
-                    alt={slide.title ?? ""}
-                    className="absolute inset-0 size-full object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-muted" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent" />
-                <div className="relative mx-auto flex h-full w-full max-w-6xl items-center px-4">
-                  <div className="max-w-lg space-y-3">
-                    {slide.title ? (
-                      <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-                        {slide.title}
-                      </h1>
-                    ) : null}
-                    {slide.subtitle ? (
-                      <p className="text-sm leading-relaxed text-muted-foreground text-pretty sm:text-base">
-                        {slide.subtitle}
-                      </p>
-                    ) : null}
-                    <CtaLink
-                      tenant={tenant}
-                      label={slide.cta_label}
-                      type={slide.cta_type}
-                      value={slide.cta_value}
-                      className="mt-1"
+          {slides.map((slide) => {
+            const title = text(slide.title)
+
+            return (
+              <CarouselItem key={slide.id}>
+                <div className="relative h-[380px] w-full overflow-hidden sm:h-[460px]">
+                  {slide.image_url ? (
+                    <img
+                      src={slide.image_url}
+                      alt={title ?? ""}
+                      className="absolute inset-0 size-full object-cover"
                     />
+                  ) : (
+                    <div className="absolute inset-0 bg-muted" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent" />
+                  <div className="relative mx-auto flex h-full w-full max-w-6xl items-center px-4">
+                    <div className="max-w-lg space-y-3">
+                      {title ? (
+                        <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+                          {title}
+                        </h1>
+                      ) : null}
+                      {text(slide.subtitle) ? (
+                        <p className="text-sm leading-relaxed text-muted-foreground text-pretty sm:text-base">
+                          {text(slide.subtitle)}
+                        </p>
+                      ) : null}
+                      <CtaLink
+                        tenant={tenant}
+                        label={slide.cta_label}
+                        type={slide.cta_type}
+                        url={slide.cta_url}
+                        className="mt-1"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CarouselItem>
-          ))}
+              </CarouselItem>
+            )
+          })}
         </CarouselContent>
 
         {slides.length > 1 ? (

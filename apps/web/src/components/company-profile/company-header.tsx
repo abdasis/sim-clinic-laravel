@@ -12,8 +12,12 @@ import {
 } from "#/components/ui/sheet.tsx"
 import { cn } from "#/lib/utils.ts"
 import { CONTENT_LOCALES, type ContentLocale } from "#/lib/company-locale.ts"
-import type { CompanyNavItem, CompanySettings } from "#/hooks/use-company-profile.ts"
+import type {
+  CompanyNavItem,
+  CompanySettings,
+} from "#/hooks/use-company-profile.ts"
 import { internalHref } from "./cta-link.tsx"
+import { useContentText } from "./locale-context.tsx"
 
 interface CompanyHeaderProps {
   tenant: string
@@ -36,6 +40,7 @@ export function CompanyHeader({
   languageLabel,
   onLocaleChange,
 }: CompanyHeaderProps) {
+  const text = useContentText()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -48,7 +53,7 @@ export function CompanyHeader({
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  const brand = settings?.brand_name ?? tenant
+  const brand = text(settings?.site_name) ?? tenant
 
   return (
     <header
@@ -126,17 +131,23 @@ function NavLink({
   item: CompanyNavItem
   onNavigate?: () => void
 }) {
-  const className =
-    "rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+  const text = useContentText()
+
+  if (!item.url) return null
 
   const href =
     item.link_type === "route_internal"
-      ? internalHref(tenant, item.link_value)
+      ? internalHref(tenant, item.url)
       : item.link_type === "anchor_section"
-        ? item.link_value.startsWith("#")
-          ? item.link_value
-          : `#${item.link_value}`
-        : item.link_value
+        ? item.url.startsWith("#")
+          ? item.url
+          : `#${item.url}`
+        : item.url
+
+  // Satu-dua menu memang dimaksudkan tampil sebagai tombol, mis. booking.
+  const className = item.is_cta
+    ? "rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    : "rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 
   return (
     <a
@@ -147,7 +158,7 @@ function NavLink({
         ? { target: "_blank", rel: "noreferrer noopener" }
         : {})}
     >
-      {item.label}
+      {text(item.label)}
     </a>
   )
 }

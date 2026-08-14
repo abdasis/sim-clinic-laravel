@@ -1,5 +1,5 @@
 import type { CompanyValueProp } from "#/hooks/use-company-profile.ts"
-import { renderRichText } from "#/lib/tiptap-render.tsx"
+import { useContentText } from "./locale-context.tsx"
 import { SectionShell } from "./section-shell.tsx"
 
 interface ValuePropsSectionProps {
@@ -13,6 +13,8 @@ export function ValuePropsSection({
   heading,
   items,
 }: ValuePropsSectionProps) {
+  const text = useContentText()
+
   if (items.length === 0) return null
 
   return (
@@ -29,11 +31,11 @@ export function ValuePropsSection({
               </span>
             ) : null}
             <h3 className="text-sm font-semibold tracking-tight">
-              {item.title}
+              {text(item.title)}
             </h3>
-            <div className="prose prose-sm mt-1.5 max-w-none text-muted-foreground dark:prose-invert">
-              {renderRichText(item.description)}
-            </div>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+              {text(item.description)}
+            </p>
           </article>
         ))}
       </div>

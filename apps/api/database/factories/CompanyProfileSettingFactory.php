@@ -17,20 +17,22 @@ class CompanyProfileSettingFactory extends Factory
         $brand = fake()->company();
 
         return [
-            'is_published' => true,
-            'brand_name' => ['id' => $brand, 'en' => $brand],
-            'tagline' => ['id' => 'Rawat kulitmu dengan tenang', 'en' => 'Care for your skin, calmly'],
             'logo_path' => null,
-            'phone' => fake()->numerify('021#######'),
-            'whatsapp' => fake()->numerify('08##########'),
-            'email' => fake()->companyEmail(),
-            'address' => ['id' => fake()->address(), 'en' => fake()->address()],
-            'map_embed_url' => null,
-            'social_links' => ['instagram' => 'https://instagram.com/'.fake()->userName()],
-            'meta_title' => ['id' => $brand, 'en' => $brand],
-            'meta_description' => ['id' => fake()->sentence(), 'en' => fake()->sentence()],
-            'chat_widget_enabled' => false,
-            'chat_widget_number' => null,
+            'site_name' => ['id' => $brand, 'en' => $brand],
+            'copyright_text' => $brand,
+            'chat_channels' => [[
+                'type' => 'whatsapp',
+                'url' => 'https://wa.me/62'.fake()->numerify('8##########'),
+                'label' => ['id' => 'Chat WhatsApp', 'en' => 'Chat on WhatsApp'],
+            ]],
+            'social_links' => [[
+                'platform' => 'instagram',
+                'url' => 'https://instagram.com/'.fake()->userName(),
+                'icon' => 'instagram',
+            ]],
+            'marketplace_links' => [],
+            'default_locale' => 'id',
+            'is_published' => true,
         ];
     }
 

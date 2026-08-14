@@ -67,7 +67,7 @@ class CompanyProfileService
             'slides' => CompanyProfileSlide::active()->ordered()->get(),
             'value_props' => CompanyValueProp::active()->ordered()->get(),
             'treatments' => CompanyTreatment::active()->ordered()->get(),
-            'promos' => CompanyPromo::active()->running()->ordered()->get(),
+            'promos' => CompanyPromo::active()->ordered()->get(),
             'brands' => CompanyBrand::active()->ordered()->get(),
             'testimonials' => CompanyTestimonial::active()->ordered()->get(),
             'content_sections' => CompanyContentSection::active()

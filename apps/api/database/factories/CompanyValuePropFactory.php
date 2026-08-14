@@ -19,17 +19,15 @@ class CompanyValuePropFactory extends Factory
         return [
             'icon' => fake()->randomElement(['sparkles', 'shield-check', 'heart']),
             'title' => ['id' => $title, 'en' => $title],
-            'description' => [
-                'id' => self::richText(fake()->sentence()),
-                'en' => self::richText(fake()->sentence()),
-            ],
+            'description' => ['id' => fake()->sentence(), 'en' => fake()->sentence()],
             'sort_order' => 0,
             'is_active' => true,
         ];
     }
 
     /**
-     * Dokumen Tiptap paling sederhana: satu paragraf.
+     * Dokumen Tiptap paling sederhana: satu paragraf. Dipakai factory lain
+     * yang field-nya memang rich-text.
      *
      * @return array<string, mixed>
      */

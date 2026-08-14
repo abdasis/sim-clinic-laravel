@@ -6,17 +6,25 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
-import { normalizeWhatsapp } from "./cta-link.tsx"
+import type { ChatChannel } from "#/hooks/use-company-profile.ts"
+import { useContentText } from "./locale-context.tsx"
 
 interface ChatWidgetProps {
-  enabled: boolean
-  number?: string | null
-  label: string
+  channels: ChatChannel[]
+  fallbackLabel: string
 }
 
-/** Tombol chat mengambang. Nomornya diatur admin lewat pengaturan. */
-export function ChatWidget({ enabled, number, label }: ChatWidgetProps) {
-  if (!enabled || !number) return null
+/**
+ * Tombol chat mengambang. Kanal pertama yang diatur admin yang dipakai —
+ * satu tombol sudah cukup, daftar panjang justru menghalangi konten.
+ */
+export function ChatWidget({ channels, fallbackLabel }: ChatWidgetProps) {
+  const text = useContentText()
+  const channel = channels[0]
+
+  if (!channel?.url) return null
+
+  const label = text(channel.label) ?? fallbackLabel
 
   return (
     <Tooltip>
@@ -27,11 +35,7 @@ export function ChatWidget({ enabled, number, label }: ChatWidgetProps) {
           aria-label={label}
           className="fixed right-5 bottom-5 z-40 size-11 rounded-full shadow-sm transition-transform hover:scale-105 active:scale-95"
         >
-          <a
-            href={`https://wa.me/${normalizeWhatsapp(number)}`}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
+          <a href={channel.url} target="_blank" rel="noreferrer noopener">
             <MessageCircle className="size-5" />
           </a>
         </Button>

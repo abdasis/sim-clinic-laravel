@@ -4,31 +4,56 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\CompanyProfile\CompanyProfileLandingResource;
 use App\Http\Resources\CompanyProfile\CompanyTreatmentResource;
+use App\Models\CompanyProfileSetting;
 use App\Models\Tenant;
 use App\Services\CompanyProfileService;
+use App\Support\LocaleText;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * Landing publik company profile — dibaca pengunjung tanpa login.
  */
 class CompanyProfileController extends Controller
 {
-    public function index(CompanyProfileService $service): JsonResponse
+    public function index(Request $request, CompanyProfileService $service): JsonResponse
     {
         $tenant = app('tenant');
+        $data = $service->landingData($tenant);
 
         return response()->json([
-            'data' => new CompanyProfileLandingResource($service->landingData($tenant)),
-            'meta' => ['tenant' => $this->tenantSummary($tenant)],
+            'data' => new CompanyProfileLandingResource($data),
+            'meta' => [
+                'locale' => $this->locale($request, $data['settings']),
+                'tenant' => $this->tenantSummary($tenant),
+            ],
         ]);
     }
 
-    public function showTreatment(string $slug, CompanyProfileService $service): JsonResponse
+    public function showTreatment(Request $request, string $slug, CompanyProfileService $service): JsonResponse
     {
         return response()->json([
             'data' => new CompanyTreatmentResource($service->treatmentDetail($slug)),
-            'meta' => ['tenant' => $this->tenantSummary(app('tenant'))],
+            'meta' => [
+                'locale' => $this->locale($request, null),
+                'tenant' => $this->tenantSummary(app('tenant')),
+            ],
         ]);
+    }
+
+    /**
+     * Bahasa yang diminta pengunjung; jatuh ke default tenant lalu ke `id`.
+     * Konten dikirim sebagai peta bahasa, jadi ini sekadar petunjuk render.
+     */
+    private function locale(Request $request, ?CompanyProfileSetting $settings): string
+    {
+        $requested = $request->query('locale');
+
+        if (in_array($requested, LocaleText::SUPPORTED, true)) {
+            return $requested;
+        }
+
+        return $settings?->default_locale ?? LocaleText::FALLBACK;
     }
 
     /**

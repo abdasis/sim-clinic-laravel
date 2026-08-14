@@ -24,12 +24,12 @@ class CompanyTreatment extends Model
         'tenant_id',
         'service_id',
         'slug',
-        'name',
-        'excerpt',
+        'title',
         'description',
         'image_path',
         'badge',
-        'price_label',
+        'category_tags',
+        'detail_url',
         'sort_order',
         'is_active',
     ];
@@ -38,9 +38,9 @@ class CompanyTreatment extends Model
     {
         return [
             'badge' => CompanyTreatmentBadge::class,
-            'name' => 'array',
-            'excerpt' => 'array',
+            'title' => 'array',
             'description' => 'array',
+            'category_tags' => 'array',
             'is_active' => 'boolean',
         ];
     }

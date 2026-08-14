@@ -3,6 +3,7 @@ import type {
   CompanySettings,
 } from "#/hooks/use-company-profile.ts"
 import { internalHref } from "./cta-link.tsx"
+import { useContentText } from "./locale-context.tsx"
 
 interface CompanyFooterProps {
   tenant: string
@@ -11,17 +12,19 @@ interface CompanyFooterProps {
 }
 
 export function CompanyFooter({ tenant, settings, items }: CompanyFooterProps) {
-  const brand = settings?.brand_name ?? tenant
-  const socials = Object.entries(settings?.social_links ?? {})
+  const text = useContentText()
+  const brand = text(settings?.site_name) ?? tenant
+  const socials = settings?.social_links ?? []
+  const marketplaces = settings?.marketplace_links ?? []
 
   return (
     <footer className="border-t border-border/50 bg-muted/30">
       <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-2">
           <p className="text-sm font-semibold tracking-tight">{brand}</p>
-          {settings?.tagline ? (
+          {settings?.copyright_text ? (
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {settings.tagline}
+              {settings.copyright_text}
             </p>
           ) : null}
         </div>
@@ -34,41 +37,34 @@ export function CompanyFooter({ tenant, settings, items }: CompanyFooterProps) {
           </nav>
         ) : null}
 
-        <address className="space-y-1.5 text-sm text-muted-foreground not-italic">
-          {settings?.address ? <p>{settings.address}</p> : null}
-          {settings?.phone ? (
-            <p>
-              <a
-                href={`tel:${settings.phone}`}
-                className="transition-colors hover:text-foreground"
-              >
-                {settings.phone}
-              </a>
-            </p>
-          ) : null}
-          {settings?.email ? (
-            <p>
-              <a
-                href={`mailto:${settings.email}`}
-                className="transition-colors hover:text-foreground"
-              >
-                {settings.email}
-              </a>
-            </p>
-          ) : null}
-        </address>
-
         {socials.length > 0 ? (
           <ul className="flex flex-col gap-1.5 text-sm">
-            {socials.map(([name, url]) => (
-              <li key={name}>
+            {socials.map((social) => (
+              <li key={social.platform}>
                 <a
-                  href={url}
+                  href={social.url}
                   target="_blank"
                   rel="noreferrer noopener"
                   className="text-muted-foreground capitalize transition-colors hover:text-foreground"
                 >
-                  {name}
+                  {social.platform}
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {marketplaces.length > 0 ? (
+          <ul className="flex flex-col gap-1.5 text-sm">
+            {marketplaces.map((marketplace) => (
+              <li key={marketplace.name}>
+                <a
+                  href={marketplace.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {marketplace.name}
                 </a>
               </li>
             ))}
@@ -78,7 +74,7 @@ export function CompanyFooter({ tenant, settings, items }: CompanyFooterProps) {
 
       <div className="border-t border-border/50">
         <p className="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} {brand}
+          &copy; {new Date().getFullYear()} {settings?.copyright_text ?? brand}
         </p>
       </div>
     </footer>
@@ -86,23 +82,24 @@ export function CompanyFooter({ tenant, settings, items }: CompanyFooterProps) {
 }
 
 function FooterLink({ tenant, item }: { tenant: string; item: CompanyNavItem }) {
-  const className =
-    "text-sm text-muted-foreground transition-colors hover:text-foreground"
+  const text = useContentText()
+
+  if (!item.url) return null
 
   const href =
     item.link_type === "route_internal"
-      ? internalHref(tenant, item.link_value)
-      : item.link_value
+      ? internalHref(tenant, item.url)
+      : item.url
 
   return (
     <a
       href={href}
-      className={className}
+      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
       {...(item.link_type === "external"
         ? { target: "_blank", rel: "noreferrer noopener" }
         : {})}
     >
-      {item.label}
+      {text(item.label)}
     </a>
   )
 }

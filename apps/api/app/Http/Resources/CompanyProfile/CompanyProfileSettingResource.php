@@ -2,31 +2,26 @@
 
 namespace App\Http\Resources\CompanyProfile;
 
-use App\Http\Resources\CompanyProfile\Concerns\PicksLocale;
+use App\Http\Resources\CompanyProfile\Concerns\ExposesMedia;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class CompanyProfileSettingResource extends JsonResource
 {
-    use PicksLocale;
+    use ExposesMedia;
 
     public function toArray(Request $request): array
     {
         return [
-            'is_published' => (bool) $this->is_published,
-            'brand_name' => $this->text($request, $this->brand_name),
-            'tagline' => $this->text($request, $this->tagline),
+            'site_name' => $this->site_name,
+            'logo_path' => $this->logo_path,
             'logo_url' => $this->mediaUrl($this->logo_path),
-            'phone' => $this->phone,
-            'whatsapp' => $this->whatsapp,
-            'email' => $this->email,
-            'address' => $this->text($request, $this->address),
-            'map_embed_url' => $this->map_embed_url,
+            'copyright_text' => $this->copyright_text,
+            'chat_channels' => $this->chat_channels ?? [],
             'social_links' => $this->social_links ?? [],
-            'meta_title' => $this->text($request, $this->meta_title),
-            'meta_description' => $this->text($request, $this->meta_description),
-            'chat_widget_enabled' => (bool) $this->chat_widget_enabled,
-            'chat_widget_number' => $this->chat_widget_number,
+            'marketplace_links' => $this->marketplace_links ?? [],
+            'default_locale' => $this->default_locale,
+            'is_published' => (bool) $this->is_published,
         ];
     }
 }

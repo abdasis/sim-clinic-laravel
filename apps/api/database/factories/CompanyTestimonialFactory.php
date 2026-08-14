@@ -15,14 +15,13 @@ class CompanyTestimonialFactory extends Factory
     public function definition(): array
     {
         return [
-            'author_name' => fake()->name(),
-            'author_role' => ['id' => 'Pasien', 'en' => 'Patient'],
             'quote' => [
                 'id' => CompanyValuePropFactory::richText(fake()->sentence()),
                 'en' => CompanyValuePropFactory::richText(fake()->sentence()),
             ],
+            'author_name' => fake()->name(),
+            'since_year' => fake()->numberBetween(2018, 2025),
             'avatar_path' => null,
-            'rating' => fake()->numberBetween(4, 5),
             'sort_order' => 0,
             'is_active' => true,
         ];

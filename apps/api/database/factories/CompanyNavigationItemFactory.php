@@ -19,12 +19,13 @@ class CompanyNavigationItemFactory extends Factory
         $label = fake()->randomElement(['Treatment', 'Promo', 'Tentang', 'Kontak']);
 
         return [
-            'position' => CompanyNavPosition::Header,
             'label' => ['id' => $label, 'en' => $label],
+            'url' => '#'.fake()->unique()->slug(1),
             'link_type' => CompanyLinkType::AnchorSection,
-            'link_value' => '#'.fake()->unique()->slug(1),
+            'position' => CompanyNavPosition::Header,
             'sort_order' => 0,
             'is_active' => true,
+            'is_cta' => false,
         ];
     }
 

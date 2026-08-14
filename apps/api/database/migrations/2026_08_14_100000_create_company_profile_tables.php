@@ -5,11 +5,12 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Konten company profile publik per tenant (spec 010).
+ * Konten company profile publik per tenant (spec 010, data-model.md).
  *
- * Field narasi disimpan sebagai peta locale (`{"id": …, "en": …}`) supaya satu
- * baris melayani dua bahasa tanpa tabel terjemahan terpisah. Kolomnya `json`,
- * bukan `jsonb`, agar migration ini tetap jalan di SQLite saat test.
+ * Field teks yang dibaca pengunjung disimpan sebagai peta locale
+ * (`{"id": …, "en": …}`) supaya satu baris melayani dua bahasa tanpa tabel
+ * terjemahan terpisah. Kolomnya `json`, bukan `jsonb`, agar migration ini
+ * tetap jalan di SQLite saat test.
  */
 return new class extends Migration
 {
@@ -18,20 +19,14 @@ return new class extends Migration
         Schema::create('company_profile_settings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->boolean('is_published')->default(false);
-            $table->json('brand_name')->nullable();
-            $table->json('tagline')->nullable();
             $table->string('logo_path')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('whatsapp')->nullable();
-            $table->string('email')->nullable();
-            $table->json('address')->nullable();
-            $table->string('map_embed_url', 1000)->nullable();
+            $table->json('site_name')->nullable();
+            $table->string('copyright_text')->nullable();
+            $table->json('chat_channels')->nullable();
             $table->json('social_links')->nullable();
-            $table->json('meta_title')->nullable();
-            $table->json('meta_description')->nullable();
-            $table->boolean('chat_widget_enabled')->default(false);
-            $table->string('chat_widget_number')->nullable();
+            $table->json('marketplace_links')->nullable();
+            $table->string('default_locale', 5)->default('id');
+            $table->boolean('is_published')->default(false);
             $table->timestamps();
 
             // Satu tenant satu setelan; CMS memperlakukannya sebagai singleton.
@@ -41,12 +36,14 @@ return new class extends Migration
         Schema::create('company_navigation_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->string('position')->default('header');
             $table->json('label');
-            $table->string('link_type')->default('anchor_section');
-            $table->string('link_value', 1000);
+            $table->string('url')->nullable();
+            $table->string('link_type');
+            $table->string('position');
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
+            // Satu-dua menu tampil sebagai tombol, bukan tautan biasa.
+            $table->boolean('is_cta')->default(false);
             $table->timestamps();
 
             $table->index(['tenant_id', 'position', 'is_active', 'sort_order'], 'company_nav_tenant_position_idx');
@@ -55,12 +52,12 @@ return new class extends Migration
         Schema::create('company_profile_slides', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->json('title')->nullable();
+            $table->json('title');
             $table->json('subtitle')->nullable();
-            $table->string('image_path');
+            $table->string('image_path')->nullable();
             $table->json('cta_label')->nullable();
+            $table->string('cta_url')->nullable();
             $table->string('cta_type')->nullable();
-            $table->string('cta_value', 1000)->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -71,7 +68,7 @@ return new class extends Migration
         Schema::create('company_value_props', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->string('icon')->nullable();
+            $table->string('icon', 100)->nullable();
             $table->json('title');
             $table->json('description')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
@@ -84,15 +81,16 @@ return new class extends Migration
         Schema::create('company_treatments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            // Etalase boleh menampilkan tindakan yang belum jadi master layanan.
+            // Etalase boleh menampilkan tindakan yang belum jadi master layanan,
+            // dan menghapus master tidak boleh menjatuhkan halaman publik.
             $table->foreignId('service_id')->nullable()->constrained('services')->nullOnDelete();
             $table->string('slug');
-            $table->json('name');
-            $table->json('excerpt')->nullable();
+            $table->json('title');
             $table->json('description')->nullable();
             $table->string('image_path')->nullable();
             $table->string('badge')->nullable();
-            $table->string('price_label')->nullable();
+            $table->json('category_tags')->nullable();
+            $table->string('detail_url')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -108,10 +106,8 @@ return new class extends Migration
             $table->json('description')->nullable();
             $table->string('image_path')->nullable();
             $table->json('cta_label')->nullable();
+            $table->string('cta_url')->nullable();
             $table->string('cta_type')->nullable();
-            $table->string('cta_value', 1000)->nullable();
-            $table->dateTime('starts_at')->nullable();
-            $table->dateTime('ends_at')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -122,9 +118,10 @@ return new class extends Migration
         Schema::create('company_brands', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->string('name');
-            $table->string('logo_path');
-            $table->string('url', 1000)->nullable();
+            $table->json('name');
+            $table->json('description')->nullable();
+            $table->string('logo_path')->nullable();
+            $table->string('external_url')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -135,11 +132,10 @@ return new class extends Migration
         Schema::create('company_testimonials', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->string('author_name');
-            $table->json('author_role')->nullable();
             $table->json('quote');
+            $table->string('author_name');
+            $table->unsignedSmallInteger('since_year')->nullable();
             $table->string('avatar_path')->nullable();
-            $table->unsignedTinyInteger('rating')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -150,14 +146,14 @@ return new class extends Migration
         Schema::create('company_content_sections', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->string('section_key');
-            $table->string('layout')->default('banner');
+            $table->string('section_key', 100);
             $table->json('title')->nullable();
             $table->json('body')->nullable();
             $table->string('image_path')->nullable();
             $table->json('cta_label')->nullable();
+            $table->string('cta_url')->nullable();
             $table->string('cta_type')->nullable();
-            $table->string('cta_value', 1000)->nullable();
+            $table->string('layout_type')->default('split');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 

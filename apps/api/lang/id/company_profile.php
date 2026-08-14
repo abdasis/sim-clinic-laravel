@@ -70,6 +70,7 @@ return [
     'read_more' => 'Selengkapnya',
     'view_all_treatments' => 'Lihat semua treatment',
     'language' => 'Bahasa',
+    'since_year' => 'Pelanggan sejak :year',
 
     'created' => 'Konten berhasil ditambahkan.',
     'updated' => 'Konten berhasil diperbarui.',

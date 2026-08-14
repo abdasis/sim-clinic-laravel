@@ -1,22 +1,25 @@
-import { Star } from "lucide-react"
-
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar.tsx"
 import type { CompanyTestimonial } from "#/hooks/use-company-profile.ts"
 import { renderRichText } from "#/lib/tiptap-render.tsx"
-import { cn } from "#/lib/utils.ts"
+import { useContentText } from "./locale-context.tsx"
 import { SectionShell } from "./section-shell.tsx"
 
 interface TestimonialSectionProps {
   id?: string
   heading?: string
+  /** Pola label "ngeZAP Sejak 2022"; `:year` diganti tahun testimoni. */
+  sinceTemplate?: string
   items: CompanyTestimonial[]
 }
 
 export function TestimonialSection({
   id,
   heading,
+  sinceTemplate,
   items,
 }: TestimonialSectionProps) {
+  const text = useContentText()
+
   if (items.length === 0) return null
 
   return (
@@ -27,27 +30,8 @@ export function TestimonialSection({
             key={testimonial.id}
             className="flex flex-col gap-3 rounded-lg border border-border/50 bg-background p-5"
           >
-            {testimonial.rating ? (
-              <div
-                className="flex items-center gap-0.5"
-                aria-label={`${testimonial.rating}/5`}
-              >
-                {Array.from({ length: 5 }, (_, index) => (
-                  <Star
-                    key={index}
-                    aria-hidden
-                    className={cn(
-                      "size-3.5",
-                      index < (testimonial.rating ?? 0)
-                        ? "fill-foreground text-foreground"
-                        : "text-muted-foreground/30",
-                    )}
-                  />
-                ))}
-              </div>
-            ) : null}
             <blockquote className="prose prose-sm max-w-none flex-1 text-muted-foreground dark:prose-invert">
-              {renderRichText(testimonial.quote)}
+              {renderRichText(text(testimonial.quote))}
             </blockquote>
             <figcaption className="flex items-center gap-2.5 border-t border-border/50 pt-3">
               <Avatar className="size-8">
@@ -65,9 +49,12 @@ export function TestimonialSection({
                 <p className="truncate text-sm font-medium">
                   {testimonial.author_name}
                 </p>
-                {testimonial.author_role ? (
-                  <p className="truncate text-xs text-muted-foreground">
-                    {testimonial.author_role}
+                {testimonial.since_year ? (
+                  <p className="truncate text-xs text-muted-foreground tabular-nums">
+                    {(sinceTemplate ?? ":year").replace(
+                      ":year",
+                      String(testimonial.since_year),
+                    )}
                   </p>
                 ) : null}
               </div>

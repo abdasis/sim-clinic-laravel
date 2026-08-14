@@ -14,10 +14,13 @@ class CompanyBrandFactory extends Factory
 
     public function definition(): array
     {
+        $name = fake()->company();
+
         return [
-            'name' => fake()->company(),
+            'name' => ['id' => $name, 'en' => $name],
+            'description' => ['id' => fake()->sentence(), 'en' => fake()->sentence()],
             'logo_path' => 'company-profile/brands/'.fake()->uuid().'.png',
-            'url' => fake()->url(),
+            'external_url' => fake()->url(),
             'sort_order' => 0,
             'is_active' => true,
         ];

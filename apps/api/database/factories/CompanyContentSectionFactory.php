@@ -19,7 +19,6 @@ class CompanyContentSectionFactory extends Factory
     {
         return [
             'section_key' => CompanySectionKey::PharmaBanner,
-            'layout' => CompanySectionLayout::Banner,
             'title' => ['id' => 'Apotek Klinik', 'en' => 'Clinic Pharmacy'],
             'body' => [
                 'id' => CompanyValuePropFactory::richText(fake()->sentence()),
@@ -27,8 +26,9 @@ class CompanyContentSectionFactory extends Factory
             ],
             'image_path' => null,
             'cta_label' => ['id' => 'Lihat Produk', 'en' => 'See Products'],
+            'cta_url' => fake()->url(),
             'cta_type' => CompanyCtaType::External,
-            'cta_value' => fake()->url(),
+            'layout_type' => CompanySectionLayout::Banner,
             'is_active' => true,
         ];
     }

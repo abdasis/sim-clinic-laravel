@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Setelan tunggal company profile per tenant: identitas, kontak, meta SEO,
- * dan saklar publikasi landing.
+ * Setelan tunggal company profile per tenant: identitas situs, kanal chat,
+ * tautan sosial/marketplace, dan saklar publikasi landing.
  */
 #[ScopedBy([TenantScope::class])]
 class CompanyProfileSetting extends Model
@@ -19,33 +19,24 @@ class CompanyProfileSetting extends Model
 
     protected $fillable = [
         'tenant_id',
-        'is_published',
-        'brand_name',
-        'tagline',
         'logo_path',
-        'phone',
-        'whatsapp',
-        'email',
-        'address',
-        'map_embed_url',
+        'site_name',
+        'copyright_text',
+        'chat_channels',
         'social_links',
-        'meta_title',
-        'meta_description',
-        'chat_widget_enabled',
-        'chat_widget_number',
+        'marketplace_links',
+        'default_locale',
+        'is_published',
     ];
 
     protected function casts(): array
     {
         return [
             'is_published' => 'boolean',
-            'chat_widget_enabled' => 'boolean',
-            'brand_name' => 'array',
-            'tagline' => 'array',
-            'address' => 'array',
+            'site_name' => 'array',
+            'chat_channels' => 'array',
             'social_links' => 'array',
-            'meta_title' => 'array',
-            'meta_description' => 'array',
+            'marketplace_links' => 'array',
         ];
     }
 }

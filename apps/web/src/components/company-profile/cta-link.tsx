@@ -1,12 +1,14 @@
 import { Button } from "#/components/ui/button.tsx"
+import type { Translatable } from "#/lib/company-locale.ts"
+import { useContentText } from "./locale-context.tsx"
 
 type ButtonProps = React.ComponentProps<typeof Button>
 
 interface CtaLinkProps {
   tenant: string
-  label?: string | null
+  label?: Translatable<string> | null
   type?: string | null
-  value?: string | null
+  url?: string | null
   variant?: ButtonProps["variant"]
   size?: ButtonProps["size"]
   className?: string
@@ -14,38 +16,33 @@ interface CtaLinkProps {
 
 /**
  * Tombol ajakan yang tujuannya diatur admin. `cta_type` menentukan cara
- * `cta_value` dibaca — route internal, alamat luar, atau nomor WhatsApp.
+ * `cta_url` dibaca — path internal, alamat luar, atau tautan WhatsApp.
  */
 export function CtaLink({
   tenant,
   label,
   type,
-  value,
+  url,
   variant,
   size,
   className,
 }: CtaLinkProps) {
-  if (!label || !value) return null
+  const text = useContentText()
+  const caption = text(label)
+
+  if (!caption || !url) return null
 
   // Tujuan internal diketik admin, jadi tidak ada di daftar route yang
   // dikenal saat kompilasi — pakai anchor biasa, bukan Link bertipe.
-  if (type === "route_internal") {
-    return (
-      <Button asChild variant={variant} size={size} className={className}>
-        <a href={internalHref(tenant, value)}>{label}</a>
-      </Button>
-    )
-  }
-
-  const href =
-    type === "whatsapp"
-      ? `https://wa.me/${normalizeWhatsapp(value)}`
-      : value
+  const isInternal = type === "route_internal"
 
   return (
     <Button asChild variant={variant} size={size} className={className}>
-      <a href={href} target="_blank" rel="noreferrer noopener">
-        {label}
+      <a
+        href={isInternal ? internalHref(tenant, url) : url}
+        {...(isInternal ? {} : { target: "_blank", rel: "noreferrer noopener" })}
+      >
+        {caption}
       </a>
     </Button>
   )
@@ -54,11 +51,4 @@ export function CtaLink({
 /** Path yang diatur admin selalu relatif terhadap tenant-nya. */
 export function internalHref(tenant: string, value: string): string {
   return `/${tenant}${value.startsWith("/") ? value : `/${value}`}`
-}
-
-/** wa.me menolak spasi, tanda hubung, dan awalan 0 — normalkan ke 62. */
-export function normalizeWhatsapp(value: string): string {
-  const digits = value.replace(/\D/g, "")
-
-  return digits.startsWith("0") ? `62${digits.slice(1)}` : digits
 }

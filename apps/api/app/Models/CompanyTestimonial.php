@@ -16,11 +16,10 @@ class CompanyTestimonial extends Model
 
     protected $fillable = [
         'tenant_id',
-        'author_name',
-        'author_role',
         'quote',
+        'author_name',
+        'since_year',
         'avatar_path',
-        'rating',
         'sort_order',
         'is_active',
     ];
@@ -28,9 +27,8 @@ class CompanyTestimonial extends Model
     protected function casts(): array
     {
         return [
-            'author_role' => 'array',
             'quote' => 'array',
-            'rating' => 'integer',
+            'since_year' => 'integer',
             'is_active' => 'boolean',
         ];
     }

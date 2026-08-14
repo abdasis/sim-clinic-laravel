@@ -21,8 +21,8 @@ class CompanyProfileSlide extends Model
         'subtitle',
         'image_path',
         'cta_label',
+        'cta_url',
         'cta_type',
-        'cta_value',
         'sort_order',
         'is_active',
     ];

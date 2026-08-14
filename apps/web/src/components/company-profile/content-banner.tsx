@@ -2,6 +2,7 @@ import type { CompanyContentSection } from "#/hooks/use-company-profile.ts"
 import { renderRichText } from "#/lib/tiptap-render.tsx"
 import { cn } from "#/lib/utils.ts"
 import { CtaLink } from "./cta-link.tsx"
+import { useContentText } from "./locale-context.tsx"
 
 interface ContentBannerProps {
   id?: string
@@ -23,9 +24,12 @@ export function ContentBanner({
   emphasis,
   className,
 }: ContentBannerProps) {
+  const text = useContentText()
+
   if (!section) return null
 
-  const isSplit = section.layout === "split"
+  const isSplit = section.layout_type === "split"
+  const title = text(section.title)
 
   return (
     <section
@@ -43,7 +47,7 @@ export function ContentBanner({
           {isSplit && section.image_url ? (
             <img
               src={section.image_url}
-              alt={section.title ?? ""}
+              alt={title ?? ""}
               loading="lazy"
               className="h-full min-h-52 w-full object-cover"
             />
@@ -56,20 +60,20 @@ export function ContentBanner({
             )}
           >
             <div className="max-w-2xl space-y-2">
-              {section.title ? (
+              {title ? (
                 <h2 className="text-xl font-semibold tracking-tight text-balance">
-                  {section.title}
+                  {title}
                 </h2>
               ) : null}
               <div className="prose prose-sm max-w-none text-muted-foreground dark:prose-invert">
-                {renderRichText(section.body)}
+                {renderRichText(text(section.body))}
               </div>
             </div>
             <CtaLink
               tenant={tenant}
               label={section.cta_label}
               type={section.cta_type}
-              value={section.cta_value}
+              url={section.cta_url}
               variant={emphasis ? "default" : "outline"}
               className="shrink-0 self-start"
             />
@@ -78,7 +82,7 @@ export function ContentBanner({
           {!isSplit && section.image_url ? (
             <img
               src={section.image_url}
-              alt={section.title ?? ""}
+              alt={title ?? ""}
               loading="lazy"
               className="h-44 w-full object-cover"
             />
