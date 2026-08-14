@@ -11,6 +11,7 @@ import {
   Boxes,
   Calendar,
   FileText,
+  Globe,
   HeartPulse,
   Package,
   ShoppingCart,
@@ -76,6 +77,7 @@ function ClinicLayout() {
         { key: "pos/transactions", label: t("pos.transactions") },
       ],
     },
+    { key: "company-profile", label: t("company_profile.title"), roles: ["admin"], icon: Globe },
     { key: "reports", label: t("report.title"), roles: ["admin"], icon: BarChart3 },
   ]
 

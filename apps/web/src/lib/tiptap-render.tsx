@@ -1,3 +1,6 @@
+// @tiptap/core hanya hadir sebagai dependensi transitif; tipenya diambil
+// lewat re-export @tiptap/react supaya resolusi modulnya tetap sah.
+import type { JSONContent } from "@tiptap/react"
 import { renderToReactElement } from "@tiptap/static-renderer"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
@@ -7,11 +10,7 @@ import Link from "@tiptap/extension-link"
 export const RICH_TEXT_EXTENSIONS = [StarterKit, Image, Link]
 
 /** Dokumen Tiptap seperti tersimpan di kolom json. */
-export type RichTextDoc = {
-  type?: string
-  content?: unknown[]
-  [key: string]: unknown
-}
+export type RichTextDoc = JSONContent
 
 /**
  * Render dokumen Tiptap jadi elemen React. Sengaja bukan HTML string +
