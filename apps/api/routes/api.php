@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CentralAuthController;
+use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MedicalRecordController;
@@ -39,6 +40,16 @@ Route::middleware(['auth:sanctum', 'permission.team'])->prefix('central')->group
     Route::get('/tenants', [PlatformTenantController::class, 'index']);
     Route::patch('/tenants/{tenant}/status', [PlatformTenantController::class, 'status']);
 });
+
+// =========================================================================
+// Company profile publik (spec 010) — tanpa auth, dibaca pengunjung
+// =========================================================================
+Route::prefix('{tenant}')
+    ->middleware(['resolve.tenant', 'ensure.tenant.active', 'permission.team'])
+    ->group(function (): void {
+        Route::get('/profile', [CompanyProfileController::class, 'index']);
+        Route::get('/profile/treatments/{slug}', [CompanyProfileController::class, 'showTreatment']);
+    });
 
 // =========================================================================
 // Auth tenant-scoped (spec 001) — resolve tenant, tanpa auth untuk login
