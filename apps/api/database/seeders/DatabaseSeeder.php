@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             CentralTenantSeeder::class,
             TenantAdminSeeder::class,
             ClinicDemoSeeder::class,
+            CompanyProfileDemoSeeder::class,
         ]);
     }
 }

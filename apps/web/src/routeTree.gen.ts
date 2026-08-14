@@ -9,40 +9,42 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RegisterRouteImport } from './routes/register'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as CentralRouteRouteImport } from './routes/central/route'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as CentralIndexRouteImport } from './routes/central/index'
-import { Route as InvitationsTokenRouteImport } from './routes/invitations/$token'
-import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
-import { Route as DemoDataTableRouteImport } from './routes/demo/data-table'
-import { Route as CentralLoginRouteImport } from './routes/central/login'
-import { Route as TenantLoginRouteImport } from './routes/$tenant/login'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as TenantIndexRouteImport } from './routes/$tenant/index'
 import { Route as TenantClinicRouteRouteImport } from './routes/$tenant/clinic/route'
-import { Route as CentralTenantsIndexRouteImport } from './routes/central/tenants/index'
+import { Route as TenantLoginRouteImport } from './routes/$tenant/login'
+import { Route as CentralIndexRouteImport } from './routes/central/index'
+import { Route as CentralLoginRouteImport } from './routes/central/login'
+import { Route as DemoDataTableRouteImport } from './routes/demo/data-table'
+import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
+import { Route as InvitationsTokenRouteImport } from './routes/invitations/$token'
+import { Route as TenantTreatmentSlugRouteImport } from './routes/$tenant/treatment/$slug'
 import { Route as TenantUsersIndexRouteImport } from './routes/$tenant/users/index'
-import { Route as TenantClinicStaffIndexRouteImport } from './routes/$tenant/clinic/staff/index'
-import { Route as TenantClinicServicesIndexRouteImport } from './routes/$tenant/clinic/services/index'
-import { Route as TenantClinicReportsIndexRouteImport } from './routes/$tenant/clinic/reports/index'
-import { Route as TenantClinicProductsIndexRouteImport } from './routes/$tenant/clinic/products/index'
-import { Route as TenantClinicPosIndexRouteImport } from './routes/$tenant/clinic/pos/index'
-import { Route as TenantClinicPatientsIndexRouteImport } from './routes/$tenant/clinic/patients/index'
-import { Route as TenantClinicMedicalRecordsIndexRouteImport } from './routes/$tenant/clinic/medical-records/index'
-import { Route as TenantClinicInventoryIndexRouteImport } from './routes/$tenant/clinic/inventory/index'
+import { Route as CentralTenantsIndexRouteImport } from './routes/central/tenants/index'
 import { Route as TenantClinicBookingsIndexRouteImport } from './routes/$tenant/clinic/bookings/index'
-import { Route as TenantClinicPosTransactionsRouteImport } from './routes/$tenant/clinic/pos/transactions'
-import { Route as TenantClinicPatientsNewRouteImport } from './routes/$tenant/clinic/patients/new'
-import { Route as TenantClinicMedicalRecordsNewRouteImport } from './routes/$tenant/clinic/medical-records/new'
+import { Route as TenantClinicInventoryIndexRouteImport } from './routes/$tenant/clinic/inventory/index'
+import { Route as TenantClinicMedicalRecordsIndexRouteImport } from './routes/$tenant/clinic/medical-records/index'
 import { Route as TenantClinicMedicalRecordsRecordIdRouteImport } from './routes/$tenant/clinic/medical-records/$recordId'
-import { Route as TenantClinicPosInvoicesIdRouteImport } from './routes/$tenant/clinic/pos/invoices/$id'
-import { Route as TenantClinicPatientsIdMedicalRecordsRouteImport } from './routes/$tenant/clinic/patients/$id/medical-records'
-import { Route as TenantClinicPatientsIdHistoryRouteImport } from './routes/$tenant/clinic/patients/$id/history'
+import { Route as TenantClinicMedicalRecordsNewRouteImport } from './routes/$tenant/clinic/medical-records/new'
+import { Route as TenantClinicPatientsIndexRouteImport } from './routes/$tenant/clinic/patients/index'
+import { Route as TenantClinicPatientsNewRouteImport } from './routes/$tenant/clinic/patients/new'
+import { Route as TenantClinicPosIndexRouteImport } from './routes/$tenant/clinic/pos/index'
+import { Route as TenantClinicPosTransactionsRouteImport } from './routes/$tenant/clinic/pos/transactions'
+import { Route as TenantClinicProductsIndexRouteImport } from './routes/$tenant/clinic/products/index'
+import { Route as TenantClinicReportsIndexRouteImport } from './routes/$tenant/clinic/reports/index'
+import { Route as TenantClinicServicesIndexRouteImport } from './routes/$tenant/clinic/services/index'
+import { Route as TenantClinicStaffIndexRouteImport } from './routes/$tenant/clinic/staff/index'
 import { Route as TenantClinicPatientsIdEditRouteImport } from './routes/$tenant/clinic/patients/$id/edit'
+import { Route as TenantClinicPatientsIdHistoryRouteImport } from './routes/$tenant/clinic/patients/$id/history'
+import { Route as TenantClinicPatientsIdMedicalRecordsRouteImport } from './routes/$tenant/clinic/patients/$id/medical-records'
+import { Route as TenantClinicPosInvoicesIdRouteImport } from './routes/$tenant/clinic/pos/invoices/$id'
 
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -55,39 +57,14 @@ const CentralRouteRoute = CentralRouteRouteImport.update({
   path: '/central',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CentralIndexRoute = CentralIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => CentralRouteRoute,
-} as any)
-const InvitationsTokenRoute = InvitationsTokenRouteImport.update({
-  id: '/invitations/$token',
-  path: '/invitations/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
-  id: '/demo/tanstack-query',
-  path: '/demo/tanstack-query',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoDataTableRoute = DemoDataTableRouteImport.update({
-  id: '/demo/data-table',
-  path: '/demo/data-table',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CentralLoginRoute = CentralLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => CentralRouteRoute,
-} as any)
-const TenantLoginRoute = TenantLoginRouteImport.update({
-  id: '/$tenant/login',
-  path: '/$tenant/login',
+const TenantIndexRoute = TenantIndexRouteImport.update({
+  id: '/$tenant/',
+  path: '/$tenant/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TenantClinicRouteRoute = TenantClinicRouteRouteImport.update({
@@ -95,54 +72,55 @@ const TenantClinicRouteRoute = TenantClinicRouteRouteImport.update({
   path: '/$tenant/clinic',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CentralTenantsIndexRoute = CentralTenantsIndexRouteImport.update({
-  id: '/tenants/',
-  path: '/tenants/',
+const TenantLoginRoute = TenantLoginRouteImport.update({
+  id: '/$tenant/login',
+  path: '/$tenant/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CentralIndexRoute = CentralIndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => CentralRouteRoute,
+} as any)
+const CentralLoginRoute = CentralLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => CentralRouteRoute,
+} as any)
+const DemoDataTableRoute = DemoDataTableRouteImport.update({
+  id: '/demo/data-table',
+  path: '/demo/data-table',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
+  id: '/demo/tanstack-query',
+  path: '/demo/tanstack-query',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvitationsTokenRoute = InvitationsTokenRouteImport.update({
+  id: '/invitations/$token',
+  path: '/invitations/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TenantTreatmentSlugRoute = TenantTreatmentSlugRouteImport.update({
+  id: '/$tenant/treatment/$slug',
+  path: '/$tenant/treatment/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const TenantUsersIndexRoute = TenantUsersIndexRouteImport.update({
   id: '/$tenant/users/',
   path: '/$tenant/users/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TenantClinicStaffIndexRoute = TenantClinicStaffIndexRouteImport.update({
-  id: '/staff/',
-  path: '/staff/',
-  getParentRoute: () => TenantClinicRouteRoute,
+const CentralTenantsIndexRoute = CentralTenantsIndexRouteImport.update({
+  id: '/tenants/',
+  path: '/tenants/',
+  getParentRoute: () => CentralRouteRoute,
 } as any)
-const TenantClinicServicesIndexRoute =
-  TenantClinicServicesIndexRouteImport.update({
-    id: '/services/',
-    path: '/services/',
-    getParentRoute: () => TenantClinicRouteRoute,
-  } as any)
-const TenantClinicReportsIndexRoute =
-  TenantClinicReportsIndexRouteImport.update({
-    id: '/reports/',
-    path: '/reports/',
-    getParentRoute: () => TenantClinicRouteRoute,
-  } as any)
-const TenantClinicProductsIndexRoute =
-  TenantClinicProductsIndexRouteImport.update({
-    id: '/products/',
-    path: '/products/',
-    getParentRoute: () => TenantClinicRouteRoute,
-  } as any)
-const TenantClinicPosIndexRoute = TenantClinicPosIndexRouteImport.update({
-  id: '/pos/',
-  path: '/pos/',
-  getParentRoute: () => TenantClinicRouteRoute,
-} as any)
-const TenantClinicPatientsIndexRoute =
-  TenantClinicPatientsIndexRouteImport.update({
-    id: '/patients/',
-    path: '/patients/',
-    getParentRoute: () => TenantClinicRouteRoute,
-  } as any)
-const TenantClinicMedicalRecordsIndexRoute =
-  TenantClinicMedicalRecordsIndexRouteImport.update({
-    id: '/medical-records/',
-    path: '/medical-records/',
+const TenantClinicBookingsIndexRoute =
+  TenantClinicBookingsIndexRouteImport.update({
+    id: '/bookings/',
+    path: '/bookings/',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
 const TenantClinicInventoryIndexRoute =
@@ -151,27 +129,10 @@ const TenantClinicInventoryIndexRoute =
     path: '/inventory/',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
-const TenantClinicBookingsIndexRoute =
-  TenantClinicBookingsIndexRouteImport.update({
-    id: '/bookings/',
-    path: '/bookings/',
-    getParentRoute: () => TenantClinicRouteRoute,
-  } as any)
-const TenantClinicPosTransactionsRoute =
-  TenantClinicPosTransactionsRouteImport.update({
-    id: '/pos/transactions',
-    path: '/pos/transactions',
-    getParentRoute: () => TenantClinicRouteRoute,
-  } as any)
-const TenantClinicPatientsNewRoute = TenantClinicPatientsNewRouteImport.update({
-  id: '/patients/new',
-  path: '/patients/new',
-  getParentRoute: () => TenantClinicRouteRoute,
-} as any)
-const TenantClinicMedicalRecordsNewRoute =
-  TenantClinicMedicalRecordsNewRouteImport.update({
-    id: '/medical-records/new',
-    path: '/medical-records/new',
+const TenantClinicMedicalRecordsIndexRoute =
+  TenantClinicMedicalRecordsIndexRouteImport.update({
+    id: '/medical-records/',
+    path: '/medical-records/',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
 const TenantClinicMedicalRecordsRecordIdRoute =
@@ -180,16 +141,61 @@ const TenantClinicMedicalRecordsRecordIdRoute =
     path: '/medical-records/$recordId',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
-const TenantClinicPosInvoicesIdRoute =
-  TenantClinicPosInvoicesIdRouteImport.update({
-    id: '/pos/invoices/$id',
-    path: '/pos/invoices/$id',
+const TenantClinicMedicalRecordsNewRoute =
+  TenantClinicMedicalRecordsNewRouteImport.update({
+    id: '/medical-records/new',
+    path: '/medical-records/new',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
-const TenantClinicPatientsIdMedicalRecordsRoute =
-  TenantClinicPatientsIdMedicalRecordsRouteImport.update({
-    id: '/patients/$id/medical-records',
-    path: '/patients/$id/medical-records',
+const TenantClinicPatientsIndexRoute =
+  TenantClinicPatientsIndexRouteImport.update({
+    id: '/patients/',
+    path: '/patients/',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
+const TenantClinicPatientsNewRoute = TenantClinicPatientsNewRouteImport.update({
+  id: '/patients/new',
+  path: '/patients/new',
+  getParentRoute: () => TenantClinicRouteRoute,
+} as any)
+const TenantClinicPosIndexRoute = TenantClinicPosIndexRouteImport.update({
+  id: '/pos/',
+  path: '/pos/',
+  getParentRoute: () => TenantClinicRouteRoute,
+} as any)
+const TenantClinicPosTransactionsRoute =
+  TenantClinicPosTransactionsRouteImport.update({
+    id: '/pos/transactions',
+    path: '/pos/transactions',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
+const TenantClinicProductsIndexRoute =
+  TenantClinicProductsIndexRouteImport.update({
+    id: '/products/',
+    path: '/products/',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
+const TenantClinicReportsIndexRoute =
+  TenantClinicReportsIndexRouteImport.update({
+    id: '/reports/',
+    path: '/reports/',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
+const TenantClinicServicesIndexRoute =
+  TenantClinicServicesIndexRouteImport.update({
+    id: '/services/',
+    path: '/services/',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
+const TenantClinicStaffIndexRoute = TenantClinicStaffIndexRouteImport.update({
+  id: '/staff/',
+  path: '/staff/',
+  getParentRoute: () => TenantClinicRouteRoute,
+} as any)
+const TenantClinicPatientsIdEditRoute =
+  TenantClinicPatientsIdEditRouteImport.update({
+    id: '/patients/$id/edit',
+    path: '/patients/$id/edit',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
 const TenantClinicPatientsIdHistoryRoute =
@@ -198,10 +204,16 @@ const TenantClinicPatientsIdHistoryRoute =
     path: '/patients/$id/history',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
-const TenantClinicPatientsIdEditRoute =
-  TenantClinicPatientsIdEditRouteImport.update({
-    id: '/patients/$id/edit',
-    path: '/patients/$id/edit',
+const TenantClinicPatientsIdMedicalRecordsRoute =
+  TenantClinicPatientsIdMedicalRecordsRouteImport.update({
+    id: '/patients/$id/medical-records',
+    path: '/patients/$id/medical-records',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
+const TenantClinicPosInvoicesIdRoute =
+  TenantClinicPosInvoicesIdRouteImport.update({
+    id: '/pos/invoices/$id',
+    path: '/pos/invoices/$id',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
 
@@ -216,7 +228,9 @@ export interface FileRoutesByFullPath {
   '/demo/data-table': typeof DemoDataTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
+  '/$tenant/': typeof TenantIndexRoute
   '/central/': typeof CentralIndexRoute
+  '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
   '/$tenant/users/': typeof TenantUsersIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -247,7 +261,9 @@ export interface FileRoutesByTo {
   '/demo/data-table': typeof DemoDataTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
+  '/$tenant': typeof TenantIndexRoute
   '/central': typeof CentralIndexRoute
+  '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
   '/$tenant/users': typeof TenantUsersIndexRoute
   '/central/tenants': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -280,7 +296,9 @@ export interface FileRoutesById {
   '/demo/data-table': typeof DemoDataTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
+  '/$tenant/': typeof TenantIndexRoute
   '/central/': typeof CentralIndexRoute
+  '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
   '/$tenant/users/': typeof TenantUsersIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -314,7 +332,9 @@ export interface FileRouteTypes {
     | '/demo/data-table'
     | '/demo/tanstack-query'
     | '/invitations/$token'
+    | '/$tenant/'
     | '/central/'
+    | '/$tenant/treatment/$slug'
     | '/$tenant/users/'
     | '/central/tenants/'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -345,7 +365,9 @@ export interface FileRouteTypes {
     | '/demo/data-table'
     | '/demo/tanstack-query'
     | '/invitations/$token'
+    | '/$tenant'
     | '/central'
+    | '/$tenant/treatment/$slug'
     | '/$tenant/users'
     | '/central/tenants'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -377,7 +399,9 @@ export interface FileRouteTypes {
     | '/demo/data-table'
     | '/demo/tanstack-query'
     | '/invitations/$token'
+    | '/$tenant/'
     | '/central/'
+    | '/$tenant/treatment/$slug'
     | '/$tenant/users/'
     | '/central/tenants/'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -409,16 +433,18 @@ export interface RootRouteChildren {
   DemoDataTableRoute: typeof DemoDataTableRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   InvitationsTokenRoute: typeof InvitationsTokenRoute
+  TenantIndexRoute: typeof TenantIndexRoute
+  TenantTreatmentSlugRoute: typeof TenantTreatmentSlugRoute
   TenantUsersIndexRoute: typeof TenantUsersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -435,53 +461,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CentralRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/central/': {
-      id: '/central/'
-      path: '/'
-      fullPath: '/central/'
-      preLoaderRoute: typeof CentralIndexRouteImport
-      parentRoute: typeof CentralRouteRoute
-    }
-    '/invitations/$token': {
-      id: '/invitations/$token'
-      path: '/invitations/$token'
-      fullPath: '/invitations/$token'
-      preLoaderRoute: typeof InvitationsTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/tanstack-query': {
-      id: '/demo/tanstack-query'
-      path: '/demo/tanstack-query'
-      fullPath: '/demo/tanstack-query'
-      preLoaderRoute: typeof DemoTanstackQueryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/data-table': {
-      id: '/demo/data-table'
-      path: '/demo/data-table'
-      fullPath: '/demo/data-table'
-      preLoaderRoute: typeof DemoDataTableRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/central/login': {
-      id: '/central/login'
-      path: '/login'
-      fullPath: '/central/login'
-      preLoaderRoute: typeof CentralLoginRouteImport
-      parentRoute: typeof CentralRouteRoute
-    }
-    '/$tenant/login': {
-      id: '/$tenant/login'
-      path: '/$tenant/login'
-      fullPath: '/$tenant/login'
-      preLoaderRoute: typeof TenantLoginRouteImport
+    '/$tenant/': {
+      id: '/$tenant/'
+      path: '/$tenant'
+      fullPath: '/$tenant/'
+      preLoaderRoute: typeof TenantIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$tenant/clinic': {
@@ -491,12 +482,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/central/tenants/': {
-      id: '/central/tenants/'
-      path: '/tenants'
-      fullPath: '/central/tenants/'
-      preLoaderRoute: typeof CentralTenantsIndexRouteImport
+    '/$tenant/login': {
+      id: '/$tenant/login'
+      path: '/$tenant/login'
+      fullPath: '/$tenant/login'
+      preLoaderRoute: typeof TenantLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/central/': {
+      id: '/central/'
+      path: '/'
+      fullPath: '/central/'
+      preLoaderRoute: typeof CentralIndexRouteImport
       parentRoute: typeof CentralRouteRoute
+    }
+    '/central/login': {
+      id: '/central/login'
+      path: '/login'
+      fullPath: '/central/login'
+      preLoaderRoute: typeof CentralLoginRouteImport
+      parentRoute: typeof CentralRouteRoute
+    }
+    '/demo/data-table': {
+      id: '/demo/data-table'
+      path: '/demo/data-table'
+      fullPath: '/demo/data-table'
+      preLoaderRoute: typeof DemoDataTableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/tanstack-query': {
+      id: '/demo/tanstack-query'
+      path: '/demo/tanstack-query'
+      fullPath: '/demo/tanstack-query'
+      preLoaderRoute: typeof DemoTanstackQueryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invitations/$token': {
+      id: '/invitations/$token'
+      path: '/invitations/$token'
+      fullPath: '/invitations/$token'
+      preLoaderRoute: typeof InvitationsTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$tenant/treatment/$slug': {
+      id: '/$tenant/treatment/$slug'
+      path: '/$tenant/treatment/$slug'
+      fullPath: '/$tenant/treatment/$slug'
+      preLoaderRoute: typeof TenantTreatmentSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/$tenant/users/': {
       id: '/$tenant/users/'
@@ -505,53 +538,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantUsersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/$tenant/clinic/staff/': {
-      id: '/$tenant/clinic/staff/'
-      path: '/staff'
-      fullPath: '/$tenant/clinic/staff/'
-      preLoaderRoute: typeof TenantClinicStaffIndexRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
+    '/central/tenants/': {
+      id: '/central/tenants/'
+      path: '/tenants'
+      fullPath: '/central/tenants/'
+      preLoaderRoute: typeof CentralTenantsIndexRouteImport
+      parentRoute: typeof CentralRouteRoute
     }
-    '/$tenant/clinic/services/': {
-      id: '/$tenant/clinic/services/'
-      path: '/services'
-      fullPath: '/$tenant/clinic/services/'
-      preLoaderRoute: typeof TenantClinicServicesIndexRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
-    '/$tenant/clinic/reports/': {
-      id: '/$tenant/clinic/reports/'
-      path: '/reports'
-      fullPath: '/$tenant/clinic/reports/'
-      preLoaderRoute: typeof TenantClinicReportsIndexRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
-    '/$tenant/clinic/products/': {
-      id: '/$tenant/clinic/products/'
-      path: '/products'
-      fullPath: '/$tenant/clinic/products/'
-      preLoaderRoute: typeof TenantClinicProductsIndexRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
-    '/$tenant/clinic/pos/': {
-      id: '/$tenant/clinic/pos/'
-      path: '/pos'
-      fullPath: '/$tenant/clinic/pos/'
-      preLoaderRoute: typeof TenantClinicPosIndexRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
-    '/$tenant/clinic/patients/': {
-      id: '/$tenant/clinic/patients/'
-      path: '/patients'
-      fullPath: '/$tenant/clinic/patients/'
-      preLoaderRoute: typeof TenantClinicPatientsIndexRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
-    '/$tenant/clinic/medical-records/': {
-      id: '/$tenant/clinic/medical-records/'
-      path: '/medical-records'
-      fullPath: '/$tenant/clinic/medical-records/'
-      preLoaderRoute: typeof TenantClinicMedicalRecordsIndexRouteImport
+    '/$tenant/clinic/bookings/': {
+      id: '/$tenant/clinic/bookings/'
+      path: '/bookings'
+      fullPath: '/$tenant/clinic/bookings/'
+      preLoaderRoute: typeof TenantClinicBookingsIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
     '/$tenant/clinic/inventory/': {
@@ -561,32 +559,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicInventoryIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
-    '/$tenant/clinic/bookings/': {
-      id: '/$tenant/clinic/bookings/'
-      path: '/bookings'
-      fullPath: '/$tenant/clinic/bookings/'
-      preLoaderRoute: typeof TenantClinicBookingsIndexRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
-    '/$tenant/clinic/pos/transactions': {
-      id: '/$tenant/clinic/pos/transactions'
-      path: '/pos/transactions'
-      fullPath: '/$tenant/clinic/pos/transactions'
-      preLoaderRoute: typeof TenantClinicPosTransactionsRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
-    '/$tenant/clinic/patients/new': {
-      id: '/$tenant/clinic/patients/new'
-      path: '/patients/new'
-      fullPath: '/$tenant/clinic/patients/new'
-      preLoaderRoute: typeof TenantClinicPatientsNewRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
-    '/$tenant/clinic/medical-records/new': {
-      id: '/$tenant/clinic/medical-records/new'
-      path: '/medical-records/new'
-      fullPath: '/$tenant/clinic/medical-records/new'
-      preLoaderRoute: typeof TenantClinicMedicalRecordsNewRouteImport
+    '/$tenant/clinic/medical-records/': {
+      id: '/$tenant/clinic/medical-records/'
+      path: '/medical-records'
+      fullPath: '/$tenant/clinic/medical-records/'
+      preLoaderRoute: typeof TenantClinicMedicalRecordsIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
     '/$tenant/clinic/medical-records/$recordId': {
@@ -596,18 +573,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicMedicalRecordsRecordIdRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
-    '/$tenant/clinic/pos/invoices/$id': {
-      id: '/$tenant/clinic/pos/invoices/$id'
-      path: '/pos/invoices/$id'
-      fullPath: '/$tenant/clinic/pos/invoices/$id'
-      preLoaderRoute: typeof TenantClinicPosInvoicesIdRouteImport
+    '/$tenant/clinic/medical-records/new': {
+      id: '/$tenant/clinic/medical-records/new'
+      path: '/medical-records/new'
+      fullPath: '/$tenant/clinic/medical-records/new'
+      preLoaderRoute: typeof TenantClinicMedicalRecordsNewRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
-    '/$tenant/clinic/patients/$id/medical-records': {
-      id: '/$tenant/clinic/patients/$id/medical-records'
-      path: '/patients/$id/medical-records'
-      fullPath: '/$tenant/clinic/patients/$id/medical-records'
-      preLoaderRoute: typeof TenantClinicPatientsIdMedicalRecordsRouteImport
+    '/$tenant/clinic/patients/': {
+      id: '/$tenant/clinic/patients/'
+      path: '/patients'
+      fullPath: '/$tenant/clinic/patients/'
+      preLoaderRoute: typeof TenantClinicPatientsIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/patients/new': {
+      id: '/$tenant/clinic/patients/new'
+      path: '/patients/new'
+      fullPath: '/$tenant/clinic/patients/new'
+      preLoaderRoute: typeof TenantClinicPatientsNewRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/pos/': {
+      id: '/$tenant/clinic/pos/'
+      path: '/pos'
+      fullPath: '/$tenant/clinic/pos/'
+      preLoaderRoute: typeof TenantClinicPosIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/pos/transactions': {
+      id: '/$tenant/clinic/pos/transactions'
+      path: '/pos/transactions'
+      fullPath: '/$tenant/clinic/pos/transactions'
+      preLoaderRoute: typeof TenantClinicPosTransactionsRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/products/': {
+      id: '/$tenant/clinic/products/'
+      path: '/products'
+      fullPath: '/$tenant/clinic/products/'
+      preLoaderRoute: typeof TenantClinicProductsIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/reports/': {
+      id: '/$tenant/clinic/reports/'
+      path: '/reports'
+      fullPath: '/$tenant/clinic/reports/'
+      preLoaderRoute: typeof TenantClinicReportsIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/services/': {
+      id: '/$tenant/clinic/services/'
+      path: '/services'
+      fullPath: '/$tenant/clinic/services/'
+      preLoaderRoute: typeof TenantClinicServicesIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/staff/': {
+      id: '/$tenant/clinic/staff/'
+      path: '/staff'
+      fullPath: '/$tenant/clinic/staff/'
+      preLoaderRoute: typeof TenantClinicStaffIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/patients/$id/edit': {
+      id: '/$tenant/clinic/patients/$id/edit'
+      path: '/patients/$id/edit'
+      fullPath: '/$tenant/clinic/patients/$id/edit'
+      preLoaderRoute: typeof TenantClinicPatientsIdEditRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
     '/$tenant/clinic/patients/$id/history': {
@@ -617,11 +650,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicPatientsIdHistoryRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
-    '/$tenant/clinic/patients/$id/edit': {
-      id: '/$tenant/clinic/patients/$id/edit'
-      path: '/patients/$id/edit'
-      fullPath: '/$tenant/clinic/patients/$id/edit'
-      preLoaderRoute: typeof TenantClinicPatientsIdEditRouteImport
+    '/$tenant/clinic/patients/$id/medical-records': {
+      id: '/$tenant/clinic/patients/$id/medical-records'
+      path: '/patients/$id/medical-records'
+      fullPath: '/$tenant/clinic/patients/$id/medical-records'
+      preLoaderRoute: typeof TenantClinicPatientsIdMedicalRecordsRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/pos/invoices/$id': {
+      id: '/$tenant/clinic/pos/invoices/$id'
+      path: '/pos/invoices/$id'
+      fullPath: '/$tenant/clinic/pos/invoices/$id'
+      preLoaderRoute: typeof TenantClinicPosInvoicesIdRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
   }
@@ -698,17 +738,10 @@ const rootRouteChildren: RootRouteChildren = {
   DemoDataTableRoute: DemoDataTableRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   InvitationsTokenRoute: InvitationsTokenRoute,
+  TenantIndexRoute: TenantIndexRoute,
+  TenantTreatmentSlugRoute: TenantTreatmentSlugRoute,
   TenantUsersIndexRoute: TenantUsersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

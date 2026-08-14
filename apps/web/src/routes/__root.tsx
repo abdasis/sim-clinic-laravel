@@ -55,6 +55,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     /^\/[^/]+\/clinic(\/|$)/.test(pathname) ||
     (/^\/central(\/|$)/.test(pathname) && pathname !== '/central/login')
 
+  // Company profile (spec 010) merender header/footer sendiri dari konten
+  // yang diatur admin, jadi chrome publik bawaan justru dobel di sini.
+  const isCompanyProfile =
+    (/^\/[^/]+\/?$/.test(pathname) && pathname !== '/central') ||
+    /^\/[^/]+\/treatment(\/|$)/.test(pathname)
+
+  const hideChrome = isAdmin || isCompanyProfile
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -63,9 +71,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
         <TooltipProvider>
-          {!isAdmin ? <Header /> : null}
+          {!hideChrome ? <Header /> : null}
           {children}
-          {!isAdmin ? <Footer /> : null}
+          {!hideChrome ? <Footer /> : null}
         </TooltipProvider>
         <TanStackDevtools
           config={{
