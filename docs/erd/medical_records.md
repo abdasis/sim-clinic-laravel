@@ -23,6 +23,11 @@ Rekam medis SOAP (Rekam Medis, US7).
 
 - `(tenant_id, booking_id)` UNIQUE — 1 record per booking.
 - `(tenant_id, patient_id, created_at)` INDEX — query riwayat rekam medis per pasien (FR-022) tanpa full scan.
+- `(tenant_id, deleted_at)` INDEX — daftar rekam medis aktif per tenant.
+
+ponytail: alter FK dilewati di SQLite (tidak mendukung drop foreign key), jadi
+aturan restrict hanya ditegakkan di PostgreSQL. `ForeignKeyRestrictTest`
+karena itu di-skip di SQLite — jalankan `phpunit.pgsql.xml` sebelum rilis.
 
 ## Relasi
 
@@ -38,10 +43,22 @@ Rekam medis SOAP (Rekam Medis, US7).
   - Hapus dokter/author TIDAK boleh menghapus rekam medis yang pernah ditulisnya. User sebaiknya di-soft-delete (`status=inactive`), bukan hard-delete.
   - Hapus pasien → restrict (pasien di-soft-delete, rekam medis tetap).
 
+Anak-anaknya (`treatment_records`, `medical_photos`) juga `restrictOnDelete` ke
+`medical_records` (R2) — hard-delete rekam medis yang masih punya treatment atau
+foto ditolak database. Ini menimpa langkah 15/16 workflow yang semula cascade.
+
 ## Business Rules
 
 - Booking harus `status=done` sebelum/serupa mengisi (FR-033, FR-040).
 - Hanya role dokter/therapist/admin yang boleh mengisi (FR-044, Policy).
+- `patient_id` diturunkan dari `booking->patient_id` saat pembuatan dan tidak
+  bisa diubah sesudahnya (R4). `booking_id` ditolak (`prohibited`) pada PATCH —
+  kunjungan yang menentukan pemilik catatan, jadi tidak boleh dipindah.
+  Sisi booking dijaga terpisah: PATCH `bookings/{booking}` dengan `patient_id`
+  berbeda ditolak 422 selama rekam medisnya sudah ada
+  (`BookingPatientImmutableTest`).
+- Revisi SOAP dicatat activity `medical_record.updated` dengan properti diff
+  `old`/`new`; soft-delete dicatat `medical_record.deleted`.
 
 ## Catatan
 

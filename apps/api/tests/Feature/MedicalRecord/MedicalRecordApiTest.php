@@ -188,6 +188,19 @@ class MedicalRecordApiTest extends TestCase
         $this->assertNull($foreign->fresh()->deleted_at);
     }
 
+    public function test_patient_history_of_other_tenant_is_not_reachable(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Doctor);
+        $other = $this->createTenant('klinik-lain');
+        $foreignPatient = Patient::factory()->create(['tenant_id' => $other->id]);
+
+        app()->instance('tenant', $this->tenant);
+
+        $this->getJson(
+            $this->tenantUrl('patients/'.$foreignPatient->id.'/medical-records'),
+        )->assertNotFound();
+    }
+
     private function makeBooking(BookingStatus $status): Booking
     {
         $service = Service::create([

@@ -20,6 +20,10 @@ import type { ApiError } from "#/lib/api.ts"
 
 export const Route = createFileRoute("/$tenant/clinic/medical-records/new")({
   component: NewMedicalRecordPage,
+  // Dari daftar booking selesai, kunjungannya sudah dipilih lebih dulu.
+  validateSearch: (search: Record<string, unknown>) => ({
+    booking: search.booking ? String(search.booking) : undefined,
+  }),
 })
 
 const schema = z.object({
@@ -48,6 +52,7 @@ interface ServiceRow {
 
 function NewMedicalRecordPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/medical-records/new" })
+  const { booking: bookingFromUrl } = Route.useSearch()
   const { t } = useTrans()
   const navigate = useNavigate()
   const [photos, setPhotos] = useState<SelectedPhoto[]>([])
@@ -55,7 +60,7 @@ function NewMedicalRecordPage() {
 
   const form = useForm(schema, {
     defaultValues: {
-      booking_id: "",
+      booking_id: bookingFromUrl ?? "",
       subjective: "",
       objective: "",
       assessment: "",
@@ -113,9 +118,12 @@ function NewMedicalRecordPage() {
       }
       return recordId
     },
-    onSuccess: () => {
+    onSuccess: (recordId) => {
       toast.success(t("medical_record.created"))
-      navigate({ to: "/$tenant/clinic/bookings", params: { tenant } })
+      navigate({
+        to: "/$tenant/clinic/medical-records/$recordId",
+        params: { tenant, recordId: String(recordId) },
+      })
     },
     onError: (err: ApiError) => {
       applyServerErrors(form, err.errors)
@@ -128,7 +136,11 @@ function NewMedicalRecordPage() {
       <ClinicBreadcrumb
         items={[
           { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-          { label: t("medical_record.title") },
+          {
+            label: t("medical_record.title"),
+            to: "/$tenant/clinic/medical-records",
+            params: { tenant },
+          },
           { label: t("general.create") },
         ]}
       />

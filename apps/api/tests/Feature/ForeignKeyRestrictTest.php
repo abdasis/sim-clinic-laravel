@@ -102,6 +102,15 @@ class ForeignKeyRestrictTest extends TestCase
         Booking::find($record->booking_id)->delete();
     }
 
+    public function test_author_with_medical_record_cannot_be_force_deleted(): void
+    {
+        $record = $this->makeMedicalRecord();
+
+        $this->expectException(QueryException::class);
+
+        User::withTrashed()->find($record->author_id)->forceDelete();
+    }
+
     public function test_medical_record_with_treatment_cannot_be_force_deleted(): void
     {
         $record = $this->makeMedicalRecord();
