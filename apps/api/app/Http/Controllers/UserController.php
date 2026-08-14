@@ -2,23 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\LogAuditAction;
-use App\Actions\User\RemoveUserAction;
 use App\Enums\InvitationStatus;
-use App\Enums\UserRole;
-use App\Enums\UserStatus;
 use App\Http\Concerns\InteractsWithDataTable;
-use App\Http\Middleware\SetPermissionTeamId;
 use App\Http\Requests\InvitationRequest;
+use App\Http\Requests\UpdateUserRoleRequest;
 use App\Http\Resources\InvitationResource;
 use App\Http\Resources\UserResource;
 use App\Models\Invitation;
 use App\Models\User;
 use App\Services\InvitationService;
+use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Spatie\Permission\PermissionRegistrar;
 
 class UserController extends Controller
 {
@@ -114,11 +109,11 @@ class UserController extends Controller
         ]);
     }
 
-    public function remove(User $user, RemoveUserAction $action): JsonResponse
+    public function remove(User $user, UserService $service): JsonResponse
     {
         $this->assertTenantAdmin();
 
-        $action->handle($user);
+        $service->remove($user);
 
         return response()->json([
             'data' => [],
@@ -126,55 +121,16 @@ class UserController extends Controller
         ]);
     }
 
-    public function role(Request $request, User $user): JsonResponse
+    public function role(UpdateUserRoleRequest $request, User $user, UserService $service): JsonResponse
     {
         $this->assertTenantAdmin();
 
-        $validated = $request->validate([
-            'role' => ['required', 'in:member,tenant_admin'],
-        ]);
-
-        $oldRole = $user->role;
-        $newRole = UserRole::from($validated['role']);
-
-        $this->guardLastTenantAdmin($user, $newRole);
-
-        DB::transaction(function () use ($user, $newRole): void {
-            $user->update(['role' => $newRole]);
-
-            app(PermissionRegistrar::class)->setPermissionsTeamId(SetPermissionTeamId::PLATFORM_TEAM_ID);
-            $user->syncRoles([$newRole->value]);
-        });
-
-        app(LogAuditAction::class)->handle('user.role_changed', $user, auth()->user(), [
-            'old_role' => $oldRole->value,
-            'new_role' => $validated['role'],
-        ], 'Peran pengguna '.$user->name.' ('.$user->email.') diubah dari '.$oldRole->label().' ke '.$user->role->label().'.', app('tenant'));
+        $service->changeRole($user, $request->validated('role'));
 
         return response()->json([
             'data' => new UserResource($user),
             'meta' => ['message' => __('tenant.role_changed')],
         ]);
-    }
-
-    /**
-     * Tenant harus selalu punya minimal satu admin aktif.
-     */
-    private function guardLastTenantAdmin(User $user, UserRole $newRole): void
-    {
-        if ($user->role !== UserRole::TenantAdmin || $newRole === UserRole::TenantAdmin) {
-            return;
-        }
-
-        $activeAdmins = User::query()
-            ->where('tenant_id', $user->tenant_id)
-            ->where('role', UserRole::TenantAdmin)
-            ->where('status', UserStatus::Active)
-            ->count();
-
-        if ($activeAdmins <= 1) {
-            abort(422, __('tenant.last_admin'));
-        }
     }
 
     /**

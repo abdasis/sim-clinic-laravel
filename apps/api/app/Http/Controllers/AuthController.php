@@ -2,52 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\LogAuditAction;
-use App\Enums\UserStatus;
+use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
-use App\Models\User;
+use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\PermissionRegistrar;
 
 class AuthController extends Controller
 {
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request, AuthService $service): JsonResponse
     {
-        $validated = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
-
         $tenant = app('tenant');
 
-        // Role/permission dibaca dalam konteks tenant yang sedang login.
-        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
-
-        // Staf yang sudah dinonaktifkan (soft-deleted) tidak boleh masuk lagi.
-        $user = User::where('tenant_id', $tenant->id)
-            ->where('email', $validated['email'])
-            ->first();
-
-        if (! $user || ! Hash::check($validated['password'], $user->password)) {
-            abort(422, __('auth.invalid_credentials'));
-        }
-        if ($user->status === UserStatus::Inactive) {
-            abort(403, __('auth.unauthorized'));
-        }
-
-        $token = $user->createToken('spa')->plainTextToken;
-
-        app(LogAuditAction::class)->handle('user.login', $user, $user, [
-            'ip_address' => $request->ip(),
-        ], 'Pengguna '.$user->email.' berhasil masuk.', $tenant);
+        $result = $service->login(
+            $tenant,
+            $request->validated('email'),
+            $request->validated('password'),
+            $request->ip(),
+        );
 
         return response()->json([
             'data' => [
-                'user' => new UserResource($user),
-                'token' => $token,
+                'user' => new UserResource($result['user']),
+                'token' => $result['token'],
             ],
             'meta' => [
                 'redirect_to' => '/'.$tenant->slug,

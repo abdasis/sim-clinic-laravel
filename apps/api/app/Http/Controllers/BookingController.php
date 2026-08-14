@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Enums\BookingStatus;
 use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\BookingRequest;
+use App\Http\Requests\BookingScheduleRequest;
+use App\Http\Requests\UpdateBookingStatusRequest;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Services\BookingOverlapService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class BookingController extends Controller
 {
@@ -91,15 +92,11 @@ class BookingController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, Booking $booking): JsonResponse
+    public function updateStatus(UpdateBookingStatusRequest $request, Booking $booking): JsonResponse
     {
         $this->authorize('update', $booking);
 
-        $validated = $request->validate([
-            'status' => ['required', Rule::in(array_column(BookingStatus::cases(), 'value'))],
-        ]);
-
-        $target = BookingStatus::from($validated['status']);
+        $target = BookingStatus::from($request->validated('status'));
 
         if (! $booking->status->canTransitionTo($target)) {
             abort(422, __('clinic.invalid_transition'));
@@ -116,15 +113,11 @@ class BookingController extends Controller
         ]);
     }
 
-    public function schedule(Request $request): JsonResponse
+    public function schedule(BookingScheduleRequest $request): JsonResponse
     {
         $this->authorize('viewAny', Booking::class);
 
-        $validated = $request->validate([
-            'from' => ['required', 'date'],
-            'to' => ['required', 'date', 'after_or_equal:from'],
-            'view' => ['nullable', Rule::in(['day', 'week'])],
-        ]);
+        $validated = $request->validated();
 
         $bookings = Booking::query()
             ->with(['patient', 'service', 'assignee'])

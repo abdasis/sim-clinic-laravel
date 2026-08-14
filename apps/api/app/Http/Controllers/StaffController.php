@@ -2,20 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\LogAuditAction;
-use App\Actions\Staff\DeactivateStaffAction;
-use App\Enums\ClinicRole;
-use App\Enums\UserRole;
-use App\Enums\UserStatus;
 use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\StoreStaffRequest;
 use App\Http\Requests\UpdateStaffRoleRequest;
 use App\Http\Resources\StaffResource;
 use App\Models\User;
+use App\Services\StaffService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class StaffController extends Controller
 {
@@ -57,27 +51,11 @@ class StaffController extends Controller
         ]);
     }
 
-    public function store(StoreStaffRequest $request): JsonResponse
+    public function store(StoreStaffRequest $request, StaffService $service): JsonResponse
     {
         $this->authorize('create', User::class);
 
-        $staff = DB::transaction(function () use ($request): User {
-            $staff = User::create([
-                'tenant_id' => app('tenant')->id,
-                'name' => $request->validated('name'),
-                'email' => $request->validated('email'),
-                'password' => Hash::make($request->validated('password')),
-                'role' => UserRole::Member,
-                'status' => UserStatus::Active,
-                'clinic_role' => $request->validated('clinic_role'),
-            ]);
-
-            $staff->syncRoles([$staff->clinic_role->value]);
-
-            return $staff;
-        });
-
-        app(LogAuditAction::class)->handle('staff.created', $staff, null, [], 'Staf baru '.$staff->name.' ('.$staff->email.') ditambahkan sebagai '.$staff->clinic_role?->label().'.');
+        $staff = $service->create(app('tenant'), $request->validated());
 
         return response()->json([
             'data' => new StaffResource($staff),
@@ -85,34 +63,11 @@ class StaffController extends Controller
         ], 201);
     }
 
-    public function updateRole(UpdateStaffRoleRequest $request, User $staff): JsonResponse
+    public function updateRole(UpdateStaffRoleRequest $request, User $staff, StaffService $service): JsonResponse
     {
         $this->authorize('update', $staff);
 
-        $newRole = ClinicRole::from($request->validated('clinic_role'));
-
-        if ($staff->clinic_role === ClinicRole::Admin && $newRole !== ClinicRole::Admin) {
-            $adminCount = User::where('tenant_id', app('tenant')->id)
-                ->where('clinic_role', ClinicRole::Admin)
-                ->where('status', UserStatus::Active)
-                ->count();
-
-            if ($adminCount <= 1) {
-                abort(422, __('clinic.last_admin'));
-            }
-        }
-
-        $oldRole = $staff->clinic_role;
-
-        DB::transaction(function () use ($staff, $newRole): void {
-            $staff->update(['clinic_role' => $newRole]);
-            $staff->syncRoles([$newRole->value]);
-        });
-
-        app(LogAuditAction::class)->handle('staff.role_changed', $staff, null, [
-            'old_role' => $oldRole?->value,
-            'new_role' => $newRole->value,
-        ], 'Peran staf '.$staff->name.' diubah dari '.$oldRole?->label().' ke '.$newRole->label().'.');
+        $service->changeRole($staff, $request->validated('clinic_role'));
 
         return response()->json([
             'data' => new StaffResource($staff),
@@ -120,11 +75,11 @@ class StaffController extends Controller
         ]);
     }
 
-    public function deactivate(User $staff, DeactivateStaffAction $deactivate): JsonResponse
+    public function deactivate(User $staff, StaffService $service): JsonResponse
     {
         $this->authorize('deactivate', $staff);
 
-        $deactivate->handle($staff);
+        $service->deactivate($staff);
 
         return response()->json([
             'data' => new StaffResource($staff),

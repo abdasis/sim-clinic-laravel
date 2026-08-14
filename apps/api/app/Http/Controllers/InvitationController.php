@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AcceptInvitationRequest;
 use App\Services\InvitationService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class InvitationController extends Controller
 {
@@ -23,15 +23,9 @@ class InvitationController extends Controller
         ]);
     }
 
-    public function accept(Request $request, string $token, InvitationService $service): JsonResponse
+    public function accept(AcceptInvitationRequest $request, string $token, InvitationService $service): JsonResponse
     {
-        $validated = $request->validate([
-            'password' => ['required', 'min:8', 'regex:/^(?=.*[A-Za-z])(?=.*\d).{8,}$/'],
-        ], [
-            'password.regex' => __('validation.password_complexity'),
-        ]);
-
-        $user = $service->accept($token, $validated['password']);
+        $user = $service->accept($token, $request->validated('password'));
 
         return response()->json([
             'data' => [],
