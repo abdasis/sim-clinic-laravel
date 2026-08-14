@@ -28,6 +28,9 @@ import type { ApiError } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { formatCurrency } from "#/lib/format.ts"
 
+// Tiga keadaan yang sama dengan enum backend.
+const PAYMENT_STATUS_OPTIONS = ["unpaid", "partially_paid", "paid"] as const
+
 export const Route = createFileRoute("/$tenant/clinic/pos/transactions")({
   component: TransactionsPage,
 })
@@ -185,6 +188,16 @@ function TransactionsPage() {
         isLoading={isLoading}
         searchPlaceholder={t("general.search")}
         meta={meta}
+        faceted={[
+          {
+            columnId: "payment_status",
+            title: t("pos.payment_status"),
+            options: PAYMENT_STATUS_OPTIONS.map((status) => ({
+              label: t(`clinic.payment_status.${status}`),
+              value: status,
+            })),
+          },
+        ]}
       />
     </div>
   )
