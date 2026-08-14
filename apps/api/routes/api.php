@@ -78,7 +78,7 @@ Route::prefix('{tenant}/clinic')
         // US3 Patient
         Route::get('patients/{patient}/history', [PatientController::class, 'history']);
         Route::get('patients/{patient}/treatments', [MedicalRecordController::class, 'patientTreatments']);
-        Route::apiResource('patients', PatientController::class)->except(['destroy']);
+        Route::apiResource('patients', PatientController::class);
 
         // US4 Booking
         Route::get('bookings/schedule', [BookingController::class, 'schedule']);

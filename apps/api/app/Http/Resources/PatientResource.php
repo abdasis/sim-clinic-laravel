@@ -18,6 +18,7 @@ class PatientResource extends JsonResource
             'whatsapp' => $this->whatsapp,
             'address' => $this->address,
             'notes' => $this->notes,
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

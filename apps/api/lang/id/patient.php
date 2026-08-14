@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'deactivated' => 'Pasien berhasil dinonaktifkan.',
+    'deactivate' => 'Nonaktifkan',
+    'deactivate_confirm' => 'Pasien nonaktif tidak lagi muncul di daftar aktif. Riwayat kunjungan, rekam medis, dan transaksinya tetap tersimpan.',
     'title' => 'Pasien',
     'name' => 'Nama',
     'birth_date' => 'Tanggal Lahir',

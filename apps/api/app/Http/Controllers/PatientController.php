@@ -6,6 +6,7 @@ use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\PatientRequest;
 use App\Http\Resources\PatientResource;
 use App\Models\Patient;
+use App\Services\PatientService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -47,15 +48,11 @@ class PatientController extends Controller
         ]);
     }
 
-    public function store(PatientRequest $request): JsonResponse
+    public function store(PatientRequest $request, PatientService $service): JsonResponse
     {
         $this->authorize('create', Patient::class);
 
-        $patient = Patient::create($request->validated());
-
-        $duplicate = Patient::where('phone', $patient->phone)
-            ->where('id', '!=', $patient->id)
-            ->first();
+        [$patient, $duplicate] = $service->create($request->validated());
 
         return response()->json([
             'data' => new PatientResource($patient),
@@ -74,15 +71,31 @@ class PatientController extends Controller
         return response()->json(['data' => new PatientResource($patient), 'meta' => []]);
     }
 
-    public function update(PatientRequest $request, Patient $patient): JsonResponse
+    public function update(PatientRequest $request, Patient $patient, PatientService $service): JsonResponse
     {
         $this->authorize('update', $patient);
 
-        $patient->update($request->validated());
+        [$patient, $duplicate] = $service->update($patient, $request->validated());
 
         return response()->json([
             'data' => new PatientResource($patient),
-            'meta' => ['message' => __('patient.updated')],
+            'meta' => [
+                'duplicate_warning' => $duplicate !== null,
+                'duplicate_patient_id' => $duplicate?->id,
+                'message' => __('patient.updated'),
+            ],
+        ]);
+    }
+
+    public function destroy(Patient $patient, PatientService $service): JsonResponse
+    {
+        $this->authorize('delete', $patient);
+
+        $service->deactivate($patient);
+
+        return response()->json([
+            'data' => new PatientResource($patient),
+            'meta' => ['message' => __('patient.deactivated')],
         ]);
     }
 

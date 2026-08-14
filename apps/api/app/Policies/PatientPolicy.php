@@ -28,4 +28,9 @@ class PatientPolicy
     {
         return $user->can('patient.manage');
     }
+
+    public function delete(User $user): bool
+    {
+        return $user->can('patient.manage');
+    }
 }
