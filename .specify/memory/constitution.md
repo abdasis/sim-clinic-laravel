@@ -1,19 +1,15 @@
 <!--
 === SYNC IMPACT REPORT ===
-Version change: (uninitialized template) -> 1.0.0
-Modified principles: N/A (first concrete ratification; all placeholders filled)
+Version change: 1.0.0 -> 1.1.0
+Modified principles: none (existing I-V unchanged)
 Added sections:
-  - Core Principles I-V (Clean Code, TDD, Multi-Tenant Isolation, Simplicity, Bounded Size)
-  - Section "Tech Stack & Constraints"
-  - Section "Development Workflow"
-  - Governance
-Removed sections: none
+  - Core Principle VI "Permission & Activity Log" (spatie/laravel-permission for dynamic roles; narrative audit log)
+Modified sections:
+  - Governance metadata (Last Amended -> 2026-08-14, Version -> 1.1.0)
 Templates requiring updates:
   - .specify/templates/plan-template.md        — ✅ no change (Constitution Check section is generic; gates derive from this file)
-  - .specify/templates/spec-template.md        — ✅ no change (acceptance scenarios align with TDD)
-  - .specify/templates/tasks-template.md       — ✅ no change (already enforces test-first: "Write these tests FIRST, ensure they FAIL")
-  - .specify/templates/commands/*.md           — ⚠ pending (directory empty / no command files to verify)
-  - README.md                                   — ⚠ pending (optional: add pointer to this constitution)
+  - .specify/templates/spec-template.md        — ✅ no change
+  - .specify/templates/tasks-template.md       — ✅ no change
 Follow-up TODOs: none
 ===
 -->
@@ -128,6 +124,30 @@ Ukuran unit kode WAJIB dibatasi untuk menjaga kemudahbacaan.
 Rasional: batas ukuran memaksa pemecahan masalah menjadi unit yang dapat
 diuji, ditinjau, dan diganti tanpa risiko luas.
 
+### VI. Permission & Activity Log (WAJIB)
+
+Manajemen otorisasi dan audit log pada project Laravel WAJIB mengikuti
+konvensi berikut:
+
+- **Role/permission dinamis WAJIB pakai `spatie/laravel-permission`**
+  (bukan matrix statik/Gate manual) saat role bersifat DB-driven, dapat
+  diassign runtime, multi-role, atau CRUD-able. `HasRoles` di User,
+  assign via `assignRole()`, cek via `hasRole()`/`can()`, define via
+  seeder, middleware `role:`/`permission:`.
+- **Exception**: role benar-benar statik & fixed (tidak berubah runtime,
+  tidak butuh CRUD role) boleh pakai enum + Gate matrix — wajib beri
+  alasan `ponytail:`. Saat role jadi dinamis/CRUD-able, WAJIB migrasi ke
+  spatie.
+- **Audit log WAJIB informatif + naratif.** Setiap aksi yang mengubah
+  data (create/update/delete) mencatat: siapa (causer), aksi, target
+  (subject), kapan, dan deskripsi naratif. Bukan kode robotik
+  "update record id=5", melainkan "Memperbarui data pendaftaran siswa
+  Budi (id: 5) — status berubah dari 'menunggu' ke 'disetujui'".
+
+Rasional: otorisasi DB-driven mencegah drift antara kode dan kebijakan
+operasional; audit naratif membuat log dapat dibaca manusia dan berguna
+untuk forensik/kepatuhan.
+
 ## Tech Stack & Constraints
 
 - **Backend**: Laravel API (PHP), aplikasi multi-tenant single-database.
@@ -176,4 +196,4 @@ Alur WAJIB untuk setiap fitur/task:
 - Panduan development runtime mengikuti `CLAUDE.md` (global) dan skill aktif:
   `/clean-code-principles`, `laravel-best-practices`, `laravel-inertia-react`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-07 | **Last Amended**: 2026-07-07
+**Version**: 1.1.0 | **Ratified**: 2026-07-07 | **Last Amended**: 2026-08-14
