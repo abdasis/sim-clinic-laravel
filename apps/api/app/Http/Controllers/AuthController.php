@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\PermissionRegistrar;
 
 class AuthController extends Controller
 {
@@ -22,6 +23,10 @@ class AuthController extends Controller
 
         $tenant = app('tenant');
 
+        // Role/permission dibaca dalam konteks tenant yang sedang login.
+        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
+
+        // Staf yang sudah dinonaktifkan (soft-deleted) tidak boleh masuk lagi.
         $user = User::where('tenant_id', $tenant->id)
             ->where('email', $validated['email'])
             ->first();
