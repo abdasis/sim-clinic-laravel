@@ -15,6 +15,7 @@ return [
     'registered' => 'Tenant berhasil didaftarkan.',
     'slug_taken' => 'Nama perusahaan menghasilkan slug yang sudah digunakan. Silakan gunakan nama lain.',
     'slug_invalid' => 'Nama perusahaan tidak dapat dijadikan slug yang valid.',
+    'slug_reserved' => 'Nama perusahaan menghasilkan slug yang sudah dipakai sistem. Silakan gunakan nama lain.',
     'status_changed' => 'Status tenant berhasil diperbarui.',
     'invite' => 'Undang Pengguna',
     'invited' => 'Undangan berhasil dikirim.',

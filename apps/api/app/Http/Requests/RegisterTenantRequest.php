@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 
 class RegisterTenantRequest extends FormRequest
 {
@@ -14,7 +16,15 @@ class RegisterTenantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_name' => ['required', 'string', 'max:255'],
+            'company_name' => [
+                'required', 'string', 'max:255',
+                // Nama yang hanya berisi simbol menghasilkan slug kosong.
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (Str::slug((string) $value) === '') {
+                        $fail(__('tenant.slug_invalid'));
+                    }
+                },
+            ],
             'phone' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'regex:/^(?=.*[A-Za-z])(?=.*\d).{8,}$/'],
