@@ -40,6 +40,10 @@ export function isAuthenticated(): boolean {
   return getToken() !== null
 }
 
+export function hasPlatformRole(): boolean {
+  return getAuthUser()?.role === "platform_admin"
+}
+
 export function hasClinicRole(...roles: string[]): boolean {
   const user = getAuthUser()
   return user?.clinic_role != null && roles.includes(user.clinic_role)

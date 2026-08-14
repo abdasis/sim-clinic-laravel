@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router"
-import { Building2 } from "lucide-react"
+import { Building2, LayoutDashboard } from "lucide-react"
 
 import { AppSidebar, type SidebarNavItem, type SidebarUser } from "#/components/app-sidebar.tsx"
 import {
@@ -31,8 +31,14 @@ function CentralLayout() {
     email: authUser?.email ?? "-",
   }
 
-  // ponytail: hanya modul Tenants; tambah item saat modul central baru ada
+  // ponytail: hanya modul Dasbor + Tenants; tambah item saat modul central baru ada
   const navMain: SidebarNavItem[] = [
+    {
+      title: t("central.dashboard"),
+      url: "/central",
+      icon: LayoutDashboard,
+      isActive: pathname === "/central",
+    },
     {
       title: t("tenant.tenants"),
       url: "/central/tenants",
@@ -51,7 +57,7 @@ function CentralLayout() {
       <AppSidebar
         brandTitle={t("general.central")}
         brandSubtitle={t("general.admin_panel")}
-        brandTo="/central/tenants"
+        brandTo="/central"
         groupLabel={t("general.platform")}
         navMain={navMain}
         user={user}
@@ -73,5 +79,6 @@ function CentralLayout() {
 
 function sectionTitle(pathname: string, t: (key: string) => string): string {
   if (pathname.startsWith("/central/tenants")) return t("tenant.tenants")
+  if (pathname === "/central") return t("central.dashboard")
   return t("general.central")
 }

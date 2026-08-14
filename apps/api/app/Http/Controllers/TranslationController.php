@@ -11,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 class TranslationController extends Controller
 {
     private const GROUPS = [
-        'general', 'auth', 'tenant', 'validation',
+        'general', 'auth', 'tenant', 'central', 'validation',
         'clinic', 'staff', 'service', 'patient', 'booking',
         'medical_record', 'product', 'inventory', 'pos', 'invoice', 'report',
     ];

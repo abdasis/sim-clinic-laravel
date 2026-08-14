@@ -13,6 +13,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as CentralRouteRouteImport } from './routes/central/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CentralIndexRouteImport } from './routes/central/index'
 import { Route as InvitationsTokenRouteImport } from './routes/invitations/$token'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoDataTableRouteImport } from './routes/demo/data-table'
@@ -56,6 +57,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CentralIndexRoute = CentralIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CentralRouteRoute,
 } as any)
 const InvitationsTokenRoute = InvitationsTokenRouteImport.update({
   id: '/invitations/$token',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/demo/data-table': typeof DemoDataTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
+  '/central/': typeof CentralIndexRoute
   '/$tenant/users/': typeof TenantUsersIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/medical-records/new': typeof TenantClinicMedicalRecordsNewRoute
@@ -216,7 +223,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/central': typeof CentralRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/register': typeof RegisterRoute
   '/$tenant/clinic': typeof TenantClinicRouteRouteWithChildren
@@ -225,6 +231,7 @@ export interface FileRoutesByTo {
   '/demo/data-table': typeof DemoDataTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
+  '/central': typeof CentralIndexRoute
   '/$tenant/users': typeof TenantUsersIndexRoute
   '/central/tenants': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/medical-records/new': typeof TenantClinicMedicalRecordsNewRoute
@@ -255,6 +262,7 @@ export interface FileRoutesById {
   '/demo/data-table': typeof DemoDataTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
+  '/central/': typeof CentralIndexRoute
   '/$tenant/users/': typeof TenantUsersIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/medical-records/new': typeof TenantClinicMedicalRecordsNewRoute
@@ -286,6 +294,7 @@ export interface FileRouteTypes {
     | '/demo/data-table'
     | '/demo/tanstack-query'
     | '/invitations/$token'
+    | '/central/'
     | '/$tenant/users/'
     | '/central/tenants/'
     | '/$tenant/clinic/medical-records/new'
@@ -306,7 +315,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/central'
     | '/about'
     | '/register'
     | '/$tenant/clinic'
@@ -315,6 +323,7 @@ export interface FileRouteTypes {
     | '/demo/data-table'
     | '/demo/tanstack-query'
     | '/invitations/$token'
+    | '/central'
     | '/$tenant/users'
     | '/central/tenants'
     | '/$tenant/clinic/medical-records/new'
@@ -344,6 +353,7 @@ export interface FileRouteTypes {
     | '/demo/data-table'
     | '/demo/tanstack-query'
     | '/invitations/$token'
+    | '/central/'
     | '/$tenant/users/'
     | '/central/tenants/'
     | '/$tenant/clinic/medical-records/new'
@@ -405,6 +415,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/central/': {
+      id: '/central/'
+      path: '/'
+      fullPath: '/central/'
+      preLoaderRoute: typeof CentralIndexRouteImport
+      parentRoute: typeof CentralRouteRoute
     }
     '/invitations/$token': {
       id: '/invitations/$token'
@@ -572,11 +589,13 @@ declare module '@tanstack/react-router' {
 
 interface CentralRouteRouteChildren {
   CentralLoginRoute: typeof CentralLoginRoute
+  CentralIndexRoute: typeof CentralIndexRoute
   CentralTenantsIndexRoute: typeof CentralTenantsIndexRoute
 }
 
 const CentralRouteRouteChildren: CentralRouteRouteChildren = {
   CentralLoginRoute: CentralLoginRoute,
+  CentralIndexRoute: CentralIndexRoute,
   CentralTenantsIndexRoute: CentralTenantsIndexRoute,
 }
 
@@ -638,12 +657,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

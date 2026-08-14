@@ -53,7 +53,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   // ponytail: deteksi via prefix; ganti ke flag route jika admin bertambah kompleks
   const isAdmin =
     /^\/[^/]+\/clinic(\/|$)/.test(pathname) ||
-    (pathname.startsWith('/central/') && pathname !== '/central/login')
+    (/^\/central(\/|$)/.test(pathname) && pathname !== '/central/login')
 
   return (
     <html lang="en" suppressHydrationWarning>
