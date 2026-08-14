@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Actions\LogAuditAction;
-use App\Actions\SyncTenantClinicRolesAction;
+use App\Actions\Tenant\SyncTenantClinicRolesAction;
 use App\Enums\ClinicRole;
 use App\Enums\TenantStatus;
 use App\Enums\UserRole;

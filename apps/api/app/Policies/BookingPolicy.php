@@ -11,26 +11,26 @@ class BookingPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('clinic.access', ['booking', 'r']);
+        return $user->can('booking.view');
     }
 
     public function view(User $user): bool
     {
-        return $user->can('clinic.access', ['booking', 'r']);
+        return $user->can('booking.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('clinic.access', ['booking', 'w']);
+        return $user->can('booking.manage');
     }
 
     public function update(User $user): bool
     {
-        return $user->can('clinic.access', ['booking', 'w']);
+        return $user->can('booking.manage');
     }
 
     public function delete(User $user): bool
     {
-        return $user->can('clinic.access', ['booking', 'w']);
+        return $user->can('booking.manage');
     }
 }

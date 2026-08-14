@@ -56,6 +56,8 @@ Route::prefix('{tenant}')
         Route::post('/users/invite', [UserController::class, 'invite']);
         Route::post('/users/{user}/remove', [UserController::class, 'remove']);
         Route::patch('/users/{user}/role', [UserController::class, 'role']);
+        Route::get('/invitations', [UserController::class, 'invitations']);
+        Route::post('/invitations/{invitation}/cancel', [UserController::class, 'cancelInvitation']);
     });
 
 // =========================================================================

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\DeactivateStaffAction;
 use App\Actions\LogAuditAction;
+use App\Actions\Staff\DeactivateStaffAction;
 use App\Enums\ClinicRole;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;

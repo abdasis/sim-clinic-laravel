@@ -11,6 +11,6 @@ class InvoicePolicy
 {
     public function view(User $user): bool
     {
-        return $user->can('clinic.access', ['invoice', 'r']);
+        return $user->can('invoice.view');
     }
 }

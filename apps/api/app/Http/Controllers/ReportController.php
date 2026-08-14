@@ -9,14 +9,14 @@ use Illuminate\Http\JsonResponse;
 /**
  * ReportController — laporan omzet, treatment, produk (US8, kontrak §8).
  *
- * Reports tidak punya Eloquent model, jadi authorize via Gate clinic.access langsung.
+ * Reports tidak punya Eloquent model, jadi authorize via permission spatie langsung.
  * Admin only (FR-075). Rentang tanpa data -> data kosong + meta.empty=true (FR-074).
  */
 class ReportController extends Controller
 {
     private function authorizeReport(): void
     {
-        if (! auth()->user()->can('clinic.access', ['report', 'r'])) {
+        if (! auth()->user()->can('report.view')) {
             abort(403, __('clinic.forbidden'));
         }
     }

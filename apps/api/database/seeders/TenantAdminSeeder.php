@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Actions\SyncTenantClinicRolesAction;
+use App\Actions\Tenant\SyncTenantClinicRolesAction;
 use App\Enums\ClinicRole;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;

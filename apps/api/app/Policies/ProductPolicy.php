@@ -11,26 +11,26 @@ class ProductPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('clinic.access', ['product', 'r']);
+        return $user->can('product.view');
     }
 
     public function view(User $user): bool
     {
-        return $user->can('clinic.access', ['product', 'r']);
+        return $user->can('product.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('clinic.access', ['product', 'w']);
+        return $user->can('product.manage');
     }
 
     public function update(User $user): bool
     {
-        return $user->can('clinic.access', ['product', 'w']);
+        return $user->can('product.manage');
     }
 
     public function delete(User $user): bool
     {
-        return $user->can('clinic.access', ['product', 'w']);
+        return $user->can('product.manage');
     }
 }

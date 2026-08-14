@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\ClinicRole;
 use App\Enums\InvitationStatus;
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -10,13 +12,15 @@ use Illuminate\Support\Str;
 
 class Invitation extends Model
 {
-    protected $fillable = ['tenant_id', 'email', 'role', 'token', 'expires_at', 'status'];
+    protected $fillable = ['tenant_id', 'email', 'role', 'clinic_role', 'token', 'expires_at', 'status'];
 
     protected function casts(): array
     {
         return [
             'expires_at' => 'datetime',
             'status' => InvitationStatus::class,
+            'role' => UserRole::class,
+            'clinic_role' => ClinicRole::class,
         ];
     }
 

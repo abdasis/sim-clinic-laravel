@@ -11,26 +11,26 @@ class StockMovementPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('clinic.access', ['inventory', 'r']);
+        return $user->can('inventory.view');
     }
 
     public function view(User $user): bool
     {
-        return $user->can('clinic.access', ['inventory', 'r']);
+        return $user->can('inventory.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('clinic.access', ['inventory', 'w']);
+        return $user->can('inventory.manage');
     }
 
     public function update(User $user): bool
     {
-        return $user->can('clinic.access', ['inventory', 'w']);
+        return $user->can('inventory.manage');
     }
 
     public function delete(User $user): bool
     {
-        return $user->can('clinic.access', ['inventory', 'w']);
+        return $user->can('inventory.manage');
     }
 }

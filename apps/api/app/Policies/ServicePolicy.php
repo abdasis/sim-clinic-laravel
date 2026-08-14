@@ -11,26 +11,26 @@ class ServicePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('clinic.access', ['service', 'r']);
+        return $user->can('service.view');
     }
 
     public function view(User $user): bool
     {
-        return $user->can('clinic.access', ['service', 'r']);
+        return $user->can('service.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('clinic.access', ['service', 'w']);
+        return $user->can('service.manage');
     }
 
     public function update(User $user): bool
     {
-        return $user->can('clinic.access', ['service', 'w']);
+        return $user->can('service.manage');
     }
 
     public function delete(User $user): bool
     {
-        return $user->can('clinic.access', ['service', 'w']);
+        return $user->can('service.manage');
     }
 }

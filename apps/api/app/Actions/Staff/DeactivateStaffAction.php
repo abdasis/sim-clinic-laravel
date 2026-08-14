@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Actions;
+namespace App\Actions\Staff;
 
+use App\Actions\LogAuditAction;
 use App\Enums\ClinicRole;
 use App\Enums\UserStatus;
 use App\Models\User;

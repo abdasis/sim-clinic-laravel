@@ -10,7 +10,7 @@ class StoreStaffRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('staff.manage') ?? false;
     }
 
     public function rules(): array

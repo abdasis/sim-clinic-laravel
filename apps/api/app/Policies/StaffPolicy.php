@@ -7,7 +7,7 @@ use App\Models\User;
 /**
  * Staff: hanya Admin klinik yang boleh kelola staf (R2 matriks, FR-002, FR-003).
  * Otorisasi didelegasikan ke permission spatie per tenant (team context
- * dipasang SetPermissionTeamId), yang di-generate dari ClinicPermission::MATRIX.
+ * dipasang SetPermissionTeamId), yang di-generate dari SyncTenantClinicRolesAction::MATRIX.
  */
 class StaffPolicy
 {

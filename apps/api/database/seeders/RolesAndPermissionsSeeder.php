@@ -2,11 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Actions\SyncTenantClinicRolesAction;
+use App\Actions\Tenant\SyncTenantClinicRolesAction;
 use App\Enums\UserRole;
 use App\Http\Middleware\SetPermissionTeamId;
 use App\Models\Tenant;
-use App\Services\ClinicPermission;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -14,7 +13,7 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Seed permission per modul, role platform global (team null), dan role
- * klinik per tenant. Matriks peran klinik mengacu ke ClinicPermission::MATRIX
+ * klinik per tenant. Matriks peran klinik mengacu ke SyncTenantClinicRolesAction::MATRIX
  * agar tidak ada duplikasi sumber kebenaran.
  */
 class RolesAndPermissionsSeeder extends Seeder
@@ -69,7 +68,7 @@ class RolesAndPermissionsSeeder extends Seeder
     {
         $modules = [];
 
-        foreach (ClinicPermission::MATRIX as $byModule) {
+        foreach (SyncTenantClinicRolesAction::MATRIX as $byModule) {
             $modules = array_merge($modules, array_keys($byModule));
         }
 

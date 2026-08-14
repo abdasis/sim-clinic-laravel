@@ -11,21 +11,21 @@ class PatientPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('clinic.access', ['patient', 'r']);
+        return $user->can('patient.view');
     }
 
     public function view(User $user): bool
     {
-        return $user->can('clinic.access', ['patient', 'r']);
+        return $user->can('patient.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('clinic.access', ['patient', 'w']);
+        return $user->can('patient.manage');
     }
 
     public function update(User $user): bool
     {
-        return $user->can('clinic.access', ['patient', 'w']);
+        return $user->can('patient.manage');
     }
 }

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Actions;
+namespace App\Actions\User;
 
+use App\Actions\LogAuditAction;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Middleware\SetPermissionTeamId;

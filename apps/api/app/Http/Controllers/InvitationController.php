@@ -2,28 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\InvitationStatus;
-use App\Models\Invitation;
 use App\Services\InvitationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class InvitationController extends Controller
 {
-    public function show(string $token): JsonResponse
+    public function show(string $token, InvitationService $service): JsonResponse
     {
-        $invitation = Invitation::where('token', $token)
-            ->where('status', InvitationStatus::Pending)
-            ->first();
-
-        if (! $invitation || $invitation->isExpired()) {
-            abort(404, __('tenant.invitation_invalid'));
-        }
+        $invitation = $service->resolvePending($token);
 
         return response()->json([
             'data' => [
                 'email' => $invitation->email,
                 'tenant_slug' => $invitation->tenant->slug,
+                'role' => $invitation->role->value,
+                'clinic_role' => $invitation->clinic_role?->value,
             ],
             'meta' => [],
         ]);
@@ -39,12 +33,10 @@ class InvitationController extends Controller
 
         $user = $service->accept($token, $validated['password']);
 
-        $slug = $user->tenant->slug;
-
         return response()->json([
             'data' => [],
             'meta' => [
-                'redirect_to' => '/'.$slug.'/login',
+                'redirect_to' => '/'.$user->tenant->slug.'/login',
                 'message' => __('auth.password_set'),
             ],
         ]);
