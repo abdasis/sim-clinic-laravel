@@ -29,12 +29,12 @@ CONTAINERS=$(docker ps --format '{{.Names}} {{.Status}}' | grep sim-clinic 2>/de
 
 if [ -z "$ERRORS" ]; then
   echo "✅ Deploy selesai — $COMMIT"
-  hermes send --to telegram "✅ Deploy Sim Clinic sukses via webhook!
+  sudo -n /usr/local/lib/hermes-agent/venv/bin/hermes send --to telegram "✅ Deploy Sim Clinic sukses via webhook!
 Commit: $COMMIT
 $CONTAINERS
 Web: https://mebaclinic.com" 2>&1 || true
 else
   echo "❌ Deploy gagal: $ERRORS"
-  hermes send --to telegram "❌ Deploy Sim Clinic GAGAL: $ERRORS
+  sudo -n /usr/local/lib/hermes-agent/venv/bin/hermes send --to telegram "❌ Deploy Sim Clinic GAGAL: $ERRORS
 Commit: $COMMIT" 2>&1 || true
 fi
