@@ -25,7 +25,6 @@ import { Route as InvitationsTokenRouteImport } from './routes/invitations/$toke
 import { Route as TenantClinicIndexRouteImport } from './routes/$tenant/clinic/index'
 import { Route as TenantClinicPosRouteRouteImport } from './routes/$tenant/clinic/pos/route'
 import { Route as TenantTreatmentSlugRouteImport } from './routes/$tenant/treatment/$slug'
-import { Route as TenantUsersIndexRouteImport } from './routes/$tenant/users/index'
 import { Route as MarketingArtikelIndexRouteImport } from './routes/_marketing/artikel/index'
 import { Route as MarketingCartIndexRouteImport } from './routes/_marketing/cart/index'
 import { Route as MarketingLocationsIndexRouteImport } from './routes/_marketing/locations/index'
@@ -141,11 +140,6 @@ const TenantClinicPosRouteRoute = TenantClinicPosRouteRouteImport.update({
 const TenantTreatmentSlugRoute = TenantTreatmentSlugRouteImport.update({
   id: '/$tenant/treatment/$slug',
   path: '/$tenant/treatment/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TenantUsersIndexRoute = TenantUsersIndexRouteImport.update({
-  id: '/$tenant/users/',
-  path: '/$tenant/users/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketingArtikelIndexRoute = MarketingArtikelIndexRouteImport.update({
@@ -377,7 +371,6 @@ export interface FileRoutesByFullPath {
   '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
   '/treatment/$slug': typeof MarketingTreatmentSlugRoute
   '/$tenant/clinic/': typeof TenantClinicIndexRoute
-  '/$tenant/users/': typeof TenantUsersIndexRoute
   '/artikel/': typeof MarketingArtikelIndexRoute
   '/cart/': typeof MarketingCartIndexRoute
   '/locations/': typeof MarketingLocationsIndexRoute
@@ -429,7 +422,6 @@ export interface FileRoutesByTo {
   '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
   '/treatment/$slug': typeof MarketingTreatmentSlugRoute
   '/$tenant/clinic': typeof TenantClinicIndexRoute
-  '/$tenant/users': typeof TenantUsersIndexRoute
   '/artikel': typeof MarketingArtikelIndexRoute
   '/cart': typeof MarketingCartIndexRoute
   '/locations': typeof MarketingLocationsIndexRoute
@@ -486,7 +478,6 @@ export interface FileRoutesById {
   '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
   '/_marketing/treatment/$slug': typeof MarketingTreatmentSlugRoute
   '/$tenant/clinic/': typeof TenantClinicIndexRoute
-  '/$tenant/users/': typeof TenantUsersIndexRoute
   '/_marketing/artikel/': typeof MarketingArtikelIndexRoute
   '/_marketing/cart/': typeof MarketingCartIndexRoute
   '/_marketing/locations/': typeof MarketingLocationsIndexRoute
@@ -543,7 +534,6 @@ export interface FileRouteTypes {
     | '/$tenant/treatment/$slug'
     | '/treatment/$slug'
     | '/$tenant/clinic/'
-    | '/$tenant/users/'
     | '/artikel/'
     | '/cart/'
     | '/locations/'
@@ -595,7 +585,6 @@ export interface FileRouteTypes {
     | '/$tenant/treatment/$slug'
     | '/treatment/$slug'
     | '/$tenant/clinic'
-    | '/$tenant/users'
     | '/artikel'
     | '/cart'
     | '/locations'
@@ -651,7 +640,6 @@ export interface FileRouteTypes {
     | '/$tenant/treatment/$slug'
     | '/_marketing/treatment/$slug'
     | '/$tenant/clinic/'
-    | '/$tenant/users/'
     | '/_marketing/artikel/'
     | '/_marketing/cart/'
     | '/_marketing/locations/'
@@ -702,7 +690,6 @@ export interface RootRouteChildren {
   InvitationsTokenRoute: typeof InvitationsTokenRoute
   TenantIndexRoute: typeof TenantIndexRoute
   TenantTreatmentSlugRoute: typeof TenantTreatmentSlugRoute
-  TenantUsersIndexRoute: typeof TenantUsersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -817,13 +804,6 @@ declare module '@tanstack/react-router' {
       path: '/$tenant/treatment/$slug'
       fullPath: '/$tenant/treatment/$slug'
       preLoaderRoute: typeof TenantTreatmentSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/$tenant/users/': {
-      id: '/$tenant/users/'
-      path: '/$tenant/users'
-      fullPath: '/$tenant/users/'
-      preLoaderRoute: typeof TenantUsersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_marketing/artikel/': {
@@ -1228,7 +1208,6 @@ const rootRouteChildren: RootRouteChildren = {
   InvitationsTokenRoute: InvitationsTokenRoute,
   TenantIndexRoute: TenantIndexRoute,
   TenantTreatmentSlugRoute: TenantTreatmentSlugRoute,
-  TenantUsersIndexRoute: TenantUsersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

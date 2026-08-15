@@ -21,7 +21,6 @@ import {
   Layers01Icon,
   PackageIcon,
   PaintBoardIcon,
-  Settings02Icon,
   StethoscopeIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons"
@@ -85,7 +84,6 @@ function ClinicLayout() {
   const items: NavItem[] = [
     { key: "", label: t("dashboard.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: DashboardSquare01Icon },
     { key: "staff", label: t("staff.title"), roles: ["admin"], icon: UserGroupIcon },
-    { key: "users", label: t("tenant.users"), roles: ["admin"], icon: Settings02Icon },
     { key: "services", label: t("service.title"), roles: ["admin", "doctor", "therapist"], icon: StethoscopeIcon },
     { key: "patients", label: t("patient.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulseIcon },
     { key: "bookings", label: t("booking.title"), roles: ["admin", "doctor", "therapist"], icon: Calendar01Icon },
