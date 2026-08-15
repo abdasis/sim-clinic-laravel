@@ -35,7 +35,7 @@ export function OutletContact({ outlet }: { outlet: ClinicOutlet }) {
           </p>
         ) : (
         <>
-        <p className="mb-2 flex items-center gap-2 text-[11px] font-medium tracking-widest text-muted-foreground uppercase">
+        <p className="mb-2 flex items-center gap-2 text-2xs font-medium tracking-widest text-muted-foreground uppercase">
           <HugeiconsIcon
             icon={Location01Icon}
             strokeWidth={2}

@@ -38,7 +38,7 @@ export function OutletHours({ hours }: { hours: OpeningHour[] }) {
           <Badge
             variant="outline"
             className={cn(
-              "gap-1.5 px-2 text-[11px] font-medium",
+              "gap-1.5 px-2 text-2xs font-medium",
               isOpen
                 ? "border-primary/40 text-primary"
                 : "border-border/60 text-muted-foreground",
@@ -76,7 +76,7 @@ export function OutletHours({ hours }: { hours: OpeningHour[] }) {
               <dt className={cn(!isToday && "text-muted-foreground")}>
                 {text(entry.day)}
                 {isToday ? (
-                  <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+                  <span className="ml-1.5 text-2xs font-normal text-muted-foreground">
                     {isEnglish ? "today" : "hari ini"}
                   </span>
                 ) : null}
