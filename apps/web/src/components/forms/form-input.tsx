@@ -18,9 +18,17 @@ interface FormInputProps<T extends FieldValues> {
   disabled?: boolean
   /** Keterangan kecil di bawah field. */
   description?: string
+  /** Penjelasan singkat di samping label untuk field yang tidak sebening namanya. */
+  tooltip?: string
   required?: boolean
   /** Lebar field di dalam grid section, mis. `sm:col-span-2`. */
   className?: string
+  /** Batas dan langkah untuk `type="number"`. */
+  min?: number
+  max?: number
+  step?: number
+  /** Kelas tambahan untuk elemen input, mis. `tabular-nums`. */
+  inputClassName?: string
 }
 
 export function FormInput<T extends FieldValues>({
@@ -31,8 +39,13 @@ export function FormInput<T extends FieldValues>({
   type = "text",
   disabled,
   description,
+  tooltip,
   required,
   className,
+  min,
+  max,
+  step,
+  inputClassName,
 }: FormInputProps<T>) {
   return (
     <FormField
@@ -40,13 +53,17 @@ export function FormInput<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FieldLabel label={label} required={required} />
+          <FieldLabel label={label} required={required} tooltip={tooltip} />
           <FormControl>
             <Input
               type={type}
               placeholder={placeholder}
               disabled={disabled}
               aria-required={required}
+              min={min}
+              max={max}
+              step={step}
+              className={inputClassName}
               {...field}
               value={field.value ?? ""}
             />

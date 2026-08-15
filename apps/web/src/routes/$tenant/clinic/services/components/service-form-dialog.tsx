@@ -24,6 +24,7 @@ const schema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   price: z.coerce.number().gte(0),
+  duration_minutes: z.coerce.number().int().gte(1).lte(600),
   status: z.string().optional(),
 })
 
@@ -34,6 +35,7 @@ export interface ServiceFormValues {
   name: string
   description?: string | null
   price: string | number
+  duration_minutes: number
   status: string
 }
 
@@ -60,7 +62,13 @@ export function ServiceFormDialog({
   const isEdit = service !== undefined
 
   const form = useForm(schema, {
-    defaultValues: { name: "", description: "", price: 0, status: "active" },
+    defaultValues: {
+      name: "",
+      description: "",
+      price: 0,
+      duration_minutes: 30,
+      status: "active",
+    },
   })
 
   // Prefill saat dialog dibuka supaya data terbaru yang dipakai, bukan
@@ -74,9 +82,16 @@ export function ServiceFormDialog({
             name: service.name,
             description: service.description ?? "",
             price: Number(service.price),
+            duration_minutes: service.duration_minutes ?? 30,
             status: service.status,
           }
-        : { name: "", description: "", price: 0, status: "active" },
+        : {
+            name: "",
+            description: "",
+            price: 0,
+            duration_minutes: 30,
+            status: "active",
+          },
     )
   }, [open, service, form])
 
@@ -125,6 +140,18 @@ export function ServiceFormDialog({
               name="price"
               label={t("service.price")}
               type="number"
+            />
+            <FormInput
+              control={form.control}
+              name="duration_minutes"
+              label={t("service.duration_minutes")}
+              tooltip={t("service.duration_minutes_hint")}
+              type="number"
+              min={1}
+              max={600}
+              step={1}
+              required
+              inputClassName="tabular-nums"
             />
             <FormSelect
               control={form.control}

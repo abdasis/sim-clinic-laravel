@@ -15,7 +15,7 @@ class Service extends Model
 {
     use BelongsToTenant, HasFactory;
 
-    protected $fillable = ['tenant_id', 'name', 'description', 'price', 'status'];
+    protected $fillable = ['tenant_id', 'name', 'description', 'price', 'duration_minutes', 'status'];
 
     protected function casts(): array
     {

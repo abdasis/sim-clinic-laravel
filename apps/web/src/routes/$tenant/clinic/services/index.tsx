@@ -29,6 +29,7 @@ interface ServiceRow {
   name: string
   description?: string | null
   price: string
+  duration_minutes: number
   status: string
   status_label: string
 }
@@ -48,6 +49,16 @@ function ServicesPage() {
         cell: ({ row }) => (
           <span className="tabular-nums">
             {formatCurrency(Number(row.original.price))}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "duration_minutes",
+        header: t("service.duration_minutes"),
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {row.original.duration_minutes}
+            <span className="text-muted-foreground ml-1">mnt</span>
           </span>
         ),
       },

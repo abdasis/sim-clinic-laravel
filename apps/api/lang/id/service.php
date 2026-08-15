@@ -8,6 +8,8 @@ return [
     'name' => 'Nama Layanan',
     'description' => 'Deskripsi',
     'price' => 'Harga',
+    'duration_minutes' => 'Durasi (menit)',
+    'duration_minutes_hint' => 'Perkiraan lama layanan dikerjakan. Dipakai untuk menyusun slot jadwal booking.',
     'status' => 'Status',
     'add' => 'Tambah Layanan',
     'created' => 'Layanan berhasil ditambahkan.',

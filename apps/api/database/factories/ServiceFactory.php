@@ -19,6 +19,7 @@ class ServiceFactory extends Factory
             'name' => fake()->randomElement(['Facial', 'Peeling', 'Laser', 'Botox']).' '.fake()->unique()->numberBetween(1, 9999),
             'description' => fake()->sentence(),
             'price' => fake()->numberBetween(50, 500) * 1000,
+            'duration_minutes' => fake()->numberBetween(15, 120),
             'status' => ServiceStatus::Active,
         ];
     }

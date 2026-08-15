@@ -19,6 +19,7 @@ class ServiceRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'gte:0'],
+            'duration_minutes' => ['required', 'integer', 'gte:1', 'max:600'],
             'status' => ['nullable', new Enum(ServiceStatus::class)],
         ];
     }
@@ -29,6 +30,7 @@ class ServiceRequest extends FormRequest
             'name' => __('service.name'),
             'description' => __('service.description'),
             'price' => __('service.price'),
+            'duration_minutes' => __('service.duration_minutes'),
             'status' => __('service.status'),
         ];
     }

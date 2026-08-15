@@ -20,9 +20,9 @@ class CreateServiceAction
         app(LogAuditAction::class)->handle(
             'service.created',
             $service,
-            null,
-            $service->only(['name', 'description', 'price', 'duration_minutes', 'status']),
-            'Membuat layanan '.$service->name.'.',
+            auth()->user(),
+            ['attributes' => $service->getAttributes()],
+            'Membuat layanan '.$service->name.' dengan durasi '.$service->duration_minutes.' menit.',
         );
 
         return $service;
