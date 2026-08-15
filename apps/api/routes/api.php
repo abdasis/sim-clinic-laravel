@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CentralAuthController;
+use App\Http\Controllers\CentralStatsController;
 use App\Http\Controllers\CompanyContentController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\DashboardController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\StatsController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\TenantRegistrationController;
 use App\Http\Controllers\TransactionController;
@@ -39,6 +41,7 @@ Route::get('/user', fn (Request $request) => $request->user())->middleware('auth
 // Central platform (spec 001) — auth:sanctum, platform admin
 // =========================================================================
 Route::middleware(['auth:sanctum', 'permission.team'])->prefix('central')->group(function (): void {
+    Route::get('/stats', [CentralStatsController::class, 'index']);
     Route::get('/tenants', [PlatformTenantController::class, 'index']);
     Route::patch('/tenants/{tenant}/status', [PlatformTenantController::class, 'status']);
 });
@@ -138,6 +141,9 @@ Route::prefix('{tenant}/clinic')
 
         // Dasbor klinik — dibaca semua peran, tanpa permission modul
         Route::get('dashboard/summary', [DashboardController::class, 'summary']);
+
+        // Statistik kepala halaman index — satu endpoint, modul dari segmen URL
+        Route::get('stats/{module}', [StatsController::class, 'show']);
 
         // US8 Reports
         Route::get('reports/revenue', [ReportController::class, 'revenue']);
