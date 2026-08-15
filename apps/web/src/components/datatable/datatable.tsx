@@ -9,6 +9,7 @@ import {
 } from "#/components/ui/table.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
+import { Button } from "#/components/ui/button.tsx"
 import type { EmptyIllustrationName } from "#/components/ui/empty-illustration.tsx"
 import { DataTableToolbar } from "#/components/datatable/datatable-toolbar.tsx"
 import { DataTablePagination } from "#/components/datatable/datatable-pagination.tsx"
@@ -32,6 +33,13 @@ interface DataTableProps<TData> {
   emptyIllustration?: EmptyIllustrationName
   /** Aksi opsional di bawah deskripsi, mis. tombol tambah. */
   emptyAction?: React.ReactNode
+  /**
+   * Permintaan daftar gagal. Wajib diteruskan: tanpa ini tabel yang error
+   * tampil persis seperti tabel kosong, dan pengguna menyimpulkan datanya
+   * hilang padahal servernya yang bermasalah.
+   */
+  isError?: boolean
+  onRetry?: () => void
 }
 
 export function DataTable<TData>({
@@ -43,6 +51,8 @@ export function DataTable<TData>({
   emptyMessage,
   emptyTitle,
   emptyDescription,
+  isError,
+  onRetry,
   emptyIllustration,
   emptyAction,
 }: DataTableProps<TData>) {
@@ -83,6 +93,26 @@ export function DataTable<TData>({
                   ))}
                 </TableRow>
               ))
+            ) : isError ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columnCount} className="py-14">
+                  {/* Gagal memuat bukan berarti datanya tidak ada — dua hal
+                      itu tidak boleh terlihat sama. */}
+                  <EmptyState
+                    className="p-0"
+                    illustration="default"
+                    title={t("general.load_failed")}
+                    description={t("general.load_failed_desc")}
+                    action={
+                      onRetry ? (
+                        <Button variant="outline" size="sm" onClick={onRetry}>
+                          {t("general.retry")}
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                </TableCell>
+              </TableRow>
             ) : rows.length === 0 ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={columnCount} className="py-14">

@@ -33,4 +33,7 @@ return [
     'pagination_of' => 'dari',
     'rows_per_page' => 'Baris per halaman',
     'select' => 'Pilih',
+    'load_failed' => 'Data gagal dimuat',
+    'load_failed_desc' => 'Server sedang tidak bisa dihubungi atau menolak permintaannya. Coba muat ulang; kalau tetap begini, kabari admin.',
+    'retry' => 'Muat ulang',
 ];

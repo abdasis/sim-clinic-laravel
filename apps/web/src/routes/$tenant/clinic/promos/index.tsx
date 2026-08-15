@@ -121,7 +121,7 @@ function PromosPage() {
     [t, tenant],
   )
 
-  const { table, isLoading, meta } = useDataTable<PromoRow>({
+  const { table, isLoading, meta, isError, refetch } = useDataTable<PromoRow>({
     queryKey: ["promos", tenant],
     queryFn: (params: DataTableParams) =>
       apiGet<DataTableResponse<PromoRow>>(`/${tenant}/clinic/promos`, {
@@ -159,6 +159,8 @@ function PromosPage() {
       <DataTable
         table={table}
         isLoading={isLoading}
+        isError={isError}
+        onRetry={() => void refetch()}
         searchPlaceholder={t("general.search")}
         meta={meta}
         emptyIllustration="default"

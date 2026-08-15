@@ -53,7 +53,7 @@ export function useDataTable<TData>({
     }
   }, [pagination, sorting, globalFilter, columnFilters])
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: [...queryKey, params],
     queryFn: () => queryFn(params),
     placeholderData: (prev) => prev,
@@ -91,5 +91,7 @@ export function useDataTable<TData>({
     isLoading,
     isError,
     error,
+    /** Dipakai tombol "Muat ulang" saat permintaan daftar gagal. */
+    refetch,
   }
 }

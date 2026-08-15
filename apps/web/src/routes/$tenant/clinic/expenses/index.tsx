@@ -126,7 +126,7 @@ function ExpensesPage() {
     [t, tenant],
   )
 
-  const { table, isLoading, meta } = useDataTable<ExpenseRow>({
+  const { table, isLoading, meta, isError, refetch } = useDataTable<ExpenseRow>({
     queryKey: ["expenses", tenant, from, to],
     queryFn: (params: DataTableParams) =>
       apiGet<DataTableResponse<ExpenseRow>>(`/${tenant}/clinic/expenses`, {
@@ -238,6 +238,8 @@ function ExpensesPage() {
       <DataTable
         table={table}
         isLoading={isLoading}
+        isError={isError}
+        onRetry={() => void refetch()}
         searchPlaceholder={t("general.search")}
         meta={meta}
         emptyIllustration="default"

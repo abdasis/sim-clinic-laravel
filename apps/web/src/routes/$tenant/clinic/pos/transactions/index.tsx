@@ -165,7 +165,7 @@ function TransactionsPage() {
 
   const stats = useStats({ tenant, module: "transactions" })
 
-  const { table, isLoading, meta } = useDataTable<TransactionRow>({
+  const { table, isLoading, meta, isError, refetch } = useDataTable<TransactionRow>({
     queryKey: ["transactions", tenant],
     queryFn: (params: DataTableParams) =>
       apiGet<DataTableResponse<TransactionRow>>(`/${tenant}/clinic/transactions`, {
@@ -215,6 +215,8 @@ function TransactionsPage() {
       <DataTable
         table={table}
         isLoading={isLoading}
+        isError={isError}
+        onRetry={() => void refetch()}
         searchPlaceholder={t("general.search")}
         meta={meta}
         emptyIllustration="pos"
