@@ -158,10 +158,19 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
 
       <Perforation />
 
-      <div className="grid grid-cols-[1.1rem_1fr_auto] items-center gap-x-1 bg-neutral-900 px-1 py-[0.6mm] text-[0.5rem] font-bold tracking-wider text-white uppercase">
-        <span>{t("invoice.qty")}</span>
-        <span>{t("invoice.description")}</span>
-        <span className="text-right">{t("invoice.subtotal")}</span>
+      {/* Kepala kolom tidak boleh membungkus: di kertas 48mm kolom jumlahnya
+          hanya selebar dua digit, dan kata yang terpenggal di sana berubah
+          jadi tumpukan huruf yang tidak terbaca. */}
+      <div className="grid grid-cols-[1.6rem_1fr_auto] items-center gap-x-1 bg-neutral-900 px-1 py-[0.6mm] text-[0.5rem] font-bold text-white uppercase">
+        <span className="text-center whitespace-nowrap">
+          {t("invoice.qty_short")}
+        </span>
+        <span className="tracking-wider whitespace-nowrap">
+          {t("invoice.description")}
+        </span>
+        <span className="text-right tracking-wider whitespace-nowrap">
+          {t("invoice.subtotal")}
+        </span>
       </div>
 
       {groups.map((group) => (
@@ -173,9 +182,9 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
             {group.items.map((item) => (
               <li
                 key={item.id}
-                className="grid grid-cols-[1.1rem_1fr_auto] items-baseline gap-x-1 border-b border-dotted border-neutral-300 py-1 last:border-b-0"
+                className="grid grid-cols-[1.6rem_1fr_auto] items-baseline gap-x-1 border-b border-dotted border-neutral-300 py-1 last:border-b-0"
               >
-                <span className="px-1 tabular-nums">{item.qty}</span>
+                <span className="text-center tabular-nums">{item.qty}</span>
                 <span className="leading-tight break-words">
                   {item.name}
                   {/* Harga satuan hanya berarti saat jumlahnya lebih dari satu;

@@ -10,7 +10,11 @@ setTranslations({
     receipt: "NOTA / RECEIPT",
     group_service: "Layanan / Tindakan",
     group_product: "Produk",
-    item_total: "Total Item",
+    item_total: "Subtotal Item",
+    qty: "Jumlah",
+    qty_short: "Jml",
+    description: "Deskripsi",
+    subtotal: "Subtotal",
     grand_total: "TOTAL",
     outstanding: "Sisa Bayar",
     title: "Invoice",
@@ -88,6 +92,22 @@ describe("Receipt", () => {
     // Tidak ada logo pecah dan tidak ada baris alamat kosong yang menganga.
     expect(queryByRole("img")).toBeNull()
     expect(container.textContent).toContain("NOTA / RECEIPT")
+  })
+
+  it("memakai kepala kolom jumlah yang pendek", () => {
+    // "Jumlah" utuh tidak muat di kolom selebar dua digit pada kertas 48mm:
+    // di sana kata itu terpenggal jadi tumpukan huruf atau menabrak kolom
+    // sebelahnya. Kepala kolomnya harus tetap singkat.
+    const { getByText, queryByText } = renderReceipt(base)
+
+    expect(getByText("Jml")).toBeTruthy()
+    expect(queryByText("Jumlah")).toBeNull()
+  })
+
+  it("menyebut totalnya subtotal item, bukan cacah item", () => {
+    const { getByText } = renderReceipt(base)
+
+    expect(getByText("Subtotal Item")).toBeTruthy()
   })
 
   it("menyembunyikan sisa bayar ketika tagihan sudah lunas", () => {

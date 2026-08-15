@@ -11,7 +11,9 @@ return [
     'description' => 'Deskripsi',
     'group_service' => 'Layanan / Tindakan',
     'group_product' => 'Produk',
-    'item_total' => 'Total Item',
+    // Nilainya jumlah rupiah seluruh baris, bukan cacah item — "Total Item"
+    // terbaca seolah menghitung banyaknya barang.
+    'item_total' => 'Subtotal Item',
     'grand_total' => 'TOTAL',
     // Frasa penutup mengikuti nota cetak klinik yang sudah berjalan.
     'thank_you' => 'Thank You',
@@ -24,6 +26,9 @@ return [
     'cashier' => 'Kasir',
     'item' => 'Item',
     'qty' => 'Jumlah',
+    // Kepala kolom nota thermal: lebar kertasnya 48mm, "Jumlah" utuh tidak
+    // muat dan terpenggal jadi tiga baris.
+    'qty_short' => 'Jml',
     'price' => 'Harga',
     'subtotal' => 'Subtotal',
     'total' => 'Total',
