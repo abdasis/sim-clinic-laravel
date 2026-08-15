@@ -54,20 +54,33 @@ interface MeResponse {
  * Sinkron lintas perangkat. Preferensi yang diubah di laptop harus ikut saat
  * membuka klinik dari komputer lain, jadi localStorage disegarkan dari server
  * sekali setiap shell klinik dipasang.
+ *
+ * Hati-hati: JANGAN menimpa localStorage dengan default saat server null.
+ * Appearance null berarti user belum pernah mengatur — localStorage justru
+ * sumber kebenaran lokal yang mungkin sudah diisi oleh halaman preferensi.
  */
 export function useMe(tenant: string, enabled = true) {
   return useQuery({
     queryKey: ["me", tenant],
     queryFn: async () => {
       const res = await apiGet<MeResponse>(`/${tenant}/me`)
-      const appearance = normalizeAppearance(res.data.appearance)
 
-      setAuthUser({ ...res.data, appearance })
-      applyAppearanceToDom(appearance)
+      // Appearance non-null dari server = sumber kebenaran kanonik
+      // (sinkron lintas perangkat).
+      if (res.data.appearance) {
+        const appearance = normalizeAppearance(res.data.appearance)
+        setAuthUser({ ...res.data, appearance })
+        applyAppearanceToDom(appearance)
+      } else {
+        // Pertahankan localStorage; hanya sinkron field user lain, bukan
+        // appearance.
+        setAuthUser({ ...res.data, appearance: getStoredAppearance() })
+      }
 
       return res.data
     },
     enabled: enabled && Boolean(tenant),
     staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   })
 }

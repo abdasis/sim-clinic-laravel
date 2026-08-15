@@ -26,6 +26,8 @@ import {
 } from "#/hooks/use-appearance.ts"
 import { apiPatch } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
+import { getAuthUser, setAuthUser } from "#/lib/auth.ts"
+import type { AuthUser } from "#/lib/auth.ts"
 import { cn } from "#/lib/utils.ts"
 import {
   ACCENTS,
@@ -33,12 +35,19 @@ import {
   MODES,
   SIDEBAR_VARIANTS,
 } from "#/types/appearance.ts"
+import {
+  normalizeAppearance,
+} from "#/types/appearance.ts"
 import type { Appearance, SidebarVariant, ThemeMode } from "#/types/appearance.ts"
 import { OptionTile, SectionCard } from "./components/preference-controls.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/preferences/")({
   component: PreferencesPage,
 })
+
+interface MeResponse {
+  data: AuthUser
+}
 
 const MODE_ICON: Record<ThemeMode, typeof Sun03Icon> = {
   light: Sun03Icon,
@@ -69,19 +78,43 @@ function PreferencesPage() {
   }, [me.data])
 
   const mutation = useMutation({
-    mutationFn: (next: Appearance) => apiPatch(`/${tenant}/me`, next),
-    onSuccess: (_data, next) => {
-      persistAppearance(next)
-      qc.invalidateQueries({ queryKey: ["me", tenant] })
+    mutationFn: (next: Appearance) => apiPatch<MeResponse>(`/${tenant}/me`, next),
+    onMutate: async (next) => {
+      // Batalkan refetch /me yang sedang berjalan supaya tidak menimpa cache
+      // saat kita menulis nilai optimistik.
+      await qc.cancelQueries({ queryKey: ["me", tenant] })
+      const previous = qc.getQueryData<MeResponse>(["me", tenant])
+      qc.setQueryData<MeResponse>(["me", tenant], (old) => {
+        const user = old?.data ?? getAuthUser()
+        if (!user) return old
+        return { data: { ...user, appearance: next } }
+      })
+      return { previous }
+    },
+    onSuccess: (data, next) => {
+      // Server sudah mengonfirmasi; samakan localStorage + cache dengan hasil
+      // server supaya tidak perlu refetch yang berisiko menimpa.
+      const appearance = normalizeAppearance(data.data.appearance ?? next)
+      setAuthUser({ ...data.data, appearance })
+      applyAppearanceToDom(appearance)
+      qc.setQueryData<MeResponse>(["me", tenant], { data: data.data })
       toast.success(t("preferences.saved"))
     },
-    onError: (err: ApiError) => {
+    onError: (err: ApiError, _next, ctx) => {
       // Tampilannya sudah berubah duluan; kembalikan ke nilai tersimpan
       // supaya layar tidak berbohong tentang apa yang benar-benar disimpan.
+      if (ctx?.previous) {
+        qc.setQueryData(["me", tenant], ctx.previous)
+      }
       const restored = getStoredAppearance()
       setDraft(restored)
       applyAppearanceToDom(restored)
       toast.error(err.message || t("preferences.save_failed"))
+    },
+    onSettled: () => {
+      // Refetch background aman: useMe tidak lagi menimpa localStorage saat
+      // server mengembalikan appearance null.
+      qc.invalidateQueries({ queryKey: ["me", tenant] })
     },
   })
 
