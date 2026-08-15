@@ -31,6 +31,8 @@ interface PosCheckoutPanelProps {
   onRemove: (key: string) => void
   onClear: () => void
   onPaymentChange: (payment: PaymentData) => void
+  /** Dipakai halaman untuk menggulir ke field pasien saat simpan ditolak. */
+  patientFieldRef?: React.Ref<HTMLDivElement>
 }
 
 /**
@@ -49,6 +51,7 @@ export function PosCheckoutPanel({
   onRemove,
   onClear,
   onPaymentChange,
+  patientFieldRef,
 }: PosCheckoutPanelProps) {
   const { t } = useTrans()
 
@@ -68,15 +71,17 @@ export function PosCheckoutPanel({
       ) : null}
 
       <Form {...form}>
-        <FormCombobox
-          control={form.control}
-          name="patient_id"
-          label={t("pos.patient")}
-          placeholder={t("general.search")}
-          emptyLabel={t("general.no_data")}
-          options={patientOptions}
-          required
-        />
+        <div ref={patientFieldRef}>
+          <FormCombobox
+            control={form.control}
+            name="patient_id"
+            label={t("pos.patient")}
+            placeholder={t("general.search")}
+            emptyLabel={t("general.no_data")}
+            options={patientOptions}
+            required
+          />
+        </div>
       </Form>
 
       <PosCart

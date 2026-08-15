@@ -37,7 +37,9 @@ function PosLayout() {
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background">
+    // Saat mencetak, tinggi dan potongan layar dilepas — kalau tidak, nota
+    // yang lebih panjang dari satu layar terpotong di halaman pertama.
+    <div className="flex h-dvh flex-col overflow-hidden bg-background print:block print:h-auto print:overflow-visible">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border/50 px-3 print:hidden">
         <Tooltip>
           <TooltipTrigger asChild>
@@ -119,7 +121,7 @@ function PosLayout() {
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-hidden">
+      <main className="min-h-0 flex-1 overflow-hidden print:overflow-visible">
         <Outlet />
       </main>
     </div>

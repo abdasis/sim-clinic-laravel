@@ -61,6 +61,7 @@ function PosPage() {
   const isNarrow = useIsMobile(SPLIT_BREAKPOINT)
 
   const searchRef = useRef<HTMLInputElement>(null)
+  const patientFieldRef = useRef<HTMLDivElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
   const [payment, setPayment] = useState<PaymentData>({
@@ -134,6 +135,13 @@ function PosPage() {
       // Di layar sempit fieldnya ada di dalam drawer — percuma ditandai
       // kalau drawernya sedang tertutup.
       if (isNarrow) setCartOpen(true)
+
+      // Keranjang bisa panjang; tanpa ini tanda merahnya tertinggal di atas
+      // layar dan kasir menyangka tombolnya yang tidak berfungsi.
+      patientFieldRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      })
     },
   })
 
@@ -178,6 +186,7 @@ function PosPage() {
       onRemove={cart.remove}
       onClear={cart.clear}
       onPaymentChange={handlePayment}
+      patientFieldRef={patientFieldRef}
     />
   )
 
@@ -280,9 +289,12 @@ function PosPage() {
 
       {isNarrow ? (
         <Drawer open={cartOpen} onOpenChange={setCartOpen}>
-          <DrawerContent className="max-h-[88dvh]">
-            <DrawerHeader className="pb-2 text-left">
-              <DrawerTitle>{t("pos.cart.title")}</DrawerTitle>
+          {/* Tingginya dipatok, bukan `max-h`: dengan `h-auto` bawaan drawer,
+              `flex-1` di area scroll tidak punya tinggi acuan sehingga isinya
+              tidak pernah bisa digulir dan bagian bawah tertimpa tombol. */}
+          <DrawerContent className="h-[85dvh]">
+            <DrawerHeader className="pb-2">
+              <DrawerTitle>{t("pos.add_transaction")}</DrawerTitle>
             </DrawerHeader>
             <ScrollArea className="min-h-0 flex-1">
               <div className="px-4 pb-2">{checkout}</div>

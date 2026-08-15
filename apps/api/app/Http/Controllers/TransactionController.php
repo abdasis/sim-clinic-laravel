@@ -6,6 +6,7 @@ use App\Actions\Transaction\CancelTransactionAction;
 use App\Actions\Transaction\SoftDeleteTransactionAction;
 use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\TransactionRequest;
+use App\Http\Resources\ClinicIdentityResource;
 use App\Http\Resources\TransactionResource;
 use App\Models\Transaction;
 use App\Services\TransactionService;
@@ -65,9 +66,17 @@ class TransactionController extends Controller
     {
         $this->authorize('view', $transaction);
 
+        // Kop nota ikut di meta supaya halaman invoice tidak perlu request
+        // kedua hanya untuk tahu nama, alamat, dan logo kliniknya.
+        $tenant = app()->bound('tenant') ? app('tenant') : null;
+
         return response()->json([
-            'data' => new TransactionResource($transaction->load('items', 'patient', 'payments')),
-            'meta' => [],
+            'data' => new TransactionResource($transaction->load('items', 'patient', 'cashier', 'payments')),
+            'meta' => [
+                'clinic' => $tenant
+                    ? new ClinicIdentityResource($tenant->loadMissing('companyProfile'))
+                    : null,
+            ],
         ]);
     }
 

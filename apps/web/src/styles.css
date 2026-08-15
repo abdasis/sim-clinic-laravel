@@ -749,3 +749,38 @@ a {
     transform: none !important;
   }
 }
+
+/* Pratinjau layar: kertas struk cuma 48mm, jadi diperbesar agar nyaman dibaca
+   tanpa mengubah pemenggalan baris — yang tampak sama dengan yang tercetak. */
+[data-receipt-frame] {
+  zoom: 2;
+}
+
+@media (max-width: 400px) {
+  [data-receipt-frame] {
+    zoom: 1.9;
+  }
+}
+
+/* Blok cetak sengaja paling akhir: spesifisitasnya sama dengan aturan layar
+   di atas, jadi urutannya yang menentukan siapa yang menang. */
+@media print {
+  /* Nota memakai pita hitam sebagai kepala kolom; tanpa ini browser membuang
+     latarnya saat mencetak dan teks putih di atasnya ikut hilang. */
+  [data-receipt],
+  [data-receipt] * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Di atas kertas ukurannya harus kembali 1:1 dengan milimeter aslinya. */
+  [data-receipt-frame] {
+    zoom: 1;
+  }
+
+  /* Struk 57mm: sisakan margin tipis supaya teks tidak tergunting rol. */
+  @page {
+    size: 57mm auto;
+    margin: 3mm 2mm;
+  }
+}

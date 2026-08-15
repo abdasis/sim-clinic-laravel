@@ -10,6 +10,19 @@ export function formatCurrency(value: number): string {
   return idr.format(Number.isFinite(value) ? value : 0)
 }
 
+const plainAmount = new Intl.NumberFormat("id-ID", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+})
+
+/**
+ * Angka berpemisah ribuan tanpa "Rp" — dipakai di nota, yang sudah menyebut
+ * mata uangnya sekali di kepala kolom sehingga tiap baris tidak perlu mengulang.
+ */
+export function formatAmount(value: number): string {
+  return plainAmount.format(Number.isFinite(value) ? value : 0)
+}
+
 const dateOnly = new Intl.DateTimeFormat("id-ID", {
   day: "2-digit",
   month: "short",

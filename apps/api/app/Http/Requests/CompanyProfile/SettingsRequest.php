@@ -12,6 +12,9 @@ class SettingsRequest extends CompanyContentRequest
         return [
             ...$this->translatableRules('site_name', required: false),
             'logo_path' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'tagline' => ['nullable', 'string', 'max:120'],
+            'receipt_note' => ['nullable', 'string', 'max:160'],
             'copyright_text' => ['nullable', 'string', 'max:255'],
             'default_locale' => ['sometimes', Rule::in(LocaleText::SUPPORTED)],
             'is_published' => ['sometimes', 'boolean'],

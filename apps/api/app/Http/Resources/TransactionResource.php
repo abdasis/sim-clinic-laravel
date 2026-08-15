@@ -28,6 +28,9 @@ class TransactionResource extends JsonResource
             'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item) => [
                 'id' => $item->id,
                 'name' => $item->name,
+                // Nota mengelompokkan baris per jenis, seperti nota cetak
+                // yang memisahkan tindakan dari produk yang dibawa pulang.
+                'kind' => $item->service_id !== null ? 'service' : 'product',
                 'unit_price' => $item->unit_price,
                 'qty' => $item->qty,
                 'subtotal' => $item->subtotal,
