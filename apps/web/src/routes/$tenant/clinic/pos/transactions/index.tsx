@@ -180,7 +180,7 @@ function TransactionsPage() {
   })
 
   return (
-    <div>
+    <div className="h-full overflow-y-auto p-4">
       <ClinicBreadcrumb
         items={[
           { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },

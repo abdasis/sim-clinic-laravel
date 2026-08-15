@@ -63,11 +63,13 @@ function InvoicePage() {
   const invoice = data?.data
 
   return (
-    <div>
+    // p-4 dilepas saat cetak supaya kertasnya tidak dapat jarak dobel.
+    <div className="h-full overflow-y-auto p-4 print:h-auto print:overflow-visible print:p-0">
       <div className="print:hidden">
         <ClinicBreadcrumb
           items={[
             { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
+            { label: t("pos.title"), to: "/$tenant/clinic/pos", params: { tenant } },
             {
               label: t("pos.transactions"),
               to: "/$tenant/clinic/pos/transactions",

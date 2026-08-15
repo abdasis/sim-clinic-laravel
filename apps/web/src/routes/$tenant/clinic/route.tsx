@@ -63,6 +63,14 @@ function ClinicLayout() {
 
   const base = `/${tenant}/clinic`
 
+  // POS punya kerangka full-screen sendiri (pos/route.tsx). Early return ini
+  // sengaja diletakkan setelah semua hook di atas — memindahkannya ke atas
+  // akan mengubah jumlah hook antar-render saat berpindah dari halaman klinik
+  // ke kasir, dan React menolaknya.
+  if (pathname === `${base}/pos` || pathname.startsWith(`${base}/pos/`)) {
+    return <Outlet />
+  }
+
   const items: NavItem[] = [
     { key: "", label: t("dashboard.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: DashboardSquare01Icon },
     { key: "staff", label: t("staff.title"), roles: ["admin"], icon: UserGroupIcon },

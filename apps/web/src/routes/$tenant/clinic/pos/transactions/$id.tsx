@@ -85,10 +85,12 @@ function TransactionDetailPage() {
   const cancelled = Boolean(data?.cancelled_at)
 
   return (
-    <div>
+    // Shell POS menahan scroll-nya sendiri, jadi halaman ini yang menggulir.
+    <div className="h-full overflow-y-auto p-4">
       <ClinicBreadcrumb
         items={[
           { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
+          { label: t("pos.title"), to: "/$tenant/clinic/pos", params: { tenant } },
           {
             label: t("pos.transactions"),
             to: "/$tenant/clinic/pos/transactions",
