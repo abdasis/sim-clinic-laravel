@@ -55,9 +55,40 @@ function PosLayout() {
           <TooltipContent>{t("pos.back_to_clinic")}</TooltipContent>
         </Tooltip>
 
-        <Separator orientation="vertical" className="h-4" />
+        <Separator orientation="vertical" className="h-4 max-sm:hidden" />
 
-        <h1 className="text-sm font-semibold tracking-tight">{t("pos.title")}</h1>
+        {/* Di layar sempit judulnya mengalah ke nav — nav sudah menyebut
+            halaman yang aktif, jadi judul cukup tersisa untuk pembaca layar. */}
+        <h1 className="text-sm font-semibold tracking-tight max-sm:sr-only">
+          {t("pos.title")}
+        </h1>
+
+        {/* Kerangka kasir sengaja tanpa sidebar, jadi dua halamannya
+            disambungkan di sini — kalau tidak, riwayat transaksi cuma bisa
+            dicapai lewat jalan memutar ke dashboard klinik. */}
+        <nav className="flex min-w-0 items-center gap-0.5 rounded-lg bg-muted/60 p-0.5 sm:ml-2">
+          {[
+            { to: "/$tenant/clinic/pos", label: t("pos.add_transaction"), exact: true },
+            {
+              to: "/$tenant/clinic/pos/transactions",
+              label: t("pos.transactions"),
+              exact: false,
+            },
+          ].map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              params={{ tenant }}
+              activeOptions={{ exact: item.exact }}
+              className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              activeProps={{
+                className: "bg-background text-foreground shadow-sm",
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
         <div className="ml-auto flex items-center gap-2">
           {/* Nama kasir dibaca dari localStorage, jadi baru ada setelah mount;

@@ -14,9 +14,9 @@ import {
   FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "#/components/ui/form.tsx"
+import { FieldLabel } from "#/components/forms/field-label.tsx"
 import type { SelectOption } from "#/components/forms/form-select.tsx"
 
 interface FormComboboxProps<T extends FieldValues> {
@@ -28,6 +28,7 @@ interface FormComboboxProps<T extends FieldValues> {
   emptyLabel?: string
   disabled?: boolean
   description?: string
+  required?: boolean
 }
 
 /**
@@ -44,6 +45,7 @@ export function FormCombobox<T extends FieldValues>({
   emptyLabel,
   disabled,
   description,
+  required,
 }: FormComboboxProps<T>) {
   const [query, setQuery] = useState("")
 
@@ -66,7 +68,7 @@ export function FormCombobox<T extends FieldValues>({
 
         return (
           <FormItem>
-            <FormLabel>{label}</FormLabel>
+            <FieldLabel label={label} required={required} />
             <FormControl>
               <Combobox
                 items={filtered}

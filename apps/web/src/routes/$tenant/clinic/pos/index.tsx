@@ -21,7 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
-import { useForm } from "#/components/forms/use-form.ts"
+import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useIsMobile } from "#/hooks/use-mobile.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost } from "#/lib/api.ts"
@@ -125,7 +125,16 @@ function PosPage() {
       cart.clear()
       patientForm.reset({ patient_id: "" })
     },
-    onError: (err: ApiError) => toast.error(err.message),
+    onError: (err: ApiError) => {
+      // Pasien wajib diisi di server; tanpa ini tombol simpan terasa mati
+      // karena error-nya hanya lewat di toast dan fieldnya tidak ditandai.
+      applyServerErrors(patientForm, err.errors)
+      toast.error(err.message)
+
+      // Di layar sempit fieldnya ada di dalam drawer — percuma ditandai
+      // kalau drawernya sedang tertutup.
+      if (isNarrow) setCartOpen(true)
+    },
   })
 
   usePosShortcuts({

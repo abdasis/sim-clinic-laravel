@@ -75,6 +75,7 @@ export function PosCheckoutPanel({
           placeholder={t("general.search")}
           emptyLabel={t("general.no_data")}
           options={patientOptions}
+          required
         />
       </Form>
 
