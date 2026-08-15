@@ -55,10 +55,9 @@ function everyDay(hours: string): OpeningHour[] {
 export const OUTLET: ClinicOutlet = {
   name: "MEBA Clinic",
   city: { id: "Jakarta", en: "Jakarta" },
-  addressLines: {
-    id: ["Alamat lengkap menunggu konfirmasi"],
-    en: ["Full address pending confirmation"],
-  },
+  // Dikosongkan sampai alamat resminya masuk; halaman menyusut dengan rapi
+  // dan mengarahkan ke Maps, bukan menampilkan catatan internal ke pengunjung.
+  addressLines: { id: [], en: [] },
   postalCode: "",
   phone: "",
   whatsapp: "",

@@ -27,6 +27,14 @@ export function OutletContact({ outlet }: { outlet: ClinicOutlet }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
+        {lines.length === 0 ? (
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {isEnglish
+              ? "Tap “Get directions” for the exact spot on Google Maps."
+              : "Ketuk “Petunjuk arah” untuk titik persisnya di Google Maps."}
+          </p>
+        ) : (
+        <>
         <p className="mb-2 flex items-center gap-2 text-[11px] font-medium tracking-widest text-muted-foreground uppercase">
           <HugeiconsIcon
             icon={Location01Icon}
@@ -47,6 +55,8 @@ export function OutletContact({ outlet }: { outlet: ClinicOutlet }) {
         </address>
 
         {address ? <CopyAddress value={address} /> : null}
+        </>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">
