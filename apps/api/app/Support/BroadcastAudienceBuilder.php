@@ -1,0 +1,136 @@
+<?php
+
+namespace App\Support;
+
+use App\Enums\BroadcastAudience;
+use App\Models\Patient;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Susun daftar penerima broadcast beserta variabel templatnya.
+ *
+ * Satu nomor hanya menerima satu pesan walau dipakai dua pasien (ibu dan
+ * anak sering memakai nomor yang sama); pasien tanpa nomor valid dilaporkan
+ * terpisah supaya admin tahu siapa yang tidak terjangkau.
+ */
+class BroadcastAudienceBuilder
+{
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array{recipients: Collection<int, array<string, mixed>>, without_phone: int}
+     */
+    public function build(BroadcastAudience $audience, array $params = []): array
+    {
+        $patients = $this->patientsFor($audience, $params);
+        $lastVisits = $this->lastVisits($patients->pluck('id'));
+
+        $withoutPhone = 0;
+        $seenPhones = [];
+        $recipients = collect();
+
+        foreach ($patients as $patient) {
+            $phone = PhoneNumber::normalize($patient->whatsapp ?: $patient->phone);
+
+            if ($phone === null) {
+                $withoutPhone++;
+
+                continue;
+            }
+
+            if (isset($seenPhones[$phone])) {
+                continue;
+            }
+
+            $seenPhones[$phone] = true;
+            $visit = $lastVisits[$patient->id] ?? null;
+
+            $recipients->push([
+                'patient_id' => $patient->id,
+                'name' => $patient->name,
+                'phone' => $phone,
+                'variables' => [
+                    'nama' => $patient->name,
+                    'layanan_terakhir' => $visit->last_service ?? '-',
+                    'tanggal_terakhir' => $visit
+                        ? Carbon::parse($visit->last_at)->translatedFormat('d F Y')
+                        : '-',
+                    // Carbon 3 mengembalikan selisih pecahan; pasien membaca
+                    // "40 hari", bukan "40.13 hari".
+                    'hari_sejak_kunjungan' => $visit
+                        ? (string) (int) Carbon::parse($visit->last_at)->diffInDays(now())
+                        : '-',
+                ],
+            ]);
+        }
+
+        return ['recipients' => $recipients, 'without_phone' => $withoutPhone];
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return Collection<int, Patient>
+     */
+    private function patientsFor(BroadcastAudience $audience, array $params): Collection
+    {
+        $query = Patient::query()->orderBy('name');
+
+        if ($audience === BroadcastAudience::Inactive) {
+            $days = max(1, (int) ($params['days'] ?? 30));
+            $cutoff = now()->subDays($days);
+
+            // Pengingat kembali hanya bermakna untuk pasien yang pernah
+            // datang; kunjungan terakhirnya harus lebih tua dari ambang.
+            $query->whereHas('transactions', fn ($q) => $q->whereNull('cancelled_at'))
+                ->whereDoesntHave('transactions', fn ($q) => $q
+                    ->whereNull('cancelled_at')
+                    ->where('issued_at', '>', $cutoff));
+        }
+
+        if ($audience === BroadcastAudience::Service) {
+            $serviceId = (int) ($params['service_id'] ?? 0);
+
+            $query->whereHas('transactions', fn ($q) => $q
+                ->whereNull('cancelled_at')
+                ->whereHas('items', fn ($item) => $item->where('service_id', $serviceId)));
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Kunjungan terakhir per pasien dalam satu kueri: tanggal dan nama
+     * layanan pada transaksi itu.
+     *
+     * @param  Collection<int, int>  $patientIds
+     * @return Collection<int, object>
+     */
+    private function lastVisits(Collection $patientIds): Collection
+    {
+        if ($patientIds->isEmpty()) {
+            return collect();
+        }
+
+        $tenantId = app('tenant')->id;
+
+        $lastAt = DB::table('transactions')
+            ->where('tenant_id', $tenantId)
+            ->whereNull('cancelled_at')
+            ->whereIn('patient_id', $patientIds)
+            ->groupBy('patient_id')
+            ->selectRaw('patient_id, MAX(issued_at) as last_at');
+
+        return DB::table('transactions')
+            ->joinSub($lastAt, 'last', fn ($join) => $join
+                ->on('transactions.patient_id', '=', 'last.patient_id')
+                ->on('transactions.issued_at', '=', 'last.last_at'))
+            ->leftJoin('transaction_items', fn ($join) => $join
+                ->on('transaction_items.transaction_id', '=', 'transactions.id')
+                ->whereNotNull('transaction_items.service_id'))
+            ->groupBy('transactions.patient_id', 'last.last_at')
+            ->selectRaw('transactions.patient_id, last.last_at, MIN(transaction_items.name) as last_service')
+            ->get()
+            ->keyBy('patient_id');
+    }
+}

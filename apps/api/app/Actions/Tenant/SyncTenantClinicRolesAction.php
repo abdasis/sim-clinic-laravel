@@ -27,7 +27,7 @@ class SyncTenantClinicRolesAction
             'staff' => 'rw', 'service' => 'rw', 'patient' => 'rw', 'booking' => 'rw',
             'medical_record' => 'rw', 'product' => 'rw', 'inventory' => 'rw',
             'transaction' => 'rw', 'invoice' => 'rw', 'report' => 'rw',
-            'content' => 'rw', 'promo' => 'rw', 'expense' => 'rw',
+            'content' => 'rw', 'promo' => 'rw', 'expense' => 'rw', 'broadcast' => 'rw',
         ],
         'doctor' => [
             'patient' => 'rw', 'booking' => 'rw', 'medical_record' => 'rw', 'service' => 'r',

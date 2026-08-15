@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Booking;
+use App\Models\Broadcast;
+use App\Models\BroadcastRecipient;
 use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
 use App\Models\CompanyNavigationItem;
@@ -54,6 +56,8 @@ class AppServiceProvider extends ServiceProvider
         'product' => Product::class,
         'promo' => Promo::class,
         'expense' => Expense::class,
+        'broadcast' => Broadcast::class,
+        'broadcast_recipient' => BroadcastRecipient::class,
         'promo_item' => PromoItem::class,
         'stock_movement' => StockMovement::class,
         'transaction' => Transaction::class,

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\CentralAuthController;
 use App\Http\Controllers\CentralStatsController;
 use App\Http\Controllers\CommissionRuleController;
@@ -120,6 +121,14 @@ Route::prefix('{tenant}/clinic')
         Route::get('commission-rules/calculate', [CommissionRuleController::class, 'calculate']);
         Route::apiResource('commission-rules', CommissionRuleController::class)
             ->only(['index', 'store', 'update', 'destroy']);
+
+        // Broadcast WhatsApp — pengingat perawatan & promo ke pasien
+        Route::get('broadcasts/audience-preview', [BroadcastController::class, 'preview']);
+        Route::get('broadcasts/settings', [BroadcastController::class, 'settings']);
+        Route::put('broadcasts/settings', [BroadcastController::class, 'updateSettings']);
+        Route::post('broadcasts/{broadcast}/send', [BroadcastController::class, 'send']);
+        Route::patch('broadcasts/{broadcast}/recipients/{recipient}', [BroadcastController::class, 'updateRecipient']);
+        Route::apiResource('broadcasts', BroadcastController::class)->only(['index', 'store', 'show', 'destroy']);
 
         // Promo — potongan harga layanan/produk dalam rentang tanggal
         Route::apiResource('promos', PromoController::class);
