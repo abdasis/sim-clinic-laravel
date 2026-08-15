@@ -40,6 +40,12 @@ interface DataTableProps<TData> {
    */
   isError?: boolean
   onRetry?: () => void
+  /**
+   * Pesan dari server. Ditampilkan apa adanya karena backend sudah menulisnya
+   * untuk dibaca manusia — mis. "jalankan php artisan migrate" — dan kalimat
+   * umum justru menyembunyikan langkah yang perlu diambil.
+   */
+  error?: unknown
 }
 
 export function DataTable<TData>({
@@ -53,6 +59,7 @@ export function DataTable<TData>({
   emptyDescription,
   isError,
   onRetry,
+  error,
   emptyIllustration,
   emptyAction,
 }: DataTableProps<TData>) {
@@ -102,7 +109,7 @@ export function DataTable<TData>({
                     className="p-0"
                     illustration="default"
                     title={t("general.load_failed")}
-                    description={t("general.load_failed_desc")}
+                    description={serverMessage(error) ?? t("general.load_failed_desc")}
                     action={
                       onRetry ? (
                         <Button variant="outline" size="sm" onClick={onRetry}>
@@ -150,4 +157,13 @@ export function DataTable<TData>({
       <DataTablePagination table={table} meta={meta} />
     </div>
   )
+}
+
+/** Ambil `message` dari ApiError bila ada; bentuk lain diabaikan. */
+function serverMessage(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined
+
+  const message = (error as { message?: unknown }).message
+
+  return typeof message === "string" && message.trim() !== "" ? message : undefined
 }

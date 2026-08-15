@@ -82,7 +82,7 @@ function ProductsPage() {
     [t, tenant],
   )
 
-  const { table, isLoading, meta, isError, refetch } = useDataTable<ProductRow>({
+  const { table, isLoading, meta, isError, refetch, error } = useDataTable<ProductRow>({
     queryKey: ["products", tenant],
     queryFn: (params: DataTableParams) =>
       apiGet<DataTableResponse<ProductRow>>(`/${tenant}/clinic/products`, {
@@ -136,6 +136,7 @@ function ProductsPage() {
         table={table}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => void refetch()}
         searchPlaceholder={t("general.search")}
         meta={meta}

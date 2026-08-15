@@ -101,7 +101,7 @@ export function StockMovementHistory({ tenant, productId }: Props) {
     [t, tenant],
   )
 
-  const { table, isLoading, meta, isError, refetch } = useDataTable<Movement>({
+  const { table, isLoading, meta, isError, refetch, error } = useDataTable<Movement>({
     queryKey: ["stock-movements", tenant, productId],
     queryFn: (params: DataTableParams) =>
       apiGet<DataTableResponse<Movement>>(
@@ -126,6 +126,7 @@ export function StockMovementHistory({ tenant, productId }: Props) {
         table={table}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => void refetch()}
         meta={meta}
         emptyIllustration="products"

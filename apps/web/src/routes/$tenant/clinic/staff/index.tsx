@@ -63,7 +63,7 @@ function StaffPage() {
     [t, tenant],
   )
 
-  const { table, isLoading, meta, isError, refetch } = useDataTable<StaffRow>({
+  const { table, isLoading, meta, isError, refetch, error } = useDataTable<StaffRow>({
     queryKey: ["staff", tenant],
     queryFn: (params: DataTableParams) =>
       apiGet<DataTableResponse<StaffRow>>(`/${tenant}/clinic/staff`, {
@@ -123,6 +123,7 @@ function StaffPage() {
         table={table}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => void refetch()}
         searchPlaceholder={t("general.search")}
         meta={meta}

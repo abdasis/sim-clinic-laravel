@@ -3,6 +3,8 @@
 use App\Http\Middleware\EnsureTenantActive;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\SetPermissionTeamId;
+use App\Support\SchemaFailure;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -56,5 +58,23 @@ return Application::configure(basePath: dirname(__DIR__))
             return response()->json([
                 'message' => $isDefault ? __('clinic.forbidden') : $message,
             ], 403);
+        });
+
+        // Skema yang tertinggal migrasi bikin daftar gagal dengan 500 telanjang,
+        // sementara kartu statistik di halaman yang sama tetap tampil karena
+        // hanya menghitung baris. Yang terlihat: "jumlahnya ada, datanya tidak".
+        //
+        // Ditangkap khusus supaya layar bisa menyebut penyebabnya. Detail SQL
+        // sengaja tidak diteruskan — cukup langkah yang harus dijalankan.
+        $exceptions->render(function (QueryException $e, Request $request): ?JsonResponse {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+
+            if (! SchemaFailure::describes($e)) {
+                return null;
+            }
+
+            return response()->json(['message' => __('general.schema_outdated')], 503);
         });
     })->create();

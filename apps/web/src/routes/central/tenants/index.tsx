@@ -47,7 +47,7 @@ function TenantsPage() {
     [t],
   )
 
-  const { table, isLoading, meta, isError, refetch } = useDataTable<TenantRow>({
+  const { table, isLoading, meta, isError, refetch, error } = useDataTable<TenantRow>({
     queryKey: ["tenants"],
     queryFn: (params: DataTableParams) =>
       apiGet<DataTableResponse<TenantRow>>("/central/tenants", {
@@ -89,6 +89,7 @@ function TenantsPage() {
         table={table}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => void refetch()}
         searchPlaceholder={t("general.search")}
         meta={meta}

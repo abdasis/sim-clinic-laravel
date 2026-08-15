@@ -112,7 +112,7 @@ function MedicalRecordsPage() {
     [t, tenant],
   )
 
-  const { table, isLoading, meta, isError, refetch } = useDataTable<MedicalRecordRow>({
+  const { table, isLoading, meta, isError, refetch, error } = useDataTable<MedicalRecordRow>({
     queryKey: ["medical-records", tenant],
     queryFn: (params: DataTableParams) =>
       apiGet<DataTableResponse<MedicalRecordRow>>(
@@ -187,6 +187,7 @@ function MedicalRecordsPage() {
         table={table}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => void refetch()}
         searchPlaceholder={t("medical_record.patient")}
         meta={meta}

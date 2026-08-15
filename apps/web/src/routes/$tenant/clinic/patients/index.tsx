@@ -43,7 +43,7 @@ function PatientsPage() {
     [t],
   )
 
-  const { table, isLoading, meta, isError, refetch } = useDataTable<PatientRow>({
+  const { table, isLoading, meta, isError, refetch, error } = useDataTable<PatientRow>({
     queryKey: ["patients", tenant],
     queryFn: (params: DataTableParams) =>
       apiGet<DataTableResponse<PatientRow>>(`/${tenant}/clinic/patients`, {
@@ -101,6 +101,7 @@ function PatientsPage() {
         table={table}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => void refetch()}
         searchPlaceholder={t("general.search")}
         meta={meta}

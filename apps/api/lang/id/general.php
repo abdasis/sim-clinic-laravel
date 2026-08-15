@@ -36,4 +36,5 @@ return [
     'load_failed' => 'Data gagal dimuat',
     'load_failed_desc' => 'Server sedang tidak bisa dihubungi atau menolak permintaannya. Coba muat ulang; kalau tetap begini, kabari admin.',
     'retry' => 'Muat ulang',
+    'schema_outdated' => 'Struktur database belum diperbarui, jadi data ini belum bisa dibaca. Jalankan `php artisan migrate` di server, lalu muat ulang halaman.',
 ];
