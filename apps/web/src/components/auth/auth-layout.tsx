@@ -67,11 +67,11 @@ export function AuthLayout({
           className="rise-in w-full max-w-sm"
           style={{ animationDelay: "60ms" }}
         >
-          <h2 className="display-title text-2xl font-bold tracking-tight text-pretty text-[var(--sea-ink)]">
+          <h2 className="display-title text-2xl font-bold tracking-tight text-pretty text-sea-ink">
             {formHeading}
           </h2>
           {formSubheading ? (
-            <p className="mt-1.5 text-sm text-[var(--sea-ink-soft)]">
+            <p className="mt-1.5 text-sm text-sea-ink-soft">
               {formSubheading}
             </p>
           ) : null}
@@ -79,7 +79,7 @@ export function AuthLayout({
           <div className="mt-6">{children}</div>
 
           {footerLink ? (
-            <p className="mt-6 text-sm text-[var(--sea-ink-soft)]">
+            <p className="mt-6 text-sm text-sea-ink-soft">
               {footerLink.text}{" "}
               <Link to={footerLink.to} className="font-semibold">
                 {footerLink.linkLabel}
@@ -90,7 +90,7 @@ export function AuthLayout({
           <Link
             to="/"
             search={{ lang: undefined }}
-            className="mt-8 inline-flex items-center gap-1.5 text-sm text-[var(--sea-ink-soft)] no-underline transition-colors hover:text-[var(--sea-ink)]"
+            className="mt-8 inline-flex items-center gap-1.5 text-sm text-sea-ink-soft no-underline transition-colors hover:text-sea-ink"
           >
             <HugeiconsIcon
               icon={ArrowLeft01Icon}
@@ -114,15 +114,15 @@ function BrandPanel({
   return (
     <div className="hidden items-center lg:flex lg:p-14">
       <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] p-10">
-        <div className="pointer-events-none absolute -top-24 -left-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-        <div className="pointer-events-none absolute -right-20 -bottom-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
+        <div className="auth-glow-a pointer-events-none absolute -top-24 -left-20 h-56 w-56 rounded-full" />
+        <div className="auth-glow-b pointer-events-none absolute -right-20 -bottom-20 h-56 w-56 rounded-full" />
 
         <p className="island-kicker mb-3">{kicker}</p>
-        <h1 className="display-title mb-4 text-4xl leading-[1.05] font-bold tracking-tight text-balance text-[var(--sea-ink)]">
+        <h1 className="display-title mb-4 text-4xl leading-[1.05] font-bold tracking-tight text-balance text-sea-ink">
           {title}
         </h1>
         {subtitle ? (
-          <p className="mb-8 max-w-md text-base text-[var(--sea-ink-soft)]">
+          <p className="mb-8 max-w-md text-base text-sea-ink-soft">
             {subtitle}
           </p>
         ) : null}
@@ -131,13 +131,13 @@ function BrandPanel({
           {points.map((point, index) => (
             <li
               key={point.label}
-              className="rise-in flex items-start gap-3 text-sm text-[var(--sea-ink)]"
+              className="rise-in flex items-start gap-3 text-sm text-sea-ink"
               style={{ animationDelay: `${index * 90 + 120}ms` }}
             >
               <HugeiconsIcon
                 icon={point.icon}
                 strokeWidth={2}
-                className="mt-0.5 size-5 shrink-0 text-[var(--lagoon-deep)]"
+                className="mt-0.5 size-5 shrink-0 text-lagoon-deep"
               />
               {point.label}
             </li>

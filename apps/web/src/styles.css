@@ -18,6 +18,7 @@
   --sea-ink-soft: #416166;
   --lagoon: #4fb8b2;
   --lagoon-deep: #328f97;
+  --lagoon-bright: #7ed3bf;
   --palm: #2f6a4a;
   --sand: #e7f0e8;
   /* Nuansa hangat khusus banner ajakan; bukan warna data. */
@@ -90,6 +91,7 @@
   --sea-ink-soft: #afcdc8;
   --lagoon: #60d7cf;
   --lagoon-deep: #8de5db;
+  --lagoon-bright: #9cf0e2;
   --palm: #6ec89a;
   --sand: #0f1a1e;
   --dune: #d8b483;
@@ -115,6 +117,7 @@
     --sea-ink-soft: #afcdc8;
     --lagoon: #60d7cf;
     --lagoon-deep: #8de5db;
+    --lagoon-bright: #9cf0e2;
     --palm: #6ec89a;
     --sand: #0f1a1e;
     --dune: #d8b483;
@@ -570,6 +573,26 @@ a {
 }
 
 @theme inline {
+  /* Brand tokens — dipakai app code sebagai utility kelas satu
+     (bg-lagoon, text-sea-ink, border-line, dst) menggantikan
+     arbitrary [var(--*)]. Hanya token yang benar dikonsumsi TSX. */
+  --color-sea-ink: var(--sea-ink);
+  --color-sea-ink-soft: var(--sea-ink-soft);
+  --color-lagoon: var(--lagoon);
+  --color-lagoon-deep: var(--lagoon-deep);
+  --color-lagoon-bright: var(--lagoon-bright);
+  --color-palm: var(--palm);
+  --color-line: var(--line);
+  --color-header-bg: var(--header-bg);
+  --color-chip-bg: var(--chip-bg);
+  --color-chip-line: var(--chip-line);
+  --color-link-bg-hover: var(--link-bg-hover);
+  /* Elevasi palm-tinted berulang di Header/ThemeToggle. */
+  --shadow-header: 0 8px 24px rgba(30, 90, 72, 0.08);
+  --shadow-chip: 0 8px 22px rgba(30, 90, 72, 0.08);
+  /* Caption/kicker di bawah text-xs (12px). */
+  --text-2xs: 0.6875rem;
+  --text-xxs: 0.625rem;
   --color-chart-cat-1: var(--chart-cat-1);
   --color-chart-cat-2: var(--chart-cat-2);
   --color-chart-cat-3: var(--chart-cat-3);
@@ -698,6 +721,18 @@ a {
 
 .cta-sunset {
   --cta-accent: var(--sunset);
+}
+
+/*
+ * Aura brand di panel halaman masuk — radial-gradient memakai token brand
+ * (--lagoon/--palm), bukan rgba mentah. Dua arah berlawanan sebagai aksen.
+ */
+.auth-glow-a {
+  background: radial-gradient(circle, color-mix(in oklab, var(--lagoon) 32%, transparent), transparent 66%);
+}
+
+.auth-glow-b {
+  background: radial-gradient(circle, color-mix(in oklab, var(--palm) 18%, transparent), transparent 66%);
 }
 
 @media (prefers-reduced-motion: reduce) {
