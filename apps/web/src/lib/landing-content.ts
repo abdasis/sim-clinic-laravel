@@ -563,62 +563,6 @@ export const STORE_PRODUCTS: StoreProduct[] = [
   },
 ]
 
-/** Outlet; alamat contoh, bukan lokasi nyata. */
-export interface ClinicLocation {
-  id: number
-  name: string
-  city: Translatable<string>
-  address: Translatable<string>
-  phone: string
-  hours: Translatable<string>
-}
-
-export const LOCATIONS: ClinicLocation[] = [
-  {
-    id: 1,
-    name: "Kemang",
-    city: { id: "Jakarta Selatan", en: "South Jakarta" },
-    address: {
-      id: "Jl. Kemang Raya No. 12, Jakarta Selatan",
-      en: "Jl. Kemang Raya No. 12, South Jakarta",
-    },
-    phone: "021-5550123",
-    hours: { id: "Setiap hari, 09.00–20.00", en: "Daily, 9 AM – 8 PM" },
-  },
-  {
-    id: 2,
-    name: "Dago",
-    city: { id: "Bandung", en: "Bandung" },
-    address: {
-      id: "Jl. Ir. H. Juanda No. 88, Bandung",
-      en: "Jl. Ir. H. Juanda No. 88, Bandung",
-    },
-    phone: "022-5550188",
-    hours: { id: "Setiap hari, 09.00–20.00", en: "Daily, 9 AM – 8 PM" },
-  },
-  {
-    id: 3,
-    name: "Darmo",
-    city: { id: "Surabaya", en: "Surabaya" },
-    address: {
-      id: "Jl. Raya Darmo No. 45, Surabaya",
-      en: "Jl. Raya Darmo No. 45, Surabaya",
-    },
-    phone: "031-5550145",
-    hours: { id: "Setiap hari, 10.00–20.00", en: "Daily, 10 AM – 8 PM" },
-  },
-  {
-    id: 4,
-    name: "Sunset Road",
-    city: { id: "Denpasar", en: "Denpasar" },
-    address: {
-      id: "Jl. Sunset Road No. 21, Denpasar",
-      en: "Jl. Sunset Road No. 21, Denpasar",
-    },
-    phone: "0361-5550121",
-    hours: { id: "Setiap hari, 10.00–21.00", en: "Daily, 10 AM – 9 PM" },
-  },
-]
 
 /** Artikel; ringkasan statis, belum ada halaman detailnya. */
 export interface Article {
