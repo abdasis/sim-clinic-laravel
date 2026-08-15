@@ -5,6 +5,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CentralAuthController;
 use App\Http\Controllers\CompanyContentController;
 use App\Http\Controllers\CompanyProfileController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MedicalRecordController;
@@ -134,6 +135,9 @@ Route::prefix('{tenant}/clinic')
             Route::put('{entity}/{content}', [CompanyContentController::class, 'update']);
             Route::delete('{entity}/{content}', [CompanyContentController::class, 'destroy']);
         });
+
+        // Dasbor klinik — dibaca semua peran, tanpa permission modul
+        Route::get('dashboard/summary', [DashboardController::class, 'summary']);
 
         // US8 Reports
         Route::get('reports/revenue', [ReportController::class, 'revenue']);

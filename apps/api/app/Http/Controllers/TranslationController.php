@@ -15,7 +15,7 @@ class TranslationController extends Controller
         'general', 'auth', 'tenant', 'central', 'validation',
         'clinic', 'staff', 'service', 'patient', 'booking',
         'medical_record', 'product', 'inventory', 'pos', 'invoice', 'report',
-        'company_profile',
+        'company_profile', 'dashboard',
     ];
 
     /**

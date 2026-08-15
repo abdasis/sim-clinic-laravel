@@ -65,6 +65,16 @@
   --chart-4: oklch(0.508 0.118 165.612);
   --chart-5: oklch(0.432 0.095 166.913);
 
+  /*
+   * Palet kategorikal chart untuk 4 status booking. Urutannya tetap —
+   * status tidak boleh berganti warna hanya karena jumlah kategorinya
+   * berubah. Divalidasi CVD-safe untuk mode terang dan gelap.
+   */
+  --chart-cat-1: #2a78d6;
+  --chart-cat-2: #eb6834;
+  --chart-cat-3: #1baf7a;
+  --chart-cat-4: #eda100;
+
   /* Enter, hover, dan press: berhenti cepat supaya terasa responsif. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   /* Gerakan yang terlihat berpindah di layar: chevron, indicator, reveal. */
@@ -505,6 +515,10 @@ a {
 }
 
 .dark {
+  --chart-cat-1: #3987e5;
+  --chart-cat-2: #d95926;
+  --chart-cat-3: #199e70;
+  --chart-cat-4: #c98500;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -539,6 +553,10 @@ a {
 }
 
 @theme inline {
+  --color-chart-cat-1: var(--chart-cat-1);
+  --color-chart-cat-2: var(--chart-cat-2);
+  --color-chart-cat-3: var(--chart-cat-3);
+  --color-chart-cat-4: var(--chart-cat-4);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

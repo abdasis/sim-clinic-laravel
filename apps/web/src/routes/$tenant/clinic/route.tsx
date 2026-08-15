@@ -1,4 +1,3 @@
-import { useEffect } from "react"
 import {
   createFileRoute,
   Outlet,
@@ -11,6 +10,7 @@ import {
   BarChartIcon,
   Calendar01Icon,
   CashierIcon,
+  DashboardSquare01Icon,
   File02Icon,
   Globe02Icon,
   HeartPulseIcon,
@@ -64,6 +64,7 @@ function ClinicLayout() {
   const base = `/${tenant}/clinic`
 
   const items: NavItem[] = [
+    { key: "", label: t("dashboard.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: DashboardSquare01Icon },
     { key: "staff", label: t("staff.title"), roles: ["admin"], icon: UserGroupIcon },
     { key: "users", label: t("tenant.users"), roles: ["admin"], icon: Settings02Icon },
     { key: "services", label: t("service.title"), roles: ["admin", "doctor", "therapist"], icon: StethoscopeIcon },
@@ -94,7 +95,7 @@ function ClinicLayout() {
 
     return {
       title: item.label,
-      url: `${base}/${item.key}`,
+      url: item.key ? `${base}/${item.key}` : base,
       icon: item.icon,
       isActive: isActiveItem(pathname, base, item),
       items: item.children?.map((child) => ({
@@ -104,14 +105,6 @@ function ClinicLayout() {
       })),
     }
   })
-
-  // Shell tidak punya halaman index; arahkan ke modul pertama yang boleh diakses.
-  const landing = navMain[0]?.url
-  useEffect(() => {
-    if (pathname.replace(/\/$/, "") === base && landing) {
-      navigate({ to: landing, replace: true })
-    }
-  }, [pathname, base, landing, navigate])
 
   const sidebarUser: SidebarUser = {
     name: user?.name ?? "Guest",
@@ -156,6 +149,12 @@ function ClinicLayout() {
 }
 
 function isActiveItem(pathname: string, base: string, item: NavItem): boolean {
+  // Dasbor tinggal di base itu sendiri; kalau dicocokkan dengan prefix, ia
+  // akan ikut aktif di setiap modul.
+  if (item.key === "") {
+    return pathname.replace(/\/$/, "") === base
+  }
+
   if (item.children?.length) {
     return item.children.some((child) => pathname.startsWith(`${base}/${child.key}`))
   }
