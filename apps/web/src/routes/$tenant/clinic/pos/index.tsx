@@ -64,6 +64,9 @@ function PosPage() {
   const patientFieldRef = useRef<HTMLDivElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
+  // Elemen drawer disimpan sebagai state, bukan ref: daftar pasien perlu
+  // di-portal ke dalamnya dan wadah itu baru ada setelah drawer terpasang.
+  const [drawerEl, setDrawerEl] = useState<HTMLDivElement | null>(null)
   const [payment, setPayment] = useState<PaymentData>({
     method: "cash",
     amount: 0,
@@ -187,6 +190,7 @@ function PosPage() {
       onClear={cart.clear}
       onPaymentChange={handlePayment}
       patientFieldRef={patientFieldRef}
+      popupContainer={isNarrow ? drawerEl : null}
     />
   )
 
@@ -292,7 +296,7 @@ function PosPage() {
           {/* Tingginya dipatok, bukan `max-h`: dengan `h-auto` bawaan drawer,
               `flex-1` di area scroll tidak punya tinggi acuan sehingga isinya
               tidak pernah bisa digulir dan bagian bawah tertimpa tombol. */}
-          <DrawerContent className="h-[85dvh]">
+          <DrawerContent ref={setDrawerEl} className="h-[85dvh]">
             <DrawerHeader className="pb-2">
               <DrawerTitle>{t("pos.add_transaction")}</DrawerTitle>
             </DrawerHeader>

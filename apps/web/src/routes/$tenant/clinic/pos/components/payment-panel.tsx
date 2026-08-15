@@ -10,7 +10,7 @@ import {
   StatusBadge,
 } from "#/components/ui/status-badge.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { formatCurrency } from "#/lib/format.ts"
+import { formatAmount, formatCurrency } from "#/lib/format.ts"
 
 export interface PaymentData {
   method: string
@@ -28,7 +28,11 @@ const METHODS = ["cash", "transfer", "qris", "debit"] as const
 export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
   const { t } = useTrans()
   const [method, setMethod] = useState<string>("cash")
-  const [amount, setAmount] = useState<number>(0)
+  // Disimpan sebagai digit mentah, bukan number. Input number yang bernilai 0
+  // menyisakan angka nol di depan begitu kasir mengetik (0 -> 05000000), dan
+  // nominal rupiah lebih mudah dibaca kalau ribuannya dipisah.
+  const [rawAmount, setRawAmount] = useState("")
+  const amount = Number(rawAmount || 0)
 
   const covers = amount >= total && total > 0
   const outstanding = Math.max(0, total - amount)
@@ -62,12 +66,20 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
       </div>
 
       <div className="space-y-1.5">
-        <Label>{t("pos.amount")}</Label>
+        <Label htmlFor="pos-amount">{t("pos.amount")}</Label>
         <Input
-          type="number"
-          min={0}
-          value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
+          id="pos-amount"
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          className="tabular-nums"
+          placeholder="0"
+          value={rawAmount === "" ? "" : formatAmount(amount)}
+          onChange={(event) =>
+            // Buang apa pun selain angka, lalu buang nol di depan supaya
+            // "05.000.000" tidak pernah terbentuk.
+            setRawAmount(event.target.value.replace(/\D/g, "").replace(/^0+/, ""))
+          }
         />
       </div>
 

@@ -36,6 +36,14 @@ return [
         'active' => 'Aktif',
         'archived' => 'Diarsipkan',
     ],
+    'discount_type' => [
+        'percent' => 'Persen (%)',
+        'fixed' => 'Nominal (Rp)',
+    ],
+    'promo_status' => [
+        'active' => 'Aktif',
+        'inactive' => 'Nonaktif',
+    ],
     'medical_photo_type' => [
         'before' => 'Sebelum',
         'after' => 'Sesudah',

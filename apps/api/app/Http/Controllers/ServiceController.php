@@ -8,6 +8,7 @@ use App\Http\Requests\ServiceRequest;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
 use App\Services\ServiceCatalogService;
+use App\Support\PromoPricing;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -39,6 +40,12 @@ class ServiceController extends Controller
         }
 
         $page = $query->paginate($params['per_page'], ['*'], 'page', $params['page']);
+
+        // Satu pencari promo dipakai bersama seluruh baris halaman ini, jadi
+        // katalog tidak menembak satu kueri promo per baris.
+        $pricing = new PromoPricing;
+        $pricing->preload(collect($page->items()));
+        $request->attributes->set('promo_pricing', $pricing);
 
         return response()->json([
             'data' => ServiceResource::collection($page->items()),

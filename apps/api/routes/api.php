@@ -15,6 +15,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PromoController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\StaffController;
@@ -110,6 +111,9 @@ Route::prefix('{tenant}/clinic')
         Route::get('products/{product}/stock-movements', [StockMovementController::class, 'indexByProduct']);
         Route::post('products/{product}/stock-movements', [StockMovementController::class, 'store']);
         Route::apiResource('products', ProductController::class);
+
+        // Promo — potongan harga layanan/produk dalam rentang tanggal
+        Route::apiResource('promos', PromoController::class);
 
         // US5 POS / Transaction
         Route::get('transactions/{transaction}/invoice', [InvoiceController::class, 'show']);

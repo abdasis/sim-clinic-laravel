@@ -33,6 +33,8 @@ interface PosCheckoutPanelProps {
   onPaymentChange: (payment: PaymentData) => void
   /** Dipakai halaman untuk menggulir ke field pasien saat simpan ditolak. */
   patientFieldRef?: React.Ref<HTMLDivElement>
+  /** Wadah portal daftar pasien; diisi saat panel berada di dalam drawer. */
+  popupContainer?: HTMLElement | null
 }
 
 /**
@@ -52,6 +54,7 @@ export function PosCheckoutPanel({
   onClear,
   onPaymentChange,
   patientFieldRef,
+  popupContainer,
 }: PosCheckoutPanelProps) {
   const { t } = useTrans()
 
@@ -80,6 +83,7 @@ export function PosCheckoutPanel({
             emptyLabel={t("general.no_data")}
             options={patientOptions}
             required
+            container={popupContainer}
           />
         </div>
       </Form>

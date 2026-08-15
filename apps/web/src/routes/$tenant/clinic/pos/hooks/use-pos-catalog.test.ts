@@ -9,6 +9,8 @@ function entry(over: Partial<CatalogEntry>): CatalogEntry {
     id: 1,
     name: "Serum",
     price: 100_000,
+  basePrice: null,
+  promoName: null,
     unit: "botol",
     stock: 10,
     minThreshold: 3,
@@ -51,7 +53,9 @@ describe("applyFilters", () => {
     entry({ id: 1, name: "Serum Vitamin C", stock: 10 }),
     entry({ id: 2, name: "Masker Wajah", stock: 2, minThreshold: 5 }),
     entry({ id: 3, name: "Toner", stock: 0 }),
-    entry({ kind: "service", id: 4, name: "Facial Basic", price: 250_000, stock: null, minThreshold: null }),
+    entry({ kind: "service", id: 4, name: "Facial Basic", price: 250_000,
+  basePrice: null,
+  promoName: null, stock: null, minThreshold: null }),
   ]
 
   it("mencari nama tanpa peduli besar-kecil huruf", () => {

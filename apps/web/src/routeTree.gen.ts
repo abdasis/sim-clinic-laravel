@@ -47,6 +47,7 @@ import { Route as TenantClinicPatientsNewRouteImport } from './routes/$tenant/cl
 import { Route as TenantClinicPosIndexRouteImport } from './routes/$tenant/clinic/pos/index'
 import { Route as TenantClinicPreferencesIndexRouteImport } from './routes/$tenant/clinic/preferences/index'
 import { Route as TenantClinicProductsIndexRouteImport } from './routes/$tenant/clinic/products/index'
+import { Route as TenantClinicPromosIndexRouteImport } from './routes/$tenant/clinic/promos/index'
 import { Route as TenantClinicReportsIndexRouteImport } from './routes/$tenant/clinic/reports/index'
 import { Route as TenantClinicServicesIndexRouteImport } from './routes/$tenant/clinic/services/index'
 import { Route as TenantClinicStaffIndexRouteImport } from './routes/$tenant/clinic/staff/index'
@@ -261,6 +262,11 @@ const TenantClinicProductsIndexRoute =
     path: '/products/',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
+const TenantClinicPromosIndexRoute = TenantClinicPromosIndexRouteImport.update({
+  id: '/promos/',
+  path: '/promos/',
+  getParentRoute: () => TenantClinicRouteRoute,
+} as any)
 const TenantClinicReportsIndexRoute =
   TenantClinicReportsIndexRouteImport.update({
     id: '/reports/',
@@ -371,6 +377,7 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/pos/': typeof TenantClinicPosIndexRoute
   '/$tenant/clinic/preferences/': typeof TenantClinicPreferencesIndexRoute
   '/$tenant/clinic/products/': typeof TenantClinicProductsIndexRoute
+  '/$tenant/clinic/promos/': typeof TenantClinicPromosIndexRoute
   '/$tenant/clinic/reports/': typeof TenantClinicReportsIndexRoute
   '/$tenant/clinic/services/': typeof TenantClinicServicesIndexRoute
   '/$tenant/clinic/staff/': typeof TenantClinicStaffIndexRoute
@@ -419,6 +426,7 @@ export interface FileRoutesByTo {
   '/$tenant/clinic/pos': typeof TenantClinicPosIndexRoute
   '/$tenant/clinic/preferences': typeof TenantClinicPreferencesIndexRoute
   '/$tenant/clinic/products': typeof TenantClinicProductsIndexRoute
+  '/$tenant/clinic/promos': typeof TenantClinicPromosIndexRoute
   '/$tenant/clinic/reports': typeof TenantClinicReportsIndexRoute
   '/$tenant/clinic/services': typeof TenantClinicServicesIndexRoute
   '/$tenant/clinic/staff': typeof TenantClinicStaffIndexRoute
@@ -472,6 +480,7 @@ export interface FileRoutesById {
   '/$tenant/clinic/pos/': typeof TenantClinicPosIndexRoute
   '/$tenant/clinic/preferences/': typeof TenantClinicPreferencesIndexRoute
   '/$tenant/clinic/products/': typeof TenantClinicProductsIndexRoute
+  '/$tenant/clinic/promos/': typeof TenantClinicPromosIndexRoute
   '/$tenant/clinic/reports/': typeof TenantClinicReportsIndexRoute
   '/$tenant/clinic/services/': typeof TenantClinicServicesIndexRoute
   '/$tenant/clinic/staff/': typeof TenantClinicStaffIndexRoute
@@ -525,6 +534,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/pos/'
     | '/$tenant/clinic/preferences/'
     | '/$tenant/clinic/products/'
+    | '/$tenant/clinic/promos/'
     | '/$tenant/clinic/reports/'
     | '/$tenant/clinic/services/'
     | '/$tenant/clinic/staff/'
@@ -573,6 +583,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/pos'
     | '/$tenant/clinic/preferences'
     | '/$tenant/clinic/products'
+    | '/$tenant/clinic/promos'
     | '/$tenant/clinic/reports'
     | '/$tenant/clinic/services'
     | '/$tenant/clinic/staff'
@@ -625,6 +636,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/pos/'
     | '/$tenant/clinic/preferences/'
     | '/$tenant/clinic/products/'
+    | '/$tenant/clinic/promos/'
     | '/$tenant/clinic/reports/'
     | '/$tenant/clinic/services/'
     | '/$tenant/clinic/staff/'
@@ -922,6 +934,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicProductsIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
+    '/$tenant/clinic/promos/': {
+      id: '/$tenant/clinic/promos/'
+      path: '/promos'
+      fullPath: '/$tenant/clinic/promos/'
+      preLoaderRoute: typeof TenantClinicPromosIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
     '/$tenant/clinic/reports/': {
       id: '/$tenant/clinic/reports/'
       path: '/reports'
@@ -1084,6 +1103,7 @@ interface TenantClinicRouteRouteChildren {
   TenantClinicPatientsIndexRoute: typeof TenantClinicPatientsIndexRoute
   TenantClinicPreferencesIndexRoute: typeof TenantClinicPreferencesIndexRoute
   TenantClinicProductsIndexRoute: typeof TenantClinicProductsIndexRoute
+  TenantClinicPromosIndexRoute: typeof TenantClinicPromosIndexRoute
   TenantClinicReportsIndexRoute: typeof TenantClinicReportsIndexRoute
   TenantClinicServicesIndexRoute: typeof TenantClinicServicesIndexRoute
   TenantClinicStaffIndexRoute: typeof TenantClinicStaffIndexRoute
@@ -1111,6 +1131,7 @@ const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
   TenantClinicPatientsIndexRoute: TenantClinicPatientsIndexRoute,
   TenantClinicPreferencesIndexRoute: TenantClinicPreferencesIndexRoute,
   TenantClinicProductsIndexRoute: TenantClinicProductsIndexRoute,
+  TenantClinicPromosIndexRoute: TenantClinicPromosIndexRoute,
   TenantClinicReportsIndexRoute: TenantClinicReportsIndexRoute,
   TenantClinicServicesIndexRoute: TenantClinicServicesIndexRoute,
   TenantClinicStaffIndexRoute: TenantClinicStaffIndexRoute,
@@ -1146,12 +1167,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

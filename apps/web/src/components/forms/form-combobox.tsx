@@ -29,6 +29,11 @@ interface FormComboboxProps<T extends FieldValues> {
   disabled?: boolean
   description?: string
   required?: boolean
+  /**
+   * Wadah portal untuk daftar pilihan. Wajib diisi bila combobox dipakai di
+   * dalam drawer atau dialog.
+   */
+  container?: HTMLElement | null
 }
 
 /**
@@ -46,6 +51,7 @@ export function FormCombobox<T extends FieldValues>({
   disabled,
   description,
   required,
+  container,
 }: FormComboboxProps<T>) {
   const [query, setQuery] = useState("")
 
@@ -73,17 +79,25 @@ export function FormCombobox<T extends FieldValues>({
               <Combobox
                 items={filtered}
                 value={field.value ?? ""}
-                onValueChange={(value: string | null) => field.onChange(value ?? "")}
+                onValueChange={(value: string | null) => {
+                  field.onChange(value ?? "")
+                  setQuery("")
+                }}
+                onOpenChange={(open: boolean) => {
+                  if (!open) setQuery("")
+                }}
                 disabled={disabled}
               >
                 <ComboboxInput
                   placeholder={placeholder}
                   value={query === "" ? (selected?.label ?? "") : query}
                   onChange={(e) => setQuery(e.target.value)}
-                  onBlur={() => setQuery("")}
                   disabled={disabled}
                 />
-                <ComboboxContent>
+                {/* Query sengaja tidak dibersihkan saat blur: di layar sentuh
+                    blur terjadi sebelum ketukan pada pilihan selesai, dan
+                    daftarnya keburu tersusun ulang sehingga pilihan meleset. */}
+                <ComboboxContent container={container}>
                   <ComboboxEmpty>{emptyLabel ?? "—"}</ComboboxEmpty>
                   <ComboboxList>
                     {filtered.map((option) => (

@@ -27,7 +27,7 @@ class SyncTenantClinicRolesAction
             'staff' => 'rw', 'service' => 'rw', 'patient' => 'rw', 'booking' => 'rw',
             'medical_record' => 'rw', 'product' => 'rw', 'inventory' => 'rw',
             'transaction' => 'rw', 'invoice' => 'rw', 'report' => 'rw',
-            'content' => 'rw',
+            'content' => 'rw', 'promo' => 'rw',
         ],
         'doctor' => [
             'patient' => 'rw', 'booking' => 'rw', 'medical_record' => 'rw', 'service' => 'r',
@@ -37,6 +37,8 @@ class SyncTenantClinicRolesAction
         ],
         'cashier' => [
             'patient' => 'rw', 'transaction' => 'rw', 'invoice' => 'rw',
+            // Kasir hanya perlu menelusuri asal potongan harga, bukan mengubahnya.
+            'promo' => 'r',
         ],
     ];
 

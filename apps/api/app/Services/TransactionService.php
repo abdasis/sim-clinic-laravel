@@ -8,6 +8,7 @@ use App\Enums\StockMovementType;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Transaction;
+use App\Support\PromoPricing;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -78,19 +79,22 @@ class TransactionService
      */
     private function buildLines(array $items): array
     {
+        // Harga promo dihitung ulang di server, bukan diterima dari klien —
+        // kasir tidak bisa menawar harga lewat payload.
+        $pricing = new PromoPricing;
         $lines = [];
 
         foreach ($items as $item) {
             $qty = (int) $item['qty'];
             $lines[] = isset($item['product_id']) && $item['product_id'] !== null
-                ? $this->productLine((int) $item['product_id'], $qty)
-                : $this->serviceLine((int) $item['service_id'], $qty);
+                ? $this->productLine((int) $item['product_id'], $qty, $pricing)
+                : $this->serviceLine((int) $item['service_id'], $qty, $pricing);
         }
 
         return $lines;
     }
 
-    private function productLine(int $productId, int $qty): array
+    private function productLine(int $productId, int $qty, PromoPricing $pricing): array
     {
         $product = Product::findOrFail($productId);
 
@@ -98,29 +102,33 @@ class TransactionService
             abort(422, __('pos.insufficient_stock'));
         }
 
+        $unitPrice = $pricing->priceFor($product);
+
         return [
             'product' => $product,
             'product_id' => $product->id,
             'service_id' => null,
             'name' => $product->name,
-            'unit_price' => $product->price,
+            'unit_price' => $unitPrice,
             'qty' => $qty,
-            'subtotal' => (float) $product->price * $qty,
+            'subtotal' => $unitPrice * $qty,
         ];
     }
 
-    private function serviceLine(int $serviceId, int $qty): array
+    private function serviceLine(int $serviceId, int $qty, PromoPricing $pricing): array
     {
         $service = Service::findOrFail($serviceId);
+
+        $unitPrice = $pricing->priceFor($service);
 
         return [
             'product' => null,
             'product_id' => null,
             'service_id' => $service->id,
             'name' => $service->name,
-            'unit_price' => $service->price,
+            'unit_price' => $unitPrice,
             'qty' => $qty,
-            'subtotal' => (float) $service->price * $qty,
+            'subtotal' => $unitPrice * $qty,
         ];
     }
 }

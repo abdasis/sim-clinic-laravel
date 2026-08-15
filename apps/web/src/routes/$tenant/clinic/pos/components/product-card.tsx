@@ -55,9 +55,27 @@ export function ProductCard({ entry, onAdd }: ProductCardProps) {
         {entry.name}
       </span>
 
+      {entry.promoName ? (
+        <Badge
+          variant="outline"
+          className="max-w-full shrink-0 gap-1 border-primary/40 px-1.5 text-xxs font-medium text-primary"
+        >
+          <span className="truncate">{entry.promoName}</span>
+        </Badge>
+      ) : null}
+
       <span className="mt-auto flex w-full items-center justify-between gap-2">
-        <span className="text-sm font-semibold tabular-nums">
-          {formatCurrency(entry.price)}
+        <span className="flex min-w-0 flex-col">
+          <span className="text-sm font-semibold tabular-nums">
+            {formatCurrency(entry.price)}
+          </span>
+          {/* Harga coret hanya muncul saat ada promo — kasir bisa menyebutkan
+              potongannya ke pasien tanpa membuka menu promo. */}
+          {entry.basePrice !== null ? (
+            <span className="text-xxs text-muted-foreground line-through tabular-nums">
+              {formatCurrency(entry.basePrice)}
+            </span>
+          ) : null}
         </span>
         {isService ? null : (
           <Badge

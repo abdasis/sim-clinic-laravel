@@ -8,6 +8,7 @@ interface CatalogRow {
   id: number
   name: string
   price: string
+  promo?: { id: number; name: string; price: string } | null
   status?: string
   unit?: string
   stock_balance?: number | string
@@ -20,7 +21,11 @@ export interface CatalogEntry {
   kind: "service" | "product"
   id: number
   name: string
+  /** Harga yang ditagihkan — sudah dipotong promo bila ada. */
   price: number
+  /** Harga sebelum potongan; null berarti tidak sedang promo. */
+  basePrice: number | null
+  promoName: string | null
   unit: string | null
   stock: number | null
   minThreshold: number | null
@@ -74,11 +79,18 @@ function toEntry(row: CatalogRow, kind: CatalogEntry["kind"]): CatalogEntry {
       ? toNumber(row.min_threshold)
       : null
 
+  // Harga promo dihitung server; kasir memakai angka itu apa adanya supaya
+  // yang tampil, yang masuk keranjang, dan yang tersimpan tidak pernah beda.
+  const basePrice = toNumber(row.price)
+  const promoPrice = row.promo ? toNumber(row.promo.price) : null
+
   return {
     kind,
     id: row.id,
     name: row.name,
-    price: toNumber(row.price),
+    price: promoPrice ?? basePrice,
+    basePrice: promoPrice === null ? null : basePrice,
+    promoName: row.promo?.name ?? null,
     unit: row.unit ?? null,
     stock,
     minThreshold,
