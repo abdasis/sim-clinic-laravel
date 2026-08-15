@@ -1,11 +1,12 @@
 import {
   createFileRoute,
+  Link,
   Outlet,
   useNavigate,
   useParams,
   useRouterState,
 } from "@tanstack/react-router"
-import { type IconSvgElement } from "@hugeicons/react"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   BarChartIcon,
   Calendar01Icon,
@@ -16,6 +17,7 @@ import {
   HeartPulseIcon,
   Layers01Icon,
   PackageIcon,
+  PaintBoardIcon,
   Settings02Icon,
   StethoscopeIcon,
   UserGroupIcon,
@@ -29,6 +31,8 @@ import {
 } from "#/components/ui/sidebar.tsx"
 import { Separator } from "#/components/ui/separator.tsx"
 import { useAuthUser } from "#/hooks/use-auth-user.ts"
+import { useMe } from "#/hooks/use-appearance.ts"
+import { normalizeAppearance } from "#/types/appearance.ts"
 import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { clearAuth } from "#/lib/auth.ts"
@@ -60,6 +64,10 @@ function ClinicLayout() {
   const mounted = useIsMounted()
   const user = useAuthUser()
   const role = user?.clinic_role ?? ""
+  // Preferensi ikut antar-perangkat: localStorage disegarkan dari server
+  // sekali per pemasangan shell, lalu diterapkan ke DOM oleh hook-nya.
+  useMe(tenant, mounted)
+  const appearance = normalizeAppearance(user?.appearance)
 
   const base = `/${tenant}/clinic`
 
@@ -131,6 +139,13 @@ function ClinicLayout() {
     <SidebarProvider>
       {mounted ? (
         <AppSidebar
+          variant={appearance.sidebar_variant}
+          preferencesTo={
+            <Link to="/$tenant/clinic/preferences" params={{ tenant }}>
+              <HugeiconsIcon icon={PaintBoardIcon} strokeWidth={2} />
+              {t("preferences.title")}
+            </Link>
+          }
           brandTitle={tenant}
           brandSubtitle={t("clinic.clinic")}
           brandTo={navMain[0]?.url ?? base}

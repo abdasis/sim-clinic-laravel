@@ -42,6 +42,7 @@ function initialsOf(name: string): string {
 export function NavUser({
   user,
   onLogout,
+  preferencesTo,
 }: {
   user: {
     name: string
@@ -49,6 +50,8 @@ export function NavUser({
     avatar?: string
   }
   onLogout?: () => void
+  /** Ditampilkan hanya bila diisi — shell central tidak punya halaman ini. */
+  preferencesTo?: React.ReactNode
 }) {
   const { t } = useTrans()
   const { isMobile } = useSidebar()
@@ -107,6 +110,9 @@ export function NavUser({
                 <HugeiconsIcon icon={BadgeCheckIcon} strokeWidth={2} />
                 {t("general.account")}
               </DropdownMenuItem>
+              {preferencesTo ? (
+                <DropdownMenuItem asChild>{preferencesTo}</DropdownMenuItem>
+              ) : null}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onLogout}>

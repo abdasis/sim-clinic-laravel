@@ -39,9 +39,12 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   navSecondary?: SidebarNavItem[]
   user: SidebarUser
   onLogout?: () => void
+  /** Item "Preferensi" di menu pengguna; hanya shell klinik yang mengisinya. */
+  preferencesTo?: React.ReactNode
 }
 
 export function AppSidebar({
+  variant = "inset",
   brandTitle,
   brandSubtitle,
   brandTo = "/",
@@ -50,10 +53,11 @@ export function AppSidebar({
   navSecondary,
   user,
   onLogout,
+  preferencesTo,
   ...props
 }: AppSidebarProps) {
   return (
-    <Sidebar variant="inset" {...props}>
+    <Sidebar variant={variant} {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -82,7 +86,7 @@ export function AppSidebar({
         ) : null}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} onLogout={onLogout} />
+        <NavUser user={user} onLogout={onLogout} preferencesTo={preferencesTo} />
       </SidebarFooter>
     </Sidebar>
   )

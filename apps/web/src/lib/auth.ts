@@ -1,4 +1,5 @@
 import { setToken, getToken } from "#/lib/api.ts"
+import type { Appearance } from "#/types/appearance.ts"
 
 export interface AuthUser {
   id: number
@@ -7,12 +8,21 @@ export interface AuthUser {
   role: string
   clinic_role: string | null
   tenant_id: number
+  /** Preferensi tampilan; belum ada untuk akun yang belum mengaturnya. */
+  appearance?: Appearance | null
 }
 
 const USER_KEY = "clinic_user"
 
 export function setAuth(token: string, user: AuthUser) {
   setToken(token)
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(USER_KEY, JSON.stringify(user))
+  }
+}
+
+/** Perbarui user tersimpan tanpa menyentuh token — dipakai halaman preferensi. */
+export function setAuthUser(user: AuthUser) {
   if (typeof window !== "undefined") {
     window.localStorage.setItem(USER_KEY, JSON.stringify(user))
   }

@@ -14,6 +14,7 @@ use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\StaffController;
@@ -68,6 +69,10 @@ Route::prefix('{tenant}')->middleware(['resolve.tenant', 'ensure.tenant.active',
 Route::prefix('{tenant}')
     ->middleware(['resolve.tenant', 'ensure.tenant.active', 'permission.team', 'auth:sanctum'])
     ->group(function (): void {
+        // Profil sendiri: preferensi tampilan, dibaca semua peran.
+        Route::get('/me', [ProfileController::class, 'show']);
+        Route::patch('/me', [ProfileController::class, 'update']);
+
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users/invite', [UserController::class, 'invite']);
         Route::post('/users/{user}/remove', [UserController::class, 'remove']);

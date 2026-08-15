@@ -20,7 +20,16 @@ interface MyRouterContext {
   queryClient: QueryClient
 }
 
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
+/*
+ * Berjalan sebelum cat pertama supaya warna dan mode tidak sempat berkedip.
+ * Preferensi pengguna yang login menang; pengunjung yang belum masuk tetap
+ * memakai kunci 'theme' lama dari pengalih tema publik.
+ *
+ * Logikanya wajib sama persis dengan applyAppearanceToDom() di
+ * hooks/use-appearance.ts — kalau berbeda, akan ada satu kedipan setelah
+ * hidrasi saat React menerapkan versinya sendiri.
+ */
+const THEME_INIT_SCRIPT = `(function(){try{var root=document.documentElement;var accent='teal';var mode=null;try{var raw=window.localStorage.getItem('clinic_user');if(raw){var pref=(JSON.parse(raw)||{}).appearance;if(pref){if(pref.accent)accent=pref.accent;if(pref.mode)mode=pref.mode}}}catch(e){}if(!mode){var stored=window.localStorage.getItem('theme');mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto'}var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.setAttribute('data-accent',accent);root.style.colorScheme=resolved;}catch(e){}})();`
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({

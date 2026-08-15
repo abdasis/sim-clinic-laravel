@@ -34,6 +34,7 @@ class User extends Authenticatable
         'role',
         'status',
         'clinic_role',
+        'appearance',
     ];
 
     protected $hidden = [
@@ -49,6 +50,7 @@ class User extends Authenticatable
             'role' => UserRole::class,
             'status' => UserStatus::class,
             'clinic_role' => ClinicRole::class,
+            'appearance' => 'array',
         ];
     }
 

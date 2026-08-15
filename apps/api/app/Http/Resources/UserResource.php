@@ -16,6 +16,7 @@ class UserResource extends JsonResource
             'role' => $this->role,
             'status' => $this->status,
             'clinic_role' => $this->clinic_role,
+            'appearance' => $this->appearance,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
