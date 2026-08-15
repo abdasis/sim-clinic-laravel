@@ -12,6 +12,7 @@ import {
 } from "#/components/ui/dialog.tsx"
 import { Form } from "#/components/ui/form.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
+import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
@@ -21,6 +22,7 @@ import type { ApiError } from "#/lib/api.ts"
 // Saldo stok sengaja tidak ada di form — hanya berubah lewat mutasi stok.
 const schema = z.object({
   name: z.string().min(1),
+  category: z.string().optional(),
   unit: z.string().min(1),
   min_threshold: z.coerce.number().gte(0),
   price: z.coerce.number().gte(0),
@@ -31,6 +33,7 @@ type Values = z.infer<typeof schema>
 export interface ProductFormValues {
   id: number
   name: string
+  category?: string | null
   unit: string
   min_threshold: number
   price: string | number
@@ -56,7 +59,7 @@ export function ProductFormModal({
   const isEdit = product !== undefined
 
   const form = useForm(schema, {
-    defaultValues: { name: "", unit: "", min_threshold: 0, price: 0 },
+    defaultValues: { name: "", category: "", unit: "", min_threshold: 0, price: 0 },
   })
 
   useEffect(() => {
@@ -66,11 +69,12 @@ export function ProductFormModal({
       product
         ? {
             name: product.name,
+            category: product.category ?? "",
             unit: product.unit,
             min_threshold: Number(product.min_threshold),
             price: Number(product.price),
           }
-        : { name: "", unit: "", min_threshold: 0, price: 0 },
+        : { name: "", category: "", unit: "", min_threshold: 0, price: 0 },
     )
   }, [open, product, form])
 
@@ -108,6 +112,19 @@ export function ProductFormModal({
               control={form.control}
               name="name"
               label={t("product.name")}
+            />
+            <FormSelect
+              control={form.control}
+              name="category"
+              label={t("product.category")}
+              options={[
+                { label: "—", value: "" },
+                { label: "Facial Wash", value: "facial_wash" },
+                { label: "Toner", value: "toner" },
+                { label: "Sunscreen", value: "sunscreen" },
+                { label: "Serum", value: "serum" },
+                { label: "Night Cream", value: "night_cream" },
+              ]}
             />
             <FormInput
               control={form.control}

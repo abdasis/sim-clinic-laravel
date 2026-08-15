@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ProductCategory;
 use App\Enums\ServiceStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
@@ -17,6 +18,7 @@ class ProductRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'category' => ['nullable', new Enum(ProductCategory::class)],
             'unit' => ['required', 'string', 'max:50'],
             'min_threshold' => ['required', 'integer', 'gte:0'],
             'price' => ['required', 'numeric', 'gte:0'],
@@ -28,6 +30,7 @@ class ProductRequest extends FormRequest
     {
         return [
             'name' => __('product.name'),
+            'category' => __('product.category'),
             'unit' => __('product.unit'),
             'min_threshold' => __('product.min_threshold'),
             'price' => __('product.price'),

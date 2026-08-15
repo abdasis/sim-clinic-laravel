@@ -12,6 +12,8 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             CentralTenantSeeder::class,
             TenantAdminSeeder::class,
+            // Katalog produk disemai dari ClinicDemoSeeder karena terikat pada
+            // satu tenant klinik, bukan data platform yang berlaku umum.
             ClinicDemoSeeder::class,
             CompanyProfileDemoSeeder::class,
         ]);

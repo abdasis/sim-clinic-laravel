@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
+use App\Enums\ProductCategory;
 use App\Enums\ServiceStatus;
 use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
@@ -15,13 +16,14 @@ class Product extends Model
 {
     use BelongsToTenant, HasFactory;
 
-    protected $fillable = ['tenant_id', 'name', 'unit', 'stock_balance', 'min_threshold', 'price', 'status'];
+    protected $fillable = ['tenant_id', 'name', 'category', 'unit', 'stock_balance', 'min_threshold', 'price', 'status'];
 
     protected $appends = ['is_low_stock'];
 
     protected function casts(): array
     {
         return [
+            'category' => ProductCategory::class,
             'price' => 'decimal:2',
             'status' => ServiceStatus::class,
             'stock_balance' => 'integer',

@@ -9,6 +9,8 @@ use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\CommissionRule;
 use App\Models\Patient;
+use App\Models\Product;
+use App\Models\Service;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Support\CommissionCalculator;
@@ -58,11 +60,15 @@ class CommissionCalculatorTest extends TestCase
         CommissionRule::create(['tenant_id' => $this->tenant->id, 'name' => 'Omzet 10 juta ke atas', 'type' => 'revenue_percent', 'percent' => 6, 'min_revenue' => 10_000_000]);
     }
 
+    /**
+     * Kunjungan treatment: transaksi dengan satu baris layanan, seperti yang
+     * dihasilkan kasir. Fee per pasien memang hanya berlaku untuk ini.
+     */
     private function sale(float $amount, string $date, ?Patient $patient = null, ?User $therapist = null): Transaction
     {
         $patient ??= Patient::factory()->create(['tenant_id' => $this->tenant->id]);
 
-        return Transaction::create([
+        $transaction = Transaction::create([
             'tenant_id' => $this->tenant->id,
             'patient_id' => $patient->id,
             'cashier_id' => auth()->id(),
@@ -73,6 +79,21 @@ class CommissionCalculatorTest extends TestCase
             'payment_status' => PaymentStatus::Unpaid,
             'issued_at' => $date.' 10:00:00',
         ]);
+
+        $service = Service::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'price' => $amount,
+        ]);
+
+        $transaction->items()->create([
+            'service_id' => $service->id,
+            'name' => $service->name,
+            'unit_price' => $amount,
+            'qty' => 1,
+            'subtotal' => $amount,
+        ]);
+
+        return $transaction;
     }
 
     public function test_counts_fee_per_visit_and_new_patient_bonus(): void
@@ -212,6 +233,75 @@ class CommissionCalculatorTest extends TestCase
 
         $this->assertSame(1, $mei['new_patients']);
         $this->assertSame(0, $juni['new_patients']);
+    }
+
+    public function test_product_only_sale_earns_no_per_patient_fee(): void
+    {
+        $this->seedRules();
+
+        $product = Product::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'CyteaPro',
+            'unit' => 'pcs',
+            'price' => 350_000,
+            'stock_balance' => 5,
+            'status' => 'active',
+        ]);
+
+        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+
+        // Transaksi berisi produk saja — bukan tindakan terapis, jadi dibuat
+        // langsung tanpa helper yang selalu menambahkan baris layanan.
+        $sale = Transaction::create([
+            'tenant_id' => $this->tenant->id,
+            'patient_id' => $patient->id,
+            'cashier_id' => auth()->id(),
+            'therapist_id' => $this->therapist->id,
+            'invoice_number' => 'INV-'.uniqid(),
+            'subtotal' => 350_000,
+            'paid_amount' => 0,
+            'payment_status' => PaymentStatus::Unpaid,
+            'issued_at' => '2026-05-10 10:00:00',
+        ]);
+
+        $sale->items()->create([
+            'product_id' => $product->id,
+            'name' => $product->name,
+            'unit_price' => 350_000,
+            'qty' => 1,
+            'subtotal' => 350_000,
+        ]);
+
+        $row = (new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows'][0];
+
+        // Tidak ada fee per pasien, tapi omzetnya tetap masuk komisi penjualan.
+        $this->assertSame(0, $row['visits']);
+        $perPatient = collect($row['lines'])->firstWhere('type', CommissionRuleType::PerPatient);
+        $this->assertNull($perPatient);
+        $this->assertEqualsWithDelta(350_000, $row['revenue'], 0.01);
+    }
+
+    public function test_visit_with_treatment_still_earns_fee_even_when_products_added(): void
+    {
+        $this->seedRules();
+
+        $service = Service::factory()->create(['tenant_id' => $this->tenant->id]);
+        $product = Product::create([
+            'tenant_id' => $this->tenant->id, 'name' => 'Vita B Gel', 'unit' => 'pcs',
+            'price' => 70_000, 'stock_balance' => 5, 'status' => 'active',
+        ]);
+
+        $sale = $this->sale(170_000, '2026-05-10');
+        $sale->items()->createMany([
+            ['service_id' => $service->id, 'name' => $service->name, 'unit_price' => 100_000, 'qty' => 1, 'subtotal' => 100_000],
+            ['product_id' => $product->id, 'name' => $product->name, 'unit_price' => 70_000, 'qty' => 1, 'subtotal' => 70_000],
+        ]);
+
+        $row = (new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows'][0];
+
+        $this->assertSame(1, $row['visits']);
+        $perPatient = collect($row['lines'])->firstWhere('type', CommissionRuleType::PerPatient);
+        $this->assertEqualsWithDelta(5000, $perPatient['amount'], 0.01);
     }
 
     public function test_endpoint_returns_preview(): void

@@ -41,7 +41,7 @@ class CommissionCalculator
             ->whereNotNull('therapist_id')
             ->whereDate('issued_at', '>=', $this->from)
             ->whereDate('issued_at', '<=', $this->to)
-            ->with('therapist')
+            ->with(['therapist', 'items'])
             ->get();
 
         $newPatientCounts = $this->newPatientCountsByBeneficiary();
@@ -52,7 +52,7 @@ class CommissionCalculator
                 $group->first()->therapist,
                 $rules,
                 (float) $group->sum(fn (Transaction $t) => (float) $t->subtotal),
-                $group->count(),
+                $this->treatmentVisits($group),
                 (int) ($newPatientCounts[$group->first()->therapist_id] ?? 0),
             ));
 
@@ -84,6 +84,22 @@ class CommissionCalculator
             'total' => (float) collect($rows)->sum('total'),
             'rules_used' => $rules->map(fn (CommissionRule $rule) => $rule->name)->all(),
         ];
+    }
+
+    /**
+     * Kunjungan yang berhak atas fee per pasien: yang benar-benar memuat
+     * tindakan. Penjualan produk murni tidak menghasilkan fee terapis —
+     * yang dibayar adalah pekerjaan merawat pasien, bukan menjual barang.
+     * Omzet untuk komisi penjualan tetap menghitung produk.
+     *
+     * @param  Collection<int, Transaction>  $group
+     */
+    private function treatmentVisits(Collection $group): int
+    {
+        return $group
+            ->filter(fn (Transaction $transaction) => $transaction->items
+                ->contains(fn ($item) => $item->service_id !== null))
+            ->count();
     }
 
     /**

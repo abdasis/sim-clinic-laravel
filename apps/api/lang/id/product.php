@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'category' => 'Kategori',
     'status_all' => 'Semua',
     'status_archived' => 'Arsip',
     'status_active' => 'Aktif',

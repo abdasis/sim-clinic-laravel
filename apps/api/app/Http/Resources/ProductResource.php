@@ -13,6 +13,8 @@ class ProductResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'category' => $this->category,
+            'category_label' => $this->category?->label(),
             'unit' => $this->unit,
             'stock_balance' => $this->stock_balance,
             'min_threshold' => $this->min_threshold,
