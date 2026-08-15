@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "#/components/ui/dialog.tsx"
 import { Form } from "#/components/ui/form.tsx"
+import { FormAlert } from "#/components/forms/form-alert.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
@@ -60,6 +61,8 @@ export function ServiceFormDialog({
   const { t } = useTrans()
   const qc = useQueryClient()
   const isEdit = service !== undefined
+  // Kegagalan yang bukan milik satu field: izin ditolak, server bermasalah.
+  const [failure, setFailure] = useState<string | null>(null)
 
   const form = useForm(schema, {
     defaultValues: {
@@ -76,6 +79,7 @@ export function ServiceFormDialog({
   useEffect(() => {
     if (!open) return
 
+    setFailure(null)
     form.reset(
       service
         ? {
@@ -101,6 +105,7 @@ export function ServiceFormDialog({
         ? apiPut(`/${tenant}/clinic/services/${service.id}`, values)
         : apiPost(`/${tenant}/clinic/services`, values),
     onSuccess: () => {
+      setFailure(null)
       toast.success(isEdit ? t("service.updated") : t("service.created"))
       qc.invalidateQueries({ queryKey: ["services"] })
       onOpenChange(false)
@@ -108,6 +113,9 @@ export function ServiceFormDialog({
     },
     onError: (err: ApiError) => {
       applyServerErrors(form, err.errors)
+      // Error per-field sudah tampil di bawah masing-masing input; sisanya
+      // tidak punya tempat, jadi ditampilkan di kepala form.
+      setFailure(err.errors ? null : err.message)
       toast.error(err.message)
     },
   })
@@ -125,6 +133,7 @@ export function ServiceFormDialog({
             onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
             className="space-y-4"
           >
+            <FormAlert message={failure} />
             <FormInput
               control={form.control}
               name="name"

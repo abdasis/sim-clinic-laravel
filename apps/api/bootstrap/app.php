@@ -6,8 +6,10 @@ use App\Http\Middleware\SetPermissionTeamId;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -35,4 +37,24 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Laravel menjawab penolakan izin dengan "This action is unauthorized."
+        // — bahasa Inggris dan tidak menjelaskan apa pun ke pengguna klinik.
+        // Diganti pesan yang bisa dibaca, tanpa mengubah status 403-nya.
+        //
+        // Tipe yang ditangkap AccessDeniedHttpException, bukan
+        // AuthorizationException: Laravel sudah membungkusnya lewat
+        // prepareException() sebelum callback ini dijalankan.
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request): ?JsonResponse {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+
+            $message = $e->getMessage();
+            $isDefault = $message === '' || $message === 'This action is unauthorized.';
+
+            return response()->json([
+                'message' => $isDefault ? __('clinic.forbidden') : $message,
+            ], 403);
+        });
     })->create();

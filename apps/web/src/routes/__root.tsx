@@ -8,6 +8,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
+import { Toaster } from '#/components/ui/sonner.tsx'
 import { TooltipProvider } from '#/components/ui/tooltip.tsx'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
@@ -126,6 +127,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           {!hideChrome ? <Header /> : null}
           {children}
           {!hideChrome ? <Footer /> : null}
+          {/* Tanpa ini setiap toast di aplikasi terkirim ke ruang hampa —
+              termasuk pesan gagal simpan yang justru paling perlu dibaca. */}
+          <Toaster position="top-right" richColors closeButton />
         </TooltipProvider>
         <TanStackDevtools
           config={{
