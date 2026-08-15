@@ -164,7 +164,7 @@ class MebaServiceSeeder extends Seeder
             }
         }
 
-        return DB::table('promos')
+        return DB::table('promo_items')
             ->where('promotable_type', Service::class)
             ->where('promotable_id', $service->id)
             ->exists();
