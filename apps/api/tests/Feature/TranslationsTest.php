@@ -30,7 +30,8 @@ class TranslationsTest extends TestCase
         // Key yang dilaporkan tampil mentah di browser.
         $this->assertSame('Pengeluaran', $data['expense']['title']);
         $this->assertSame('Ringkasan Pengeluaran', $data['expense']['summary'] ?? null);
-        $this->assertSame('Promo', $data['promo']['title']);
+        $this->assertSame('Promosi', $data['promo']['title']);
+        $this->assertSame('Profil Perusahaan', $data['company_profile']['title']);
         $this->assertNotEmpty($data['commission']['title'] ?? null);
         $this->assertNotEmpty($data['broadcast']['title'] ?? null);
         $this->assertNotEmpty($data['commission']['preview'] ?? null);

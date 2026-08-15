@@ -1,14 +1,14 @@
 <?php
 
 return [
-    'title' => 'Company Profile',
+    'title' => 'Profil Perusahaan',
     'subtitle' => 'Kelola isi halaman publik klinik.',
     'settings' => 'Pengaturan',
     'navigation' => 'Menu Navigasi',
     'slides' => 'Slide Hero',
     'value_props' => 'Keunggulan',
     'treatments' => 'Treatment',
-    'promos' => 'Promo',
+    'promos' => 'Promosi',
     'brands' => 'Brand',
     'testimonials' => 'Testimoni',
     'content_sections' => 'Section Konten',
