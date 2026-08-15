@@ -1,10 +1,14 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
+import { UserGroupIcon } from "@hugeicons/core-free-icons"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { IndexCta } from "#/components/stats/index-cta.tsx"
+import { StatsSection } from "#/components/stats/stats-section.tsx"
+import { useStats } from "#/hooks/use-stats.ts"
 import { useAuthUser } from "#/hooks/use-auth-user.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
@@ -28,8 +32,15 @@ export interface StaffRow {
 
 function StaffPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/staff/" })
+  const [createOpen, setCreateOpen] = useState(false)
   const { t } = useTrans()
   const authUser = useAuthUser()
+  // Halaman ini khusus admin; jangan tembak endpoint yang pasti ditolak.
+  const stats = useStats({
+    tenant,
+    module: "staff",
+    enabled: authUser?.clinic_role === "admin",
+  })
 
   const columns = useMemo<ColumnDef<StaffRow>[]>(
     () => [
@@ -82,9 +93,31 @@ function StaffPage() {
           { label: t("staff.title") },
         ]}
       />
+      <IndexCta
+        icon={UserGroupIcon}
+        tone="ink"
+        mascot="clinic"
+        title={t("cta.staff.title")}
+        description={t("cta.staff.description")}
+        actionLabel={t("cta.staff.action")}
+        onAction={() => setCreateOpen(true)}
+      />
+
+      <StatsSection
+        stats={stats.data?.data}
+        isLoading={stats.isLoading}
+        isError={stats.isError}
+        isFetching={stats.isFetching}
+        onRefresh={() => void stats.refetch()}
+      />
+
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("staff.title")}</h1>
-        <StaffFormModal tenant={tenant} />
+        <StaffFormModal
+          tenant={tenant}
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+        />
       </div>
       <DataTable
         table={table}

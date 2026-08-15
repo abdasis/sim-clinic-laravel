@@ -1,4 +1,5 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
+import { TagsIcon } from "@hugeicons/core-free-icons"
 import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
@@ -8,6 +9,9 @@ import {
   StatusBadge,
 } from "#/components/ui/status-badge.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { IndexCta } from "#/components/stats/index-cta.tsx"
+import { StatsSection } from "#/components/stats/stats-section.tsx"
+import { useStats } from "#/hooks/use-stats.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { formatCurrency } from "#/lib/format.ts"
 import { apiGet } from "#/lib/api.ts"
@@ -33,6 +37,7 @@ function ServicesPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/services/" })
   const { t } = useTrans()
   const [createOpen, setCreateOpen] = useState(false)
+  const stats = useStats({ tenant, module: "services" })
 
   const columns = useMemo<ColumnDef<ServiceRow>[]>(
     () => [
@@ -93,6 +98,24 @@ function ServicesPage() {
           { label: t("service.title") },
         ]}
       />
+      <IndexCta
+        icon={TagsIcon}
+        tone="palm"
+        mascot="clinic"
+        title={t("cta.services.title")}
+        description={t("cta.services.description")}
+        actionLabel={t("cta.services.action")}
+        onAction={() => setCreateOpen(true)}
+      />
+
+      <StatsSection
+        stats={stats.data?.data}
+        isLoading={stats.isLoading}
+        isError={stats.isError}
+        isFetching={stats.isFetching}
+        onRefresh={() => void stats.refetch()}
+      />
+
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("service.title")}</h1>
         <Button onClick={() => setCreateOpen(true)}>{t("service.add")}</Button>

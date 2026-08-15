@@ -4,6 +4,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { StatsSection } from "#/components/stats/stats-section.tsx"
+import { useCentralStats } from "#/hooks/use-stats.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
@@ -23,6 +25,8 @@ interface TenantRow {
 
 function TenantsPage() {
   const { t } = useTrans()
+  // Ringkasan yang sama dengan dasbor central; React Query berbagi cache-nya.
+  const stats = useCentralStats()
 
   const columns = useMemo<ColumnDef<TenantRow>[]>(
     () => [
@@ -65,6 +69,19 @@ function TenantsPage() {
           { label: t("tenant.tenants") },
         ]}
       />
+      <StatsSection
+        className="mt-2"
+        rangeLabel={t("stats.last_weeks").replace(
+          ":weeks",
+          String(stats.data?.meta.weeks ?? 12),
+        )}
+        stats={stats.data?.data}
+        isLoading={stats.isLoading}
+        isError={stats.isError}
+        isFetching={stats.isFetching}
+        onRefresh={() => void stats.refetch()}
+      />
+
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("tenant.tenants")}</h1>
       </div>

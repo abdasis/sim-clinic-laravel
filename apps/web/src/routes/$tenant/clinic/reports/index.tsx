@@ -2,6 +2,8 @@ import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { StatsSection } from "#/components/stats/stats-section.tsx"
+import { useStats } from "#/hooks/use-stats.ts"
 import { Button } from "#/components/ui/button.tsx"
 import { Input } from "#/components/ui/input.tsx"
 import { Label } from "#/components/ui/label.tsx"
@@ -39,6 +41,9 @@ function ReportsPage() {
   // ponytail: render null saat belum mount, guard role setelah mount — SSR & first client render identik kosong (mencegah hydration mismatch dari localStorage).
   const mounted = useIsMounted()
   const isAdmin = useAuthUser()?.clinic_role === "admin"
+  // Laporan memakai ringkasan transaksi yang sama; tanpa ajakan karena
+  // filter tanggal di bawah sudah jadi aksi utamanya.
+  const stats = useStats({ tenant, module: "transactions", enabled: isAdmin })
 
   const [tab, setTab] = useState<ReportTab>("revenue")
   const [from, setFrom] = useState("")
@@ -83,6 +88,15 @@ function ReportsPage() {
         ]}
       />
       <h1 className="mb-4 text-xl font-semibold">{t("report.title")}</h1>
+
+      <StatsSection
+        className="mt-4"
+        stats={stats.data?.data}
+        isLoading={stats.isLoading}
+        isError={stats.isError}
+        isFetching={stats.isFetching}
+        onRefresh={() => void stats.refetch()}
+      />
 
       <form
         className="mb-6 flex flex-wrap items-end gap-4"

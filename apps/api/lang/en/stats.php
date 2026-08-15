@@ -6,6 +6,7 @@ return [
     'title' => 'Overview',
     'subtitle' => 'Key numbers for this module and how they have been moving.',
     'last_days' => 'Last :days days',
+    'last_weeks' => 'Last :weeks weeks',
     'refresh' => 'Refresh stats',
     'refresh_hint' => 'Fetch the latest numbers from the server',
     'loading' => 'Crunching the numbers...',

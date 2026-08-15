@@ -1,4 +1,5 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
+import { PackageIcon } from "@hugeicons/core-free-icons"
 import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
@@ -9,6 +10,9 @@ import {
   StatusBadge,
 } from "#/components/ui/status-badge.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { IndexCta } from "#/components/stats/index-cta.tsx"
+import { StatsSection } from "#/components/stats/stats-section.tsx"
+import { useStats } from "#/hooks/use-stats.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
@@ -36,6 +40,7 @@ function ProductsPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/products/" })
   const { t } = useTrans()
   const [createOpen, setCreateOpen] = useState(false)
+  const stats = useStats({ tenant, module: "products" })
 
   const columns = useMemo<ColumnDef<ProductRow>[]>(
     () => [
@@ -100,6 +105,24 @@ function ProductsPage() {
           { label: t("product.title") },
         ]}
       />
+      <IndexCta
+        icon={PackageIcon}
+        tone="sand"
+        mascot="clinic"
+        title={t("cta.products.title")}
+        description={t("cta.products.description")}
+        actionLabel={t("cta.products.action")}
+        onAction={() => setCreateOpen(true)}
+      />
+
+      <StatsSection
+        stats={stats.data?.data}
+        isLoading={stats.isLoading}
+        isError={stats.isError}
+        isFetching={stats.isFetching}
+        onRefresh={() => void stats.refetch()}
+      />
+
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("product.title")}</h1>
         <Button onClick={() => setCreateOpen(true)}>{t("product.add")}</Button>

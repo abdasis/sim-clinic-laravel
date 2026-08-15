@@ -1,10 +1,14 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 import { useMemo } from "react"
+import { UserAdd01Icon } from "@hugeicons/core-free-icons"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { IndexCta } from "#/components/stats/index-cta.tsx"
+import { StatsSection } from "#/components/stats/stats-section.tsx"
+import { useStats } from "#/hooks/use-stats.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
@@ -24,6 +28,7 @@ interface PatientRow {
 function PatientsPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/patients/" })
   const { t } = useTrans()
+  const stats = useStats({ tenant, module: "patients" })
 
   const columns = useMemo<ColumnDef<PatientRow>[]>(
     () => [
@@ -61,6 +66,29 @@ function PatientsPage() {
           { label: t("patient.title") },
         ]}
       />
+      <IndexCta
+        icon={UserAdd01Icon}
+        tone="lagoon"
+        mascot="clinic"
+        title={t("cta.patients.title")}
+        description={t("cta.patients.description")}
+        action={
+          <Button asChild className="transition-transform duration-150 ease-out hover:-translate-y-px">
+            <Link to="/$tenant/clinic/patients/new" params={{ tenant }}>
+              {t("cta.patients.action")}
+            </Link>
+          </Button>
+        }
+      />
+
+      <StatsSection
+        stats={stats.data?.data}
+        isLoading={stats.isLoading}
+        isError={stats.isError}
+        isFetching={stats.isFetching}
+        onRefresh={() => void stats.refetch()}
+      />
+
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("patient.title")}</h1>
         <Button asChild>

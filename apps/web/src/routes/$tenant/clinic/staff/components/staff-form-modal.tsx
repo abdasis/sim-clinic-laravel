@@ -30,9 +30,22 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>
 
-export function StaffFormModal({ tenant }: { tenant: string }) {
+interface StaffFormModalProps {
+  tenant: string
+  /** Dikendalikan halaman saat banner ajakan ikut membuka dialog ini. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export function StaffFormModal({
+  tenant,
+  open: openProp,
+  onOpenChange,
+}: StaffFormModalProps) {
   const { t } = useTrans()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = openProp ?? internalOpen
+  const setOpen = onOpenChange ?? setInternalOpen
   const qc = useQueryClient()
   const form = useForm(schema, {
     defaultValues: { name: "", email: "", clinic_role: "cashier", password: "" },

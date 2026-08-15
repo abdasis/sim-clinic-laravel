@@ -7,6 +7,7 @@ return [
     'title' => 'Ringkasan',
     'subtitle' => 'Angka penting modul ini dan pergerakannya belakangan.',
     'last_days' => 'Data :days hari terakhir',
+    'last_weeks' => 'Data :weeks minggu terakhir',
     'refresh' => 'Muat ulang statistik',
     'refresh_hint' => 'Ambil ulang angka terbaru dari server',
     'loading' => 'Menyiapkan angka...',

@@ -5,7 +5,11 @@ import { toast } from "sonner"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
+import { ReceiptDollarIcon } from "@hugeicons/core-free-icons"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { IndexCta } from "#/components/stats/index-cta.tsx"
+import { StatsSection } from "#/components/stats/stats-section.tsx"
+import { useStats } from "#/hooks/use-stats.ts"
 import {
   PAYMENT_STATUS_VARIANTS,
   StatusBadge,
@@ -159,6 +163,8 @@ function TransactionsPage() {
     [t, tenant],
   )
 
+  const stats = useStats({ tenant, module: "transactions" })
+
   const { table, isLoading, meta } = useDataTable<TransactionRow>({
     queryKey: ["transactions", tenant],
     queryFn: (params: DataTableParams) =>
@@ -182,6 +188,29 @@ function TransactionsPage() {
           { label: t("pos.transactions") },
         ]}
       />
+      <IndexCta
+        icon={ReceiptDollarIcon}
+        tone="sunset"
+        mascot="clinic"
+        title={t("cta.transactions.title")}
+        description={t("cta.transactions.description")}
+        action={
+          <Button asChild className="transition-transform duration-150 ease-out hover:-translate-y-px">
+            <Link to="/$tenant/clinic/pos" params={{ tenant }}>
+              {t("cta.transactions.action")}
+            </Link>
+          </Button>
+        }
+      />
+
+      <StatsSection
+        stats={stats.data?.data}
+        isLoading={stats.isLoading}
+        isError={stats.isError}
+        isFetching={stats.isFetching}
+        onRefresh={() => void stats.refetch()}
+      />
+
       <h1 className="mb-4 text-xl font-semibold">{t("pos.transactions")}</h1>
       <DataTable
         table={table}

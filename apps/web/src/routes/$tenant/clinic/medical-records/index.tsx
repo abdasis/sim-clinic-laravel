@@ -1,8 +1,12 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 import { useMemo } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
+import { Notebook01Icon } from "@hugeicons/core-free-icons"
 
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { IndexCta } from "#/components/stats/index-cta.tsx"
+import { StatsSection } from "#/components/stats/stats-section.tsx"
+import { useStats } from "#/hooks/use-stats.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import {
@@ -40,6 +44,7 @@ function summarise(record: MedicalRecordRow): string | null {
 
 function MedicalRecordsPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/medical-records/" })
+  const stats = useStats({ tenant, module: "medical-records" })
   const { t } = useTrans()
 
   const columns = useMemo<ColumnDef<MedicalRecordRow>[]>(
@@ -132,6 +137,33 @@ function MedicalRecordsPage() {
           { label: t("medical_record.title") },
         ]}
       />
+      <IndexCta
+        icon={Notebook01Icon}
+        tone="lagoon"
+        mascot="clinic"
+        title={t("cta.medical_records.title")}
+        description={t("cta.medical_records.description")}
+        action={
+          <Button asChild className="transition-transform duration-150 ease-out hover:-translate-y-px">
+            <Link
+              to="/$tenant/clinic/medical-records/new"
+              params={{ tenant }}
+              search={{ booking: undefined }}
+            >
+              {t("cta.medical_records.action")}
+            </Link>
+          </Button>
+        }
+      />
+
+      <StatsSection
+        stats={stats.data?.data}
+        isLoading={stats.isLoading}
+        isError={stats.isError}
+        isFetching={stats.isFetching}
+        onRefresh={() => void stats.refetch()}
+      />
+
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">

@@ -7,7 +7,11 @@ import {
   startOfWeek,
   endOfWeek,
 } from "date-fns"
+import { CalendarCheckIcon } from "@hugeicons/core-free-icons"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { IndexCta } from "#/components/stats/index-cta.tsx"
+import { StatsSection } from "#/components/stats/stats-section.tsx"
+import { useStats } from "#/hooks/use-stats.ts"
 import { Button } from "#/components/ui/button.tsx"
 import { Card } from "#/components/ui/card.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
@@ -43,6 +47,7 @@ function BookingsPage() {
   const [view, setView] = useState<View>("day")
   const [date, setDate] = useState(() => format(new Date(), "yyyy-MM-dd"))
   const [formOpen, setFormOpen] = useState(false)
+  const stats = useStats({ tenant, module: "bookings" })
   const [editingId, setEditingId] = useState<number | undefined>(undefined)
 
   const { from, to } = computeRange(date, view)
@@ -69,6 +74,27 @@ function BookingsPage() {
           { label: t("booking.title") },
         ]}
       />
+      <IndexCta
+        icon={CalendarCheckIcon}
+        tone="palm"
+        mascot="clinic"
+        title={t("cta.bookings.title")}
+        description={t("cta.bookings.description")}
+        actionLabel={t("cta.bookings.action")}
+        onAction={() => {
+          setEditingId(undefined)
+          setFormOpen(true)
+        }}
+      />
+
+      <StatsSection
+        stats={stats.data?.data}
+        isLoading={stats.isLoading}
+        isError={stats.isError}
+        isFetching={stats.isFetching}
+        onRefresh={() => void stats.refetch()}
+      />
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">{t("booking.schedule")}</h1>
         <div className="flex items-center gap-2">
