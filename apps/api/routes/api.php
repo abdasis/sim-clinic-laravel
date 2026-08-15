@@ -165,6 +165,8 @@ Route::prefix('{tenant}/clinic')
         Route::get('stats/{module}', [StatsController::class, 'show']);
 
         // US8 Reports
+        Route::get('reports/monthly', [ReportController::class, 'monthly']);
+        Route::get('reports/monthly/export', [ReportController::class, 'monthlyExport']);
         Route::get('reports/revenue', [ReportController::class, 'revenue']);
         Route::get('reports/services', [ReportController::class, 'services']);
         Route::get('reports/products', [ReportController::class, 'products']);

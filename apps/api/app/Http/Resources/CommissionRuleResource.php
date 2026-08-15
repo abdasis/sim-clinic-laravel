@@ -12,6 +12,8 @@ class CommissionRuleResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'therapist_id' => $this->therapist_id,
+            'therapist_name' => $this->therapist?->name,
             'type' => $this->type,
             'type_label' => $this->type?->label(),
             'amount' => $this->amount,

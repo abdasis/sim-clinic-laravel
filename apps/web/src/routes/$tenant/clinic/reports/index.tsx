@@ -23,13 +23,14 @@ import type { RevenueData } from "./components/revenue-summary.tsx"
 import { ServiceSalesTable } from "./components/service-sales-table.tsx"
 import type { ServiceSalesRow } from "./components/service-sales-table.tsx"
 import { ProductSalesTable } from "./components/product-sales-table.tsx"
+import { MonthlyReport } from "./components/monthly-report.tsx"
 import type { ProductSalesRow } from "./components/product-sales-table.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/reports/")({
   component: ReportsPage,
 })
 
-type ReportTab = "revenue" | "services" | "products"
+type ReportTab = "revenue" | "services" | "products" | "monthly"
 
 interface ReportResponse {
   data: RevenueData | ServiceSalesRow[] | ProductSalesRow[]
@@ -132,11 +133,14 @@ function ReportsPage() {
           <TabsTrigger value="revenue">{t("report.revenue")}</TabsTrigger>
           <TabsTrigger value="services">{t("report.services")}</TabsTrigger>
           <TabsTrigger value="products">{t("report.products")}</TabsTrigger>
+          <TabsTrigger value="monthly">{t("report.monthly")}</TabsTrigger>
         </TabsList>
 
         <div className="mt-4">
           {!applied ? (
             <p className="text-muted-foreground">{t("report.select_range")}</p>
+          ) : tab === "monthly" ? (
+            <MonthlyReport tenant={tenant} from={applied.from} to={applied.to} />
           ) : isLoading ? (
             <p className="text-muted-foreground">{t("general.loading")}</p>
           ) : isEmpty ? (

@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\PaymentMethod;
+use App\Models\Expense;
+use App\Models\Transaction;
+use App\Support\CommissionCalculator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -97,5 +101,102 @@ class ReportService
             'qty_sold' => (int) $r->qty_sold,
             'revenue' => sprintf('%.2f', (float) $r->revenue),
         ])->all();
+    }
+
+    /**
+     * Laporan bulanan lengkap, mengikuti susunan laporan spreadsheet klinik:
+     * baris per transaksi, rincian dana per metode bayar, rincian pengeluaran,
+     * fee terapis, lalu keuntungan bersih.
+     *
+     * Keuntungan bersih = pendapatan - pengeluaran tercatat. Fee terapis
+     * ditampilkan sebagai pratinjau dan TIDAK ikut dikurangkan otomatis —
+     * begitu dibukukan, ia sudah masuk sebagai pengeluaran, dan mengurangkan
+     * dua kali berarti melaporkan laba lebih kecil dari kenyataan.
+     */
+    public function monthly(string $from, string $to): array
+    {
+        $tenantId = $this->tenantId();
+        $start = Carbon::parse($from)->startOfDay();
+        $end = Carbon::parse($to)->endOfDay();
+
+        $transactions = Transaction::query()
+            ->where('tenant_id', $tenantId)
+            ->where('payment_status', 'paid')
+            ->whereNull('cancelled_at')
+            ->whereBetween('issued_at', [$start, $end])
+            ->with(['items', 'patient', 'therapist'])
+            ->orderBy('issued_at')
+            ->get();
+
+        $rows = $transactions->map(function (Transaction $transaction) {
+            $services = $transaction->items->whereNotNull('service_id');
+            $products = $transaction->items->whereNotNull('product_id');
+
+            return [
+                'issued_at' => $transaction->issued_at?->toDateString(),
+                'therapist_name' => $transaction->therapist?->name,
+                'patient_name' => $transaction->patient?->name,
+                'invoice_number' => $transaction->invoice_number,
+                'services' => $services->pluck('name')->implode(', '),
+                'products' => $products->pluck('name')->implode(', '),
+                'treatment_amount' => (float) $services->sum('subtotal'),
+                'product_amount' => (float) $products->sum('subtotal'),
+                'total' => (float) $transaction->subtotal,
+            ];
+        })->values()->all();
+
+        // Rincian dana per metode: dari pembayaran nyata, bukan asumsi.
+        $paymentRows = DB::table('payments')
+            ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
+            ->where('transactions.tenant_id', $tenantId)
+            ->whereNull('transactions.cancelled_at')
+            ->whereBetween('transactions.issued_at', [$start, $end])
+            ->groupBy('payments.method')
+            ->selectRaw('payments.method, SUM(payments.amount) as total')
+            ->pluck('total', 'method');
+
+        $payments = collect(PaymentMethod::cases())->map(fn (PaymentMethod $method) => [
+            'method' => $method->value,
+            'method_label' => $method->label(),
+            'total' => (float) ($paymentRows[$method->value] ?? 0),
+        ])->values()->all();
+
+        $expenseRows = Expense::query()
+            ->between($from, $to)
+            ->selectRaw('category, SUM(amount) as total')
+            ->groupBy('category')
+            ->get();
+
+        $expenses = $expenseRows->map(fn ($row) => [
+            'category' => $row->category?->value,
+            'category_label' => $row->category?->label(),
+            'total' => (float) $row->total,
+        ])->sortByDesc('total')->values()->all();
+
+        $commission = (new CommissionCalculator($from, $to))->run();
+
+        $revenueTotal = (float) collect($rows)->sum('total');
+        $expenseTotal = (float) $expenseRows->sum('total');
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'rows' => $rows,
+            'totals' => [
+                'treatment' => (float) collect($rows)->sum('treatment_amount'),
+                'product' => (float) collect($rows)->sum('product_amount'),
+                'revenue' => $revenueTotal,
+            ],
+            'payments' => $payments,
+            'expenses' => [
+                'by_category' => $expenses,
+                'total' => $expenseTotal,
+            ],
+            'commission' => [
+                'rows' => $commission['rows'],
+                'total' => $commission['total'],
+            ],
+            'net_profit' => $revenueTotal - $expenseTotal,
+        ];
     }
 }

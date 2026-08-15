@@ -22,7 +22,7 @@ class CommissionRuleController extends Controller
 
         return response()->json([
             'data' => CommissionRuleResource::collection(
-                CommissionRule::query()->orderBy('type')->orderBy('min_revenue')->get()
+                CommissionRule::query()->with('therapist')->orderBy('type')->orderBy('min_revenue')->get()
             ),
             'meta' => [],
         ]);

@@ -72,6 +72,38 @@ export async function apiGet<T>(
   return handle<T>(res)
 }
 
+/**
+ * Unduh berkas dari endpoint ber-otorisasi. Tautan biasa tidak bisa membawa
+ * header Bearer, jadi berkasnya diambil sebagai blob lalu disodorkan lewat
+ * object URL sekali pakai.
+ */
+export async function apiDownload(
+  path: string,
+  params: Record<string, unknown>,
+  filename: string,
+): Promise<void> {
+  const res = await fetch(buildUrl(path, params), { headers: headers(false) })
+
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { message?: string }
+    const err: ApiError = {
+      status: res.status,
+      message: body.message ?? `API ${res.status}`,
+    }
+    throw err
+  }
+
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+}
+
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(buildUrl(path), {
     method: "POST",

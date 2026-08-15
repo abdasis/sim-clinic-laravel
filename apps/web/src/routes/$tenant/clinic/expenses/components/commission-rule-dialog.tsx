@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { toast } from "sonner"
 
@@ -17,12 +17,14 @@ import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { apiPost, apiPut } from "#/lib/api.ts"
+import { apiGet, apiPost, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 
 export interface CommissionRule {
   id: number
   name: string
+  therapist_id?: number | null
+  therapist_name?: string | null
   type: string
   type_label?: string | null
   amount: string | number
@@ -33,6 +35,8 @@ export interface CommissionRule {
 
 const schema = z.object({
   name: z.string().min(1),
+  // "" berarti berlaku untuk semua terapis.
+  therapist_id: z.string().optional(),
   type: z.string().min(1),
   amount: z.coerce.number().gte(0),
   percent: z.coerce.number().gte(0).lte(100),
@@ -43,6 +47,7 @@ type Values = z.infer<typeof schema>
 
 const EMPTY: Values = {
   name: "",
+  therapist_id: "",
   type: "per_patient",
   amount: 5000,
   percent: 0,
@@ -69,6 +74,16 @@ export function CommissionRuleDialog({
   const form = useForm(schema, { defaultValues: EMPTY })
   const type = form.watch("type")
 
+  const staff = useQuery({
+    queryKey: ["staff", tenant, "therapists"],
+    queryFn: () =>
+      apiGet<{ data: { id: number; name: string; clinic_role: string }[] }>(
+        `/${tenant}/clinic/staff`,
+        { per_page: 100 },
+      ),
+    enabled: open,
+  })
+
   useEffect(() => {
     if (!open) return
 
@@ -76,6 +91,7 @@ export function CommissionRuleDialog({
       rule
         ? {
             name: rule.name,
+            therapist_id: rule.therapist_id ? String(rule.therapist_id) : "",
             type: rule.type,
             amount: Number(rule.amount),
             percent: Number(rule.percent),
@@ -86,10 +102,16 @@ export function CommissionRuleDialog({
   }, [open, rule, form])
 
   const mutation = useMutation({
-    mutationFn: (values: Values) =>
-      isEdit
-        ? apiPut(`/${tenant}/clinic/commission-rules/${rule.id}`, values)
-        : apiPost(`/${tenant}/clinic/commission-rules`, values),
+    mutationFn: (values: Values) => {
+      const payload = {
+        ...values,
+        therapist_id: values.therapist_id ? Number(values.therapist_id) : null,
+      }
+
+      return isEdit
+        ? apiPut(`/${tenant}/clinic/commission-rules/${rule.id}`, payload)
+        : apiPost(`/${tenant}/clinic/commission-rules`, payload)
+    },
     onSuccess: () => {
       toast.success(isEdit ? t("commission.updated") : t("commission.created"))
       qc.invalidateQueries({ queryKey: ["commission-rules"] })
@@ -124,6 +146,23 @@ export function CommissionRuleDialog({
               name="name"
               label={t("commission.name")}
               required
+            />
+
+            <FormSelect
+              control={form.control}
+              name="therapist_id"
+              label={t("commission.therapist_scope")}
+              options={[
+                { label: t("commission.all_therapists"), value: "" },
+                ...(staff.data?.data ?? [])
+                  .filter((member) =>
+                    ["therapist", "doctor"].includes(member.clinic_role),
+                  )
+                  .map((member) => ({
+                    label: member.name,
+                    value: String(member.id),
+                  })),
+              ]}
             />
 
             <FormSelect

@@ -68,6 +68,10 @@ class CommissionCalculator
         $revenue = (float) $group->sum(fn (Transaction $t) => (float) $t->subtotal);
         $visits = $group->count();
 
+        // Aturan yang dibatasi ke terapis lain tidak boleh menyentuh baris ini;
+        // kompetisi antar-tingkat pun hanya terjadi di antara aturan yang berlaku.
+        $rules = $rules->filter(fn (CommissionRule $rule) => $rule->appliesTo($therapist?->id))->values();
+
         // Pasien baru: kunjungan berbayar pertamanya jatuh di dalam periode ini.
         $newPatients = $group
             ->filter(function (Transaction $t) use ($firstVisitAt) {

@@ -23,6 +23,8 @@ return [
     'post_as_expense' => 'Bukukan sebagai pengeluaran',
     'posted' => 'Fee terapis berhasil dibukukan sebagai pengeluaran.',
     'therapist' => 'Terapis',
+    'therapist_scope' => 'Berlaku Untuk',
+    'all_therapists' => 'Semua terapis',
     'revenue' => 'Omzet',
     'visits' => 'Kunjungan',
     'new_patients' => 'Pasien Baru',
