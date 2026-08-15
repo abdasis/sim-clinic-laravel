@@ -27,6 +27,8 @@ class Transaction extends Model
         'paid_amount',
         'payment_status',
         'issued_at',
+        'print_count',
+        'last_printed_at',
         'cancelled_at',
     ];
 
@@ -37,6 +39,7 @@ class Transaction extends Model
             'paid_amount' => 'decimal:2',
             'payment_status' => PaymentStatus::class,
             'issued_at' => 'datetime',
+            'last_printed_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];

@@ -22,6 +22,8 @@ class TransactionResource extends JsonResource
             'payment_status' => $this->payment_status,
             'payment_status_label' => $this->payment_status?->label(),
             'issued_at' => $this->issued_at?->toIso8601String(),
+            'print_count' => $this->print_count,
+            'last_printed_at' => $this->last_printed_at?->toIso8601String(),
             'cancelled_at' => $this->cancelled_at?->toIso8601String(),
             'deleted_at' => $this->deleted_at?->toIso8601String(),
             'payments' => PaymentResource::collection($this->whenLoaded('payments')),

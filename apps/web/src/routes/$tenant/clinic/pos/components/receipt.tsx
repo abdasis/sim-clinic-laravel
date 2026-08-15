@@ -37,6 +37,7 @@ export interface ReceiptData {
   outstanding_amount: string
   issued_at?: string | null
   created_at?: string | null
+  print_count?: number | null
   patient_name?: string | null
   cashier_name?: string | null
   items: ReceiptItem[]
@@ -89,6 +90,9 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
   const paid = Number(data.paid_amount ?? 0)
   const outstanding = Number(data.outstanding_amount ?? 0)
   const issuedAt = data.issued_at ?? data.created_at
+  // Hitungan disimpan setelah dicetak, jadi cetakan yang sedang berjalan
+  // adalah yang berikutnya — nota tidak boleh mengaku cetakan ke-0.
+  const printCount = Math.max(1, Number(data.print_count ?? 0))
 
   return (
     <article
@@ -231,16 +235,36 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
         </p>
       ) : null}
 
-      <Perforation />
+      <footer className="mt-3">
+        {/* Garis berornamen, bukan perforasi biasa: bagian ini penutup yang
+            personal, jadi pemisahnya pun berbeda dari pemisah data di atas. */}
+        <div className="flex items-center gap-1.5" aria-hidden="true">
+          <span className="h-px flex-1 bg-neutral-800" />
+          <span className="text-[0.55rem] leading-none">&#10022;</span>
+          <span className="text-[0.5rem] leading-none">&#9829;</span>
+          <span className="h-px flex-1 bg-neutral-800" />
+        </div>
 
-      <footer className="text-center">
-        <p className="text-2xs font-semibold italic">{t("invoice.thank_you")}</p>
-        <p className="mt-0.5 text-[0.5rem] leading-snug text-neutral-600">
-          {t("invoice.thank_you_sub")}
+        <p className="mt-1 text-center font-script text-xl leading-none">
+          {t("invoice.thank_you")}
         </p>
-        <p className="mt-1.5 text-[0.5rem] text-neutral-400 tabular-nums">
-          {t("invoice.printed_at")}: {printedAt}
+        <p className="mt-1 text-center text-[0.5rem] tracking-[0.14em] text-neutral-700 uppercase">
+          {t("invoice.thank_you_sub")}{" "}
+          {clinic?.name ?? t("invoice.title")}
         </p>
+
+        <Perforation />
+
+        {/* Sejajar berlabel seperti nota cetak: label rata kiri, titik dua
+            sejajar, nilainya menyusul — mudah dipindai walau kertasnya sempit. */}
+        <dl className="grid grid-cols-[auto_0.4rem_1fr] text-[0.5rem] text-neutral-600 tabular-nums">
+          <dt>{t("invoice.print_count")}</dt>
+          <dd className="text-center">:</dd>
+          <dd>{printCount}</dd>
+          <dt>{t("invoice.printed_at")}</dt>
+          <dd className="text-center">:</dd>
+          <dd>{printedAt}</dd>
+        </dl>
       </footer>
     </article>
   )

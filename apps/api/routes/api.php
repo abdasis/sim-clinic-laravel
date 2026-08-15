@@ -113,6 +113,7 @@ Route::prefix('{tenant}/clinic')
 
         // US5 POS / Transaction
         Route::get('transactions/{transaction}/invoice', [InvoiceController::class, 'show']);
+        Route::post('transactions/{transaction}/invoice/print', [InvoiceController::class, 'recordPrint']);
         Route::get('transactions/{transaction}/stock-movements', [StockMovementController::class, 'indexByTransaction']);
         Route::post('transactions/{transaction}/payments', [PaymentController::class, 'store']);
         Route::post('transactions/{transaction}/cancel', [TransactionController::class, 'cancel']);

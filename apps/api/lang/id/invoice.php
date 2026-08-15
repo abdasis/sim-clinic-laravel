@@ -13,8 +13,11 @@ return [
     'group_product' => 'Produk',
     'item_total' => 'Total Item',
     'grand_total' => 'TOTAL',
-    'thank_you' => 'Terima kasih',
-    'thank_you_sub' => 'sudah mempercayakan perawatan Anda kepada kami',
+    // Frasa penutup mengikuti nota cetak klinik yang sudah berjalan.
+    'thank_you' => 'Thank You',
+    'thank_you_sub' => 'for trusting',
+    'print_count' => 'No. cetak',
+    'print_not_recorded' => 'Nota tetap dicetak, tapi nomor cetakannya gagal dicatat.',
     'invoice_number' => 'Nomor Invoice',
     'date' => 'Tanggal',
     'patient' => 'Pasien',

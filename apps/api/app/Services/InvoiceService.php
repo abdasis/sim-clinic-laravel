@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Actions\Transaction\RecordInvoicePrintAction;
 use App\Models\Transaction;
 
 /**
@@ -10,6 +11,14 @@ use App\Models\Transaction;
  */
 class InvoiceService
 {
+    /**
+     * Tandai nota sudah dicetak sekali lagi.
+     */
+    public function recordPrint(Transaction $transaction): Transaction
+    {
+        return app(RecordInvoicePrintAction::class)->handle($transaction);
+    }
+
     public function render(Transaction $transaction): array
     {
         $transaction->loadMissing('items', 'payments', 'patient', 'cashier');

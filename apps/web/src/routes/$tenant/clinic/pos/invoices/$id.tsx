@@ -1,6 +1,7 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo } from "react"
+import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { PrinterIcon } from "@hugeicons/core-free-icons"
 
@@ -14,7 +15,7 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { apiGet } from "#/lib/api.ts"
+import { apiGet, apiPost } from "#/lib/api.ts"
 import { formatDateTime } from "#/lib/format.ts"
 import {
   Receipt,
@@ -29,9 +30,11 @@ export const Route = createFileRoute("/$tenant/clinic/pos/invoices/$id")({
 function InvoicePage() {
   const { tenant, id } = useParams({ from: "/$tenant/clinic/pos/invoices/$id" })
   const { t } = useTrans()
+  const qc = useQueryClient()
+  const queryKey = ["transactions", tenant, id]
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["transactions", tenant, id],
+    queryKey,
     queryFn: () =>
       apiGet<{ data: ReceiptData; meta: { clinic?: ReceiptClinic | null } }>(
         `/${tenant}/clinic/transactions/${id}`,
@@ -43,6 +46,33 @@ function InvoicePage() {
   // Dikunci sekali agar waktu cetak tidak bergeser tiap render — nota yang
   // jamnya berubah sendiri saat dipandangi bukan dokumen yang meyakinkan.
   const printedAt = useMemo(() => formatDateTime(new Date().toISOString()), [])
+
+  // Cetakan dicatat lebih dulu supaya nomor yang tertera di kertas sama dengan
+  // yang tersimpan; gagal mencatat tidak boleh menahan kasir mencetak.
+  const print = useMutation({
+    mutationFn: () =>
+      apiPost<{ data: { print_count: number } }>(
+        `/${tenant}/clinic/transactions/${id}/invoice/print`,
+      ),
+    onSuccess: (res) => {
+      qc.setQueryData<{ data: ReceiptData; meta: { clinic?: ReceiptClinic | null } }>(
+        queryKey,
+        (previous) =>
+          previous
+            ? {
+                ...previous,
+                data: { ...previous.data, print_count: res.data.print_count },
+              }
+            : previous,
+      )
+      // Tunggu satu frame supaya nomor cetakan yang baru ikut terbawa ke kertas.
+      requestAnimationFrame(() => window.print())
+    },
+    onError: () => {
+      toast.error(t("invoice.print_not_recorded"))
+      window.print()
+    },
+  })
 
   return (
     // Jarak halaman dilepas saat cetak supaya kertasnya tidak dapat margin dobel.
@@ -70,8 +100,8 @@ function InvoicePage() {
               <Button
                 size="sm"
                 className="gap-2 transition-transform duration-150 ease-out hover:-translate-y-px"
-                disabled={!invoice}
-                onClick={() => window.print()}
+                disabled={!invoice || print.isPending}
+                onClick={() => print.mutate()}
               >
                 <HugeiconsIcon
                   icon={PrinterIcon}
