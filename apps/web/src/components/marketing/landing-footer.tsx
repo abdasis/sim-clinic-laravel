@@ -1,8 +1,11 @@
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   ArrowUp01Icon,
+  Clock01Icon,
+  GoogleMapsIcon,
   InstagramIcon,
   Link01Icon,
+  Location01Icon,
   ShoppingBag01Icon,
   TiktokIcon,
   YoutubeIcon,
@@ -14,6 +17,7 @@ import type {
   CompanySettings,
 } from "#/hooks/use-company-profile.ts"
 import type { ContentLocale } from "#/lib/company-locale.ts"
+import { GOOGLE_MAPS_URL } from "#/lib/landing-content.ts"
 
 /** Ikon per platform; yang tidak dikenal memakai ikon tautan biasa. */
 const SOCIAL_ICONS: Record<string, IconSvgElement> = {
@@ -37,8 +41,8 @@ export function LandingFooter({ settings, items, locale }: LandingFooterProps) {
 
   return (
     <footer className="border-t border-border/50 bg-muted/30">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="space-y-2">
+      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="space-y-3 lg:col-span-2">
           <p className="text-sm font-semibold tracking-tight">
             {text(settings?.site_name)}
           </p>
@@ -47,6 +51,46 @@ export function LandingFooter({ settings, items, locale }: LandingFooterProps) {
               ? "Beauty, laser, and hair removal clinic with certified doctors."
               : "Klinik kecantikan, laser, dan hair removal dengan dokter bersertifikasi."}
           </p>
+
+          <ul className="space-y-2 pt-1">
+            <li className="flex items-start gap-2">
+              <HugeiconsIcon
+                icon={Location01Icon}
+                strokeWidth={2}
+                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              />
+              <span className="text-sm leading-relaxed text-muted-foreground">
+                Komp. Pusat Bisnis Ringroad, Jl. Ring Road No.A10, Tj. Sari,
+                Kec. Medan Selayang, Kota Medan, Sumatera Utara 20133
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <HugeiconsIcon
+                icon={Clock01Icon}
+                strokeWidth={2}
+                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              />
+              <span className="text-sm leading-relaxed text-muted-foreground">
+                {isEnglish
+                  ? "Daily, 10.00 – 18.00"
+                  : "Setiap hari, 10.00 – 18.00"}
+              </span>
+            </li>
+          </ul>
+
+          <a
+            href={GOOGLE_MAPS_URL}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground no-underline transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97]"
+          >
+            <HugeiconsIcon
+              icon={GoogleMapsIcon}
+              strokeWidth={2}
+              className="size-3.5"
+            />
+            {isEnglish ? "View on Google Maps" : "Lihat di Google Maps"}
+          </a>
         </div>
 
         <FooterColumn heading={isEnglish ? "Talk To Us" : "Hubungi Kami"}>

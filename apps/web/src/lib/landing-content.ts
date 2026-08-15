@@ -21,7 +21,10 @@ import type { Translatable } from "#/lib/company-locale.ts"
  * section bisa dipakai apa adanya, sama seperti di halaman tenant.
  */
 
-const WHATSAPP = "https://wa.me/6281234567890"
+const WHATSAPP = "https://wa.me/6282273097656"
+
+export const GOOGLE_MAPS_URL =
+  "https://www.google.com/maps/place/Meba+Clinic+Aesthetic/@3.5530874,98.626229,17z"
 
 /** Bungkus teks dua bahasa jadi dokumen Tiptap satu paragraf. */
 function richText(pair: Translatable<string>): Translatable<RichTextDoc> {
@@ -60,17 +63,17 @@ const SLIDES: CompanySlide[] = [
   {
     id: 2,
     title: {
-      id: "Lebih dari 100 outlet, satu standar perawatan",
-      en: "Over 100 outlets, one standard of care",
+      id: "Klinik estetika di Medan",
+      en: "Aesthetic clinic in Medan",
     },
     subtitle: {
-      id: "Datang di kota mana pun, protokol dan kualitasnya sama. Rekam perawatanmu ikut berpindah.",
-      en: "Visit us in any city — the protocol and quality stay the same, and your treatment history travels with you.",
+      id: "Berlokasi di Ring Road Medan Selayang — mudah dijangkau, dengan parkir yang cukup dan ruang tunggu yang nyaman.",
+      en: "Located on Ring Road, Medan Selayang — easy to reach, with ample parking and a comfortable waiting area.",
     },
     image_url: photo("1600334089648-b0d9d3028eb2", 1600),
-    cta_label: { id: "Lihat Lokasi", en: "See Locations" },
-    cta_url: "/locations",
-    cta_type: "route_root",
+    cta_label: { id: "Lihat Lokasi", en: "View Location" },
+    cta_url: GOOGLE_MAPS_URL,
+    cta_type: "external",
   },
   {
     id: 3,
@@ -129,10 +132,10 @@ const VALUE_PROPS: CompanyValueProp[] = [
   {
     id: 5,
     icon: "map",
-    title: { id: "Ratusan Lokasi", en: "Hundreds of Locations" },
+    title: { id: "Lokasi Strategis", en: "Strategic Location" },
     description: {
-      id: "Lebih dari 100 outlet terintegrasi, siap melayani di seluruh Indonesia.",
-      en: "Over 100 integrated outlets, ready to serve you nationwide.",
+      id: "Berlokasi di Ring Road Medan Selayang, mudah dijangkau dari berbagai arah.",
+      en: "Located on Ring Road, Medan Selayang — easy to reach from any direction.",
     },
   },
   {
@@ -455,10 +458,10 @@ const FOOTER_NAV: CompanyNavItem[] = [
 export const LANDING_CONTENT: CompanyLanding = {
   is_published: true,
   settings: {
-    site_name: { id: "Klinik Cantik", en: "Klinik Cantik" },
+    site_name: { id: "Meba Clinic Aesthetic", en: "Meba Clinic Aesthetic" },
     logo_path: null,
     logo_url: null,
-    copyright_text: "Copyright © 2026 PT.Zulu Alpha Papa All Right Reserved",
+    copyright_text: "Copyright © 2026 Meba Clinic Aesthetic. All Right Reserved",
     chat_channels: [
       {
         type: "whatsapp",
