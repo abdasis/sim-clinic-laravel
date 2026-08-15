@@ -188,6 +188,9 @@ function MedicalRecordsPage() {
         isLoading={isLoading}
         searchPlaceholder={t("medical_record.patient")}
         meta={meta}
+        emptyIllustration="medical-records"
+        emptyTitle={t("medical_record.empty_title")}
+        emptyDescription={t("medical_record.empty_desc")}
       />
     </div>
   )

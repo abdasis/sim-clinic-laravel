@@ -102,6 +102,9 @@ function PatientsPage() {
         isLoading={isLoading}
         searchPlaceholder={t("general.search")}
         meta={meta}
+        emptyIllustration="patients"
+        emptyTitle={t("patient.empty_title")}
+        emptyDescription={t("patient.empty_desc")}
       />
     </div>
   )

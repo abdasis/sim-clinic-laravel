@@ -137,6 +137,9 @@ function ProductsPage() {
         isLoading={isLoading}
         searchPlaceholder={t("general.search")}
         meta={meta}
+        emptyIllustration="products"
+        emptyTitle={t("product.empty_title")}
+        emptyDescription={t("product.empty_desc")}
       />
     </div>
   )

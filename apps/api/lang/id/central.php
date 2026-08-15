@@ -10,4 +10,6 @@ return [
     'inactive_tenants' => 'Tenant Nonaktif',
     'manage_tenants' => 'Kelola Tenant',
     'load_failed' => 'Gagal memuat ringkasan tenant.',
+    'empty_title' => 'Belum ada klinik',
+    'empty_desc' => 'Klinik yang mendaftar lewat halaman registrasi akan langsung tampil di daftar ini.',
 ];

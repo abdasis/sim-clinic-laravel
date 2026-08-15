@@ -22,4 +22,6 @@ return [
     'deleted' => 'Booking berhasil dihapus.',
     'status_updated' => 'Status booking berhasil diperbarui.',
     'invalid_assignee' => 'Staf penanggung jawab harus dokter atau terapis.',
+    'empty_title' => 'Belum ada booking',
+    'empty_desc' => 'Jadwal untuk rentang ini masih kosong. Buat booking baru atau pilih tanggal lain.',
 ];

@@ -16,6 +16,7 @@ import {
 import { useAuthUser } from "#/hooks/use-auth-user.ts"
 import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiGet } from "#/lib/api.ts"
 import { RevenueSummary } from "./components/revenue-summary.tsx"
 import type { RevenueData } from "./components/revenue-summary.tsx"
@@ -139,7 +140,12 @@ function ReportsPage() {
           ) : isLoading ? (
             <p className="text-muted-foreground">{t("general.loading")}</p>
           ) : isEmpty ? (
-            <p className="text-muted-foreground">{t("report.empty")}</p>
+            <EmptyState
+              className="py-10"
+              illustration="reports"
+              title={t("report.empty")}
+              description={t("report.empty_desc")}
+            />
           ) : (
             <>
               <TabsContent value="revenue">

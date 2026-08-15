@@ -124,6 +124,9 @@ function StaffPage() {
         isLoading={isLoading}
         searchPlaceholder={t("general.search")}
         meta={meta}
+        emptyIllustration="staff"
+        emptyTitle={t("staff.empty_title")}
+        emptyDescription={t("staff.empty_desc")}
       />
     </div>
   )

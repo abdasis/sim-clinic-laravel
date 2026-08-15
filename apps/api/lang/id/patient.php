@@ -27,4 +27,9 @@ return [
         'booking' => 'Booking',
         'treatment' => 'Treatment',
     ],
+    'history_empty' => 'Belum ada riwayat kunjungan',
+    'history_empty_desc' => 'Riwayat booking dan treatment pasien ini akan terkumpul di sini setelah kunjungan pertamanya.',
+    'empty_title' => 'Belum ada pasien',
+    'empty_desc' => 'Tambahkan pasien pertama, lalu riwayat dan rekam medisnya ikut menempel dengan sendirinya.',
+    'duplicate_warning' => 'Nomor telepon ini sudah dipakai pasien lain. Periksa lagi sebelum menyimpan.',
 ];

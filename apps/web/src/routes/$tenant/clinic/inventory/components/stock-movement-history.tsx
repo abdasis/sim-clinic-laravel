@@ -126,7 +126,9 @@ export function StockMovementHistory({ tenant, productId }: Props) {
         table={table}
         isLoading={isLoading}
         meta={meta}
-        emptyMessage={t("inventory.empty_movements")}
+        emptyIllustration="products"
+        emptyTitle={t("inventory.empty_movements")}
+        emptyDescription={t("inventory.empty_movements_desc")}
       />
     </div>
   )

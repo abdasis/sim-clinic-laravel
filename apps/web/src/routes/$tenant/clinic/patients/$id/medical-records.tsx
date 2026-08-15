@@ -11,6 +11,7 @@ import {
 } from "#/components/ui/card.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiGet } from "#/lib/api.ts"
 import { formatDateTime } from "#/lib/format.ts"
 import { MedicalRecordAttachments } from "../../medical-records/components/medical-record-attachments.tsx"
@@ -106,10 +107,12 @@ function PatientMedicalRecordsPage() {
         </div>
       ) : records.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="py-10 text-center">
-            <p className="text-sm text-muted-foreground">
-              {t("medical_record.empty_patient")}
-            </p>
+          <CardContent className="py-10">
+            <EmptyState
+              illustration="medical-records"
+              title={t("medical_record.empty_patient")}
+              description={t("medical_record.empty_patient_desc")}
+            />
           </CardContent>
         </Card>
       ) : (

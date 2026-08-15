@@ -108,4 +108,5 @@ return [
         'booking_cta' => 'Ajakan Booking',
         'estore_cta' => 'Ajakan E-Store',
     ],
+    'empty_section_desc' => 'Belum ada konten di bagian ini. Tambahkan satu entri untuk mulai mengisinya.',
 ];

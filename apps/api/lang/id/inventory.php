@@ -16,4 +16,7 @@ return [
     'insufficient_stock' => 'Stok produk tidak mencukupi.',
     'empty_movements' => 'Belum ada mutasi stok.',
     'related_transaction' => 'Transaksi Terkait',
+    'empty_movements_desc' => 'Belum ada barang masuk atau keluar yang tercatat untuk transaksi ini.',
+    'select_product' => 'Pilih produk dulu',
+    'select_product_desc' => 'Setelah produknya dipilih, riwayat pergerakan stoknya muncul di bawah formulir.',
 ];

@@ -10,6 +10,7 @@ import {
 } from "#/components/ui/native-select.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiGet } from "#/lib/api.ts"
 import { formatCurrency } from "#/lib/format.ts"
 
@@ -176,7 +177,12 @@ export function TransactionItemList({ tenant, onChange }: TransactionItemListPro
           )
         })}
         {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("general.no_data")}</p>
+          <EmptyState
+            className="py-8"
+            illustration="cart"
+            title={t("pos.empty_cart")}
+            description={t("pos.empty_cart_desc")}
+          />
         ) : null}
       </div>
 

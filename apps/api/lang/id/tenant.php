@@ -46,4 +46,7 @@ return [
         'active' => 'Aktif',
         'inactive' => 'Nonaktif',
     ],
+    'no_pending_invitations_desc' => 'Semua undangan sudah diterima. Undang rekan baru kapan pun dibutuhkan.',
+    'empty_title' => 'Belum ada pengguna',
+    'empty_desc' => 'Undang rekan kerja lewat email supaya mereka bisa masuk ke klinik ini.',
 ];

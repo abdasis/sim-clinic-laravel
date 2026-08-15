@@ -90,6 +90,9 @@ function TenantsPage() {
         isLoading={isLoading}
         searchPlaceholder={t("general.search")}
         meta={meta}
+        emptyIllustration="tenants"
+        emptyTitle={t("central.empty_title")}
+        emptyDescription={t("central.empty_desc")}
       />
     </div>
   )

@@ -10,6 +10,7 @@ import {
 } from "#/components/ui/table.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiGet } from "#/lib/api.ts"
 import { formatDateTime } from "#/lib/format.ts"
 
@@ -53,9 +54,12 @@ export function TransactionStockImpact({
 
   if (!data || data.length === 0) {
     return (
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        {t("inventory.empty_movements")}
-      </p>
+      <EmptyState
+        className="py-8"
+        illustration="products"
+        title={t("inventory.empty_movements")}
+        description={t("inventory.empty_movements_desc")}
+      />
     )
   }
 

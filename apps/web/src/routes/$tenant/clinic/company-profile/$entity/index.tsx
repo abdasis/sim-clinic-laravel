@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "#/components/ui/table.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiDelete, apiGet, apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 import { pickTranslatable } from "#/lib/company-locale.ts"
@@ -134,11 +135,12 @@ function ContentListPage() {
       {isLoading ? (
         <Skeleton className="h-56 w-full" />
       ) : rows.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border/50 py-12 text-center">
-          <p className="text-sm text-muted-foreground">
-            {t("company_profile.empty_section")}
-          </p>
-        </div>
+        <EmptyState
+          className="rounded-lg border border-dashed border-border/50 py-12"
+          illustration="company-profile"
+          title={t("company_profile.empty_section")}
+          description={t("company_profile.empty_section_desc")}
+        />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border/50">
           <Table>

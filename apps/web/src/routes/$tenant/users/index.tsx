@@ -204,6 +204,9 @@ function UsersPage() {
         isLoading={isLoading}
         searchPlaceholder={t("general.search")}
         meta={meta}
+        emptyIllustration="users"
+        emptyTitle={t("tenant.empty_title")}
+        emptyDescription={t("tenant.empty_desc")}
       />
       {isAdmin ? <PendingInvitations tenant={tenant} /> : null}
     </div>

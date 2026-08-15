@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from "#/components/ui/select.tsx"
 import { Button } from "#/components/ui/button.tsx"
+import { useTrans } from "#/hooks/use-trans.ts"
 import type { DataTableMeta } from "#/types/data-table.ts"
 
 interface DataTablePaginationProps<TData> {
@@ -18,6 +19,7 @@ export function DataTablePagination<TData>({
   table,
   meta,
 }: DataTablePaginationProps<TData>) {
+  const { t } = useTrans()
   const pageIndex = table.getState().pagination.pageIndex
   const pageSize = table.getState().pagination.pageSize
   const total = meta?.total ?? 0
@@ -27,13 +29,14 @@ export function DataTablePagination<TData>({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-2 py-3">
       <div className="text-sm text-muted-foreground">
+        {/* t() hanya mengembalikan string, jadi angkanya dirangkai di sini. */}
         {total === 0
-          ? "No results"
-          : `Showing ${start}–${end} of ${total}`}
+          ? t("general.no_results")
+          : `${t("general.pagination_showing")} ${start}–${end} ${t("general.pagination_of")} ${total}`}
       </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 text-sm">
-          <span className="hidden sm:inline">Rows per page</span>
+          <span className="hidden sm:inline">{t("general.rows_per_page")}</span>
           <Select
             value={String(pageSize)}
             onValueChange={(v) => table.setPageSize(Number(v))}

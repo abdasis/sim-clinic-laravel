@@ -35,4 +35,9 @@ return [
     'cashier' => 'Kasir',
     'issued_at' => 'Diterbitkan',
     'stock_impact' => 'Pengaruh Stok',
+    'no_payments_desc' => 'Pembayaran yang dicatat untuk transaksi ini akan terdaftar di sini.',
+    'empty_cart' => 'Keranjang masih kosong',
+    'empty_cart_desc' => 'Pilih layanan atau produk di sebelah kiri untuk mulai menyusun transaksi.',
+    'empty_title' => 'Belum ada transaksi',
+    'empty_desc' => 'Transaksi yang dibuat lewat kasir akan langsung terdaftar di sini.',
 ];

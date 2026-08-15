@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "#/components/ui/table.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { formatCurrency, formatDateTime } from "#/lib/format.ts"
 
 export interface PaymentRow {
@@ -27,9 +28,12 @@ export function PaymentHistory({ payments }: PaymentHistoryProps) {
 
   if (payments.length === 0) {
     return (
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        {t("pos.no_payments")}
-      </p>
+      <EmptyState
+        className="py-8"
+        illustration="payments"
+        title={t("pos.no_payments")}
+        description={t("pos.no_payments_desc")}
+      />
     )
   }
 

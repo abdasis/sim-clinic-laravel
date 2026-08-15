@@ -217,6 +217,9 @@ function TransactionsPage() {
         isLoading={isLoading}
         searchPlaceholder={t("general.search")}
         meta={meta}
+        emptyIllustration="pos"
+        emptyTitle={t("pos.empty_title")}
+        emptyDescription={t("pos.empty_desc")}
         faceted={[
           {
             columnId: "payment_status",

@@ -9,6 +9,7 @@ import {
 } from "date-fns"
 import { CalendarCheckIcon } from "@hugeicons/core-free-icons"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useStats } from "#/hooks/use-stats.ts"
@@ -153,9 +154,12 @@ function BookingsPage() {
       </h2>
       <Card className="divide-y py-0">
         {bookings.length === 0 ? (
-          <div className="p-4 text-sm text-muted-foreground">
-            {t("general.no_data")}
-          </div>
+          <EmptyState
+            className="py-10"
+            illustration="bookings"
+            title={t("booking.empty_title")}
+            description={t("booking.empty_desc")}
+          />
         ) : (
           bookings.map((booking) => (
             <div

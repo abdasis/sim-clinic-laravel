@@ -8,6 +8,8 @@ import {
   TableRow,
 } from "#/components/ui/table.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
+import type { EmptyIllustrationName } from "#/components/ui/empty-illustration.tsx"
 import { DataTableToolbar } from "#/components/datatable/datatable-toolbar.tsx"
 import { DataTablePagination } from "#/components/datatable/datatable-pagination.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
@@ -19,8 +21,17 @@ interface DataTableProps<TData> {
   searchPlaceholder?: string
   faceted?: Array<{ columnId: string; title: string; options: FacetedOption[] }>
   meta?: DataTableMeta
-  /** Pesan saat tabel kosong; default memakai teks umum "Tidak ada data". */
+  /**
+   * Pesan satu baris saat tabel kosong. Bentuk lama yang dipertahankan untuk
+   * pemakai yang belum pindah; `emptyTitle` mengambil alih bila diisi.
+   */
   emptyMessage?: string
+  /** Judul keadaan kosong; mengaktifkan permukaan `Empty` yang lengkap. */
+  emptyTitle?: string
+  emptyDescription?: string
+  emptyIllustration?: EmptyIllustrationName
+  /** Aksi opsional di bawah deskripsi, mis. tombol tambah. */
+  emptyAction?: React.ReactNode
 }
 
 export function DataTable<TData>({
@@ -30,6 +41,10 @@ export function DataTable<TData>({
   faceted,
   meta,
   emptyMessage,
+  emptyTitle,
+  emptyDescription,
+  emptyIllustration,
+  emptyAction,
 }: DataTableProps<TData>) {
   const { t } = useTrans()
   const rows = table.getRowModel().rows
@@ -69,12 +84,23 @@ export function DataTable<TData>({
                 </TableRow>
               ))
             ) : rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columnCount}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  {emptyMessage ?? t("general.no_data")}
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columnCount} className="py-14">
+                  {/* Teks polos hanya bertahan untuk pemakai lama yang belum
+                      mengisi emptyTitle; sisanya dapat permukaan penuh. */}
+                  {!emptyTitle && emptyMessage ? (
+                    <p className="text-center text-muted-foreground">
+                      {emptyMessage}
+                    </p>
+                  ) : (
+                    <EmptyState
+                      className="p-0"
+                      illustration={emptyIllustration}
+                      title={emptyTitle ?? t("general.no_data")}
+                      description={emptyDescription ?? t("general.no_data_desc")}
+                      action={emptyAction}
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             ) : (

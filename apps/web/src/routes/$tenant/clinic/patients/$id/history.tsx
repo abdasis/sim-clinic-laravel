@@ -5,6 +5,7 @@ import { Badge } from "#/components/ui/badge.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiGet } from "#/lib/api.ts"
 
 export const Route = createFileRoute("/$tenant/clinic/patients/$id/history")({
@@ -57,9 +58,12 @@ function PatientHistoryPage() {
           ))}
         </div>
       ) : entries.length === 0 ? (
-        <div className="text-sm text-muted-foreground">
-          {t("patient.history_empty")}
-        </div>
+        <EmptyState
+          className="py-10"
+          illustration="history-clock"
+          title={t("patient.history_empty")}
+          description={t("patient.history_empty_desc")}
+        />
       ) : (
         <ol className="relative space-y-3 border-s ps-6">
           {entries.map((entry, i) => (

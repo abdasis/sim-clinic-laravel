@@ -2,6 +2,7 @@ import { format, parseISO, getHours } from "date-fns"
 import { Card } from "#/components/ui/card.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 
 export interface ScheduleBooking {
   id: number
@@ -92,8 +93,12 @@ export function ScheduleGrid({ data, view }: ScheduleGridProps) {
 
   if (columns.length === 0) {
     return (
-      <Card className="items-center justify-center py-10 text-sm text-muted-foreground">
-        {t("general.no_data")}
+      <Card className="py-10">
+        <EmptyState
+          illustration="bookings"
+          title={t("booking.empty_title")}
+          description={t("booking.empty_desc")}
+        />
       </Card>
     )
   }

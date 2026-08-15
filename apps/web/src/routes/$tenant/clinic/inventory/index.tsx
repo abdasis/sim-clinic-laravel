@@ -2,6 +2,7 @@ import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useCallback, useState } from "react"
 import { DeliveryBox01Icon } from "@hugeicons/core-free-icons"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useStats } from "#/hooks/use-stats.ts"
@@ -68,7 +69,14 @@ function InventoryPage() {
       </div>
       {productId ? (
         <StockMovementHistory tenant={tenant} productId={productId} />
-      ) : null}
+      ) : (
+        <EmptyState
+          className="mt-4 rounded-lg border border-dashed border-border/50 py-12"
+          illustration="inventory-select"
+          title={t("inventory.select_product")}
+          description={t("inventory.select_product_desc")}
+        />
+      )}
     </div>
   )
 }

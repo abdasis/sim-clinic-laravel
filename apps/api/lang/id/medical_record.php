@@ -33,4 +33,7 @@ return [
     'no_treatments' => 'Belum ada treatment yang dicatat.',
     'no_photos' => 'Belum ada foto yang diunggah.',
     'soap_empty' => 'Bagian ini belum diisi.',
+    'empty_patient_desc' => 'Rekam medis pasien ini akan tampil di sini begitu kunjungan pertamanya dicatat.',
+    'empty_title' => 'Belum ada rekam medis',
+    'empty_desc' => 'Catat SOAP, tindakan, dan foto perkembangan selagi ingatannya masih segar.',
 ];

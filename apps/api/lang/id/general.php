@@ -27,4 +27,10 @@ return [
     'admin_panel' => 'Panel Admin',
     'logout' => 'Keluar',
     'account' => 'Akun',
+    'no_data_desc' => 'Belum ada apa pun di sini. Data yang kamu tambahkan akan langsung muncul.',
+    'no_results' => 'Tidak ada hasil',
+    'pagination_showing' => 'Menampilkan',
+    'pagination_of' => 'dari',
+    'rows_per_page' => 'Baris per halaman',
+    'select' => 'Pilih',
 ];

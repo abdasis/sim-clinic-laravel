@@ -19,4 +19,6 @@ return [
     'created' => 'Produk berhasil ditambahkan.',
     'updated' => 'Produk berhasil diperbarui.',
     'archived' => 'Produk berhasil diarsipkan.',
+    'empty_title' => 'Belum ada produk',
+    'empty_desc' => 'Tambahkan produk beserta ambang stok minimumnya agar peringatan stok menipis muncul tepat waktu.',
 ];

@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiGet, apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 
@@ -114,9 +115,12 @@ export function PendingInvitations({ tenant }: { tenant: string }) {
           ))}
         </ul>
       ) : (
-        <p className="rounded-lg border border-dashed border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
-          {t("tenant.no_pending_invitations")}
-        </p>
+        <EmptyState
+          className="rounded-lg border border-dashed border-border/60 py-8"
+          illustration="users"
+          title={t("tenant.no_pending_invitations")}
+          description={t("tenant.no_pending_invitations_desc")}
+        />
       )}
     </section>
   )

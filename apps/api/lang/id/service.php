@@ -15,4 +15,6 @@ return [
     'archived' => 'Layanan berhasil diarsipkan.',
     'status_active' => 'Aktif',
     'status_archived' => 'Arsip',
+    'empty_title' => 'Belum ada layanan',
+    'empty_desc' => 'Daftarkan layanan beserta harganya supaya booking dan kasir memakai angka yang sama.',
 ];

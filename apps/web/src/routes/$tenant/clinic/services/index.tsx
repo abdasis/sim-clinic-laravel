@@ -130,6 +130,9 @@ function ServicesPage() {
         isLoading={isLoading}
         searchPlaceholder={t("general.search")}
         meta={meta}
+        emptyIllustration="default"
+        emptyTitle={t("service.empty_title")}
+        emptyDescription={t("service.empty_desc")}
       />
     </div>
   )
