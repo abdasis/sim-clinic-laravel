@@ -4,9 +4,9 @@ import {
   FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "#/components/ui/form.tsx"
+import { FieldLabel } from "#/components/forms/field-label.tsx"
 import {
   NativeSelect,
   NativeSelectOption,
@@ -26,6 +26,9 @@ interface FormSelectProps<T extends FieldValues> {
   disabled?: boolean
   /** Keterangan kecil di bawah field, mis. alasan field terkunci. */
   description?: string
+  required?: boolean
+  /** Lebar field di dalam grid section, mis. `sm:col-span-2`. */
+  className?: string
 }
 
 export function FormSelect<T extends FieldValues>({
@@ -36,16 +39,23 @@ export function FormSelect<T extends FieldValues>({
   placeholder,
   disabled,
   description,
+  required,
+  className,
 }: FormSelectProps<T>) {
   return (
     <FormField
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem>
-          <FormLabel>{label}</FormLabel>
+        <FormItem className={className}>
+          <FieldLabel label={label} required={required} />
           <FormControl>
-            <NativeSelect {...field} value={field.value ?? ""} disabled={disabled}>
+            <NativeSelect
+              {...field}
+              value={field.value ?? ""}
+              disabled={disabled}
+              aria-required={required}
+            >
               {placeholder ? <NativeSelectOption value="">{placeholder}</NativeSelectOption> : null}
               {options.map((opt) => (
                 <NativeSelectOption key={opt.value} value={opt.value}>

@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
 } from "#/components/ui/alert-dialog.tsx"
 import { Form } from "#/components/ui/form.tsx"
-import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card.tsx"
+import { Button } from "#/components/ui/button.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
@@ -53,7 +53,7 @@ function EditPatientPage() {
 
   useEffect(() => {
     if (data?.data) {
-      form.reset({ ...patientDefaults, ...data.data })
+      form.reset({ ...patientDefaults, ...withoutNulls(data.data) })
     }
   }, [data, form])
 
@@ -93,31 +93,42 @@ function EditPatientPage() {
           { label: t("patient.edit") },
         ]}
       />
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("patient.edit")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
-              className="space-y-4"
-            >
-              <PatientFormFields control={form.control} />
-              <FormSubmit loading={mutation.isPending}>
-                {t("general.save")}
-              </FormSubmit>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+      <div className="mb-4">
+        <h1 className="text-xl font-semibold tracking-tight">{t("patient.edit")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t("patient.edit_description")}
+        </p>
+      </div>
+
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit((values) =>
+            // Gender boleh kosong; kirim undefined supaya lolos aturan
+            // `nullable|in:...` di backend, bukan string kosong.
+            mutation.mutate({ ...values, gender: values.gender || undefined }),
+          )}
+          className="space-y-4"
+        >
+          <PatientFormFields control={form.control} />
+          {/* Footer menempel di bawah supaya Simpan tetap terjangkau
+              walaupun formnya panjang. */}
+          <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t border-border/50 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <Button type="button" variant="outline" onClick={goToList}>
+              {t("general.cancel")}
+            </Button>
+            <FormSubmit loading={mutation.isPending} className="min-w-28">
+              {t("general.save")}
+            </FormSubmit>
+          </div>
+        </form>
+      </Form>
 
       <AlertDialog open={showDuplicate} onOpenChange={setShowDuplicate}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("patient.duplicate_title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("patient.duplicate_warning")}
+              {t("patient.duplicate_body")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -129,4 +140,16 @@ function EditPatientPage() {
       </AlertDialog>
     </div>
   )
+}
+
+/**
+ * Field opsional pulang sebagai `null` dari API, sedangkan skemanya string.
+ * Tanpa penyeragaman ini, pasien yang jenis kelaminnya kosong akan gagal
+ * disimpan tanpa pesan apa pun — validasinya menolak null di field yang tidak
+ * menampilkan error karena memang opsional.
+ */
+function withoutNulls(values: PatientValues): Partial<PatientValues> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== null && value !== undefined),
+  ) as Partial<PatientValues>
 }
