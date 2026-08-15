@@ -97,7 +97,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       !APP_SEGMENTS.has(firstSegment(pathname))) ||
     /^\/[^/]+\/treatment(\/|$)/.test(pathname)
 
-  const hideChrome = isAdmin || isMarketing || isTenantProfile
+  // ponytail: halaman ENTRY auth (masuk/daftar/terima undangan), bukan halaman
+  // dalam hierarki — panel brand dan tautan kembali ke beranda menggantikan
+  // breadcrumb. Tambahkan breadcrumb bila kelak ada halaman auth non-entry.
+  const isAuth =
+    /^\/(register|central\/login|invitations\/)/.test(pathname) ||
+    /^\/[^/]+\/login(\/|$)/.test(pathname)
+
+  const hideChrome = isAdmin || isMarketing || isTenantProfile || isAuth
 
   return (
     <html lang="en" suppressHydrationWarning>

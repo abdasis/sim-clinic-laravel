@@ -641,6 +641,11 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Entrance halaman juga gerakan; hanya munculnya yang dipertahankan. */
+  .rise-in {
+    animation: none !important;
+  }
+
   [data-slot="sidebar-menu-button"],
   [data-slot="sidebar-menu-sub-button"],
   [data-slot="collapsible-content"],
