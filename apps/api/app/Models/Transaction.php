@@ -22,6 +22,7 @@ class Transaction extends Model
         'patient_id',
         'booking_id',
         'cashier_id',
+        'therapist_id',
         'invoice_number',
         'subtotal',
         'paid_amount',
@@ -58,6 +59,11 @@ class Transaction extends Model
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cashier_id');
+    }
+
+    public function therapist(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'therapist_id');
     }
 
     public function items(): HasMany

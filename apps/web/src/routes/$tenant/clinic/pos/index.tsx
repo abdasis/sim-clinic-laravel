@@ -79,9 +79,20 @@ function PosPage() {
   // Pasien wajib diisi; validasinya ikut skema supaya pesannya konsisten
   // dengan form lain, bukan alert manual.
   const patientForm = useForm(patientSchema, {
-    defaultValues: { patient_id: "" },
+    defaultValues: { patient_id: "", therapist_id: "" },
   })
   const patientId = patientForm.watch("patient_id")
+  const therapistId = patientForm.watch("therapist_id")
+
+  // Hanya peran yang mengerjakan tindakan yang boleh jadi penerima fee.
+  const staff = useQuery({
+    queryKey: ["staff", tenant, "therapists"],
+    queryFn: () =>
+      apiGet<{ data: { id: number; name: string; clinic_role: string }[] }>(
+        `/${tenant}/clinic/staff`,
+        { per_page: 100 },
+      ),
+  })
 
   const patients = useQuery({
     queryKey: ["patients", tenant, "options"],
@@ -101,6 +112,7 @@ function PosPage() {
         `/${tenant}/clinic/transactions`,
         {
           patient_id: patientId ? Number(patientId) : null,
+          therapist_id: therapistId ? Number(therapistId) : null,
           booking_id: null,
           items: cart.items.map((item) =>
             item.kind === "product"
@@ -127,7 +139,7 @@ function PosPage() {
       // Katalog ikut disegarkan supaya saldo stoknya tidak basi setelah jualan.
       qc.invalidateQueries({ queryKey: ["products", tenant, "catalog"] })
       cart.clear()
-      patientForm.reset({ patient_id: "" })
+      patientForm.reset({ patient_id: "", therapist_id: "" })
     },
     onError: (err: ApiError) => {
       // Pasien wajib diisi di server; tanpa ini tombol simpan terasa mati
@@ -182,6 +194,11 @@ function PosPage() {
         label: patient.name,
         value: String(patient.id),
       }))}
+      therapistOptions={(staff.data?.data ?? [])
+        .filter((member) =>
+          ["therapist", "doctor"].includes(member.clinic_role),
+        )
+        .map((member) => ({ label: member.name, value: String(member.id) }))}
       created={created}
       items={cart.items}
       total={cart.total}

@@ -19,6 +19,7 @@ class TransactionRequest extends FormRequest
         return [
             'patient_id' => ['required', 'exists:patients,id'],
             'booking_id' => ['nullable', 'exists:bookings,id'],
+            'therapist_id' => ['nullable', 'exists:users,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.qty' => ['required', 'integer', 'gt:0'],
             // Satu baris mewakili tepat satu layanan atau satu produk.
@@ -50,6 +51,7 @@ class TransactionRequest extends FormRequest
         return [
             'patient_id' => __('pos.patient'),
             'booking_id' => __('booking.title'),
+            'therapist_id' => __('commission.therapist'),
             'items' => __('pos.items'),
             'items.*.qty' => __('pos.qty'),
             'items.*.service_id' => __('pos.item'),

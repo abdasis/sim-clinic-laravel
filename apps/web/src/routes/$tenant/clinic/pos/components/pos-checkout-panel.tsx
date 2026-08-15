@@ -11,6 +11,8 @@ import type { LineItem } from "../hooks/use-pos-cart.ts"
 
 export const patientSchema = z.object({
   patient_id: z.string().min(1),
+  // Opsional: dipakai menghitung fee terapis, bukan syarat transaksi.
+  therapist_id: z.string().optional(),
 })
 
 export type PatientFormValues = z.output<typeof patientSchema>
@@ -24,6 +26,7 @@ interface PosCheckoutPanelProps {
   tenant: string
   form: UseFormReturn<PatientFormValues>
   patientOptions: { label: string; value: string }[]
+  therapistOptions: { label: string; value: string }[]
   created: CreatedTransaction | null
   items: LineItem[]
   total: number
@@ -46,6 +49,7 @@ export function PosCheckoutPanel({
   tenant,
   form,
   patientOptions,
+  therapistOptions,
   created,
   items,
   total,
@@ -85,6 +89,20 @@ export function PosCheckoutPanel({
             required
             container={popupContainer}
           />
+
+          {/* Terapis menentukan fee bulanan, jadi diisi di kasir saat
+              transaksinya dibuat — bukan direkap ulang dari ingatan. */}
+          <div className="mt-4">
+            <FormCombobox
+              control={form.control}
+              name="therapist_id"
+              label={t("commission.therapist")}
+              placeholder={t("general.search")}
+              emptyLabel={t("general.no_data")}
+              options={therapistOptions}
+              container={popupContainer}
+            />
+          </div>
         </div>
       </Form>
 

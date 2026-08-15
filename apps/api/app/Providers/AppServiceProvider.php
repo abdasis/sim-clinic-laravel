@@ -12,6 +12,7 @@ use App\Models\CompanyPromo;
 use App\Models\CompanyTestimonial;
 use App\Models\CompanyTreatment;
 use App\Models\CompanyValueProp;
+use App\Models\Expense;
 use App\Models\Invitation;
 use App\Models\Invoice;
 use App\Models\MedicalPhoto;
@@ -52,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
         'booking' => Booking::class,
         'product' => Product::class,
         'promo' => Promo::class,
+        'expense' => Expense::class,
         'promo_item' => PromoItem::class,
         'stock_movement' => StockMovement::class,
         'transaction' => Transaction::class,

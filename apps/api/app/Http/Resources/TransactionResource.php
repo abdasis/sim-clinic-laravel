@@ -15,6 +15,8 @@ class TransactionResource extends JsonResource
             'patient_id' => $this->patient_id,
             'patient_name' => $this->patient?->name,
             'cashier_name' => $this->cashier?->name,
+            'therapist_id' => $this->therapist_id,
+            'therapist_name' => $this->therapist?->name,
             'booking_id' => $this->booking_id,
             'subtotal' => $this->subtotal,
             'paid_amount' => $this->paid_amount,

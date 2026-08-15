@@ -10,6 +10,7 @@ import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   BarChartIcon,
   DiscountTag01Icon,
+  MoneyBag02Icon,
   Calendar01Icon,
   CashierIcon,
   DashboardSquare01Icon,
@@ -102,6 +103,7 @@ function ClinicLayout() {
       ],
     },
     { key: "promos", label: t("promo.title"), roles: ["admin", "cashier"], icon: DiscountTag01Icon },
+    { key: "expenses", label: t("expense.title"), roles: ["admin"], icon: MoneyBag02Icon },
     { key: "company-profile", label: t("company_profile.title"), roles: ["admin"], icon: Globe02Icon },
     { key: "reports", label: t("report.title"), roles: ["admin"], icon: BarChartIcon },
   ]

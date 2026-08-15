@@ -4,9 +4,11 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CentralAuthController;
 use App\Http\Controllers\CentralStatsController;
+use App\Http\Controllers\CommissionRuleController;
 use App\Http\Controllers\CompanyContentController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MedicalRecordController;
@@ -111,6 +113,13 @@ Route::prefix('{tenant}/clinic')
         Route::get('products/{product}/stock-movements', [StockMovementController::class, 'indexByProduct']);
         Route::post('products/{product}/stock-movements', [StockMovementController::class, 'store']);
         Route::apiResource('products', ProductController::class);
+
+        // Pengeluaran klinik + aturan fee terapis
+        Route::get('expenses/summary', [ExpenseController::class, 'summary']);
+        Route::apiResource('expenses', ExpenseController::class);
+        Route::get('commission-rules/calculate', [CommissionRuleController::class, 'calculate']);
+        Route::apiResource('commission-rules', CommissionRuleController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
 
         // Promo — potongan harga layanan/produk dalam rentang tanggal
         Route::apiResource('promos', PromoController::class);

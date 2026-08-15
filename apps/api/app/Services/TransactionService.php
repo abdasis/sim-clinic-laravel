@@ -29,6 +29,8 @@ class TransactionService
                 'patient_id' => $data['patient_id'],
                 'booking_id' => $data['booking_id'] ?? null,
                 'cashier_id' => Auth::id(),
+                // Terapis yang mengerjakan; dasar perhitungan fee.
+                'therapist_id' => $data['therapist_id'] ?? null,
                 // Nomor diambil di dalam transaction agar barisnya terkunci.
                 'invoice_number' => Transaction::generateInvoiceNumber(),
                 'subtotal' => $subtotal,
