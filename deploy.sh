@@ -2,23 +2,65 @@
 # Auto-deploy script — Sim Clinic (mebaclinic.com)
 # Dipanggil dari GitHub webhook. TIDAK pakai set -e biar tiap step error ketahuan.
 
-cd /home/mebaclinic/repo
+COMPOSE="docker compose -f docker-compose.prod.yml"
+
+# Skrip ini ikut ter-update oleh git pull di bawah. Bash membaca berkasnya
+# sambil jalan, jadi menarik versi baru di tengah eksekusi bisa membuat sisa
+# perintah dibaca dari offset yang sudah bergeser. Karena itu: tarik kode
+# dulu, lalu jalankan ulang diri sendiri dari berkas yang sudah baru.
+if [ -z "$SIM_CLINIC_DEPLOY_STAGE2" ]; then
+  cd /home/mebaclinic/repo || exit 1
+
+  echo "📥 Pulling latest code... (rebase + autostash)"
+  if git pull --rebase --autostash; then
+    export SIM_CLINIC_PULL_FAILED=""
+  else
+    export SIM_CLINIC_PULL_FAILED="1"
+  fi
+
+  export SIM_CLINIC_DEPLOY_STAGE2=1
+  exec bash "$0" "$@"
+fi
+
+cd /home/mebaclinic/repo || exit 1
 ERRORS=""
 
-echo "📥 Pulling latest code... (rebase + autostash)"
-git pull --rebase --autostash || ERRORS+="git pull gagal; "
+[ -n "$SIM_CLINIC_PULL_FAILED" ] && ERRORS+="git pull gagal; "
 
 echo "🔨 Building API..."
-docker compose -f docker-compose.prod.yml build api || ERRORS+="build API gagal; "
+$COMPOSE build api || ERRORS+="build API gagal; "
 
 echo "🔨 Building Web..."
-docker compose -f docker-compose.prod.yml build web || ERRORS+="build Web gagal; "
+$COMPOSE build web || ERRORS+="build Web gagal; "
 
 echo "🔨 Building Nginx..."
-docker compose -f docker-compose.prod.yml build nginx || ERRORS+="build Nginx gagal; "
+$COMPOSE build nginx || ERRORS+="build Nginx gagal; "
 
 echo "🚀 Restarting containers..."
-docker compose -f docker-compose.prod.yml up -d || ERRORS+="restart container gagal; "
+$COMPOSE up -d || ERRORS+="restart container gagal; "
+
+# Cache config/route/paket menempel di volume bootstrap/cache dan ikut
+# terbawa lintas build. Kalau tidak dibersihkan, image baru masih membaca
+# konfigurasi image lama.
+echo "🧽 Membersihkan cache Laravel..."
+$COMPOSE exec -T api php artisan optimize:clear || ERRORS+="bersihkan cache gagal; "
+
+# Migrasi WAJIB tiap deploy. Tanpa ini, kolom baru tidak pernah sampai ke
+# server dan halaman yang memakainya gagal memuat data. Dicoba beberapa kali
+# karena PHP-FPM bisa siap sedikit lebih dulu daripada koneksi database.
+echo "🗄️  Menjalankan migrasi database..."
+MIGRATED=""
+for attempt in 1 2 3 4 5; do
+  if $COMPOSE exec -T api php artisan migrate --force; then
+    MIGRATED="1"
+    break
+  fi
+
+  echo "⏳ Migrasi belum berhasil (percobaan $attempt), menunggu database..."
+  sleep 5
+done
+
+[ -z "$MIGRATED" ] && ERRORS+="migrasi database gagal; "
 
 echo "🧹 Cleaning old images..."
 docker image prune -f >/dev/null 2>&1 || true
