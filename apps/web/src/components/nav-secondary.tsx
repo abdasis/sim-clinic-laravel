@@ -1,6 +1,6 @@
 import * as React from "react"
-import { type LucideIcon } from "lucide-react"
 import { Link } from "@tanstack/react-router"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 
 import {
   SidebarGroup,
@@ -17,7 +17,7 @@ export function NavSecondary({
   items: {
     title: string
     url: string
-    icon: LucideIcon
+    icon: IconSvgElement
   }[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   return (
@@ -26,9 +26,9 @@ export function NavSecondary({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild size="sm">
+              <SidebarMenuButton asChild size="sm" className="active:scale-[0.96]">
                 <Link to={item.url as string}>
-                  <item.icon />
+                  <HugeiconsIcon icon={item.icon} strokeWidth={2} />
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>

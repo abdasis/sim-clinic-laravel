@@ -64,6 +64,11 @@
   --chart-3: oklch(0.596 0.145 163.225);
   --chart-4: oklch(0.508 0.118 165.612);
   --chart-5: oklch(0.432 0.095 166.913);
+
+  /* Enter, hover, dan press: berhenti cepat supaya terasa responsif. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Gerakan yang terlihat berpindah di layar: chevron, indicator, reveal. */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 :root[data-theme="dark"] {
@@ -588,5 +593,18 @@ a {
   }
   html {
     @apply font-sans;
+  }
+}
+/*
+ * Perpindahan warna tetap dipertahankan karena membantu memahami state;
+ * yang dibuang hanya gerakannya.
+ */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="sidebar-menu-button"],
+  [data-slot="sidebar-menu-sub-button"],
+  [data-slot="collapsible-content"],
+  [data-slot="sidebar-menu-action"] {
+    transition-duration: 0.01ms !important;
+    transform: none !important;
   }
 }

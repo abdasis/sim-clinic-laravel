@@ -1,4 +1,9 @@
-import { BadgeCheck, ChevronsUpDown, LogOut } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import {
+  ArrowUpDownIcon,
+  BadgeCheckIcon,
+  Logout01Icon,
+} from "@hugeicons/core-free-icons"
 
 import {
   Avatar,
@@ -57,7 +62,7 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="active:scale-[0.96] data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 {user.avatar ? (
@@ -69,7 +74,11 @@ export function NavUser({
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              <HugeiconsIcon
+                icon={ArrowUpDownIcon}
+                strokeWidth={2}
+                className="ml-auto size-4"
+              />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -95,13 +104,13 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <BadgeCheck />
+                <HugeiconsIcon icon={BadgeCheckIcon} strokeWidth={2} />
                 {t("general.account")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onLogout}>
-              <LogOut />
+              <HugeiconsIcon icon={Logout01Icon} strokeWidth={2} />
               {t("general.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>

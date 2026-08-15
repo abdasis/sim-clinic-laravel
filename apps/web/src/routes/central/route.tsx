@@ -1,5 +1,8 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router"
-import { Building2, LayoutDashboard } from "lucide-react"
+import {
+  Building02Icon,
+  DashboardSquare01Icon,
+} from "@hugeicons/core-free-icons"
 
 import { AppSidebar, type SidebarNavItem, type SidebarUser } from "#/components/app-sidebar.tsx"
 import {
@@ -41,13 +44,13 @@ function CentralLayout() {
     {
       title: t("central.dashboard"),
       url: "/central",
-      icon: LayoutDashboard,
+      icon: DashboardSquare01Icon,
       isActive: pathname === "/central",
     },
     {
       title: t("tenant.tenants"),
       url: "/central/tenants",
-      icon: Building2,
+      icon: Building02Icon,
       isActive: pathname.startsWith("/central/tenants"),
     },
   ]

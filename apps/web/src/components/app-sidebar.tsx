@@ -1,6 +1,7 @@
 import * as React from "react"
-import { Command, type LucideIcon } from "lucide-react"
 import { Link } from "@tanstack/react-router"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
+import { SourceCodeIcon } from "@hugeicons/core-free-icons"
 
 import { NavMain } from "#/components/nav-main.tsx"
 import { NavSecondary } from "#/components/nav-secondary.tsx"
@@ -18,9 +19,9 @@ import {
 export interface SidebarNavItem {
   title: string
   url: string
-  icon: LucideIcon
+  icon: IconSvgElement
   isActive?: boolean
-  items?: { title: string; url: string }[]
+  items?: { title: string; url: string; isActive?: boolean }[]
 }
 
 export interface SidebarUser {
@@ -56,10 +57,14 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            <SidebarMenuButton size="lg" asChild className="active:scale-[0.96]">
               <Link to={brandTo}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Command className="size-4" />
+                  <HugeiconsIcon
+                    icon={SourceCodeIcon}
+                    strokeWidth={2}
+                    className="size-4"
+                  />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{brandTitle}</span>

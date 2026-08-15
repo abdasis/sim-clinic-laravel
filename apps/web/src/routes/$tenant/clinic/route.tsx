@@ -6,20 +6,20 @@ import {
   useParams,
   useRouterState,
 } from "@tanstack/react-router"
+import { type IconSvgElement } from "@hugeicons/react"
 import {
-  BarChart3,
-  Boxes,
-  Calendar,
-  FileText,
-  Globe,
-  HeartPulse,
-  Package,
-  ShoppingCart,
-  Stethoscope,
-  Users,
-  UserCog,
-  type LucideIcon,
-} from "lucide-react"
+  BarChartIcon,
+  Calendar01Icon,
+  CashierIcon,
+  File02Icon,
+  Globe02Icon,
+  HeartPulseIcon,
+  Layers01Icon,
+  PackageIcon,
+  Settings02Icon,
+  StethoscopeIcon,
+  UserGroupIcon,
+} from "@hugeicons/core-free-icons"
 
 import { AppSidebar, type SidebarNavItem, type SidebarUser } from "#/components/app-sidebar.tsx"
 import {
@@ -47,7 +47,7 @@ interface NavItem {
   key: string
   label: string
   roles: string[] // peran klinik yang boleh melihat modul
-  icon: LucideIcon
+  icon: IconSvgElement
   children?: NavChild[]
 }
 
@@ -64,40 +64,46 @@ function ClinicLayout() {
   const base = `/${tenant}/clinic`
 
   const items: NavItem[] = [
-    { key: "staff", label: t("staff.title"), roles: ["admin"], icon: Users },
-    { key: "users", label: t("tenant.users"), roles: ["admin"], icon: UserCog },
-    { key: "services", label: t("service.title"), roles: ["admin", "doctor", "therapist"], icon: Stethoscope },
-    { key: "patients", label: t("patient.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulse },
-    { key: "bookings", label: t("booking.title"), roles: ["admin", "doctor", "therapist"], icon: Calendar },
-    { key: "medical-records", label: t("medical_record.title"), roles: ["admin", "doctor", "therapist"], icon: FileText },
-    { key: "products", label: t("product.title"), roles: ["admin"], icon: Package },
-    { key: "inventory", label: t("inventory.title"), roles: ["admin"], icon: Boxes },
+    { key: "staff", label: t("staff.title"), roles: ["admin"], icon: UserGroupIcon },
+    { key: "users", label: t("tenant.users"), roles: ["admin"], icon: Settings02Icon },
+    { key: "services", label: t("service.title"), roles: ["admin", "doctor", "therapist"], icon: StethoscopeIcon },
+    { key: "patients", label: t("patient.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulseIcon },
+    { key: "bookings", label: t("booking.title"), roles: ["admin", "doctor", "therapist"], icon: Calendar01Icon },
+    { key: "medical-records", label: t("medical_record.title"), roles: ["admin", "doctor", "therapist"], icon: File02Icon },
+    { key: "products", label: t("product.title"), roles: ["admin"], icon: PackageIcon },
+    { key: "inventory", label: t("inventory.title"), roles: ["admin"], icon: Layers01Icon },
     {
       key: "pos",
       label: t("pos.title"),
       roles: ["admin", "cashier"],
-      icon: ShoppingCart,
+      // Tidak ada ikon keranjang di set gratis; POS di klinik = meja kasir.
+      icon: CashierIcon,
       children: [
         { key: "pos", label: t("pos.add_transaction") },
         { key: "pos/transactions", label: t("pos.transactions") },
       ],
     },
-    { key: "company-profile", label: t("company_profile.title"), roles: ["admin"], icon: Globe },
-    { key: "reports", label: t("report.title"), roles: ["admin"], icon: BarChart3 },
+    { key: "company-profile", label: t("company_profile.title"), roles: ["admin"], icon: Globe02Icon },
+    { key: "reports", label: t("report.title"), roles: ["admin"], icon: BarChartIcon },
   ]
 
   const visible = items.filter((item) => item.roles.includes(role))
 
-  const navMain: SidebarNavItem[] = visible.map((item) => ({
-    title: item.label,
-    url: `${base}/${item.key}`,
-    icon: item.icon,
-    isActive: isActiveItem(pathname, base, item),
-    items: item.children?.map((child) => ({
-      title: child.label,
-      url: `${base}/${child.key}`,
-    })),
-  }))
+  const navMain: SidebarNavItem[] = visible.map((item) => {
+    const activeChild = activeChildKey(pathname, base, item)
+
+    return {
+      title: item.label,
+      url: `${base}/${item.key}`,
+      icon: item.icon,
+      isActive: isActiveItem(pathname, base, item),
+      items: item.children?.map((child) => ({
+        title: child.label,
+        url: `${base}/${child.key}`,
+        isActive: child.key === activeChild,
+      })),
+    }
+  })
 
   // Shell tidak punya halaman index; arahkan ke modul pertama yang boleh diakses.
   const landing = navMain[0]?.url
@@ -156,17 +162,33 @@ function isActiveItem(pathname: string, base: string, item: NavItem): boolean {
   return pathname.startsWith(`${base}/${item.key}`)
 }
 
+/**
+ * Kunci submenu yang sedang aktif. Kunci saudara bisa saling berawalan
+ * ("pos" dan "pos/transactions"), jadi yang paling panjang yang menang —
+ * kalau tidak, keduanya tampak aktif bersamaan.
+ */
+function activeChildKey(
+  pathname: string,
+  base: string,
+  item: NavItem,
+): string | undefined {
+  return item.children
+    ?.filter((child) => pathname.startsWith(`${base}/${child.key}`))
+    .sort((a, b) => b.key.length - a.key.length)
+    .at(0)?.key
+}
+
 function sectionTitle(
   pathname: string,
   base: string,
   visible: NavItem[],
 ): string | undefined {
-  const parent = visible.find((item) =>
-    isActiveItem(pathname, base, item),
-  )
+  const parent = visible.find((item) => isActiveItem(pathname, base, item))
+
   if (!parent) return undefined
-  const child = parent.children?.find((c) =>
-    pathname.startsWith(`${base}/${c.key}`),
-  )
+
+  const childKey = activeChildKey(pathname, base, parent)
+  const child = parent.children?.find((c) => c.key === childKey)
+
   return child ? `${parent.label} / ${child.label}` : parent.label
 }

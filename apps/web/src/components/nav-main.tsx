@@ -1,5 +1,6 @@
-import { ChevronRight, type LucideIcon } from "lucide-react"
 import { Link } from "@tanstack/react-router"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
 
 import {
   Collapsible,
@@ -18,6 +19,13 @@ import {
   SidebarMenuSubItem,
 } from "#/components/ui/sidebar.tsx"
 
+/**
+ * Batang penanda di tepi kiri item aktif. Tumbuh dari tengah saat item
+ * menjadi aktif — anchor visual yang tidak menambah warna baru.
+ */
+const ACTIVE_BAR =
+  "before:absolute before:top-1/2 before:left-0 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-sidebar-primary before:transition-transform before:duration-200 before:ease-[var(--ease-in-out)] before:scale-y-0 data-[active=true]:before:scale-y-100"
+
 export function NavMain({
   items,
   groupLabel,
@@ -25,11 +33,12 @@ export function NavMain({
   items: {
     title: string
     url: string
-    icon: LucideIcon
+    icon: IconSvgElement
     isActive?: boolean
     items?: {
       title: string
       url: string
+      isActive?: boolean
     }[]
   }[]
   groupLabel?: string
@@ -41,25 +50,39 @@ export function NavMain({
         {items.map((item) => (
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={item.title}>
+              <SidebarMenuButton
+                asChild
+                tooltip={item.title}
+                isActive={item.isActive}
+                className={`relative active:scale-[0.96] ${ACTIVE_BAR}`}
+              >
                 <Link to={item.url as string}>
-                  <item.icon />
+                  <HugeiconsIcon icon={item.icon} strokeWidth={2} />
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>
               {item.items?.length ? (
                 <>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuAction className="data-[state=open]:rotate-90">
-                      <ChevronRight />
-                      <span className="sr-only">Toggle</span>
+                    <SidebarMenuAction className="transition-transform duration-200 ease-[var(--ease-in-out)] data-[state=open]:rotate-90">
+                      <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
+                      <span className="sr-only">Buka submenu</span>
                     </SidebarMenuAction>
                   </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
+                  {/*
+                    Radix tidak menganimasikan tinggi konten. Trik grid-rows
+                    memberi transisi tinggi-otomatis yang bisa dipotong di
+                    tengah jalan, tanpa mengukur lewat JS.
+                  */}
+                  <CollapsibleContent className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-[var(--ease-out)] data-[state=open]:grid-rows-[1fr]">
+                    <SidebarMenuSub className="min-h-0 overflow-hidden">
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={subItem.isActive}
+                            className={`relative data-[active=true]:pl-3.5 data-[active=true]:font-medium ${ACTIVE_BAR}`}
+                          >
                             <Link to={subItem.url as string}>
                               <span>{subItem.title}</span>
                             </Link>
