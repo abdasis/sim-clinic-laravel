@@ -33,7 +33,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Klinik Cantik — Perawatan Wajah, Laser, dan Hair Removal',
       },
     ],
     links: [
@@ -46,6 +46,34 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   shellComponent: RootDocument,
 })
 
+/** Segmen pertama halaman marketing; semuanya hidup di akar situs. */
+const MARKETING_SEGMENTS = new Set([
+  'treatments',
+  'promo',
+  'store',
+  'online-booking',
+  'locations',
+  'artikel',
+  'cart',
+])
+
+/**
+ * Segmen satu-kata yang merupakan halaman aplikasi, bukan slug tenant.
+ * Tanpa daftar ini, `/about` dan `/register` ikut kehilangan chrome publik
+ * karena bentuk URL-nya sama dengan landing tenant.
+ */
+const APP_SEGMENTS = new Set([
+  ...MARKETING_SEGMENTS,
+  'about',
+  'register',
+  'central',
+  'demo',
+])
+
+function firstSegment(pathname: string): string {
+  return pathname.split('/')[1] ?? ''
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   // Route admin punya chrome sendiri (sidebar-08); skip Header/Footer publik
@@ -55,13 +83,21 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     /^\/[^/]+\/clinic(\/|$)/.test(pathname) ||
     (/^\/central(\/|$)/.test(pathname) && pathname !== '/central/login')
 
-  // Company profile (spec 010) merender header/footer sendiri dari konten
-  // yang diatur admin, jadi chrome publik bawaan justru dobel di sini.
-  const isCompanyProfile =
-    (/^\/[^/]+\/?$/.test(pathname) && pathname !== '/central') ||
+  // Halaman marketing punya header/footer sendiri (_marketing layout).
+  const isMarketing =
+    pathname === '/' ||
+    MARKETING_SEGMENTS.has(firstSegment(pathname)) ||
+    /^\/treatment\//.test(pathname)
+
+  // Company profile tenant (spec 010) juga merender chrome-nya sendiri dari
+  // konten yang diatur admin. Satu segmen yang bukan halaman aplikasi
+  // dianggap slug tenant.
+  const isTenantProfile =
+    (/^\/[^/]+\/?$/.test(pathname) &&
+      !APP_SEGMENTS.has(firstSegment(pathname))) ||
     /^\/[^/]+\/treatment(\/|$)/.test(pathname)
 
-  const hideChrome = isAdmin || isCompanyProfile
+  const hideChrome = isAdmin || isMarketing || isTenantProfile
 
   return (
     <html lang="en" suppressHydrationWarning>

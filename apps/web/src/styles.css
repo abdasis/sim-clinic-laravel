@@ -599,6 +599,29 @@ a {
  * Perpindahan warna tetap dipertahankan karena membantu memahami state;
  * yang dibuang hanya gerakannya.
  */
+/*
+ * Latar bertekstur untuk section landing. Dipakai bergantian supaya halaman
+ * panjang tidak terasa rata, tanpa menambah warna baru — polanya memakai
+ * token tema, jadi ikut menyesuaikan mode gelap dengan sendirinya.
+ */
+.bg-dot-grid {
+  background-image: radial-gradient(
+    circle at center,
+    color-mix(in oklab, var(--lagoon) 42%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent 78%);
+}
+
+.bg-line-grid {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--lagoon) 26%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--lagoon) 26%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 78% 62% at 50% 45%, black, transparent 76%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-slot="sidebar-menu-button"],
   [data-slot="sidebar-menu-sub-button"],

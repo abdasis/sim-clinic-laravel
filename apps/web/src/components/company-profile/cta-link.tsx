@@ -34,7 +34,7 @@ export function CtaLink({
 
   // Tujuan internal diketik admin, jadi tidak ada di daftar route yang
   // dikenal saat kompilasi — pakai anchor biasa, bukan Link bertipe.
-  const isInternal = type === "route_internal"
+  const isInternal = type === "route_internal" || type === "route_root"
 
   return (
     <Button asChild variant={variant} size={size} className={className}>
@@ -62,6 +62,9 @@ export function ctaHref(
   type: string | null | undefined,
   url: string,
 ): string {
+  // Halaman marketing hidup di akar situs, bukan di dalam tenant.
+  if (type === "route_root") return url.startsWith("/") ? url : `/${url}`
+
   if (type === "route_internal") return internalHref(tenant, url)
 
   if (type === "whatsapp" && !/^https?:\/\//i.test(url)) {

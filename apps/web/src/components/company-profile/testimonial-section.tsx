@@ -10,6 +10,7 @@ interface TestimonialSectionProps {
   /** Pola label "ngeZAP Sejak 2022"; `:year` diganti tahun testimoni. */
   sinceTemplate?: string
   items: CompanyTestimonial[]
+  className?: string
 }
 
 export function TestimonialSection({
@@ -17,13 +18,14 @@ export function TestimonialSection({
   heading,
   sinceTemplate,
   items,
+  className,
 }: TestimonialSectionProps) {
   const text = useContentText()
 
   if (items.length === 0) return null
 
   return (
-    <SectionShell id={id} title={heading}>
+    <SectionShell id={id} title={heading} className={className}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((testimonial) => (
           <figure

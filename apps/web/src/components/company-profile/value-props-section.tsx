@@ -6,19 +6,21 @@ interface ValuePropsSectionProps {
   id?: string
   heading?: string
   items: CompanyValueProp[]
+  className?: string
 }
 
 export function ValuePropsSection({
   id,
   heading,
   items,
+  className,
 }: ValuePropsSectionProps) {
   const text = useContentText()
 
   if (items.length === 0) return null
 
   return (
-    <SectionShell id={id} title={heading}>
+    <SectionShell id={id} title={heading} className={className}>
       <div className="grid gap-px overflow-hidden rounded-lg border border-border/50 bg-border/50 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
           <article

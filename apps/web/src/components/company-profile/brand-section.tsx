@@ -6,15 +6,21 @@ interface BrandSectionProps {
   id?: string
   heading?: string
   items: CompanyBrand[]
+  className?: string
 }
 
-export function BrandSection({ id, heading, items }: BrandSectionProps) {
+export function BrandSection({
+  id,
+  heading,
+  items,
+  className,
+}: BrandSectionProps) {
   const text = useContentText()
 
   if (items.length === 0) return null
 
   return (
-    <SectionShell id={id} title={heading}>
+    <SectionShell id={id} title={heading} className={className}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((brand) => {
           const name = text(brand.name)

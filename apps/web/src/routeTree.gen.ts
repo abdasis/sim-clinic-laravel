@@ -9,13 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as MarketingRouteImport } from './routes/_marketing'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as CentralRouteRouteImport } from './routes/central/route'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as TenantIndexRouteImport } from './routes/$tenant/index'
 import { Route as TenantClinicRouteRouteImport } from './routes/$tenant/clinic/route'
 import { Route as TenantLoginRouteImport } from './routes/$tenant/login'
+import { Route as MarketingIndexRouteImport } from './routes/_marketing/index'
 import { Route as CentralIndexRouteImport } from './routes/central/index'
 import { Route as CentralLoginRouteImport } from './routes/central/login'
 import { Route as DemoDataTableRouteImport } from './routes/demo/data-table'
@@ -24,6 +25,14 @@ import { Route as InvitationsTokenRouteImport } from './routes/invitations/$toke
 import { Route as TenantClinicIndexRouteImport } from './routes/$tenant/clinic/index'
 import { Route as TenantTreatmentSlugRouteImport } from './routes/$tenant/treatment/$slug'
 import { Route as TenantUsersIndexRouteImport } from './routes/$tenant/users/index'
+import { Route as MarketingArtikelIndexRouteImport } from './routes/_marketing/artikel/index'
+import { Route as MarketingCartIndexRouteImport } from './routes/_marketing/cart/index'
+import { Route as MarketingLocationsIndexRouteImport } from './routes/_marketing/locations/index'
+import { Route as MarketingOnlineBookingIndexRouteImport } from './routes/_marketing/online-booking/index'
+import { Route as MarketingPromoIndexRouteImport } from './routes/_marketing/promo/index'
+import { Route as MarketingStoreIndexRouteImport } from './routes/_marketing/store/index'
+import { Route as MarketingTreatmentSlugRouteImport } from './routes/_marketing/treatment/$slug'
+import { Route as MarketingTreatmentsIndexRouteImport } from './routes/_marketing/treatments/index'
 import { Route as CentralTenantsIndexRouteImport } from './routes/central/tenants/index'
 import { Route as TenantClinicBookingsIndexRouteImport } from './routes/$tenant/clinic/bookings/index'
 import { Route as TenantClinicCompanyProfileIndexRouteImport } from './routes/$tenant/clinic/company-profile/index'
@@ -49,9 +58,8 @@ import { Route as TenantClinicPosInvoicesIdRouteImport } from './routes/$tenant/
 import { Route as TenantClinicPosTransactionsIndexRouteImport } from './routes/$tenant/clinic/pos/transactions/index'
 import { Route as TenantClinicPosTransactionsIdRouteImport } from './routes/$tenant/clinic/pos/transactions/$id'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const MarketingRoute = MarketingRouteImport.update({
+  id: '/_marketing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -83,6 +91,11 @@ const TenantLoginRoute = TenantLoginRouteImport.update({
   id: '/$tenant/login',
   path: '/$tenant/login',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MarketingIndexRoute = MarketingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MarketingRoute,
 } as any)
 const CentralIndexRoute = CentralIndexRouteImport.update({
   id: '/',
@@ -124,6 +137,48 @@ const TenantUsersIndexRoute = TenantUsersIndexRouteImport.update({
   path: '/$tenant/users/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarketingArtikelIndexRoute = MarketingArtikelIndexRouteImport.update({
+  id: '/artikel/',
+  path: '/artikel/',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingCartIndexRoute = MarketingCartIndexRouteImport.update({
+  id: '/cart/',
+  path: '/cart/',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingLocationsIndexRoute = MarketingLocationsIndexRouteImport.update({
+  id: '/locations/',
+  path: '/locations/',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingOnlineBookingIndexRoute =
+  MarketingOnlineBookingIndexRouteImport.update({
+    id: '/online-booking/',
+    path: '/online-booking/',
+    getParentRoute: () => MarketingRoute,
+  } as any)
+const MarketingPromoIndexRoute = MarketingPromoIndexRouteImport.update({
+  id: '/promo/',
+  path: '/promo/',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingStoreIndexRoute = MarketingStoreIndexRouteImport.update({
+  id: '/store/',
+  path: '/store/',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingTreatmentSlugRoute = MarketingTreatmentSlugRouteImport.update({
+  id: '/treatment/$slug',
+  path: '/treatment/$slug',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingTreatmentsIndexRoute =
+  MarketingTreatmentsIndexRouteImport.update({
+    id: '/treatments/',
+    path: '/treatments/',
+    getParentRoute: () => MarketingRoute,
+  } as any)
 const CentralTenantsIndexRoute = CentralTenantsIndexRouteImport.update({
   id: '/tenants/',
   path: '/tenants/',
@@ -266,8 +321,8 @@ const TenantClinicPosTransactionsIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/central': typeof CentralRouteRouteWithChildren
+  '/': typeof MarketingIndexRoute
   '/about': typeof AboutRoute
   '/register': typeof RegisterRoute
   '/$tenant/clinic': typeof TenantClinicRouteRouteWithChildren
@@ -279,8 +334,16 @@ export interface FileRoutesByFullPath {
   '/$tenant/': typeof TenantIndexRoute
   '/central/': typeof CentralIndexRoute
   '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
+  '/treatment/$slug': typeof MarketingTreatmentSlugRoute
   '/$tenant/clinic/': typeof TenantClinicIndexRoute
   '/$tenant/users/': typeof TenantUsersIndexRoute
+  '/artikel/': typeof MarketingArtikelIndexRoute
+  '/cart/': typeof MarketingCartIndexRoute
+  '/locations/': typeof MarketingLocationsIndexRoute
+  '/online-booking/': typeof MarketingOnlineBookingIndexRoute
+  '/promo/': typeof MarketingPromoIndexRoute
+  '/store/': typeof MarketingStoreIndexRoute
+  '/treatments/': typeof MarketingTreatmentsIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -307,7 +370,6 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/pos/transactions/': typeof TenantClinicPosTransactionsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/register': typeof RegisterRoute
   '/$tenant/login': typeof TenantLoginRoute
@@ -316,10 +378,19 @@ export interface FileRoutesByTo {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
   '/$tenant': typeof TenantIndexRoute
+  '/': typeof MarketingIndexRoute
   '/central': typeof CentralIndexRoute
   '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
+  '/treatment/$slug': typeof MarketingTreatmentSlugRoute
   '/$tenant/clinic': typeof TenantClinicIndexRoute
   '/$tenant/users': typeof TenantUsersIndexRoute
+  '/artikel': typeof MarketingArtikelIndexRoute
+  '/cart': typeof MarketingCartIndexRoute
+  '/locations': typeof MarketingLocationsIndexRoute
+  '/online-booking': typeof MarketingOnlineBookingIndexRoute
+  '/promo': typeof MarketingPromoIndexRoute
+  '/store': typeof MarketingStoreIndexRoute
+  '/treatments': typeof MarketingTreatmentsIndexRoute
   '/central/tenants': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -347,8 +418,8 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/central': typeof CentralRouteRouteWithChildren
+  '/_marketing': typeof MarketingRouteWithChildren
   '/about': typeof AboutRoute
   '/register': typeof RegisterRoute
   '/$tenant/clinic': typeof TenantClinicRouteRouteWithChildren
@@ -358,10 +429,19 @@ export interface FileRoutesById {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
   '/$tenant/': typeof TenantIndexRoute
+  '/_marketing/': typeof MarketingIndexRoute
   '/central/': typeof CentralIndexRoute
   '/$tenant/treatment/$slug': typeof TenantTreatmentSlugRoute
+  '/_marketing/treatment/$slug': typeof MarketingTreatmentSlugRoute
   '/$tenant/clinic/': typeof TenantClinicIndexRoute
   '/$tenant/users/': typeof TenantUsersIndexRoute
+  '/_marketing/artikel/': typeof MarketingArtikelIndexRoute
+  '/_marketing/cart/': typeof MarketingCartIndexRoute
+  '/_marketing/locations/': typeof MarketingLocationsIndexRoute
+  '/_marketing/online-booking/': typeof MarketingOnlineBookingIndexRoute
+  '/_marketing/promo/': typeof MarketingPromoIndexRoute
+  '/_marketing/store/': typeof MarketingStoreIndexRoute
+  '/_marketing/treatments/': typeof MarketingTreatmentsIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -390,8 +470,8 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/central'
+    | '/'
     | '/about'
     | '/register'
     | '/$tenant/clinic'
@@ -403,8 +483,16 @@ export interface FileRouteTypes {
     | '/$tenant/'
     | '/central/'
     | '/$tenant/treatment/$slug'
+    | '/treatment/$slug'
     | '/$tenant/clinic/'
     | '/$tenant/users/'
+    | '/artikel/'
+    | '/cart/'
+    | '/locations/'
+    | '/online-booking/'
+    | '/promo/'
+    | '/store/'
+    | '/treatments/'
     | '/central/tenants/'
     | '/$tenant/clinic/company-profile/settings'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -431,7 +519,6 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/pos/transactions/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/about'
     | '/register'
     | '/$tenant/login'
@@ -440,10 +527,19 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/invitations/$token'
     | '/$tenant'
+    | '/'
     | '/central'
     | '/$tenant/treatment/$slug'
+    | '/treatment/$slug'
     | '/$tenant/clinic'
     | '/$tenant/users'
+    | '/artikel'
+    | '/cart'
+    | '/locations'
+    | '/online-booking'
+    | '/promo'
+    | '/store'
+    | '/treatments'
     | '/central/tenants'
     | '/$tenant/clinic/company-profile/settings'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -470,8 +566,8 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/pos/transactions'
   id:
     | '__root__'
-    | '/'
     | '/central'
+    | '/_marketing'
     | '/about'
     | '/register'
     | '/$tenant/clinic'
@@ -481,10 +577,19 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/invitations/$token'
     | '/$tenant/'
+    | '/_marketing/'
     | '/central/'
     | '/$tenant/treatment/$slug'
+    | '/_marketing/treatment/$slug'
     | '/$tenant/clinic/'
     | '/$tenant/users/'
+    | '/_marketing/artikel/'
+    | '/_marketing/cart/'
+    | '/_marketing/locations/'
+    | '/_marketing/online-booking/'
+    | '/_marketing/promo/'
+    | '/_marketing/store/'
+    | '/_marketing/treatments/'
     | '/central/tenants/'
     | '/$tenant/clinic/company-profile/settings'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -512,8 +617,8 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   CentralRouteRoute: typeof CentralRouteRouteWithChildren
+  MarketingRoute: typeof MarketingRouteWithChildren
   AboutRoute: typeof AboutRoute
   RegisterRoute: typeof RegisterRoute
   TenantClinicRouteRoute: typeof TenantClinicRouteRouteWithChildren
@@ -528,11 +633,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
+    '/_marketing': {
+      id: '/_marketing'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof MarketingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -576,6 +681,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$tenant/login'
       preLoaderRoute: typeof TenantLoginRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_marketing/': {
+      id: '/_marketing/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof MarketingIndexRouteImport
+      parentRoute: typeof MarketingRoute
     }
     '/central/': {
       id: '/central/'
@@ -632,6 +744,62 @@ declare module '@tanstack/react-router' {
       fullPath: '/$tenant/users/'
       preLoaderRoute: typeof TenantUsersIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_marketing/artikel/': {
+      id: '/_marketing/artikel/'
+      path: '/artikel'
+      fullPath: '/artikel/'
+      preLoaderRoute: typeof MarketingArtikelIndexRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/cart/': {
+      id: '/_marketing/cart/'
+      path: '/cart'
+      fullPath: '/cart/'
+      preLoaderRoute: typeof MarketingCartIndexRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/locations/': {
+      id: '/_marketing/locations/'
+      path: '/locations'
+      fullPath: '/locations/'
+      preLoaderRoute: typeof MarketingLocationsIndexRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/online-booking/': {
+      id: '/_marketing/online-booking/'
+      path: '/online-booking'
+      fullPath: '/online-booking/'
+      preLoaderRoute: typeof MarketingOnlineBookingIndexRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/promo/': {
+      id: '/_marketing/promo/'
+      path: '/promo'
+      fullPath: '/promo/'
+      preLoaderRoute: typeof MarketingPromoIndexRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/store/': {
+      id: '/_marketing/store/'
+      path: '/store'
+      fullPath: '/store/'
+      preLoaderRoute: typeof MarketingStoreIndexRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/treatment/$slug': {
+      id: '/_marketing/treatment/$slug'
+      path: '/treatment/$slug'
+      fullPath: '/treatment/$slug'
+      preLoaderRoute: typeof MarketingTreatmentSlugRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/treatments/': {
+      id: '/_marketing/treatments/'
+      path: '/treatments'
+      fullPath: '/treatments/'
+      preLoaderRoute: typeof MarketingTreatmentsIndexRouteImport
+      parentRoute: typeof MarketingRoute
     }
     '/central/tenants/': {
       id: '/central/tenants/'
@@ -820,6 +988,34 @@ const CentralRouteRouteWithChildren = CentralRouteRoute._addFileChildren(
   CentralRouteRouteChildren,
 )
 
+interface MarketingRouteChildren {
+  MarketingIndexRoute: typeof MarketingIndexRoute
+  MarketingTreatmentSlugRoute: typeof MarketingTreatmentSlugRoute
+  MarketingArtikelIndexRoute: typeof MarketingArtikelIndexRoute
+  MarketingCartIndexRoute: typeof MarketingCartIndexRoute
+  MarketingLocationsIndexRoute: typeof MarketingLocationsIndexRoute
+  MarketingOnlineBookingIndexRoute: typeof MarketingOnlineBookingIndexRoute
+  MarketingPromoIndexRoute: typeof MarketingPromoIndexRoute
+  MarketingStoreIndexRoute: typeof MarketingStoreIndexRoute
+  MarketingTreatmentsIndexRoute: typeof MarketingTreatmentsIndexRoute
+}
+
+const MarketingRouteChildren: MarketingRouteChildren = {
+  MarketingIndexRoute: MarketingIndexRoute,
+  MarketingTreatmentSlugRoute: MarketingTreatmentSlugRoute,
+  MarketingArtikelIndexRoute: MarketingArtikelIndexRoute,
+  MarketingCartIndexRoute: MarketingCartIndexRoute,
+  MarketingLocationsIndexRoute: MarketingLocationsIndexRoute,
+  MarketingOnlineBookingIndexRoute: MarketingOnlineBookingIndexRoute,
+  MarketingPromoIndexRoute: MarketingPromoIndexRoute,
+  MarketingStoreIndexRoute: MarketingStoreIndexRoute,
+  MarketingTreatmentsIndexRoute: MarketingTreatmentsIndexRoute,
+}
+
+const MarketingRouteWithChildren = MarketingRoute._addFileChildren(
+  MarketingRouteChildren,
+)
+
 interface TenantClinicRouteRouteChildren {
   TenantClinicIndexRoute: typeof TenantClinicIndexRoute
   TenantClinicCompanyProfileSettingsRoute: typeof TenantClinicCompanyProfileSettingsRoute
@@ -884,8 +1080,8 @@ const TenantClinicRouteRouteWithChildren =
   TenantClinicRouteRoute._addFileChildren(TenantClinicRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   CentralRouteRoute: CentralRouteRouteWithChildren,
+  MarketingRoute: MarketingRouteWithChildren,
   AboutRoute: AboutRoute,
   RegisterRoute: RegisterRoute,
   TenantClinicRouteRoute: TenantClinicRouteRouteWithChildren,
@@ -900,12 +1096,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

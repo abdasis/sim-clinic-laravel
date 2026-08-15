@@ -9,6 +9,7 @@ interface PromoSectionProps {
   tenant: string
   heading?: string
   items: CompanyPromo[]
+  className?: string
 }
 
 export function PromoSection({
@@ -16,13 +17,14 @@ export function PromoSection({
   tenant,
   heading,
   items,
+  className,
 }: PromoSectionProps) {
   const text = useContentText()
 
   if (items.length === 0) return null
 
   return (
-    <SectionShell id={id} title={heading}>
+    <SectionShell id={id} title={heading} className={className}>
       <div className="grid gap-4 lg:grid-cols-2">
         {items.map((promo) => {
           const title = text(promo.title)
