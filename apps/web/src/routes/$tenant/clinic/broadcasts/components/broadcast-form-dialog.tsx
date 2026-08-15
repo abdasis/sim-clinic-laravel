@@ -103,6 +103,15 @@ export function BroadcastFormDialog({
     enabled: open && previewParams !== null,
   })
 
+  const templates = useQuery({
+    queryKey: ["message-templates", tenant],
+    queryFn: () =>
+      apiGet<{ data: { id: number; name: string; body: string }[] }>(
+        `/${tenant}/clinic/message-templates`,
+      ),
+    enabled: open,
+  })
+
   const services = useQuery({
     queryKey: ["services", tenant, "options"],
     queryFn: () =>
@@ -237,6 +246,22 @@ export function BroadcastFormDialog({
 
                 <div className="space-y-2">
                   <div className="flex flex-wrap gap-1.5">
+                    {(templates.data?.data ?? []).map((template) => (
+                      <Button
+                        key={template.id}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() =>
+                          form.setValue("message", template.body, {
+                            shouldValidate: true,
+                          })
+                        }
+                      >
+                        {template.name}
+                      </Button>
+                    ))}
                     <Button
                       type="button"
                       variant="outline"

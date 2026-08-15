@@ -21,6 +21,8 @@ class PatientRequest extends FormRequest
             'whatsapp' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'referred_by' => ['nullable', 'exists:users,id'],
+            'whatsapp_opt_in' => ['nullable', 'boolean'],
         ];
     }
 

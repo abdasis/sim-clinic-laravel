@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Tenant\SeedDefaultCommissionRulesAction;
 use App\Actions\Tenant\SyncTenantClinicRolesAction;
 use App\Enums\UserRole;
 use App\Http\Middleware\SetPermissionTeamId;
@@ -58,7 +59,10 @@ class RolesAndPermissionsSeeder extends Seeder
     {
         $action = app(SyncTenantClinicRolesAction::class);
 
-        Tenant::query()->each(fn (Tenant $tenant) => $action->handle($tenant->id));
+        Tenant::query()->each(function (Tenant $tenant) use ($action): void {
+            $action->handle($tenant->id);
+            app(SeedDefaultCommissionRulesAction::class)->handle($tenant->id);
+        });
     }
 
     /**

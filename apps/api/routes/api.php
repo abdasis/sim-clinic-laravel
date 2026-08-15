@@ -13,12 +13,14 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MedicalRecordController;
+use App\Http\Controllers\MessageTemplateController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromoController;
+use App\Http\Controllers\ReminderRuleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\StaffController;
@@ -126,7 +128,15 @@ Route::prefix('{tenant}/clinic')
         Route::get('broadcasts/audience-preview', [BroadcastController::class, 'preview']);
         Route::get('broadcasts/settings', [BroadcastController::class, 'settings']);
         Route::put('broadcasts/settings', [BroadcastController::class, 'updateSettings']);
+        Route::get('broadcasts/connection', [BroadcastController::class, 'connection']);
+        Route::get('broadcasts/dashboard', [BroadcastController::class, 'dashboard']);
+        Route::post('broadcasts/test-message', [BroadcastController::class, 'sendTest']);
         Route::post('broadcasts/{broadcast}/send', [BroadcastController::class, 'send']);
+        Route::patch('broadcasts/{broadcast}/status', [BroadcastController::class, 'changeStatus']);
+        Route::apiResource('message-templates', MessageTemplateController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('reminder-rules', ReminderRuleController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
         Route::patch('broadcasts/{broadcast}/recipients/{recipient}', [BroadcastController::class, 'updateRecipient']);
         Route::apiResource('broadcasts', BroadcastController::class)->only(['index', 'store', 'show', 'destroy']);
 

@@ -4,20 +4,26 @@ namespace App\Services;
 
 use App\Actions\Broadcast\CreateBroadcastAction;
 use App\Actions\Broadcast\DeleteBroadcastAction;
-use App\Actions\Broadcast\SendBroadcastViaGatewayAction;
 use App\Actions\Broadcast\UpdateRecipientStatusAction;
+use App\Actions\LogAuditAction;
 use App\Enums\BroadcastRecipientStatus;
+use App\Enums\BroadcastStatus;
+use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
-use App\Models\WhatsappSetting;
+use App\Support\WhatsappClientFactory;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Orkestrasi broadcast WhatsApp: pembuatan snapshot penerima dalam satu
- * transaksi, penandaan manual, dan blast lewat gateway.
+ * Orkestrasi broadcast WhatsApp: snapshot penerima, penandaan manual, dan
+ * pengiriman lewat antrian dengan jeda antar pesan.
  */
 class BroadcastService
 {
+    /** Jarak detik antar pesan agar tidak menyembur dan memicu blokir spam. */
+    private const SECONDS_BETWEEN_MESSAGES = 5;
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -37,19 +43,77 @@ class BroadcastService
     }
 
     /**
-     * @return array{sent: int, failed: int}
+     * Antrekan semua penerima menunggu, satu job per pesan dengan jeda
+     * berjenjang — HTTP request kembali seketika, worker yang mengirim.
+     *
+     * @return array{queued: int}
      */
-    public function sendViaGateway(Broadcast $broadcast): array
+    public function queueSend(Broadcast $broadcast): array
     {
-        $setting = WhatsappSetting::query()->first();
-
-        if ($setting === null || ! $setting->isGatewayReady()) {
+        if (app(WhatsappClientFactory::class)->forCurrentTenant() === null) {
             abort(422, __('broadcast.gateway_not_ready'));
         }
 
-        // Sengaja TANPA transaction pembungkus: tiap penerima menulis
-        // statusnya sendiri agar kegagalan di tengah tidak menghapus jejak
-        // pesan yang sudah benar-benar terkirim.
-        return app(SendBroadcastViaGatewayAction::class)->handle($broadcast, $setting);
+        $pendingIds = $broadcast->recipients()
+            ->where('status', BroadcastRecipientStatus::Pending)
+            ->orderBy('id')
+            ->pluck('id');
+
+        $broadcast->update(['status' => BroadcastStatus::Sending]);
+
+        foreach ($pendingIds as $index => $recipientId) {
+            SendBroadcastRecipientJob::dispatch($recipientId, $broadcast->tenant_id)
+                ->delay(now()->addSeconds($index * self::SECONDS_BETWEEN_MESSAGES));
+        }
+
+        app(LogAuditAction::class)->handle(
+            'broadcast.queued',
+            $broadcast,
+            Auth::user(),
+            ['new' => ['queued' => $pendingIds->count()]],
+            'Mengantrekan broadcast '.$broadcast->title.' ('.$pendingIds->count().' pesan).',
+        );
+
+        return ['queued' => $pendingIds->count()];
+    }
+
+    public function changeStatus(Broadcast $broadcast, BroadcastStatus $status): Broadcast
+    {
+        $old = $broadcast->status;
+
+        // Resume = antrekan ulang sisa pending; job lama yang melihat status
+        // jeda sudah gugur tanpa mengirim.
+        if ($status === BroadcastStatus::Sending) {
+            $this->queueSend($broadcast);
+
+            return $broadcast->refresh();
+        }
+
+        $broadcast->update(['status' => $status]);
+
+        app(LogAuditAction::class)->handle(
+            'broadcast.status_changed',
+            $broadcast,
+            Auth::user(),
+            ['old' => ['status' => $old], 'new' => ['status' => $status]],
+            'Mengubah status broadcast '.$broadcast->title.' menjadi '.$status->label().'.',
+        );
+
+        return $broadcast;
+    }
+
+    /**
+     * Kirim pesan uji ke satu nomor — memastikan koneksi hidup sebelum
+     * ratusan pasien dikirimi.
+     */
+    public function sendTest(string $phone, string $message): void
+    {
+        $client = app(WhatsappClientFactory::class)->forCurrentTenant();
+
+        if ($client === null) {
+            abort(422, __('broadcast.gateway_not_ready'));
+        }
+
+        $client->send($phone, $message);
     }
 }

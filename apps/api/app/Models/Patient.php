@@ -7,6 +7,7 @@ use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -24,15 +25,24 @@ class Patient extends Model
         'whatsapp',
         'address',
         'notes',
+        'referred_by',
+        'whatsapp_opt_in',
         'deleted_at',
     ];
 
     protected function casts(): array
     {
         return [
+            'whatsapp_opt_in' => 'boolean',
             'birth_date' => 'date',
             'deleted_at' => 'datetime',
         ];
+    }
+
+    /** Staf yang membawa pasien ini — dasar bonus pasien baru. */
+    public function referrer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referred_by');
     }
 
     public function bookings(): HasMany

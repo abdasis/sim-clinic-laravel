@@ -90,7 +90,12 @@ function NewPatientPage() {
           onSubmit={form.handleSubmit((values) =>
             // Gender boleh kosong; kirim undefined supaya lolos aturan
             // `nullable|in:...` di backend, bukan string kosong.
-            mutation.mutate({ ...values, gender: values.gender || undefined }),
+            mutation.mutate({
+              ...values,
+              gender: values.gender || undefined,
+              // "" dari select berarti tanpa pembawa; backend menerima null.
+              referred_by: values.referred_by ? Number(values.referred_by) : null,
+            } as never),
           )}
           className="space-y-4"
         >

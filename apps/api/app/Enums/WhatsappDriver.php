@@ -10,6 +10,9 @@ enum WhatsappDriver: string
     /** Gateway HTTP (kompatibel Fonnte/Wablas); kirim massal dari server. */
     case Gateway = 'gateway';
 
+    /** Sidecar internal: scan QR dari WhatsApp klinik, kirim dari server. */
+    case Qr = 'qr';
+
     public function label(): string
     {
         return __('broadcast.driver.'.$this->value);

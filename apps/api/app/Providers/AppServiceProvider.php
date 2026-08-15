@@ -19,11 +19,13 @@ use App\Models\Invitation;
 use App\Models\Invoice;
 use App\Models\MedicalPhoto;
 use App\Models\MedicalRecord;
+use App\Models\MessageTemplate;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Promo;
 use App\Models\PromoItem;
+use App\Models\ReminderRule;
 use App\Models\Service;
 use App\Models\StockMovement;
 use App\Models\Tenant;
@@ -58,6 +60,8 @@ class AppServiceProvider extends ServiceProvider
         'expense' => Expense::class,
         'broadcast' => Broadcast::class,
         'broadcast_recipient' => BroadcastRecipient::class,
+        'message_template' => MessageTemplate::class,
+        'reminder_rule' => ReminderRule::class,
         'promo_item' => PromoItem::class,
         'stock_movement' => StockMovement::class,
         'transaction' => Transaction::class,

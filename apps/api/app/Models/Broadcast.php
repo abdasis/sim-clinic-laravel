@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
 use App\Enums\BroadcastAudience;
+use App\Enums\BroadcastKind;
 use App\Enums\BroadcastRecipientStatus;
+use App\Enums\BroadcastStatus;
 use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +21,8 @@ class Broadcast extends Model
     protected $fillable = [
         'tenant_id',
         'title',
+        'kind',
+        'status',
         'message',
         'audience',
         'audience_params',
@@ -29,6 +33,8 @@ class Broadcast extends Model
     {
         return [
             'audience' => BroadcastAudience::class,
+            'kind' => BroadcastKind::class,
+            'status' => BroadcastStatus::class,
             'audience_params' => 'array',
         ];
     }

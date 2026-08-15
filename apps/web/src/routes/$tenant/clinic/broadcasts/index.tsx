@@ -2,7 +2,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { BubbleChatIcon, Settings02Icon } from "@hugeicons/core-free-icons"
+import { BubbleChatIcon, Link01Icon, Settings02Icon } from "@hugeicons/core-free-icons"
 
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
@@ -20,6 +20,11 @@ import { apiGet } from "#/lib/api.ts"
 import { formatDateTime } from "#/lib/format.ts"
 import { BroadcastFormDialog } from "./components/broadcast-form-dialog.tsx"
 import { BroadcastSettingsDialog } from "./components/broadcast-settings-dialog.tsx"
+import {
+  ConnectionDialog,
+  RemindersDialog,
+  TemplatesDialog,
+} from "./components/whatsapp-tools.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/broadcasts/")({
   component: BroadcastsPage,
@@ -28,6 +33,9 @@ export const Route = createFileRoute("/$tenant/clinic/broadcasts/")({
 interface BroadcastRow {
   id: number
   title: string
+  kind_label?: string | null
+  status?: string | null
+  status_label?: string | null
   audience_label: string
   created_by_name?: string | null
   created_at?: string | null
@@ -41,6 +49,21 @@ function BroadcastsPage() {
   const { t } = useTrans()
   const [createOpen, setCreateOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [connectionOpen, setConnectionOpen] = useState(false)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
+  const [remindersOpen, setRemindersOpen] = useState(false)
+
+  const dashboard = useQuery({
+    queryKey: ["wa-dashboard", tenant],
+    queryFn: () =>
+      apiGet<{
+        data: {
+          today: { sent: number; failed: number; pending: number }
+          reminders_today: { total: number; sent: number; failed: number }
+          active_campaigns: number
+        }
+      }>(`/${tenant}/clinic/broadcasts/dashboard`),
+  })
 
   const { data, isLoading } = useQuery({
     queryKey: ["broadcasts", tenant],
@@ -64,7 +87,17 @@ function BroadcastsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">{t("broadcast.title")}</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setConnectionOpen(true)} className="gap-1.5">
+            <HugeiconsIcon icon={Link01Icon} strokeWidth={2} className="size-3.5" />
+            {t("broadcast.connection")}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setTemplatesOpen(true)}>
+            {t("broadcast.templates")}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setRemindersOpen(true)}>
+            {t("broadcast.reminders")}
+          </Button>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -87,6 +120,38 @@ function BroadcastsPage() {
           </Button>
         </div>
       </div>
+
+      {dashboard.data ? (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-border/50 bg-card p-3">
+            <p className="text-xs text-muted-foreground">{t("broadcast.today_messages")}</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">
+              {dashboard.data.data.today.sent}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                {t("broadcast.status.sent")}
+              </span>
+            </p>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {dashboard.data.data.today.failed} {t("broadcast.status.failed").toLowerCase()} · {dashboard.data.data.today.pending} {t("broadcast.status.pending").toLowerCase()}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/50 bg-card p-3">
+            <p className="text-xs text-muted-foreground">{t("broadcast.reminders_today")}</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">
+              {dashboard.data.data.reminders_today.total}
+            </p>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {dashboard.data.data.reminders_today.sent} {t("broadcast.status.sent").toLowerCase()} · {dashboard.data.data.reminders_today.failed} {t("broadcast.status.failed").toLowerCase()}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/50 bg-card p-3">
+            <p className="text-xs text-muted-foreground">{t("broadcast.active_campaigns")}</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">
+              {dashboard.data.data.active_campaigns}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="space-y-2">
@@ -133,6 +198,8 @@ function BroadcastsPage() {
                       <div className="min-w-0">
                         <p className="truncate font-medium">{row.title}</p>
                         <p className="text-xs text-muted-foreground">
+                          {row.kind_label ? `${row.kind_label} · ` : ""}
+                          {row.status_label ? `${row.status_label} · ` : ""}
                           {row.audience_label}
                           {row.created_at
                             ? ` · ${formatDateTime(row.created_at)}`
@@ -170,6 +237,9 @@ function BroadcastsPage() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
       />
+      <ConnectionDialog tenant={tenant} open={connectionOpen} onOpenChange={setConnectionOpen} />
+      <TemplatesDialog tenant={tenant} open={templatesOpen} onOpenChange={setTemplatesOpen} />
+      <RemindersDialog tenant={tenant} open={remindersOpen} onOpenChange={setRemindersOpen} />
     </div>
   )
 }

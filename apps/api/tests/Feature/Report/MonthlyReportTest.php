@@ -35,6 +35,10 @@ class MonthlyReportTest extends TestCase
 
         $this->actingAsClinicUser();
 
+        // Tenant baru otomatis dapat empat aturan bawaan; tes ini menyetel
+        // aturannya sendiri supaya angka yang diuji tidak tercampur.
+        CommissionRule::query()->delete();
+
         $this->therapist = User::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Jasmin',

@@ -32,6 +32,7 @@ class CommissionCalculatorTest extends TestCase
         parent::setUp();
 
         $this->actingAsClinicUser(ClinicRole::Admin);
+        CommissionRule::query()->delete();
         $this->therapist = $this->makeTherapist();
     }
 
@@ -173,6 +174,44 @@ class CommissionCalculatorTest extends TestCase
 
         $this->assertSame([], $result['rows']);
         $this->assertSame(0.0, $result['total']);
+    }
+
+    public function test_new_patient_bonus_goes_to_referrer_not_therapist(): void
+    {
+        $this->seedRules();
+        $receptionist = $this->makeTherapist('Resepsionis');
+
+        $patient = Patient::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'referred_by' => $receptionist->id,
+        ]);
+
+        // Kunjungan pertama ditangani Jasmin, tapi yang membawa Resepsionis.
+        $this->sale(1_000_000, '2026-05-02', $patient);
+
+        $rows = collect((new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows']);
+
+        // Bonus pasien baru (5.000) milik pembawa, bukan terapis.
+        $this->assertEqualsWithDelta(5000, $rows->firstWhere('therapist_name', 'Resepsionis')['total'], 0.01);
+        $this->assertSame(1, $rows->firstWhere('therapist_name', 'Resepsionis')['new_patients']);
+        $this->assertSame(0, $rows->firstWhere('therapist_name', 'Jasmin')['new_patients']);
+    }
+
+    public function test_new_patient_counted_once_across_periods(): void
+    {
+        $this->seedRules();
+        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+
+        // Kunjungan pertama Mei -> bonus di Mei.
+        $this->sale(100_000, '2026-05-02', $patient);
+        // Kunjungan kedua Juni -> TIDAK ada bonus pasien baru lagi.
+        $this->sale(100_000, '2026-06-02', $patient);
+
+        $mei = (new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows'][0];
+        $juni = (new CommissionCalculator('2026-06-01', '2026-06-30'))->run()['rows'][0];
+
+        $this->assertSame(1, $mei['new_patients']);
+        $this->assertSame(0, $juni['new_patients']);
     }
 
     public function test_endpoint_returns_preview(): void

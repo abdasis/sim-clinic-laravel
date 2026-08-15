@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'referred_by' => 'Dibawa Oleh',
+    'referred_by_hint' => 'Staf yang membawa pasien ini. Dasar bonus pasien baru Rp5.000.',
     'deactivated' => 'Pasien berhasil dinonaktifkan.',
     'deactivate' => 'Nonaktifkan',
     'deactivate_confirm' => 'Pasien nonaktif tidak lagi muncul di daftar aktif. Riwayat kunjungan, rekam medis, dan transaksinya tetap tersimpan.',

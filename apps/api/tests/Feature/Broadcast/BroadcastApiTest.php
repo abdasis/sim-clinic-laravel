@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Broadcast;
 
+use App\Enums\BroadcastStatus;
 use App\Enums\ClinicRole;
 use App\Enums\PaymentStatus;
+use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\Patient;
 use App\Models\Service;
@@ -175,7 +177,7 @@ class BroadcastApiTest extends TestCase
         $this->assertNotNull($recipient->fresh()->sent_at);
     }
 
-    public function test_gateway_send_marks_sent_and_failed_individually(): void
+    public function test_failed_job_marks_recipient_failed_with_error(): void
     {
         $this->actingAsClinicUser();
 
@@ -186,30 +188,31 @@ class BroadcastApiTest extends TestCase
             'api_token' => 'secret-token',
         ]);
 
-        $this->patient('Sukses', '081111111111');
         $this->patient('Gagal', '082222222222');
 
         $broadcast = $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Promo', 'message' => 'Halo {nama}', 'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
-        // Nomor pertama sukses, kedua ditolak gateway.
-        Http::fake([
-            'gateway.test/*' => Http::sequence()
-                ->push(['status' => true], 200)
-                ->push(['status' => false], 500),
-        ]);
+        Broadcast::find($broadcast)->update(['status' => BroadcastStatus::Sending]);
+        $recipient = Broadcast::find($broadcast)->recipients()->first();
 
-        $this->postJson($this->tenantUrl("broadcasts/{$broadcast}/send"))
-            ->assertOk()
-            ->assertJsonPath('data.sent', 1)
-            ->assertJsonPath('data.failed', 1);
+        Http::fake(['gateway.test/*' => Http::response(['status' => false], 500)]);
 
-        $statuses = Broadcast::find($broadcast)->recipients()->orderBy('id')->pluck('status')->map->value->all();
-        $this->assertSame(['sent', 'failed'], $statuses);
+        // Jalankan percobaan terakhir langsung: job harus menandai gagal
+        // beserta pesan galatnya, bukan melempar tanpa jejak.
+        $job = new SendBroadcastRecipientJob($recipient->id, $this->tenant->id);
+        // attempts() dari queue tidak tersedia di luar worker; simulasikan
+        // percobaan terakhir dengan menurunkan tries ke 1.
+        $job->tries = 1;
+        $job->handle();
+
+        $fresh = $recipient->fresh();
+        $this->assertSame('failed', $fresh->status->value);
+        $this->assertNotNull($fresh->error);
 
         Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'secret-token')
-            && $request['target'] === '6281111111111');
+            && $request['target'] === '6282222222222');
     }
 
     public function test_gateway_send_rejected_when_not_configured(): void

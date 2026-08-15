@@ -18,10 +18,12 @@ class BroadcastRecipient extends Model
         'tenant_id',
         'broadcast_id',
         'patient_id',
+        'reminder_rule_id',
         'name',
         'phone',
         'message',
         'status',
+        'attempts',
         'sent_at',
         'error',
     ];

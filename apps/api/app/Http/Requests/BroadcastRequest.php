@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\BroadcastAudience;
+use App\Enums\BroadcastKind;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
@@ -21,6 +22,7 @@ class BroadcastRequest extends FormRequest
             // WhatsApp memutus pesan sangat panjang; 4000 aman untuk semua gateway.
             'message' => ['required', 'string', 'max:4000'],
             'audience' => ['required', new Enum(BroadcastAudience::class)],
+            'kind' => ['nullable', new Enum(BroadcastKind::class)],
             'audience_params' => ['nullable', 'array'],
             'audience_params.days' => ['nullable', 'integer', 'min:1', 'max:730'],
             'audience_params.service_id' => ['nullable', 'exists:services,id'],

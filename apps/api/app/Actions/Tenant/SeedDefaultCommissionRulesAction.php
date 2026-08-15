@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Actions\Tenant;
+
+use App\Enums\CommissionRuleType;
+use App\Models\CommissionRule;
+
+/**
+ * Pasang aturan fee bawaan untuk tenant baru sesuai praktik klinik:
+ * fee per pasien, bonus pasien baru, dan komisi omzet bertingkat.
+ *
+ * Nominalnya business rule di sini — bukan angka yang diketik frontend —
+ * dan tetap bisa disesuaikan tiap tenant lewat menu Pengeluaran.
+ */
+class SeedDefaultCommissionRulesAction
+{
+    private const DEFAULTS = [
+        ['name' => 'Fee pasien', 'type' => CommissionRuleType::PerPatient, 'amount' => 5000],
+        ['name' => 'Bonus pasien baru', 'type' => CommissionRuleType::PerNewPatient, 'amount' => 5000],
+        ['name' => 'Target penjualan', 'type' => CommissionRuleType::RevenuePercent, 'percent' => 5, 'min_revenue' => 0],
+        ['name' => 'Omzet 10 juta ke atas', 'type' => CommissionRuleType::RevenuePercent, 'percent' => 6, 'min_revenue' => 10_000_000],
+    ];
+
+    public function handle(int $tenantId): void
+    {
+        // Idempoten: tenant yang sudah menyetel aturannya sendiri tidak
+        // boleh ditimpa oleh seeding ulang.
+        if (CommissionRule::withoutGlobalScopes()->where('tenant_id', $tenantId)->exists()) {
+            return;
+        }
+
+        foreach (self::DEFAULTS as $rule) {
+            CommissionRule::withoutGlobalScopes()->create($rule + [
+                'tenant_id' => $tenantId,
+                'amount' => $rule['amount'] ?? 0,
+                'percent' => $rule['percent'] ?? 0,
+                'min_revenue' => $rule['min_revenue'] ?? 0,
+                'is_active' => true,
+            ]);
+        }
+    }
+}

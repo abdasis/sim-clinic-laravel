@@ -12,6 +12,10 @@ class BroadcastResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
+            'kind' => $this->kind,
+            'kind_label' => $this->kind?->label(),
+            'status' => $this->status,
+            'status_label' => $this->status?->label(),
             'message' => $this->message,
             'audience' => $this->audience,
             'audience_label' => $this->audience?->label(),

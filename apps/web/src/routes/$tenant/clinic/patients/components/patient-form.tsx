@@ -1,4 +1,6 @@
 import type { Control } from "react-hook-form"
+import { useQuery } from "@tanstack/react-query"
+import { useParams } from "@tanstack/react-router"
 import { z } from "zod"
 import {
   Card,
@@ -11,7 +13,9 @@ import { FormInput } from "#/components/forms/form-input.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormTextarea } from "#/components/forms/form-textarea.tsx"
 import { FormDatePicker } from "#/components/forms/form-date-picker.tsx"
+import { FormSwitch } from "#/components/forms/form-switch.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { apiGet } from "#/lib/api.ts"
 
 export const patientSchema = z.object({
   name: z.string().min(1),
@@ -23,6 +27,9 @@ export const patientSchema = z.object({
   whatsapp: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  // "" berarti tidak ada pembawa; dikonversi ke null saat submit.
+  referred_by: z.string().optional(),
+  whatsapp_opt_in: z.boolean().optional(),
 })
 
 export type PatientValues = z.infer<typeof patientSchema>
@@ -35,6 +42,8 @@ export const patientDefaults: PatientValues = {
   whatsapp: "",
   address: "",
   notes: "",
+  referred_by: "",
+  whatsapp_opt_in: true,
 }
 
 export function PatientFormFields({
@@ -43,6 +52,19 @@ export function PatientFormFields({
   control: Control<PatientValues>
 }) {
   const { t } = useTrans()
+  const { tenant } = useParams({ strict: false }) as { tenant: string }
+
+  // Pilihan pembawa pasien: staf klinik apa pun perannya — resepsionis pun
+  // boleh membawa pasien baru dan berhak atas bonusnya.
+  const staff = useQuery({
+    queryKey: ["staff", tenant, "options"],
+    queryFn: () =>
+      apiGet<{ data: { id: number; name: string }[] }>(
+        `/${tenant}/clinic/staff`,
+        { per_page: 100 },
+      ),
+    enabled: Boolean(tenant),
+  })
   // Tanggal lahir di masa depan pasti ditolak backend; batasi di pemilihnya
   // supaya tidak ada 422 yang sebenarnya bisa dicegah.
   const today = new Date().toISOString().slice(0, 10)
@@ -110,6 +132,25 @@ export function PatientFormFields({
         title={t("patient.section_notes")}
         description={t("patient.section_notes_desc")}
       >
+        <FormSelect
+          control={control}
+          name="referred_by"
+          label={t("patient.referred_by")}
+          description={t("patient.referred_by_hint")}
+          options={[
+            { label: "—", value: "" },
+            ...(staff.data?.data ?? []).map((member) => ({
+              label: member.name,
+              value: String(member.id),
+            })),
+          ]}
+        />
+        <FormSwitch
+          control={control}
+          name="whatsapp_opt_in"
+          label={t("broadcast.opt_in")}
+          description={t("broadcast.opt_in_note")}
+        />
         <FormTextarea
           control={control}
           name="notes"

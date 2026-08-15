@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Actions\LogAuditAction;
+use App\Actions\Tenant\SeedDefaultCommissionRulesAction;
 use App\Actions\Tenant\SyncTenantClinicRolesAction;
 use App\Enums\ClinicRole;
 use App\Enums\TenantStatus;
@@ -83,6 +84,7 @@ class TenantRegistrationService
     private function assignAdminRoles(Tenant $tenant, User $user): void
     {
         app(SyncTenantClinicRolesAction::class)->handle($tenant->id);
+        app(SeedDefaultCommissionRulesAction::class)->handle($tenant->id);
 
         $registrar = app(PermissionRegistrar::class);
 

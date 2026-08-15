@@ -55,6 +55,9 @@ interface BroadcastDetail {
   id: number
   title: string
   message: string
+  status?: string | null
+  status_label?: string | null
+  kind_label?: string | null
   audience_label: string
   recipients_total: number
   recipients_sent: number
@@ -95,6 +98,13 @@ function BroadcastDetailPage() {
       apiPatch(`/${tenant}/clinic/broadcasts/${id}/recipients/${recipient}`, {
         status,
       }),
+    onSuccess: () => qc.invalidateQueries({ queryKey }),
+    onError: (err: ApiError) => toast.error(err.message),
+  })
+
+  const changeStatus = useMutation({
+    mutationFn: (status: "sending" | "paused" | "cancelled") =>
+      apiPatch(`/${tenant}/clinic/broadcasts/${id}/status`, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey }),
     onError: (err: ApiError) => toast.error(err.message),
   })
@@ -172,14 +182,36 @@ function BroadcastDetailPage() {
         <div className="min-w-0">
           <h1 className="text-xl font-semibold">{broadcast.title}</h1>
           <p className="text-sm text-muted-foreground">
+            {broadcast.kind_label ? `${broadcast.kind_label} · ` : ""}
+            {broadcast.status_label ? `${broadcast.status_label} · ` : ""}
             {broadcast.audience_label} ·{" "}
             {t("broadcast.progress")
               .replace(":sent", String(broadcast.recipients_sent))
               .replace(":total", String(broadcast.recipients_total))}
           </p>
         </div>
-        <div className="flex gap-2">
-          {gatewayReady && broadcast.recipients_pending > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {broadcast.status === "sending" ? (
+            <>
+              <Button variant="outline" onClick={() => changeStatus.mutate("paused")} disabled={changeStatus.isPending}>
+                {t("broadcast.pause")}
+              </Button>
+              <Button variant="outline" className="text-destructive" onClick={() => changeStatus.mutate("cancelled")} disabled={changeStatus.isPending}>
+                {t("broadcast.cancel_campaign")}
+              </Button>
+            </>
+          ) : null}
+          {broadcast.status === "paused" ? (
+            <>
+              <Button onClick={() => changeStatus.mutate("sending")} disabled={changeStatus.isPending}>
+                {t("broadcast.resume")}
+              </Button>
+              <Button variant="outline" className="text-destructive" onClick={() => changeStatus.mutate("cancelled")} disabled={changeStatus.isPending}>
+                {t("broadcast.cancel_campaign")}
+              </Button>
+            </>
+          ) : null}
+          {gatewayReady && broadcast.status !== "sending" && broadcast.status !== "paused" && broadcast.status !== "cancelled" && broadcast.recipients_pending > 0 ? (
             <Button
               onClick={() => setConfirmSendAll(true)}
               disabled={sendAll.isPending}

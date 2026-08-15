@@ -13,7 +13,7 @@ return [
     'total' => 'Total Pengeluaran',
     'entries' => ':count catatan',
     'period' => 'Periode',
-    'summary' => 'Rincian Pengeluaran',
+    'summary' => 'Ringkasan Pengeluaran',
     'created' => 'Pengeluaran berhasil dicatat.',
     'updated' => 'Pengeluaran berhasil diperbarui.',
     'deleted' => 'Pengeluaran berhasil dihapus.',

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 
 /**
  * Bagikan seluruh grup terjemahan ke frontend SPA (CLAUDE.md i18n).
@@ -11,13 +12,6 @@ use Illuminate\Http\Request;
  */
 class TranslationController extends Controller
 {
-    private const GROUPS = [
-        'general', 'auth', 'tenant', 'central', 'validation',
-        'clinic', 'staff', 'service', 'patient', 'booking',
-        'medical_record', 'product', 'inventory', 'pos', 'invoice', 'report',
-        'company_profile', 'dashboard', 'brand', 'stats', 'cta', 'preferences',
-    ];
-
     /**
      * Bahasa yang punya berkas terjemahan lengkap. Nilai di luar daftar
      * diabaikan supaya `?locale=` tidak bisa dipakai menebak berkas lain.
@@ -31,7 +25,10 @@ class TranslationController extends Controller
 
         $translations = [];
 
-        foreach (self::GROUPS as $group) {
+        // Grup ditemukan dari berkasnya, bukan daftar manual: dulu daftar
+        // manual pernah tertinggal saat modul baru lahir dan key mentah
+        // seperti "expense.title" bocor ke layar pengguna.
+        foreach ($this->groups() as $group) {
             $translations[$group] = __($group, [], $locale);
         }
 
@@ -39,5 +36,31 @@ class TranslationController extends Controller
             'data' => $translations,
             'meta' => ['locale' => $locale],
         ]);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function groups(): array
+    {
+        $groups = [];
+
+        foreach (self::LOCALES as $locale) {
+            $path = lang_path($locale);
+
+            if (! File::isDirectory($path)) {
+                continue;
+            }
+
+            foreach (File::files($path) as $file) {
+                if ($file->getExtension() === 'php') {
+                    $groups[] = $file->getFilenameWithoutExtension();
+                }
+            }
+        }
+
+        sort($groups);
+
+        return array_values(array_unique($groups));
     }
 }

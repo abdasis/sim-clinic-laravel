@@ -53,7 +53,12 @@ function EditPatientPage() {
 
   useEffect(() => {
     if (data?.data) {
-      form.reset({ ...patientDefaults, ...withoutNulls(data.data) })
+      form.reset({
+        ...patientDefaults,
+        ...withoutNulls(data.data),
+        referred_by: data.data.referred_by ? String(data.data.referred_by) : "",
+        whatsapp_opt_in: data.data.whatsapp_opt_in ?? true,
+      })
     }
   }, [data, form])
 
@@ -105,7 +110,12 @@ function EditPatientPage() {
           onSubmit={form.handleSubmit((values) =>
             // Gender boleh kosong; kirim undefined supaya lolos aturan
             // `nullable|in:...` di backend, bukan string kosong.
-            mutation.mutate({ ...values, gender: values.gender || undefined }),
+            mutation.mutate({
+              ...values,
+              gender: values.gender || undefined,
+              // "" dari select berarti tanpa pembawa; backend menerima null.
+              referred_by: values.referred_by ? Number(values.referred_by) : null,
+            } as never),
           )}
           className="space-y-4"
         >

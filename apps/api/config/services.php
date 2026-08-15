@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Sidecar WhatsApp QR (apps/wa-gateway). Diisi operator server, bukan tenant.
+    'wa_sidecar' => [
+        'url' => env('WA_SIDECAR_URL'),
+        'token' => env('WA_SIDECAR_TOKEN'),
+    ],
+
 ];

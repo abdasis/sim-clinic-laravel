@@ -21,9 +21,9 @@ class BroadcastAudienceBuilder
      * @param  array<string, mixed>  $params
      * @return array{recipients: Collection<int, array<string, mixed>>, without_phone: int}
      */
-    public function build(BroadcastAudience $audience, array $params = []): array
+    public function build(BroadcastAudience $audience, array $params = [], bool $marketing = true): array
     {
-        $patients = $this->patientsFor($audience, $params);
+        $patients = $this->patientsFor($audience, $params, $marketing);
         $lastVisits = $this->lastVisits($patients->pluck('id'));
 
         $withoutPhone = 0;
@@ -72,9 +72,15 @@ class BroadcastAudienceBuilder
      * @param  array<string, mixed>  $params
      * @return Collection<int, Patient>
      */
-    private function patientsFor(BroadcastAudience $audience, array $params): Collection
+    private function patientsFor(BroadcastAudience $audience, array $params, bool $marketing): Collection
     {
         $query = Patient::query()->orderBy('name');
+
+        // Promosi hanya untuk pasien yang memberi izin; pengingat operasional
+        // perawatan tidak tunduk pada opt-in pemasaran.
+        if ($marketing) {
+            $query->where('whatsapp_opt_in', true);
+        }
 
         if ($audience === BroadcastAudience::Inactive) {
             $days = max(1, (int) ($params['days'] ?? 30));

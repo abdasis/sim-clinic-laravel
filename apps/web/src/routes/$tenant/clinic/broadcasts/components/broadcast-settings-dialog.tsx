@@ -49,9 +49,14 @@ export function BroadcastSettingsDialog({
   const settings = useQuery({
     queryKey: ["broadcast-settings", tenant],
     queryFn: () =>
-      apiGet<{ data: { driver: string; api_url?: string | null; has_token: boolean } }>(
-        `/${tenant}/clinic/broadcasts/settings`,
-      ),
+      apiGet<{
+        data: {
+          driver: string
+          api_url?: string | null
+          has_token: boolean
+          sidecar_available?: boolean
+        }
+      }>(`/${tenant}/clinic/broadcasts/settings`),
     enabled: open,
   })
 
@@ -108,8 +113,15 @@ export function BroadcastSettingsDialog({
               options={[
                 { label: t("broadcast.driver.manual"), value: "manual" },
                 { label: t("broadcast.driver.gateway"), value: "gateway" },
+                { label: t("broadcast.driver.qr"), value: "qr" },
               ]}
             />
+
+            {driver === "qr" && !settings.data?.data.sidecar_available ? (
+              <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                {t("broadcast.sidecar_missing")}
+              </p>
+            ) : null}
 
             {driver === "gateway" ? (
               <>
