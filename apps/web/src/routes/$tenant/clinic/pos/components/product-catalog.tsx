@@ -22,7 +22,7 @@ export function ProductCatalog({ tenant, onAdd, searchRef }: ProductCatalogProps
     usePosCatalog(tenant)
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-r border-border/50">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-border/50 lg:border-r">
       <PosFilters
         filters={filters}
         onChange={setFilters}

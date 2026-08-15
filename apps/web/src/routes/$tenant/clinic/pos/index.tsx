@@ -1,14 +1,19 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router"
-import { z } from "zod"
+import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useCallback, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { KeyboardIcon } from "@hugeicons/core-free-icons"
+import { KeyboardIcon, ShoppingCart01Icon } from "@hugeicons/core-free-icons"
 
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Button } from "#/components/ui/button.tsx"
-import { Form } from "#/components/ui/form.tsx"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "#/components/ui/drawer.tsx"
 import { Kbd } from "#/components/ui/kbd.tsx"
 import { ScrollArea } from "#/components/ui/scroll-area.tsx"
 import {
@@ -16,21 +21,29 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
-import { FormCombobox } from "#/components/forms/form-combobox.tsx"
 import { useForm } from "#/components/forms/use-form.ts"
+import { useIsMobile } from "#/hooks/use-mobile.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
-import { PaymentPanel, type PaymentData } from "./components/payment-panel.tsx"
-import { PosCart } from "./components/pos-cart.tsx"
+import { formatCurrency } from "#/lib/format.ts"
+import type { PaymentData } from "./components/payment-panel.tsx"
+import {
+  PosCheckoutPanel,
+  patientSchema,
+  type CreatedTransaction,
+} from "./components/pos-checkout-panel.tsx"
 import { PosShortcutHelp } from "./components/pos-shortcut-help.tsx"
 import { ProductCatalog } from "./components/product-catalog.tsx"
 import { usePosCart } from "./hooks/use-pos-cart.ts"
 import { usePosShortcuts } from "./hooks/use-pos-shortcuts.ts"
 
-const patientSchema = z.object({
-  patient_id: z.string().min(1),
-})
+/**
+ * Panel keranjang lebarnya tetap 380px, jadi dua kolom baru muat kalau
+ * katalognya masih kebagian ruang layak — di bawah `lg` katalog tergencet
+ * sampai nol dan produknya seolah hilang, karena itu panelnya pindah ke drawer.
+ */
+const SPLIT_BREAKPOINT = 1024
 
 export const Route = createFileRoute("/$tenant/clinic/pos/")({
   component: PosPage,
@@ -41,23 +54,21 @@ interface PatientRow {
   name: string
 }
 
-interface CreatedTransaction {
-  data: { id: number; invoice_number: string }
-}
-
 function PosPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/pos/" })
   const { t } = useTrans()
   const qc = useQueryClient()
+  const isNarrow = useIsMobile(SPLIT_BREAKPOINT)
 
   const searchRef = useRef<HTMLInputElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
   const [payment, setPayment] = useState<PaymentData>({
     method: "cash",
     amount: 0,
     covers: false,
   })
-  const [created, setCreated] = useState<CreatedTransaction["data"] | null>(null)
+  const [created, setCreated] = useState<CreatedTransaction | null>(null)
 
   const cart = usePosCart()
 
@@ -82,7 +93,7 @@ function PosPage() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await apiPost<CreatedTransaction>(
+      const res = await apiPost<{ data: CreatedTransaction }>(
         `/${tenant}/clinic/transactions`,
         {
           patient_id: patientId ? Number(patientId) : null,
@@ -131,21 +142,72 @@ function PosPage() {
     canClear: () => !cart.isEmpty,
   })
 
+  const breadcrumb = (
+    <ClinicBreadcrumb
+      items={[
+        { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
+        { label: t("pos.title"), to: "/$tenant/clinic/pos", params: { tenant } },
+        { label: t("pos.add_transaction") },
+      ]}
+    />
+  )
+
+  // Hanya satu salinan yang pernah ter-mount: drawer di layar sempit, kolom
+  // kanan di layar lebar. Kalau dirender dua-duanya, form pasiennya kembar.
+  const checkout = (
+    <PosCheckoutPanel
+      tenant={tenant}
+      form={patientForm}
+      patientOptions={(patients.data?.data ?? []).map((patient) => ({
+        label: patient.name,
+        value: String(patient.id),
+      }))}
+      created={created}
+      items={cart.items}
+      total={cart.total}
+      onStep={cart.step}
+      onRemove={cart.remove}
+      onClear={cart.clear}
+      onPaymentChange={handlePayment}
+    />
+  )
+
+  const saveButton = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          className="w-full transition-transform duration-150 ease-out hover:-translate-y-px"
+          disabled={!canSubmit || mutation.isPending}
+          onClick={() => mutation.mutate()}
+        >
+          {t("general.save")}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent className="flex items-center gap-2">
+        {t("pos.shortcut.save")}
+        <span className="flex items-center gap-0.5">
+          <Kbd>Mod</Kbd>
+          <Kbd>Enter</Kbd>
+        </span>
+      </TooltipContent>
+    </Tooltip>
+  )
+
   return (
-    <div className="flex h-full min-h-0">
+    <div className="flex h-full min-h-0 flex-col lg:flex-row">
+      {/* Kolom kanan hilang di layar sempit, jadi jejak navigasinya dipindah
+          ke bar tipis di atas katalog supaya halaman tetap punya breadcrumb. */}
+      <div className="shrink-0 border-b border-border/50 px-3 py-2 lg:hidden">
+        {breadcrumb}
+      </div>
+
       <ProductCatalog tenant={tenant} onAdd={cart.add} searchRef={searchRef} />
 
-      <aside className="flex w-[380px] shrink-0 flex-col overflow-hidden bg-background">
+      <aside className="hidden w-[380px] shrink-0 flex-col overflow-hidden bg-background lg:flex">
         <ScrollArea className="min-h-0 flex-1">
           <div className="space-y-4 p-4">
             <div className="flex items-start justify-between gap-2">
-              <ClinicBreadcrumb
-                items={[
-                  { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-                  { label: t("pos.title"), to: "/$tenant/clinic/pos", params: { tenant } },
-                  { label: t("pos.add_transaction") },
-                ]}
-              />
+              {breadcrumb}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -170,68 +232,58 @@ function PosPage() {
               </Tooltip>
             </div>
 
-            {created ? (
-              <div className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm">
-                <span className="font-medium">{created.invoice_number}</span> —{" "}
-                <Link
-                  to="/$tenant/clinic/pos/invoices/$id"
-                  params={{ tenant, id: String(created.id) }}
-                  className="text-primary underline underline-offset-4"
-                >
-                  {t("invoice.title")}
-                </Link>
-              </div>
-            ) : null}
-
-            <Form {...patientForm}>
-              <FormCombobox
-                control={patientForm.control}
-                name="patient_id"
-                label={t("pos.patient")}
-                placeholder={t("general.search")}
-                emptyLabel={t("general.no_data")}
-                options={(patients.data?.data ?? []).map((patient) => ({
-                  label: patient.name,
-                  value: String(patient.id),
-                }))}
-              />
-            </Form>
-
-            <PosCart
-              items={cart.items}
-              total={cart.total}
-              onStep={cart.step}
-              onRemove={cart.remove}
-              onClear={cart.clear}
-            />
-
-            <PaymentPanel total={cart.total} onChange={handlePayment} />
+            {isNarrow ? null : checkout}
           </div>
         </ScrollArea>
 
         {/* Tombol simpan menempel di bawah supaya selalu terjangkau walau
             keranjangnya panjang. */}
-        <div className="shrink-0 border-t border-border/50 p-4">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                className="w-full transition-transform duration-150 ease-out hover:-translate-y-px"
-                disabled={!canSubmit || mutation.isPending}
-                onClick={() => mutation.mutate()}
-              >
-                {t("general.save")}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="flex items-center gap-2">
-              {t("pos.shortcut.save")}
-              <span className="flex items-center gap-0.5">
-                <Kbd>Mod</Kbd>
-                <Kbd>Enter</Kbd>
-              </span>
-            </TooltipContent>
-          </Tooltip>
-        </div>
+        <div className="shrink-0 border-t border-border/50 p-4">{saveButton}</div>
       </aside>
+
+      {/* Ringkasan yang selalu terlihat di layar sempit — kasir tahu isi
+          keranjang tanpa harus membukanya dulu. */}
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border/50 bg-background p-3 lg:hidden">
+        <div className="min-w-0">
+          <p className="text-2xs text-muted-foreground">
+            {t("pos.cart.items_count").replace(
+              ":count",
+              String(cart.items.length),
+            )}
+          </p>
+          <p className="truncate text-sm font-semibold tabular-nums">
+            {formatCurrency(cart.total)}
+          </p>
+        </div>
+        <Button
+          type="button"
+          className="shrink-0 gap-2"
+          onClick={() => setCartOpen(true)}
+        >
+          <HugeiconsIcon
+            icon={ShoppingCart01Icon}
+            strokeWidth={2}
+            className="size-4"
+          />
+          {t("pos.cart.open")}
+        </Button>
+      </div>
+
+      {isNarrow ? (
+        <Drawer open={cartOpen} onOpenChange={setCartOpen}>
+          <DrawerContent className="max-h-[88dvh]">
+            <DrawerHeader className="pb-2 text-left">
+              <DrawerTitle>{t("pos.cart.title")}</DrawerTitle>
+            </DrawerHeader>
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="px-4 pb-2">{checkout}</div>
+            </ScrollArea>
+            <DrawerFooter className="border-t border-border/50">
+              {saveButton}
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : null}
 
       <PosShortcutHelp open={helpOpen} onOpenChange={setHelpOpen} />
     </div>
