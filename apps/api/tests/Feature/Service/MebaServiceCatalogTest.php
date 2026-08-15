@@ -6,6 +6,8 @@ use App\Enums\ClinicRole;
 use App\Enums\PaymentStatus;
 use App\Enums\ServiceCategory;
 use App\Models\Patient;
+use App\Models\Promo;
+use App\Models\PromoItem;
 use App\Models\Service;
 use App\Models\Transaction;
 use App\Support\CommissionCalculator;
@@ -179,6 +181,37 @@ class MebaServiceCatalogTest extends TestCase
         // Tapi layanannya tidak lagi aktif di master.
         $this->assertSame('archived', $dummy->fresh()->status->value);
         $this->assertSame(self::EXPECTED_TOTAL, Service::query()->where('status', 'active')->count());
+    }
+
+    public function test_archives_dummy_service_that_is_targeted_by_a_promo(): void
+    {
+        $this->actingAsClinicUser();
+
+        $dummy = Service::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Promo Percobaan',
+            'price' => 200_000,
+            'status' => 'active',
+        ]);
+
+        $promo = Promo::factory()->create(['tenant_id' => $this->tenant->id]);
+        PromoItem::create([
+            'tenant_id' => $this->tenant->id,
+            'promo_id' => $promo->id,
+            'promotable_type' => Service::class,
+            'promotable_id' => $dummy->id,
+        ]);
+
+        $this->seedCatalog();
+
+        // Promo memakai relasi morph tanpa foreign key: menghapus layanannya
+        // tidak ditolak database, tapi meninggalkan promo yang menunjuk ke
+        // ruang kosong.
+        $this->assertSame('archived', $dummy->fresh()->status->value);
+        $this->assertDatabaseHas('promo_items', [
+            'promotable_type' => Service::class,
+            'promotable_id' => $dummy->id,
+        ]);
     }
 
     public function test_master_data_endpoint_lists_the_thirty_with_indonesian_labels(): void

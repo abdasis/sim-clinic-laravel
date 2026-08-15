@@ -140,9 +140,18 @@ class MebaProductSeeder extends Seeder
         }
     }
 
+    /**
+     * Jejak sebuah produk. Promo memakai relasi morph tanpa foreign key, jadi
+     * ikut diperiksa manual — menghapus produknya tidak ditolak database, tapi
+     * meninggalkan promo yang menunjuk ke ruang kosong.
+     */
     private function isReferenced(Product $product): bool
     {
         return DB::table('transaction_items')->where('product_id', $product->id)->exists()
-            || DB::table('stock_movements')->where('product_id', $product->id)->exists();
+            || DB::table('stock_movements')->where('product_id', $product->id)->exists()
+            || DB::table('promo_items')
+                ->where('promotable_type', Product::class)
+                ->where('promotable_id', $product->id)
+                ->exists();
     }
 }

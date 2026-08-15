@@ -6,6 +6,8 @@ use App\Enums\PaymentStatus;
 use App\Enums\ProductCategory;
 use App\Models\Patient;
 use App\Models\Product;
+use App\Models\Promo;
+use App\Models\PromoItem;
 use App\Models\Transaction;
 use Database\Seeders\MebaProductSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -168,6 +170,35 @@ class MebaProductCatalogTest extends TestCase
         // Tapi produknya tidak lagi aktif di master.
         $this->assertSame('archived', $dummy->fresh()->status->value);
         $this->assertSame(self::EXPECTED_TOTAL, Product::query()->where('status', 'active')->count());
+    }
+
+    public function test_archives_dummy_product_that_is_targeted_by_a_promo(): void
+    {
+        $this->actingAsClinicUser();
+
+        $dummy = Product::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Produk Promo Percobaan',
+            'unit' => 'pcs',
+            'price' => 20_000,
+            'status' => 'active',
+        ]);
+
+        $promo = Promo::factory()->create(['tenant_id' => $this->tenant->id]);
+        PromoItem::create([
+            'tenant_id' => $this->tenant->id,
+            'promo_id' => $promo->id,
+            'promotable_type' => Product::class,
+            'promotable_id' => $dummy->id,
+        ]);
+
+        $this->seedCatalog();
+
+        $this->assertSame('archived', $dummy->fresh()->status->value);
+        $this->assertDatabaseHas('promo_items', [
+            'promotable_type' => Product::class,
+            'promotable_id' => $dummy->id,
+        ]);
     }
 
     public function test_master_data_endpoint_lists_only_the_twenty(): void
