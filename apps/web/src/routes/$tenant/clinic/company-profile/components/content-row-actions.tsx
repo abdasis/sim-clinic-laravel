@@ -77,7 +77,7 @@ export function ContentRowActions({
         </TooltipTrigger>
         <TooltipContent className="flex items-center gap-2">
           {t("general.edit")}
-          <kbd className="rounded-sm bg-background/20 px-1 font-mono text-[10px]">
+          <kbd className="rounded-sm bg-background/20 px-1 font-mono text-xxs">
             e
           </kbd>
         </TooltipContent>

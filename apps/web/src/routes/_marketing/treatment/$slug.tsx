@@ -63,7 +63,7 @@ function TreatmentDetailPage() {
           {treatment.category_tags.map((tag) => (
             <span
               key={tag}
-              className="rounded-sm bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
+              className="rounded-sm bg-muted px-1.5 py-0.5 text-2xs text-muted-foreground"
             >
               {tag}
             </span>

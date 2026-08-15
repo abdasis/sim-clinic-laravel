@@ -63,7 +63,7 @@ export function ProductCard({ entry, onAdd }: ProductCardProps) {
           <Badge
             variant="outline"
             className={cn(
-              "shrink-0 px-1.5 text-[10px] font-medium",
+              "shrink-0 px-1.5 text-xxs font-medium",
               STOCK_TONE[entry.stockStatus as Exclude<StockStatus, "n/a">],
             )}
           >

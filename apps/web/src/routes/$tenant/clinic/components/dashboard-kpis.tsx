@@ -97,7 +97,7 @@ function StatTile({
       style={{ animationDelay: `${index * 45}ms` }}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[11px] font-medium tracking-widest text-muted-foreground uppercase">
+        <span className="text-2xs font-medium tracking-widest text-muted-foreground uppercase">
           {label}
         </span>
         <HugeiconsIcon

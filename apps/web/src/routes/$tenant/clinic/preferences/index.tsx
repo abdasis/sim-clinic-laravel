@@ -180,7 +180,7 @@ function PreferencesPage() {
                         className="size-6 rounded-full ring-1 ring-black/10 dark:ring-white/15"
                         style={{ backgroundColor: accent.swatch }}
                       />
-                      <span className="truncate text-[10px] text-muted-foreground">
+                      <span className="truncate text-xxs text-muted-foreground">
                         {t(`preferences.accents.${accent.key}`)}
                       </span>
                     </button>

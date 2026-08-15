@@ -99,7 +99,7 @@ export function LandingHeader({
               <Link to="/cart" search={{ lang: locale }} aria-label="Keranjang">
                 <HugeiconsIcon icon={ShoppingCart01Icon} strokeWidth={2} />
                 {cartCount > 0 ? (
-                  <Badge className="absolute -top-0.5 -right-0.5 size-4 justify-center rounded-full p-0 text-[10px] tabular-nums">
+                  <Badge className="absolute -top-0.5 -right-0.5 size-4 justify-center rounded-full p-0 text-xxs tabular-nums">
                     {cartCount}
                   </Badge>
                 ) : null}

@@ -171,7 +171,7 @@ function ScheduleCell({ booking }: { booking: ScheduleBooking }) {
       <div className="font-medium">{booking.patient_name}</div>
       <div className="text-muted-foreground">{booking.service_name}</div>
       <div className="mt-1 flex items-center justify-between gap-1">
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-xxs text-muted-foreground">
           {format(parseISO(booking.start_at), "HH:mm")}–
           {format(parseISO(booking.end_at), "HH:mm")}
         </span>

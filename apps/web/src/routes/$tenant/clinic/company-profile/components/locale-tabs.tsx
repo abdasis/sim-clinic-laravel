@@ -23,7 +23,7 @@ export function LocaleTabs({ locale, filled, onChange }: LocaleTabsProps) {
           aria-pressed={code === locale}
           onClick={() => onChange(code)}
           className={cn(
-            "flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px] font-medium tracking-wide uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            "flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-2xs font-medium tracking-wide uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
             code === locale
               ? "bg-muted text-foreground"
               : "text-muted-foreground hover:text-foreground",

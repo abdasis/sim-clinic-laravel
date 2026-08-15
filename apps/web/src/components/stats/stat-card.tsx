@@ -64,7 +64,7 @@ export function StatCard({
       className="group rounded-lg border border-border/50 bg-card p-4 shadow-sm transition-colors hover:border-border focus-within:border-border"
     >
       <div className="mb-2 flex items-start justify-between gap-2">
-        <span className="text-[11px] leading-4 font-medium tracking-widest text-muted-foreground uppercase">
+        <span className="text-2xs leading-4 font-medium tracking-widest text-muted-foreground uppercase">
           {label}
         </span>
         <HugeiconsIcon
