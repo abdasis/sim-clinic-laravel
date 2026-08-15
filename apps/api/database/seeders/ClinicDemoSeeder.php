@@ -7,7 +7,6 @@ use App\Enums\ClinicRole;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\Patient;
-use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -16,7 +15,7 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Data demo klinik (spec 002, T014): 1 tenant demo, 4 staf (1 per peran),
- * beberapa pasien, 3 layanan, dan katalog produk final.
+ * beberapa pasien, plus katalog layanan dan produk final.
  */
 class ClinicDemoSeeder extends Seeder
 {
@@ -66,17 +65,10 @@ class ClinicDemoSeeder extends Seeder
             );
         }
 
-        $services = [
-            ['name' => 'Facial Basic', 'price' => 150000],
-            ['name' => 'Chemical Peeling', 'price' => 350000],
-            ['name' => 'Konsultasi Dokter', 'price' => 100000],
-        ];
-        foreach ($services as $s) {
-            Service::query()->firstOrCreate(
-                ['tenant_id' => $tenant->id, 'name' => $s['name']],
-                ['price' => $s['price'], 'status' => 'active'],
-            );
-        }
+        // Katalog layanan memakai pricelist final MEBA Clinic; seeder demo
+        // tidak lagi membuat treatment contoh sendiri supaya seed ulang tidak
+        // memunculkan kembali layanan percobaan.
+        app(MebaServiceSeeder::class)->seedTenant($tenant);
 
         // Katalog produk memakai daftar final MEBA Clinic; seeder demo tidak
         // lagi membuat produk contoh sendiri supaya seed ulang tidak

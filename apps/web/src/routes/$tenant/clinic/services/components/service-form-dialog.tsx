@@ -23,6 +23,7 @@ import type { ApiError } from "#/lib/api.ts"
 
 const schema = z.object({
   name: z.string().min(1),
+  category: z.string().optional(),
   description: z.string().optional(),
   price: z.coerce.number().gte(0),
   duration_minutes: z.coerce.number().int().gte(1).lte(600),
@@ -34,6 +35,7 @@ type Values = z.infer<typeof schema>
 export interface ServiceFormValues {
   id: number
   name: string
+  category?: string | null
   description?: string | null
   price: string | number
   duration_minutes: number
@@ -67,6 +69,7 @@ export function ServiceFormDialog({
   const form = useForm(schema, {
     defaultValues: {
       name: "",
+      category: "",
       description: "",
       price: 0,
       duration_minutes: 30,
@@ -84,6 +87,7 @@ export function ServiceFormDialog({
       service
         ? {
             name: service.name,
+            category: service.category ?? "",
             description: service.description ?? "",
             price: Number(service.price),
             duration_minutes: service.duration_minutes ?? 30,
@@ -91,6 +95,7 @@ export function ServiceFormDialog({
           }
         : {
             name: "",
+            category: "",
             description: "",
             price: 0,
             duration_minutes: 30,
@@ -138,6 +143,24 @@ export function ServiceFormDialog({
               control={form.control}
               name="name"
               label={t("service.name")}
+            />
+            <FormSelect
+              control={form.control}
+              name="category"
+              label={t("service.category")}
+              options={[
+                { label: t("service.category_none"), value: "" },
+                { label: t("service.category_skinbooster"), value: "skinbooster" },
+                {
+                  label: t("service.category_derma_treatment"),
+                  value: "derma_treatment",
+                },
+                {
+                  label: t("service.category_facial_peeling"),
+                  value: "facial_peeling",
+                },
+                { label: t("service.category_other"), value: "other" },
+              ]}
             />
             <FormTextarea
               control={form.control}

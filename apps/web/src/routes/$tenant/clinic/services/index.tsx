@@ -18,6 +18,7 @@ import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { ServiceActionsCell } from "./components/service-actions-cell.tsx"
 import { ServiceFormDialog } from "./components/service-form-dialog.tsx"
+import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/services/")({
@@ -27,6 +28,8 @@ export const Route = createFileRoute("/$tenant/clinic/services/")({
 interface ServiceRow {
   id: number
   name: string
+  category?: string | null
+  category_label?: string | null
   description?: string | null
   price: string
   duration_minutes: number
@@ -43,6 +46,18 @@ function ServicesPage() {
   const columns = useMemo<ColumnDef<ServiceRow>[]>(
     () => [
       { accessorKey: "name", header: t("service.name") },
+      {
+        accessorKey: "category",
+        header: t("service.category"),
+        cell: ({ row }) =>
+          row.original.category_label ? (
+            <Badge variant="secondary" className="font-normal">
+              {row.original.category_label}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          ),
+      },
       {
         accessorKey: "price",
         header: t("service.price"),
