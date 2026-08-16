@@ -21,10 +21,9 @@ class MedicalRecordResource extends JsonResource
                 'status' => $this->booking->status,
                 'start_at' => $this->booking->start_at?->toIso8601String(),
             ]),
-            'subjective' => $this->subjective,
-            'objective' => $this->objective,
-            'assessment' => $this->assessment,
-            'plan' => $this->plan,
+            'anamnesis' => $this->anamnesis,
+            'skincare_history' => $this->skincare_history,
+            'allergy_history' => $this->allergy_history,
             'deleted_at' => $this->deleted_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             // Daftar (index) tidak memuat anak-anaknya; tanpa penjagaan ini

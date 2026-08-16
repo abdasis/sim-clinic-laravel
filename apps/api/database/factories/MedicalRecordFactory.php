@@ -22,10 +22,9 @@ class MedicalRecordFactory extends Factory
             'patient_id' => Patient::factory(),
             'booking_id' => Booking::factory()->done(),
             'author_id' => User::factory(),
-            'subjective' => fake()->sentence(),
-            'objective' => fake()->sentence(),
-            'assessment' => fake()->sentence(),
-            'plan' => fake()->sentence(),
+            'anamnesis' => fake()->sentence(),
+            'skincare_history' => fake()->sentence(),
+            'allergy_history' => fake()->sentence(),
         ];
     }
 

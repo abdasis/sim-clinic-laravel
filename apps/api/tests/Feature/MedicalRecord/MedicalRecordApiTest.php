@@ -27,15 +27,14 @@ class MedicalRecordApiTest extends TestCase
 
         $response = $this->postJson($this->tenantUrl('medical-records'), [
             'booking_id' => $booking->id,
-            'subjective' => 'Pasien mengeluh kulit kering.',
-            'objective' => 'Kulit tampak bersisik di area pipi.',
-            'assessment' => 'Dermatitis ringan.',
-            'plan' => 'Pelembab dua kali sehari.',
+            'anamnesis' => 'Pasien mengeluh kulit kering sejak dua minggu lalu.',
+            'skincare_history' => 'Pakai sabun wajah bebas busa dan pelembab malam.',
+            'allergy_history' => 'Alergi retinol dosis tinggi.',
         ]);
 
         $response->assertCreated();
         $response->assertJsonPath('data.patient_id', $booking->patient_id);
-        $response->assertJsonPath('data.assessment', 'Dermatitis ringan.');
+        $response->assertJsonPath('data.allergy_history', 'Alergi retinol dosis tinggi.');
 
         $this->assertDatabaseHas('medical_records', [
             'booking_id' => $booking->id,
@@ -50,7 +49,7 @@ class MedicalRecordApiTest extends TestCase
 
         $this->postJson($this->tenantUrl('medical-records'), [
             'booking_id' => $booking->id,
-            'subjective' => 'Catatan.',
+            'anamnesis' => 'Catatan.',
         ])->assertStatus(422);
 
         $this->assertDatabaseCount('medical_records', 0);
@@ -61,7 +60,7 @@ class MedicalRecordApiTest extends TestCase
         $this->actingAsClinicUser(ClinicRole::Doctor);
         $booking = $this->makeBooking(BookingStatus::Done);
 
-        $payload = ['booking_id' => $booking->id, 'subjective' => 'Catatan pertama.'];
+        $payload = ['booking_id' => $booking->id, 'anamnesis' => 'Catatan pertama.'];
 
         $this->postJson($this->tenantUrl('medical-records'), $payload)->assertCreated();
         $this->postJson($this->tenantUrl('medical-records'), $payload)->assertStatus(422);
@@ -88,7 +87,7 @@ class MedicalRecordApiTest extends TestCase
 
         $this->patchJson($this->tenantUrl('medical-records/'.$record->id), [
             'booking_id' => $otherBooking->id,
-            'plan' => 'Kontrol dua minggu lagi.',
+            'anamnesis' => 'Kontrol dua minggu lagi.',
         ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('booking_id');
@@ -97,15 +96,15 @@ class MedicalRecordApiTest extends TestCase
     public function test_soap_can_be_revised(): void
     {
         $this->actingAsClinicUser(ClinicRole::Doctor);
-        $record = $this->makeRecord(['plan' => 'Rencana lama.']);
+        $record = $this->makeRecord(['anamnesis' => 'Catatan lama.']);
 
         $this->patchJson($this->tenantUrl('medical-records/'.$record->id), [
-            'plan' => 'Rencana baru.',
+            'anamnesis' => 'Catatan baru.',
         ])
             ->assertOk()
-            ->assertJsonPath('data.plan', 'Rencana baru.');
+            ->assertJsonPath('data.anamnesis', 'Catatan baru.');
 
-        $this->assertSame('Rencana baru.', $record->fresh()->plan);
+        $this->assertSame('Catatan baru.', $record->fresh()->anamnesis);
     }
 
     public function test_deleted_record_disappears_from_listing(): void
@@ -181,7 +180,7 @@ class MedicalRecordApiTest extends TestCase
 
         $this->getJson($this->tenantUrl('medical-records/'.$foreign->id))->assertNotFound();
         $this->patchJson($this->tenantUrl('medical-records/'.$foreign->id), [
-            'plan' => 'Coba sunting.',
+            'anamnesis' => 'Coba sunting.',
         ])->assertNotFound();
         $this->deleteJson($this->tenantUrl('medical-records/'.$foreign->id))->assertNotFound();
 

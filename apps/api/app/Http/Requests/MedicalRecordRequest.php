@@ -19,10 +19,9 @@ class MedicalRecordRequest extends FormRequest
             ...$this->isMethod('POST')
                 ? ['booking_id' => ['required', 'exists:bookings,id']]
                 : ['booking_id' => ['prohibited']],
-            'subjective' => ['nullable', 'string'],
-            'objective' => ['nullable', 'string'],
-            'assessment' => ['nullable', 'string'],
-            'plan' => ['nullable', 'string'],
+            'anamnesis' => ['nullable', 'string'],
+            'skincare_history' => ['nullable', 'string'],
+            'allergy_history' => ['nullable', 'string'],
         ];
     }
 
@@ -30,10 +29,9 @@ class MedicalRecordRequest extends FormRequest
     {
         return [
             'booking_id' => __('medical_record.booking'),
-            'subjective' => __('medical_record.subjective'),
-            'objective' => __('medical_record.objective'),
-            'assessment' => __('medical_record.assessment'),
-            'plan' => __('medical_record.plan'),
+            'anamnesis' => __('medical_record.anamnesis'),
+            'skincare_history' => __('medical_record.skincare_history'),
+            'allergy_history' => __('medical_record.allergy_history'),
         ];
     }
 }

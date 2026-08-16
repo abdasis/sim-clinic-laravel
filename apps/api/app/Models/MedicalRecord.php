@@ -22,10 +22,9 @@ class MedicalRecord extends Model
         'booking_id',
         'patient_id',
         'author_id',
-        'subjective',
-        'objective',
-        'assessment',
-        'plan',
+        'anamnesis',
+        'skincare_history',
+        'allergy_history',
     ];
 
     protected function casts(): array

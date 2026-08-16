@@ -28,10 +28,9 @@ export const Route = createFileRoute("/$tenant/clinic/medical-records/new")({
 
 const schema = z.object({
   booking_id: z.string().min(1),
-  subjective: z.string().optional(),
-  objective: z.string().optional(),
-  assessment: z.string().optional(),
-  plan: z.string().optional(),
+  anamnesis: z.string().optional(),
+  skincare_history: z.string().optional(),
+  allergy_history: z.string().optional(),
   treatments: z.array(
     z.object({ service_id: z.string().min(1), notes: z.string().optional() }),
   ),
@@ -61,10 +60,9 @@ function NewMedicalRecordPage() {
   const form = useForm(schema, {
     defaultValues: {
       booking_id: bookingFromUrl ?? "",
-      subjective: "",
-      objective: "",
-      assessment: "",
-      plan: "",
+      anamnesis: "",
+      skincare_history: "",
+      allergy_history: "",
       treatments: [],
     },
   })
@@ -86,6 +84,11 @@ function NewMedicalRecordPage() {
     value: String(b.id),
     label: `#${b.id} · ${b.patient_name ?? "-"} · ${b.service_name ?? "-"}`,
   }))
+  const selectedBookingId = form.watch("booking_id")
+  const selectedPatientName = doneBookings.find(
+    (b) => String(b.id) === selectedBookingId,
+  )?.patient_name
+
   const serviceOptions = (services.data?.data ?? []).map((s) => ({
     value: String(s.id),
     label: s.name,
@@ -97,10 +100,9 @@ function NewMedicalRecordPage() {
         `/${tenant}/clinic/medical-records`,
         {
           booking_id: Number(values.booking_id),
-          subjective: values.subjective,
-          objective: values.objective,
-          assessment: values.assessment,
-          plan: values.plan,
+          anamnesis: values.anamnesis,
+          skincare_history: values.skincare_history,
+          allergy_history: values.allergy_history,
         },
       )
       const recordId = res.data.id
@@ -163,10 +165,34 @@ function NewMedicalRecordPage() {
                 placeholder={t("medical_record.booking")}
                 options={bookingOptions}
               />
-              <FormTextarea control={form.control} name="subjective" label={t("medical_record.subjective")} />
-              <FormTextarea control={form.control} name="objective" label={t("medical_record.objective")} />
-              <FormTextarea control={form.control} name="assessment" label={t("medical_record.assessment")} />
-              <FormTextarea control={form.control} name="plan" label={t("medical_record.plan")} />
+              {/* Nama pasien tidak diketik ulang: ia melekat pada kunjungan
+                  yang dipilih, jadi salah ketik di sini mustahil terjadi. */}
+              {selectedPatientName ? (
+                <div className="flex items-baseline gap-2 rounded-md border border-border/60 bg-muted/40 px-3 py-2">
+                  <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    {t("medical_record.name")}
+                  </span>
+                  <span className="text-sm font-medium">{selectedPatientName}</span>
+                </div>
+              ) : null}
+              <FormTextarea
+                control={form.control}
+                name="anamnesis"
+                label={t("medical_record.anamnesis")}
+                rows={5}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormTextarea
+                  control={form.control}
+                  name="skincare_history"
+                  label={t("medical_record.skincare_history")}
+                />
+                <FormTextarea
+                  control={form.control}
+                  name="allergy_history"
+                  label={t("medical_record.allergy_history")}
+                />
+              </div>
             </CardContent>
           </Card>
 

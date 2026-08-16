@@ -8,7 +8,7 @@ use App\Models\MedicalRecord;
 use App\Models\User;
 
 /**
- * Tulis rekam medis SOAP untuk satu kunjungan yang sudah selesai.
+ * Tulis rekam medis untuk satu kunjungan yang sudah selesai.
  */
 class CreateMedicalRecordAction
 {
@@ -21,10 +21,9 @@ class CreateMedicalRecordAction
             'booking_id' => $booking->id,
             'patient_id' => $booking->patient_id,
             'author_id' => $author->id,
-            'subjective' => $data['subjective'] ?? null,
-            'objective' => $data['objective'] ?? null,
-            'assessment' => $data['assessment'] ?? null,
-            'plan' => $data['plan'] ?? null,
+            'anamnesis' => $data['anamnesis'] ?? null,
+            'skincare_history' => $data['skincare_history'] ?? null,
+            'allergy_history' => $data['allergy_history'] ?? null,
         ]);
 
         app(LogAuditAction::class)->handle(

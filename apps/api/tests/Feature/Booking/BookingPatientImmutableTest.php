@@ -150,7 +150,7 @@ class BookingPatientImmutableTest extends TestCase
             'booking_id' => $booking->id,
             'patient_id' => $booking->patient_id,
             'author_id' => auth()->id(),
-            'subjective' => 'Keluhan awal',
+            'anamnesis' => 'Keluhan awal',
         ]);
 
         return $booking->fresh();

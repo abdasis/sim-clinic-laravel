@@ -30,14 +30,14 @@ interface MedicalRecordRow {
   patient_id: number
   patient_name?: string | null
   author_name?: string | null
-  assessment?: string | null
-  plan?: string | null
+  anamnesis?: string | null
+  skincare_history?: string | null
   created_at?: string | null
 }
 
-/** Ringkasan satu baris: assessment dulu, jatuh ke plan bila belum diisi. */
+/** Ringkasan satu baris: anamnesa dulu, jatuh ke riwayat skincare bila kosong. */
 function summarise(record: MedicalRecordRow): string | null {
-  const text = record.assessment?.trim() || record.plan?.trim()
+  const text = record.anamnesis?.trim() || record.skincare_history?.trim()
 
   return text ? text : null
 }
@@ -80,7 +80,7 @@ function MedicalRecordsPage() {
             <span className="line-clamp-1 text-muted-foreground">{summary}</span>
           ) : (
             <span className="text-muted-foreground/60">
-              {t("medical_record.soap_empty")}
+              {t("medical_record.section_empty")}
             </span>
           )
         },

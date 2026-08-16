@@ -12,37 +12,36 @@ import { apiPatch } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 
 const schema = z.object({
-  subjective: z.string().optional(),
-  objective: z.string().optional(),
-  assessment: z.string().optional(),
-  plan: z.string().optional(),
+  anamnesis: z.string().optional(),
+  skincare_history: z.string().optional(),
+  allergy_history: z.string().optional(),
 })
 
-export type SoapValues = z.infer<typeof schema>
+export type MedicalRecordValues = z.infer<typeof schema>
 
-interface MedicalRecordSoapFormProps {
+interface MedicalRecordFormProps {
   tenant: string
   recordId: string
-  defaultValues: SoapValues
+  defaultValues: MedicalRecordValues
   onDone: () => void
 }
 
 /**
- * Form revisi SOAP. Empat bagiannya boleh kosong — dokter kerap menyimpan
+ * Form revisi catatan. Setiap bagian boleh kosong — dokter kerap menyimpan
  * draf lalu melengkapinya setelah pasien pulang.
  */
-export function MedicalRecordSoapForm({
+export function MedicalRecordForm({
   tenant,
   recordId,
   defaultValues,
   onDone,
-}: MedicalRecordSoapFormProps) {
+}: MedicalRecordFormProps) {
   const { t } = useTrans()
   const qc = useQueryClient()
   const form = useForm(schema, { defaultValues })
 
   const mutation = useMutation({
-    mutationFn: (values: SoapValues) =>
+    mutationFn: (values: MedicalRecordValues) =>
       apiPatch(`/${tenant}/clinic/medical-records/${recordId}`, values),
     onSuccess: () => {
       toast.success(t("medical_record.updated"))
@@ -62,31 +61,27 @@ export function MedicalRecordSoapForm({
         onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
         className="space-y-4"
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <FormTextarea
             control={form.control}
-            name="subjective"
-            label={t("medical_record.subjective")}
-            rows={4}
+            name="anamnesis"
+            label={t("medical_record.anamnesis")}
+            rows={5}
           />
-          <FormTextarea
-            control={form.control}
-            name="objective"
-            label={t("medical_record.objective")}
-            rows={4}
-          />
-          <FormTextarea
-            control={form.control}
-            name="assessment"
-            label={t("medical_record.assessment")}
-            rows={4}
-          />
-          <FormTextarea
-            control={form.control}
-            name="plan"
-            label={t("medical_record.plan")}
-            rows={4}
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormTextarea
+              control={form.control}
+              name="skincare_history"
+              label={t("medical_record.skincare_history")}
+              rows={4}
+            />
+            <FormTextarea
+              control={form.control}
+              name="allergy_history"
+              label={t("medical_record.allergy_history")}
+              rows={4}
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <FormSubmit loading={mutation.isPending}>

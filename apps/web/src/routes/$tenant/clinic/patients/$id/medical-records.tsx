@@ -31,15 +31,14 @@ interface RecordRow {
   created_at?: string | null
   patient_name?: string | null
   author_name?: string | null
-  subjective?: string | null
-  objective?: string | null
-  assessment?: string | null
-  plan?: string | null
+  anamnesis?: string | null
+  skincare_history?: string | null
+  allergy_history?: string | null
   treatments?: TreatmentRow[]
   photos?: PhotoRow[]
 }
 
-function SoapField({
+function RecordField({
   label,
   value,
   empty,
@@ -140,27 +139,24 @@ function PatientMedicalRecordsPage() {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <SoapField
-                    label={t("medical_record.subjective")}
-                    value={record.subjective}
-                    empty={t("medical_record.soap_empty")}
+                <div className="grid gap-4">
+                  <RecordField
+                    label={t("medical_record.anamnesis")}
+                    value={record.anamnesis}
+                    empty={t("medical_record.section_empty")}
                   />
-                  <SoapField
-                    label={t("medical_record.objective")}
-                    value={record.objective}
-                    empty={t("medical_record.soap_empty")}
-                  />
-                  <SoapField
-                    label={t("medical_record.assessment")}
-                    value={record.assessment}
-                    empty={t("medical_record.soap_empty")}
-                  />
-                  <SoapField
-                    label={t("medical_record.plan")}
-                    value={record.plan}
-                    empty={t("medical_record.soap_empty")}
-                  />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <RecordField
+                      label={t("medical_record.skincare_history")}
+                      value={record.skincare_history}
+                      empty={t("medical_record.section_empty")}
+                    />
+                    <RecordField
+                      label={t("medical_record.allergy_history")}
+                      value={record.allergy_history}
+                      empty={t("medical_record.section_empty")}
+                    />
+                  </div>
                 </div>
                 <MedicalRecordAttachments
                   treatments={record.treatments}

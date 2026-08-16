@@ -43,7 +43,7 @@ import {
   type PhotoRow,
   type TreatmentRow,
 } from "./components/medical-record-attachments.tsx"
-import { MedicalRecordSoapForm } from "./components/medical-record-soap-form.tsx"
+import { MedicalRecordForm } from "./components/medical-record-form.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/medical-records/$recordId")({
   component: MedicalRecordDetailPage,
@@ -54,17 +54,16 @@ interface RecordDetail {
   patient_id: number
   patient_name?: string | null
   author_name?: string | null
-  subjective?: string | null
-  objective?: string | null
-  assessment?: string | null
-  plan?: string | null
+  anamnesis?: string | null
+  skincare_history?: string | null
+  allergy_history?: string | null
   created_at?: string | null
   updated_at?: string | null
   treatments?: TreatmentRow[]
   photos?: PhotoRow[]
 }
 
-function SoapSection({
+function RecordSection({
   label,
   value,
   empty,
@@ -200,39 +199,42 @@ function MedicalRecordDetailPage() {
             </CardHeader>
             <CardContent>
               {editing ? (
-                <MedicalRecordSoapForm
+                <MedicalRecordForm
                   tenant={tenant}
                   recordId={recordId}
                   defaultValues={{
-                    subjective: record.subjective ?? "",
-                    objective: record.objective ?? "",
-                    assessment: record.assessment ?? "",
-                    plan: record.plan ?? "",
+                    anamnesis: record.anamnesis ?? "",
+                    skincare_history: record.skincare_history ?? "",
+                    allergy_history: record.allergy_history ?? "",
                   }}
                   onDone={() => setEditing(false)}
                 />
               ) : (
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <SoapSection
-                    label={t("medical_record.subjective")}
-                    value={record.subjective}
-                    empty={t("medical_record.soap_empty")}
+                <div className="grid gap-5">
+                  {/* Nama pasien dibaca lebih dulu: catatan ini hanya berarti
+                      kalau jelas milik siapa. */}
+                  <RecordSection
+                    label={t("medical_record.name")}
+                    value={record.patient_name}
+                    empty={t("medical_record.section_empty")}
                   />
-                  <SoapSection
-                    label={t("medical_record.objective")}
-                    value={record.objective}
-                    empty={t("medical_record.soap_empty")}
+                  <RecordSection
+                    label={t("medical_record.anamnesis")}
+                    value={record.anamnesis}
+                    empty={t("medical_record.section_empty")}
                   />
-                  <SoapSection
-                    label={t("medical_record.assessment")}
-                    value={record.assessment}
-                    empty={t("medical_record.soap_empty")}
-                  />
-                  <SoapSection
-                    label={t("medical_record.plan")}
-                    value={record.plan}
-                    empty={t("medical_record.soap_empty")}
-                  />
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <RecordSection
+                      label={t("medical_record.skincare_history")}
+                      value={record.skincare_history}
+                      empty={t("medical_record.section_empty")}
+                    />
+                    <RecordSection
+                      label={t("medical_record.allergy_history")}
+                      value={record.allergy_history}
+                      empty={t("medical_record.section_empty")}
+                    />
+                  </div>
                 </div>
               )}
             </CardContent>
