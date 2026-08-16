@@ -98,8 +98,12 @@ export function FormCombobox<T extends FieldValues>({
                 onValueChange={(option: SelectOption | null) =>
                   field.onChange(option?.value ?? "")
                 }
-                disabled={disabled || loading}
+                disabled={disabled}
               >
+                {/* Sengaja tidak dimatikan saat memuat: field yang terlihat
+                    aktif tapi tidak membuka apa-apa persis seperti field
+                    rusak. Dibiarkan terbuka, isinya yang berbicara —
+                    "Memuat..." lalu daftarnya. */}
                 <ComboboxInput placeholder={placeholder} disabled={disabled} />
                 <ComboboxContent container={container}>
                   <ComboboxEmpty>{emptyText}</ComboboxEmpty>

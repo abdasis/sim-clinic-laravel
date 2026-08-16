@@ -104,6 +104,10 @@ function ComboboxContent({
     // `container` dipakai saat combobox berada di dalam drawer/dialog: popup
     // yang mendarat di <body> berada di luar lapisan itu, sehingga kliknya
     // ditelan dan posisinya kehilangan jangkar.
+    //
+    // Kirim `undefined` bila tidak butuh wadah khusus. `null` punya arti lain
+    // di Base UI — "wadahnya belum terpasang, tahan dulu" — sehingga popupnya
+    // tidak pernah dirender dan fieldnya terasa mati saat diklik.
     <ComboboxPrimitive.Portal container={container}>
       <ComboboxPrimitive.Positioner
         side={side}

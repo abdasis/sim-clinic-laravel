@@ -207,7 +207,7 @@ function PosPage() {
       onClear={cart.clear}
       onPaymentChange={handlePayment}
       patientFieldRef={patientFieldRef}
-      popupContainer={isNarrow ? drawerEl : null}
+      popupContainer={isNarrow ? drawerEl : undefined}
       optionsLoading={patients.isLoading || staff.isLoading}
       optionsError={patients.isError || staff.isError}
     />

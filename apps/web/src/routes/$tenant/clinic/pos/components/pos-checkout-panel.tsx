@@ -36,7 +36,14 @@ interface PosCheckoutPanelProps {
   onPaymentChange: (payment: PaymentData) => void
   /** Dipakai halaman untuk menggulir ke field pasien saat simpan ditolak. */
   patientFieldRef?: React.Ref<HTMLDivElement>
-  /** Wadah portal daftar pasien; diisi saat panel berada di dalam drawer. */
+  /**
+   * Wadah portal daftar pasien; diisi saat panel berada di dalam drawer.
+   *
+   * Bedakan dua nilai kosongnya: `undefined` berarti "tidak perlu wadah
+   * khusus, portal ke body", sedangkan `null` berarti "wadahnya belum
+   * terpasang" dan Base UI sengaja menahan portalnya sampai ada. Mengirim
+   * `null` di layar lebar membuat daftarnya tidak pernah muncul sama sekali.
+   */
   popupContainer?: HTMLElement | null
   /**
    * Keadaan pengambilan daftar pilihan. Tanpa ini, daftar pasien yang gagal
