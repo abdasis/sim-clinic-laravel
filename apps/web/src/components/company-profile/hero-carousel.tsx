@@ -70,7 +70,9 @@ export function HeroCarousel({ tenant, slides }: HeroCarouselProps) {
 
             return (
               <CarouselItem key={slide.id}>
-                <div className="relative h-[380px] w-full overflow-hidden sm:h-[460px]">
+                {/* Tinggi mengikuti viewport dengan batas atas: hero setinggi
+                    380px di layar 1080 terbaca sebagai pita, bukan pembuka. */}
+                <div className="relative h-[78svh] max-h-[680px] min-h-[440px] w-full overflow-hidden">
                   {slide.image_url ? (
                     <img
                       src={slide.image_url}
@@ -80,16 +82,23 @@ export function HeroCarousel({ tenant, slides }: HeroCarouselProps) {
                   ) : (
                     <div className="absolute inset-0 bg-muted" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent" />
-                  <div className="relative mx-auto flex h-full w-full max-w-6xl items-center px-4">
-                    <div className="max-w-lg space-y-3">
+
+                  {/* Dua lapis peredup, bukan satu: lapis mendatar menjaga
+                      sisi teks tetap pekat, lapis menurun menahan bagian
+                      bawah supaya kontrolnya tetap terbaca di atas foto
+                      terang mana pun. */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/85 via-neutral-950/55 to-neutral-950/10" />
+                  <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-neutral-950/60 to-transparent" />
+
+                  <div className="relative mx-auto flex h-full w-full max-w-6xl items-center px-4 sm:px-6">
+                    <div className="max-w-xl pb-14">
                       {title ? (
-                        <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+                        <h1 className="text-3xl leading-[1.08] font-semibold tracking-tight text-balance text-white sm:text-5xl lg:text-[3.25rem]">
                           {title}
                         </h1>
                       ) : null}
                       {text(slide.subtitle) ? (
-                        <p className="text-sm leading-relaxed text-muted-foreground text-pretty sm:text-base">
+                        <p className="mt-4 max-w-md text-sm leading-relaxed text-pretty text-white/75 sm:text-base">
                           {text(slide.subtitle)}
                         </p>
                       ) : null}
@@ -98,7 +107,8 @@ export function HeroCarousel({ tenant, slides }: HeroCarouselProps) {
                         label={slide.cta_label}
                         type={slide.cta_type}
                         url={slide.cta_url}
-                        className="mt-1"
+                        size="lg"
+                        className="mt-7 shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
                       />
                     </div>
                   </div>
@@ -110,29 +120,33 @@ export function HeroCarousel({ tenant, slides }: HeroCarouselProps) {
 
         {slides.length > 1 ? (
           <>
-            <CarouselPrevious className="left-4" />
-            <CarouselNext className="right-4" />
+            <CarouselPrevious className="left-4 border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white" />
+            <CarouselNext className="right-4 border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white" />
           </>
         ) : null}
       </Carousel>
 
       {slides.length > 1 ? (
-        <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
-          {slides.map((slide, index) => (
-            <button
-              key={slide.id}
-              type="button"
-              aria-label={`Slide ${index + 1}`}
-              aria-current={index === current}
-              onClick={() => goTo(index)}
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                index === current
-                  ? "w-6 bg-foreground"
-                  : "w-1.5 bg-foreground/30 hover:bg-foreground/50",
-              )}
-            />
-          ))}
+        // Sejajar kolom teks, bukan tengah layar: penanda slide bagian dari
+        // blok konten, sehingga matanya tidak perlu pindah untuk melihatnya.
+        <div className="pointer-events-none absolute inset-x-0 bottom-7">
+          <div className="mx-auto flex w-full max-w-6xl items-center gap-2 px-4 sm:px-6">
+            {slides.map((slide, index) => (
+              <button
+                key={slide.id}
+                type="button"
+                aria-label={`Slide ${index + 1}`}
+                aria-current={index === current}
+                onClick={() => goTo(index)}
+                className={cn(
+                  "pointer-events-auto h-1 rounded-full transition-all duration-300 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none",
+                  index === current
+                    ? "w-8 bg-white"
+                    : "w-3 bg-white/40 hover:bg-white/70",
+                )}
+              />
+            ))}
+          </div>
         </div>
       ) : null}
     </section>

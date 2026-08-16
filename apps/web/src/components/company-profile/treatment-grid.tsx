@@ -1,17 +1,23 @@
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { Link } from "@tanstack/react-router"
 
 import { Badge } from "#/components/ui/badge.tsx"
 import type { CompanyTreatment } from "#/hooks/use-company-profile.ts"
 import { useContentLocale, useContentText } from "./locale-context.tsx"
-import { SectionShell } from "./section-shell.tsx"
+import { SectionShell, type SectionTone } from "./section-shell.tsx"
 
 const CARD_CLASS =
-  "group flex flex-col overflow-hidden rounded-lg border border-border/50 bg-background transition-all hover:border-border hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+  "group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-background transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 
 interface TreatmentGridProps {
   id?: string
   tenant: string
+  eyebrow?: string
   heading?: string
+  description?: string
+  tone?: SectionTone
+  action?: React.ReactNode
   readMoreLabel: string
   items: CompanyTreatment[]
   /**
@@ -25,7 +31,11 @@ interface TreatmentGridProps {
 export function TreatmentGrid({
   id,
   tenant,
+  eyebrow,
   heading,
+  description,
+  tone,
+  action,
   readMoreLabel,
   items,
   basePath,
@@ -36,8 +46,16 @@ export function TreatmentGrid({
   if (items.length === 0) return null
 
   return (
-    <SectionShell id={id} title={heading} className={className}>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <SectionShell
+      id={id}
+      eyebrow={eyebrow}
+      title={heading}
+      description={description}
+      tone={tone}
+      action={action}
+      className={className}
+    >
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((treatment) =>
           // Dua varian Link karena `to` harus berupa literal agar tipenya
           // terperiksa; isi kartunya sendiri sama persis.
@@ -114,8 +132,15 @@ function TreatmentCard({
               </span>
             ))}
           </div>
-          <span className="shrink-0 text-xs font-medium text-muted-foreground transition-colors group-hover:text-foreground">
-            {readMoreLabel} →
+          {/* Panah ikut bergerak saat kartunya disentuh — isyarat kecil bahwa
+              kartunya bisa diklik, bukan sekadar kotak berisi teks. */}
+          <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground transition-colors group-hover:text-foreground">
+            {readMoreLabel}
+            <HugeiconsIcon
+              icon={ArrowRight01Icon}
+              strokeWidth={2}
+              className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
+            />
           </span>
         </div>
       </div>

@@ -1,13 +1,17 @@
 import type { CompanyPromo } from "#/hooks/use-company-profile.ts"
 import { renderRichText } from "#/lib/tiptap-render.tsx"
+import { cn } from "#/lib/utils.ts"
 import { CtaLink } from "./cta-link.tsx"
 import { useContentText } from "./locale-context.tsx"
-import { SectionShell } from "./section-shell.tsx"
+import { SectionShell, type SectionTone } from "./section-shell.tsx"
 
 interface PromoSectionProps {
   id?: string
   tenant: string
+  eyebrow?: string
   heading?: string
+  description?: string
+  tone?: SectionTone
   items: CompanyPromo[]
   className?: string
 }
@@ -15,52 +19,108 @@ interface PromoSectionProps {
 export function PromoSection({
   id,
   tenant,
+  eyebrow,
   heading,
+  description,
+  tone,
   items,
   className,
 }: PromoSectionProps) {
-  const text = useContentText()
-
   if (items.length === 0) return null
 
-  return (
-    <SectionShell id={id} title={heading} className={className}>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {items.map((promo) => {
-          const title = text(promo.title)
+  // Promo pertama dibesarkan. Klinik biasanya hanya menjalankan satu promo,
+  // dan satu kartu kecil di kisi dua kolom terbaca seperti sisa layout yang
+  // gagal terisi — bukan sebagai penawaran yang sedang ditonjolkan.
+  const [lead, ...rest] = items
 
-          return (
-            <article
-              key={promo.id}
-              className="flex gap-4 rounded-lg border border-border/50 bg-background p-4 transition-colors hover:border-border"
-            >
-              {promo.image_url ? (
-                <img
-                  src={promo.image_url}
-                  alt={title ?? ""}
-                  loading="lazy"
-                  className="size-24 shrink-0 rounded-md object-cover"
-                />
-              ) : null}
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
-                <div className="prose prose-sm max-w-none text-muted-foreground dark:prose-invert">
-                  {renderRichText(text(promo.description))}
-                </div>
-                <CtaLink
-                  tenant={tenant}
-                  label={promo.cta_label}
-                  type={promo.cta_type}
-                  url={promo.cta_url}
-                  variant="outline"
-                  size="sm"
-                  className="mt-2 self-start"
-                />
-              </div>
-            </article>
-          )
-        })}
+  return (
+    <SectionShell
+      id={id}
+      eyebrow={eyebrow}
+      title={heading}
+      description={description}
+      tone={tone}
+      className={className}
+    >
+      <div className="space-y-4">
+        <PromoCard tenant={tenant} promo={lead} featured />
+
+        {rest.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {rest.map((promo) => (
+              <PromoCard key={promo.id} tenant={tenant} promo={promo} />
+            ))}
+          </div>
+        ) : null}
       </div>
     </SectionShell>
+  )
+}
+
+function PromoCard({
+  tenant,
+  promo,
+  featured,
+}: {
+  tenant: string
+  promo: CompanyPromo
+  featured?: boolean
+}) {
+  const text = useContentText()
+  const title = text(promo.title)
+
+  return (
+    <article
+      className={cn(
+        "group/promo grid overflow-hidden rounded-xl border border-border/60 bg-background transition-all duration-200 hover:border-border hover:shadow-sm",
+        featured ? "md:grid-cols-[1.1fr_1fr]" : "grid-cols-1",
+      )}
+    >
+      {promo.image_url ? (
+        <div
+          className={cn(
+            "relative overflow-hidden bg-muted",
+            featured ? "aspect-[16/10] md:aspect-auto md:min-h-[19rem]" : "aspect-[16/9]",
+          )}
+        >
+          <img
+            src={promo.image_url}
+            alt={title ?? ""}
+            loading="lazy"
+            className="size-full object-cover transition-transform duration-500 group-hover/promo:scale-[1.03]"
+          />
+        </div>
+      ) : null}
+
+      <div
+        className={cn(
+          "flex flex-col justify-center gap-3",
+          featured ? "p-7 sm:p-9" : "p-5",
+        )}
+      >
+        {title ? (
+          <h3
+            className={cn(
+              "font-semibold tracking-tight text-balance",
+              featured ? "text-xl sm:text-2xl" : "text-base",
+            )}
+          >
+            {title}
+          </h3>
+        ) : null}
+        <div className="prose prose-sm max-w-none text-muted-foreground dark:prose-invert">
+          {renderRichText(text(promo.description))}
+        </div>
+        <CtaLink
+          tenant={tenant}
+          label={promo.cta_label}
+          type={promo.cta_type}
+          url={promo.cta_url}
+          variant={featured ? "default" : "outline"}
+          size="sm"
+          className="mt-2 self-start"
+        />
+      </div>
+    </article>
   )
 }

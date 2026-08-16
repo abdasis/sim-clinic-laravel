@@ -13,6 +13,17 @@ return [
     'testimonials' => 'Testimoni',
     'content_sections' => 'Section Konten',
 
+    // Judul section di halaman publik. Dipisah dari label CMS di atas: yang di
+    // panel admin adalah nama menu, yang ini dibaca pengunjung.
+    'landing_value_props' => 'Kenapa memilih kami',
+    'landing_treatments' => 'Treatment pilihan',
+    'landing_promos' => 'Promo yang sedang berjalan',
+    'landing_brands' => 'Brand yang kami gunakan',
+    'landing_testimonials' => 'Kata mereka yang sudah mencoba',
+    'footer_explore' => 'Jelajahi',
+    'footer_social' => 'Media Sosial',
+    'footer_shop' => 'Belanja',
+
     'published' => 'Halaman publik aktif',
     'unpublished' => 'Halaman publik nonaktif',
     'publish' => 'Terbitkan',

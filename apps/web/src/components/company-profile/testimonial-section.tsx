@@ -2,11 +2,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar.tsx"
 import type { CompanyTestimonial } from "#/hooks/use-company-profile.ts"
 import { renderRichText } from "#/lib/tiptap-render.tsx"
 import { useContentText } from "./locale-context.tsx"
-import { SectionShell } from "./section-shell.tsx"
+import { SectionShell, type SectionTone } from "./section-shell.tsx"
 
 interface TestimonialSectionProps {
   id?: string
+  eyebrow?: string
   heading?: string
+  tone?: SectionTone
   /** Pola label "Pelanggan Sejak 2022"; `:year` diganti tahun testimoni. */
   sinceTemplate?: string
   items: CompanyTestimonial[]
@@ -15,7 +17,9 @@ interface TestimonialSectionProps {
 
 export function TestimonialSection({
   id,
+  eyebrow,
   heading,
+  tone,
   sinceTemplate,
   items,
   className,
@@ -25,12 +29,18 @@ export function TestimonialSection({
   if (items.length === 0) return null
 
   return (
-    <SectionShell id={id} title={heading} className={className}>
+    <SectionShell
+      id={id}
+      eyebrow={eyebrow}
+      title={heading}
+      tone={tone}
+      className={className}
+    >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((testimonial) => (
           <figure
             key={testimonial.id}
-            className="flex flex-col gap-3 rounded-lg border border-border/50 bg-background p-5"
+            className="flex flex-col gap-4 rounded-xl border border-border/60 bg-background p-6 transition-colors duration-200 hover:border-border"
           >
             <blockquote className="prose prose-sm max-w-none flex-1 text-muted-foreground dark:prose-invert">
               {renderRichText(text(testimonial.quote))}

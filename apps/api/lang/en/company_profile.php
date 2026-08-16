@@ -13,6 +13,16 @@ return [
     'testimonials' => 'Testimonials',
     'content_sections' => 'Content Sections',
 
+    // Public page section titles; the labels above name the CMS menus.
+    'landing_value_props' => 'Why choose us',
+    'landing_treatments' => 'Featured treatments',
+    'landing_promos' => 'Running promos',
+    'landing_brands' => 'Brands we use',
+    'landing_testimonials' => 'What our patients say',
+    'footer_explore' => 'Explore',
+    'footer_social' => 'Social',
+    'footer_shop' => 'Shop',
+
     'published' => 'Public page is live',
     'unpublished' => 'Public page is hidden',
     'publish' => 'Publish',

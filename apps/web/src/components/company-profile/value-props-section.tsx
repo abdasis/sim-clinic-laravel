@@ -1,17 +1,26 @@
+import { HugeiconsIcon } from "@hugeicons/react"
+
 import type { CompanyValueProp } from "#/hooks/use-company-profile.ts"
 import { useContentText } from "./locale-context.tsx"
-import { SectionShell } from "./section-shell.tsx"
+import { SectionShell, type SectionTone } from "./section-shell.tsx"
+import { valuePropIcon } from "./value-prop-icons.ts"
 
 interface ValuePropsSectionProps {
   id?: string
+  eyebrow?: string
   heading?: string
+  description?: string
+  tone?: SectionTone
   items: CompanyValueProp[]
   className?: string
 }
 
 export function ValuePropsSection({
   id,
+  eyebrow,
   heading,
+  description,
+  tone,
   items,
   className,
 }: ValuePropsSectionProps) {
@@ -20,22 +29,33 @@ export function ValuePropsSection({
   if (items.length === 0) return null
 
   return (
-    <SectionShell id={id} title={heading} className={className}>
-      <div className="grid gap-px overflow-hidden rounded-lg border border-border/50 bg-border/50 sm:grid-cols-2 lg:grid-cols-3">
+    <SectionShell
+      id={id}
+      eyebrow={eyebrow}
+      title={heading}
+      description={description}
+      tone={tone}
+      className={className}
+    >
+      {/* Kisi berjarak satu piksel: garis pemisahnya berasal dari latar yang
+          menembus celah, jadi tidak ada border ganda di pertemuan kartu. */}
+      <div className="grid gap-px overflow-hidden rounded-xl border border-border/60 bg-border/60 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
           <article
             key={item.id}
-            className="bg-background p-5 transition-colors hover:bg-muted/40"
+            className="group/prop relative bg-background p-6 transition-colors duration-200 hover:bg-muted/50"
           >
-            {item.icon ? (
-              <span className="mb-3 inline-flex size-8 items-center justify-center rounded-md bg-muted text-xs font-medium text-muted-foreground">
-                {item.icon.slice(0, 2).toUpperCase()}
-              </span>
-            ) : null}
+            <span className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-foreground/[0.04] text-foreground/70 ring-1 ring-foreground/5 transition-colors duration-200 group-hover/prop:bg-foreground/[0.07] group-hover/prop:text-foreground">
+              <HugeiconsIcon
+                icon={valuePropIcon(item.icon)}
+                strokeWidth={1.8}
+                className="size-5"
+              />
+            </span>
             <h3 className="text-sm font-semibold tracking-tight">
               {text(item.title)}
             </h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
               {text(item.description)}
             </p>
           </article>

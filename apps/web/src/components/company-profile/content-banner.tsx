@@ -16,6 +16,11 @@ interface ContentBannerProps {
 /**
  * Section konten bebas. Admin memilih tata letaknya: banner selebar halaman
  * atau dua kolom gambar-teks.
+ *
+ * Varian banner memakai gambarnya sebagai latar, bukan menaruhnya sebagai
+ * potongan terpisah di bawah teks. Sebelumnya kotak banner nyaris kosong —
+ * teks di pojok kiri atas, tombol di pojok kanan, dan sisanya ruang menganggur
+ * setinggi hampir dua ratus piksel.
  */
 export function ContentBanner({
   id,
@@ -34,60 +39,101 @@ export function ContentBanner({
   return (
     <section
       id={id ?? section.section_key}
-      className={cn("scroll-mt-20 border-t border-border/50 py-14", className)}
+      className={cn(
+        "scroll-mt-16 border-t border-border/40 py-16 sm:py-20",
+        className,
+      )}
     >
-      <div className="mx-auto w-full max-w-6xl px-4">
-        <div
-          className={cn(
-            "overflow-hidden rounded-lg border border-border/50",
-            emphasis ? "bg-muted/60" : "bg-background",
-            isSplit ? "grid items-stretch gap-0 md:grid-cols-2" : "",
-          )}
-        >
-          {isSplit && section.image_url ? (
-            <img
-              src={section.image_url}
-              alt={title ?? ""}
-              loading="lazy"
-              className="h-full min-h-52 w-full object-cover"
-            />
-          ) : null}
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+        {isSplit ? (
+          <div className="grid items-stretch overflow-hidden rounded-xl border border-border/60 bg-background md:grid-cols-2">
+            {section.image_url ? (
+              <div className="relative min-h-56 overflow-hidden bg-muted md:order-last">
+                <img
+                  src={section.image_url}
+                  alt={title ?? ""}
+                  loading="lazy"
+                  className="absolute inset-0 size-full object-cover"
+                />
+              </div>
+            ) : null}
 
-          <div
-            className={cn(
-              "flex flex-col justify-center gap-3 p-6",
-              isSplit ? "" : "sm:flex-row sm:items-center sm:justify-between",
-            )}
-          >
-            <div className="max-w-2xl space-y-2">
+            <div className="flex flex-col justify-center gap-4 p-7 sm:p-10">
               {title ? (
-                <h2 className="text-xl font-semibold tracking-tight text-balance">
+                <h2 className="text-xl font-semibold tracking-tight text-balance sm:text-2xl">
                   {title}
                 </h2>
               ) : null}
               <div className="prose prose-sm max-w-none text-muted-foreground dark:prose-invert">
                 {renderRichText(text(section.body))}
               </div>
+              <CtaLink
+                tenant={tenant}
+                label={section.cta_label}
+                type={section.cta_type}
+                url={section.cta_url}
+                variant={emphasis ? "default" : "outline"}
+                className="mt-1 self-start"
+              />
             </div>
-            <CtaLink
-              tenant={tenant}
-              label={section.cta_label}
-              type={section.cta_type}
-              url={section.cta_url}
-              variant={emphasis ? "default" : "outline"}
-              className="shrink-0 self-start"
-            />
           </div>
+        ) : (
+          <div className="relative overflow-hidden rounded-xl border border-border/60">
+            {section.image_url ? (
+              <>
+                <img
+                  src={section.image_url}
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  className="absolute inset-0 size-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/85 via-neutral-950/65 to-neutral-950/35" />
+              </>
+            ) : (
+              <div
+                className={cn(
+                  "absolute inset-0",
+                  emphasis ? "bg-muted/60" : "bg-muted/30",
+                )}
+              />
+            )}
 
-          {!isSplit && section.image_url ? (
-            <img
-              src={section.image_url}
-              alt={title ?? ""}
-              loading="lazy"
-              className="h-44 w-full object-cover"
-            />
-          ) : null}
-        </div>
+            <div
+              className={cn(
+                "relative flex flex-col gap-5 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-12",
+                section.image_url ? "text-white" : "",
+              )}
+            >
+              <div className="max-w-2xl space-y-2.5">
+                {title ? (
+                  <h2 className="text-xl font-semibold tracking-tight text-balance sm:text-2xl">
+                    {title}
+                  </h2>
+                ) : null}
+                <div
+                  className={cn(
+                    "prose prose-sm max-w-none dark:prose-invert",
+                    section.image_url
+                      ? "text-white/75 prose-p:text-white/75"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {renderRichText(text(section.body))}
+                </div>
+              </div>
+              <CtaLink
+                tenant={tenant}
+                label={section.cta_label}
+                type={section.cta_type}
+                url={section.cta_url}
+                size="lg"
+                variant={section.image_url || emphasis ? "default" : "outline"}
+                className="shrink-0 self-start transition-transform duration-200 hover:-translate-y-0.5 sm:self-auto"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )

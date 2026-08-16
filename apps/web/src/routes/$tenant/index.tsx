@@ -68,22 +68,30 @@ function CompanyLandingPage() {
           <>
             <main className="flex-1">
               <HeroCarousel tenant={tenant} slides={data.slides} />
+              {/* Nada latar bergantian sepanjang halaman. Tanpa itu seluruh
+                  section berlatar sama dan halaman terbaca sebagai satu
+                  tumpukan pita seragam — mata tidak punya penanda pindah
+                  bagian selain jarak. */}
               <ValuePropsSection
                 id="keunggulan"
-                heading={t("company_profile.value_props")}
+                eyebrow={t("company_profile.value_props")}
+                heading={t("company_profile.landing_value_props")}
                 items={data.value_props}
               />
               <TreatmentGrid
                 id="treatment"
                 tenant={tenant}
-                heading={t("company_profile.treatments")}
+                tone="muted"
+                eyebrow={t("company_profile.treatments")}
+                heading={t("company_profile.landing_treatments")}
                 readMoreLabel={t("company_profile.read_more")}
                 items={data.treatments}
               />
               <PromoSection
                 id="promo"
                 tenant={tenant}
-                heading={t("company_profile.promos")}
+                eyebrow={t("company_profile.promos")}
+                heading={t("company_profile.landing_promos")}
                 items={data.promos}
               />
               <ContentBanner
@@ -96,12 +104,15 @@ function CompanyLandingPage() {
               />
               <BrandSection
                 id="brand"
-                heading={t("company_profile.brands")}
+                tone="muted"
+                eyebrow={t("company_profile.brands")}
+                heading={t("company_profile.landing_brands")}
                 items={data.brands}
               />
               <TestimonialSection
                 id="testimoni"
-                heading={t("company_profile.testimonials")}
+                eyebrow={t("company_profile.testimonials")}
+                heading={t("company_profile.landing_testimonials")}
                 sinceTemplate={t("company_profile.since_year")}
                 items={data.testimonials}
               />
@@ -115,6 +126,11 @@ function CompanyLandingPage() {
               tenant={tenant}
               settings={data.settings}
               items={data.navigation.footer}
+              labels={{
+                explore: t("company_profile.footer_explore"),
+                social: t("company_profile.footer_social"),
+                shop: t("company_profile.footer_shop"),
+              }}
             />
 
             <BackToTop label={t("company_profile.back_to_top")} />
@@ -132,7 +148,7 @@ function CompanyLandingPage() {
 function LandingSkeleton() {
   return (
     <div>
-      <Skeleton className="h-[380px] w-full rounded-none sm:h-[460px]" />
+      <Skeleton className="h-[78svh] max-h-[680px] min-h-[440px] w-full rounded-none" />
       <div className="mx-auto w-full max-w-6xl space-y-4 px-4 py-14">
         <Skeleton className="h-8 w-56" />
         <Skeleton className="h-40 w-full" />
