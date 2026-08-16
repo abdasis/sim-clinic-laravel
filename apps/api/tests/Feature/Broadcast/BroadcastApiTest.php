@@ -95,6 +95,38 @@ class BroadcastApiTest extends TestCase
         $this->assertStringNotContainsString('{', $recipient->message);
     }
 
+    /**
+     * Jumlah hari dihitung per hari kalender. Sebelumnya selisihnya dihitung
+     * per 24 jam lalu dipotong, sehingga pesan yang sama berbunyi "40 hari"
+     * bila dikirim sore dan "39 hari" bila dikirim pagi — dan bisa meleset
+     * dari ambang aturan pengingat yang memicunya.
+     */
+    public function test_days_since_visit_does_not_depend_on_send_time(): void
+    {
+        $this->actingAsClinicUser();
+
+        foreach (['06:00:00', '23:30:00'] as $sendTime) {
+            $this->travelTo('2026-08-16 '.$sendTime);
+
+            $patient = $this->patient('Dessy '.$sendTime, '08'.substr((string) crc32($sendTime), 0, 10));
+            $this->visit($patient, '2026-07-07');
+
+            $this->postJson($this->tenantUrl('broadcasts'), [
+                'title' => 'Pengingat '.$sendTime,
+                'message' => 'Sudah {hari_sejak_kunjungan} hari.',
+                'audience' => 'inactive',
+                'audience_params' => ['days' => 30],
+            ])->assertCreated();
+
+            $message = Broadcast::query()->latest('id')->first()->recipients()
+                ->where('patient_id', $patient->id)->first()->message;
+
+            $this->assertSame('Sudah 40 hari.', $message, "dikirim pukul {$sendTime}");
+        }
+
+        $this->travelBack();
+    }
+
     public function test_inactive_audience_excludes_recent_and_never_visited(): void
     {
         $this->actingAsClinicUser();

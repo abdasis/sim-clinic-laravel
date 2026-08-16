@@ -56,10 +56,15 @@ class BroadcastAudienceBuilder
                     'tanggal_terakhir' => $visit
                         ? Carbon::parse($visit->last_at)->translatedFormat('d F Y')
                         : '-',
-                    // Carbon 3 mengembalikan selisih pecahan; pasien membaca
-                    // "40 hari", bukan "40.13 hari".
+                    // Dihitung per hari kalender, bukan per 24 jam: kunjungan
+                    // pukul 10.00 yang diingatkan pukul 08.00 tetap "40 hari",
+                    // bukan "39 hari" hanya karena jam kirimnya lebih pagi.
+                    // Angkanya juga harus sama dengan ambang aturan pengingat
+                    // yang memicunya.
                     'hari_sejak_kunjungan' => $visit
-                        ? (string) (int) Carbon::parse($visit->last_at)->diffInDays(now())
+                        ? (string) Carbon::parse($visit->last_at)
+                            ->startOfDay()
+                            ->diffInDays(now()->startOfDay())
                         : '-',
                 ],
             ]);
