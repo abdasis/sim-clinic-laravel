@@ -15,8 +15,14 @@ class TransactionResource extends JsonResource
             'patient_id' => $this->patient_id,
             'patient_name' => $this->patient?->name,
             'cashier_name' => $this->cashier?->name,
-            'therapist_id' => $this->therapist_id,
-            'therapist_name' => $this->therapist?->name,
+            // Daftar, bukan satu nama: satu kunjungan bisa dikerjakan
+            // terapis dan dokter sekaligus.
+            'performers' => $this->relationLoaded('performers')
+                ? $this->performers->map(fn ($staff) => [
+                    'id' => $staff->id,
+                    'name' => $staff->name,
+                ])->values()
+                : [],
             'booking_id' => $this->booking_id,
             'subtotal' => $this->subtotal,
             'paid_amount' => $this->paid_amount,
@@ -38,6 +44,10 @@ class TransactionResource extends JsonResource
                 'unit_price' => $item->unit_price,
                 'qty' => $item->qty,
                 'subtotal' => $item->subtotal,
+                'offered_by' => $item->offered_by,
+                'offered_by_name' => $item->relationLoaded('offeredBy')
+                    ? $item->offeredBy?->name
+                    : null,
             ])),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

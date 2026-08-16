@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -22,7 +23,6 @@ class Transaction extends Model
         'patient_id',
         'booking_id',
         'cashier_id',
-        'therapist_id',
         'invoice_number',
         'subtotal',
         'paid_amount',
@@ -61,9 +61,33 @@ class Transaction extends Model
         return $this->belongsTo(User::class, 'cashier_id');
     }
 
-    public function therapist(): BelongsTo
+    /**
+     * Staf yang mengerjakan kunjungan ini. Bisa lebih dari satu — satu
+     * treatment kerap butuh terapis dan dokter sekaligus, dan keduanya
+     * berhak atas fee kunjungannya masing-masing.
+     */
+    public function performers(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'therapist_id');
+        return $this->belongsToMany(User::class, 'transaction_performers')
+            ->withTimestamps();
+    }
+
+    /**
+     * Pasang daftar pelaksana beserta tenantnya.
+     *
+     * tenant_id tidak bisa dititipkan ke definisi relasi: saat eager loading,
+     * relasinya dibangun dari instance kosong yang tenantnya belum ada.
+     *
+     * @param  array<int, int|string>  $userIds
+     */
+    public function syncPerformers(array $userIds): void
+    {
+        $this->performers()->sync(
+            collect($userIds)
+                ->unique()
+                ->mapWithKeys(fn ($id) => [(int) $id => ['tenant_id' => $this->tenant_id]])
+                ->all()
+        );
     }
 
     public function items(): HasMany

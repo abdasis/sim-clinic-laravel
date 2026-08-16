@@ -20,12 +20,18 @@ class TransactionRequest extends FormRequest
         return [
             'patient_id' => ['required', TenantRule::exists('patients')],
             'booking_id' => ['nullable', TenantRule::exists('bookings')],
-            'therapist_id' => ['nullable', TenantRule::exists('users')],
+            // Pelaksana kunjungan; boleh lebih dari satu, boleh kosong untuk
+            // penjualan produk yang tidak melibatkan tindakan.
+            'performer_ids' => ['nullable', 'array'],
+            'performer_ids.*' => [TenantRule::exists('users')],
             'items' => ['required', 'array', 'min:1'],
             'items.*.qty' => ['required', 'integer', 'gt:0'],
             // Satu baris mewakili tepat satu layanan atau satu produk.
             'items.*.service_id' => ['nullable', 'required_without:items.*.product_id', 'prohibits:items.*.product_id', TenantRule::exists('services')],
             'items.*.product_id' => ['nullable', TenantRule::exists('products')],
+            // Penawar baris ini. Null berarti pasien membeli atas kemauan
+            // sendiri, jadi tidak masuk target penjualan siapa pun.
+            'items.*.offered_by' => ['nullable', TenantRule::exists('users')],
         ];
     }
 
@@ -52,7 +58,9 @@ class TransactionRequest extends FormRequest
         return [
             'patient_id' => __('pos.patient'),
             'booking_id' => __('booking.title'),
-            'therapist_id' => __('commission.therapist'),
+            'performer_ids' => __('pos.performers'),
+            'performer_ids.*' => __('pos.performers'),
+            'items.*.offered_by' => __('pos.offered_by'),
             'items' => __('pos.items'),
             'items.*.qty' => __('pos.qty'),
             'items.*.service_id' => __('pos.item'),

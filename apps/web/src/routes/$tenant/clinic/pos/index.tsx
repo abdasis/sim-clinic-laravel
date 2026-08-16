@@ -85,11 +85,13 @@ function PosPage() {
   // Pasien wajib diisi; validasinya ikut skema supaya pesannya konsisten
   // dengan form lain, bukan alert manual.
   const patientForm = useForm(patientSchema, {
-    defaultValues: { patient_id: "", therapist_id: "", booking_id: "" },
+    defaultValues: { patient_id: "", booking_id: "" },
   })
   const patientId = patientForm.watch("patient_id")
-  const therapistId = patientForm.watch("therapist_id")
   const bookingId = patientForm.watch("booking_id")
+  // Pelaksana kunjungan; di luar form karena bukan satu nilai teks dan
+  // tidak punya aturan validasi sendiri.
+  const [performerIds, setPerformerIds] = useState<number[]>([])
 
   // Hanya peran yang mengerjakan tindakan yang boleh jadi penerima fee.
   const staff = useQuery({
@@ -130,6 +132,12 @@ function PosPage() {
     patientForm.setValue("booking_id", "")
   }, [patientId, patientForm])
 
+  // Hanya peran yang mengerjakan tindakan yang boleh jadi pelaksana maupun
+  // penawar; kasir dan admin tidak masuk hitungan fee.
+  const clinicStaff = (staff.data?.data ?? []).filter((member) =>
+    ["therapist", "doctor"].includes(member.clinic_role),
+  )
+
   const handlePayment = useCallback((next: PaymentData) => setPayment(next), [])
 
   const canSubmit = !cart.isEmpty && !cart.hasStockIssue
@@ -140,13 +148,15 @@ function PosPage() {
         `/${tenant}/clinic/transactions`,
         {
           patient_id: patientId ? Number(patientId) : null,
-          therapist_id: therapistId ? Number(therapistId) : null,
+          performer_ids: performerIds,
           booking_id: bookingId ? Number(bookingId) : null,
-          items: cart.items.map((item) =>
-            item.kind === "product"
-              ? { product_id: item.refId, qty: item.qty }
-              : { service_id: item.refId, qty: item.qty },
-          ),
+          items: cart.items.map((item) => ({
+            ...(item.kind === "product"
+              ? { product_id: item.refId }
+              : { service_id: item.refId }),
+            qty: item.qty,
+            offered_by: item.offeredBy,
+          })),
         },
       )
 
@@ -167,7 +177,8 @@ function PosPage() {
       // Katalog ikut disegarkan supaya saldo stoknya tidak basi setelah jualan.
       qc.invalidateQueries({ queryKey: ["products", tenant, "catalog"] })
       cart.clear()
-      patientForm.reset({ patient_id: "", therapist_id: "", booking_id: "" })
+      setPerformerIds([])
+      patientForm.reset({ patient_id: "", booking_id: "" })
     },
     onError: (err: ApiError) => {
       // Pasien wajib diisi di server; tanpa ini tombol simpan terasa mati
@@ -222,11 +233,11 @@ function PosPage() {
         label: patient.name,
         value: String(patient.id),
       }))}
-      therapistOptions={(staff.data?.data ?? [])
-        .filter((member) =>
-          ["therapist", "doctor"].includes(member.clinic_role),
-        )
-        .map((member) => ({ label: member.name, value: String(member.id) }))}
+      staff={clinicStaff}
+      staffLoading={staff.isLoading}
+      performerIds={performerIds}
+      onPerformersChange={setPerformerIds}
+      onOfferedBy={cart.setOfferedBy}
       created={created}
       items={cart.items}
       total={cart.total}

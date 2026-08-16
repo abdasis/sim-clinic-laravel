@@ -11,6 +11,12 @@ export interface LineItem {
   qty: number
   /** null untuk layanan — layanan tidak terbatas stok. */
   stock: number | null
+  /**
+   * Staf yang menawarkan baris ini; dasar target penjualan. Null berarti
+   * pasien membelinya atas kemauan sendiri, jadi tidak masuk target siapa pun
+   * — dan itu memang keadaan bawaannya.
+   */
+  offeredBy: number | null
 }
 
 /** Satu entri katalog hanya boleh muncul sekali; menambah lagi menaikkan qty. */
@@ -43,6 +49,7 @@ export function usePosCart() {
           unitPrice: entry.price,
           qty: 1,
           stock: entry.stock,
+          offeredBy: null,
         },
       ]
     })
@@ -54,6 +61,15 @@ export function usePosCart() {
       qty < 1
         ? prev.filter((item) => item.key !== key)
         : prev.map((item) => (item.key === key ? { ...item, qty } : item)),
+    )
+  }, [])
+
+  /** Penawar baris; dipilih kasir per item, bukan sekali untuk seluruh nota. */
+  const setOfferedBy = useCallback((key: string, userId: number | null) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.key === key ? { ...item, offeredBy: userId } : item,
+      ),
     )
   }, [])
 
@@ -98,6 +114,7 @@ export function usePosCart() {
     isEmpty: items.length === 0,
     add,
     setQty,
+    setOfferedBy,
     step,
     remove,
     clear,

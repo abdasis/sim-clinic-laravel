@@ -124,7 +124,7 @@ class ReportService
             ->where('payment_status', 'paid')
             ->whereNull('cancelled_at')
             ->whereBetween('issued_at', [$start, $end])
-            ->with(['items', 'patient', 'therapist'])
+            ->with(['items', 'patient', 'performers'])
             ->orderBy('issued_at')
             ->get();
 
@@ -134,7 +134,9 @@ class ReportService
 
             return [
                 'issued_at' => $transaction->issued_at?->toDateString(),
-                'therapist_name' => $transaction->therapist?->name,
+                // Bisa lebih dari satu pelaksana; digabung supaya baris
+                // laporannya tetap satu per transaksi.
+                'therapist_name' => $transaction->performers->pluck('name')->implode(', ') ?: null,
                 'patient_name' => $transaction->patient?->name,
                 'invoice_number' => $transaction->invoice_number,
                 'services' => $services->pluck('name')->implode(', '),

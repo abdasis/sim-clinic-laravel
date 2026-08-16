@@ -19,6 +19,7 @@ class TransactionItem extends Model
         'transaction_id',
         'product_id',
         'service_id',
+        'offered_by',
         'name',
         'unit_price',
         'qty',
@@ -47,5 +48,15 @@ class TransactionItem extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+
+    /**
+     * Staf yang menawarkan baris ini; dasar perhitungan target penjualan.
+     * Null berarti pasien membelinya atas kemauan sendiri, jadi tidak masuk
+     * target siapa pun.
+     */
+    public function offeredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'offered_by');
     }
 }

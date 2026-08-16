@@ -71,7 +71,7 @@ class TransactionController extends Controller
         $tenant = app()->bound('tenant') ? app('tenant') : null;
 
         return response()->json([
-            'data' => new TransactionResource($transaction->load('items', 'patient', 'cashier', 'payments')),
+            'data' => new TransactionResource($transaction->load('items.offeredBy', 'patient', 'cashier', 'payments', 'performers')),
             'meta' => [
                 'clinic' => $tenant
                     ? new ClinicIdentityResource($tenant->loadMissing('companyProfile'))

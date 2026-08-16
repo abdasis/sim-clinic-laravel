@@ -106,17 +106,18 @@ class StaffEditDeleteTest extends TestCase
         $staff = $this->staff('Terapis Bekerja');
         $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
 
-        Transaction::create([
+        $transaction = Transaction::create([
             'tenant_id' => $this->tenant->id,
             'patient_id' => $patient->id,
             'cashier_id' => auth()->id(),
-            'therapist_id' => $staff->id,
             'invoice_number' => 'INV-STAF-1',
             'subtotal' => 100_000,
             'paid_amount' => 100_000,
             'payment_status' => PaymentStatus::Paid,
             'issued_at' => now(),
         ]);
+
+        $transaction->syncPerformers([$staff->id]);
 
         $this->deleteJson($this->tenantUrl("staff/{$staff->id}"))->assertStatus(422);
 

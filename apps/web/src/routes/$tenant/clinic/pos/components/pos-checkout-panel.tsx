@@ -6,13 +6,12 @@ import { Form } from "#/components/ui/form.tsx"
 import { FormCombobox } from "#/components/forms/form-combobox.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { PaymentPanel, type PaymentData } from "./payment-panel.tsx"
+import { PerformerPicker, type StaffOption } from "./performer-picker.tsx"
 import { PosCart } from "./pos-cart.tsx"
 import type { LineItem } from "../hooks/use-pos-cart.ts"
 
 export const patientSchema = z.object({
   patient_id: z.string().min(1),
-  // Opsional: dipakai menghitung fee terapis, bukan syarat transaksi.
-  therapist_id: z.string().optional(),
   // Opsional juga: penjualan produk di etalase tidak berasal dari kunjungan
   // mana pun. Diisi saat tagihan ini memang menagih kunjungan yang selesai,
   // sehingga transaksi dan rekam medisnya tersambung lewat booking yang sama.
@@ -30,9 +29,14 @@ interface PosCheckoutPanelProps {
   tenant: string
   form: UseFormReturn<PatientFormValues>
   patientOptions: { label: string; value: string }[]
-  therapistOptions: { label: string; value: string }[]
   /** Kunjungan selesai milik pasien terpilih; kosong sebelum pasien dipilih. */
   bookingOptions: { label: string; value: string }[]
+  /** Staf yang boleh dicatat sebagai pelaksana maupun penawar. */
+  staff: StaffOption[]
+  staffLoading?: boolean
+  performerIds: number[]
+  onPerformersChange: (next: number[]) => void
+  onOfferedBy: (key: string, userId: number | null) => void
   bookingsLoading?: boolean
   /** Pasien belum dipilih, jadi daftar kunjungan memang belum bisa diisi. */
   bookingsNeedPatient?: boolean
@@ -72,8 +76,12 @@ export function PosCheckoutPanel({
   tenant,
   form,
   patientOptions,
-  therapistOptions,
   bookingOptions,
+  staff,
+  staffLoading,
+  performerIds,
+  onPerformersChange,
+  onOfferedBy,
   bookingsLoading,
   bookingsNeedPatient,
   created,
@@ -120,22 +128,6 @@ export function PosCheckoutPanel({
             error={optionsError}
           />
 
-          {/* Terapis menentukan fee bulanan, jadi diisi di kasir saat
-              transaksinya dibuat — bukan direkap ulang dari ingatan. */}
-          <div className="mt-4">
-            <FormCombobox
-              control={form.control}
-              name="therapist_id"
-              label={t("commission.therapist")}
-              placeholder={t("general.search")}
-              emptyLabel={t("general.no_data")}
-              options={therapistOptions}
-              container={popupContainer}
-              loading={optionsLoading}
-              error={optionsError}
-            />
-          </div>
-
           {/* Tautan ke kunjungan: inilah yang menyambungkan tagihan dengan
               rekam medis, karena keduanya menunjuk booking yang sama. */}
           <div className="mt-4">
@@ -158,12 +150,21 @@ export function PosCheckoutPanel({
         </div>
       </Form>
 
+      <PerformerPicker
+        staff={staff}
+        loading={staffLoading}
+        value={performerIds}
+        onChange={onPerformersChange}
+      />
+
       <PosCart
         items={items}
         total={total}
         onStep={onStep}
         onRemove={onRemove}
         onClear={onClear}
+        staff={staff}
+        onOfferedBy={onOfferedBy}
       />
 
       <PaymentPanel total={total} onChange={onPaymentChange} />

@@ -65,7 +65,6 @@ class MonthlyReportTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'patient_id' => $patient->id,
             'cashier_id' => auth()->id(),
-            'therapist_id' => $this->therapist->id,
             'invoice_number' => 'INV-'.uniqid(),
             'subtotal' => $total,
             'paid_amount' => $total,
@@ -73,9 +72,11 @@ class MonthlyReportTest extends TestCase
             'issued_at' => $date.' 10:00:00',
         ]);
 
+        $transaction->syncPerformers([$this->therapist->id]);
+
         $transaction->items()->createMany([
-            ['service_id' => $service->id, 'name' => $service->name, 'unit_price' => $servicePrice, 'qty' => 1, 'subtotal' => $servicePrice],
-            ['product_id' => $product->id, 'name' => $product->name, 'unit_price' => $productPrice, 'qty' => 1, 'subtotal' => $productPrice],
+            ['service_id' => $service->id, 'offered_by' => $this->therapist->id, 'name' => $service->name, 'unit_price' => $servicePrice, 'qty' => 1, 'subtotal' => $servicePrice],
+            ['product_id' => $product->id, 'offered_by' => $this->therapist->id, 'name' => $product->name, 'unit_price' => $productPrice, 'qty' => 1, 'subtotal' => $productPrice],
         ]);
 
         $transaction->payments()->create([
@@ -158,7 +159,9 @@ class MonthlyReportTest extends TestCase
         $this->paidSale(100_000, 0, '2026-05-02');
 
         $sale = $this->paidSale(100_000, 0, '2026-05-03');
-        $sale->update(['therapist_id' => $other->id]);
+        // Kunjungan kedua dikerjakan Rani, bukan Jasmin.
+        $sale->syncPerformers([$other->id]);
+        $sale->items()->update(['offered_by' => $other->id]);
 
         $rows = collect($this->getJson(
             $this->tenantUrl('commission-rules/calculate?from=2026-05-01&to=2026-05-31'),

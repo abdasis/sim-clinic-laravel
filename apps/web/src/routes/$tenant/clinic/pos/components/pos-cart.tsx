@@ -8,6 +8,7 @@ import {
 import { Button } from "#/components/ui/button.tsx"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { Kbd } from "#/components/ui/kbd.tsx"
+import { NativeSelect } from "#/components/ui/native-select.tsx"
 import {
   Tooltip,
   TooltipContent,
@@ -24,9 +25,20 @@ interface PosCartProps {
   onStep: (key: string, delta: number) => void
   onRemove: (key: string) => void
   onClear: () => void
+  /** Staf yang boleh dicatat sebagai penawar. */
+  staff: { id: number; name: string }[]
+  onOfferedBy: (key: string, userId: number | null) => void
 }
 
-export function PosCart({ items, total, onStep, onRemove, onClear }: PosCartProps) {
+export function PosCart({
+  items,
+  total,
+  onStep,
+  onRemove,
+  onClear,
+  staff,
+  onOfferedBy,
+}: PosCartProps) {
   const { t } = useTrans()
 
   return (
@@ -77,6 +89,8 @@ export function PosCart({ items, total, onStep, onRemove, onClear }: PosCartProp
               item={item}
               onStep={onStep}
               onRemove={onRemove}
+              staff={staff}
+              onOfferedBy={onOfferedBy}
             />
           ))}
         </ul>
@@ -96,10 +110,14 @@ function CartRow({
   item,
   onStep,
   onRemove,
+  staff,
+  onOfferedBy,
 }: {
   item: LineItem
   onStep: (key: string, delta: number) => void
   onRemove: (key: string) => void
+  staff: { id: number; name: string }[]
+  onOfferedBy: (key: string, userId: number | null) => void
 }) {
   const { t } = useTrans()
   const overStock = item.stock !== null && item.qty > item.stock
@@ -165,6 +183,37 @@ function CartRow({
           {formatCurrency(item.unitPrice * item.qty)}
         </span>
       </div>
+
+      {/* Penawar dipilih per baris, bukan sekali untuk seluruh nota: booster
+          yang ditawarkan dokter bisa berdampingan dengan treatment yang
+          ditawarkan terapis dalam satu kunjungan. */}
+      <label className="flex items-center gap-1.5">
+        <span className="shrink-0 text-2xs text-muted-foreground">
+          {t("pos.offered_by")}
+        </span>
+        <NativeSelect size="sm" className="min-w-0 flex-1">
+          <select
+            data-slot="native-select"
+            data-size="sm"
+            aria-label={`${t("pos.offered_by")}: ${item.name}`}
+            value={item.offeredBy === null ? "" : String(item.offeredBy)}
+            onChange={(event) =>
+              onOfferedBy(
+                item.key,
+                event.target.value === "" ? null : Number(event.target.value),
+              )
+            }
+            className="h-7 w-full min-w-0 appearance-none rounded-md border border-input bg-transparent py-0.5 pr-7 pl-2 text-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+          >
+            <option value="">{t("pos.offered_by_none")}</option>
+            {staff.map((member) => (
+              <option key={member.id} value={member.id}>
+                {member.name}
+              </option>
+            ))}
+          </select>
+        </NativeSelect>
+      </label>
 
       {overStock ? (
         <p className="text-xs font-medium text-destructive">

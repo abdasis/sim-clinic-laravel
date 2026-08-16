@@ -261,8 +261,8 @@ class MebaServiceCatalogTest extends TestCase
 
         $this->postJson($this->tenantUrl('transactions'), [
             'patient_id' => $patient->id,
-            'therapist_id' => $therapist->id,
-            'items' => [['service_id' => $service->id, 'qty' => 1]],
+            'performer_ids' => [$therapist->id],
+            'items' => [['service_id' => $service->id, 'qty' => 1, 'offered_by' => $therapist->id]],
         ])->assertCreated();
 
         $result = (new CommissionCalculator(now()->toDateString(), now()->toDateString()))->run();

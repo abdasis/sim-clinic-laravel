@@ -29,8 +29,6 @@ class TransactionService
                 'patient_id' => $data['patient_id'],
                 'booking_id' => $data['booking_id'] ?? null,
                 'cashier_id' => Auth::id(),
-                // Terapis yang mengerjakan; dasar perhitungan fee.
-                'therapist_id' => $data['therapist_id'] ?? null,
                 // Nomor diambil di dalam transaction agar barisnya terkunci.
                 'invoice_number' => Transaction::generateInvoiceNumber(),
                 'subtotal' => $subtotal,
@@ -39,10 +37,15 @@ class TransactionService
                 'issued_at' => now(),
             ]);
 
+            // Pelaksana kunjungan: dasar fee per pasien, bisa lebih dari satu.
+            $transaction->syncPerformers($data['performer_ids'] ?? []);
+
             foreach ($lines as $line) {
                 $transaction->items()->create([
                     'product_id' => $line['product_id'],
                     'service_id' => $line['service_id'],
+                    // Penawar baris ini; dasar perhitungan target penjualan.
+                    'offered_by' => $line['offered_by'],
                     'name' => $line['name'],
                     'unit_price' => $line['unit_price'],
                     'qty' => $line['qty'],
@@ -60,7 +63,7 @@ class TransactionService
                 }
             }
 
-            return $transaction->load('items', 'patient');
+            return $transaction->load('items', 'patient', 'performers');
         });
 
         app(LogAuditAction::class)->handle(
@@ -88,9 +91,12 @@ class TransactionService
 
         foreach ($items as $item) {
             $qty = (int) $item['qty'];
-            $lines[] = isset($item['product_id']) && $item['product_id'] !== null
+            $line = isset($item['product_id']) && $item['product_id'] !== null
                 ? $this->productLine((int) $item['product_id'], $qty, $pricing)
                 : $this->serviceLine((int) $item['service_id'], $qty, $pricing);
+
+            $line['offered_by'] = $item['offered_by'] ?? null;
+            $lines[] = $line;
         }
 
         return $lines;

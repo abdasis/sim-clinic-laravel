@@ -232,6 +232,103 @@ class CommissionCalculatorTest extends TestCase
         $this->assertSame(2, CommissionRule::count());
     }
 
+    /**
+     * Skenario yang diminta klinik: satu pasien facial ditangani satu terapis
+     * dan satu dokter. Terapis dapat 5rb, dokter 15rb — keduanya, bukan salah
+     * satu, dan bukan dibagi dua.
+     */
+    public function test_one_visit_pays_every_performer_their_own_fee(): void
+    {
+        $this->seedRules();
+        $doctor = $this->makeDoctor();
+
+        CommissionRule::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Fee dokter',
+            'therapist_id' => $doctor->id,
+            'type' => 'per_patient',
+            'amount' => 15000,
+        ]);
+
+        $sale = $this->sale(300_000, '2026-05-02');
+        $sale->syncPerformers([$this->therapist->id, $doctor->id]);
+
+        $rows = collect((new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows'])
+            ->keyBy('therapist_name');
+
+        $feeOf = fn (string $name) => collect($rows[$name]['lines'])
+            ->firstWhere('type', CommissionRuleType::PerPatient)['amount'];
+
+        $this->assertSame(5000.0, $feeOf('Jasmin'));
+        $this->assertSame(15000.0, $feeOf('dr. Andi'));
+        $this->assertSame(1, $rows['Jasmin']['visits']);
+        $this->assertSame(1, $rows['dr. Andi']['visits']);
+    }
+
+    /**
+     * Target penjualan mengikuti penawar tiap baris, bukan pelaksananya.
+     * Booster yang ditawarkan dokter masuk target dokter walau terapis yang
+     * mengerjakan treatmentnya.
+     */
+    public function test_sales_target_follows_the_offering_staff_per_line(): void
+    {
+        $this->seedRules();
+        $doctor = $this->makeDoctor();
+
+        $sale = $this->sale(200_000, '2026-05-02');
+        $sale->syncPerformers([$this->therapist->id, $doctor->id]);
+
+        // Booster ditawarkan dokter di kunjungan yang sama.
+        $booster = Service::factory()->create(['tenant_id' => $this->tenant->id, 'price' => 100_000]);
+        $sale->items()->create([
+            'service_id' => $booster->id,
+            'offered_by' => $doctor->id,
+            'name' => $booster->name,
+            'unit_price' => 100_000,
+            'qty' => 1,
+            'subtotal' => 100_000,
+        ]);
+
+        $rows = collect((new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows'])
+            ->keyBy('therapist_name');
+
+        // Terapis: hanya baris treatment yang ia tawarkan.
+        $this->assertEqualsWithDelta(200_000, $rows['Jasmin']['revenue'], 0.01);
+        // Dokter: hanya boosternya.
+        $this->assertEqualsWithDelta(100_000, $rows['dr. Andi']['revenue'], 0.01);
+    }
+
+    public function test_a_line_nobody_offered_counts_toward_no_target(): void
+    {
+        $this->seedRules();
+
+        $sale = $this->sale(200_000, '2026-05-02');
+        $sale->syncPerformers([$this->therapist->id]);
+
+        // Pasien mengambil sendiri dari etalase: tidak ada penawarnya.
+        $product = Product::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Sunscreen',
+            'unit' => 'pcs',
+            'price' => 150_000,
+            'stock_balance' => 5,
+            'status' => 'active',
+        ]);
+        $sale->items()->create([
+            'product_id' => $product->id,
+            'offered_by' => null,
+            'name' => $product->name,
+            'unit_price' => 150_000,
+            'qty' => 1,
+            'subtotal' => 150_000,
+        ]);
+
+        $row = (new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows'][0];
+
+        // Omzetnya berhenti di 200rb; 150rb tanpa penawar tidak masuk ke mana pun.
+        $this->assertEqualsWithDelta(200_000, $row['revenue'], 0.01);
+    }
+
     private function makeDoctor(): User
     {
         return User::create([
@@ -275,17 +372,22 @@ class CommissionCalculatorTest extends TestCase
     {
         $patient ??= Patient::factory()->create(['tenant_id' => $this->tenant->id]);
 
+        $staff = $therapist ?? $this->therapist;
+
         $transaction = Transaction::create([
             'tenant_id' => $this->tenant->id,
             'patient_id' => $patient->id,
             'cashier_id' => auth()->id(),
-            'therapist_id' => ($therapist ?? $this->therapist)->id,
             'invoice_number' => 'INV-'.uniqid(),
             'subtotal' => $amount,
             'paid_amount' => 0,
             'payment_status' => PaymentStatus::Unpaid,
             'issued_at' => $date.' 10:00:00',
         ]);
+
+        // Yang mengerjakan sekaligus yang menawarkan: bentuk paling lazim,
+        // dan sama dengan cara data lama dipindahkan.
+        $transaction->syncPerformers([$staff->id]);
 
         $service = Service::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -294,6 +396,7 @@ class CommissionCalculatorTest extends TestCase
 
         $transaction->items()->create([
             'service_id' => $service->id,
+            'offered_by' => $staff->id,
             'name' => $service->name,
             'unit_price' => $amount,
             'qty' => 1,
@@ -474,7 +577,6 @@ class CommissionCalculatorTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'patient_id' => $patient->id,
             'cashier_id' => auth()->id(),
-            'therapist_id' => $this->therapist->id,
             'invoice_number' => 'INV-'.uniqid(),
             'subtotal' => 350_000,
             'paid_amount' => 0,
@@ -482,8 +584,11 @@ class CommissionCalculatorTest extends TestCase
             'issued_at' => '2026-05-10 10:00:00',
         ]);
 
+        $sale->syncPerformers([$this->therapist->id]);
+
         $sale->items()->create([
             'product_id' => $product->id,
+            'offered_by' => $this->therapist->id,
             'name' => $product->name,
             'unit_price' => 350_000,
             'qty' => 1,

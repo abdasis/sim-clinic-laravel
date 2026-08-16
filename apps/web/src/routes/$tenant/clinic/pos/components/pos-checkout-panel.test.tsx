@@ -37,7 +37,7 @@ function Harness(
   props: Partial<React.ComponentProps<typeof PosCheckoutPanel>>,
 ) {
   const form = useForm<PatientFormValues>({
-    defaultValues: { patient_id: "", therapist_id: "" },
+    defaultValues: { patient_id: "", booking_id: "" },
   })
 
   return (
@@ -45,8 +45,11 @@ function Harness(
       tenant="demo"
       form={form}
       patientOptions={PATIENTS}
-      therapistOptions={[{ label: "Mbak Rara", value: "9" }]}
       bookingOptions={[]}
+      staff={[{ id: 9, name: "Mbak Rara", clinic_role: "therapist" }]}
+      performerIds={[]}
+      onPerformersChange={() => {}}
+      onOfferedBy={() => {}}
       created={null}
       items={[]}
       total={0}
@@ -86,12 +89,12 @@ describe("PosCheckoutPanel", () => {
     expect(await screen.findByText("Ibu Sinta")).toBeTruthy()
   })
 
-  it("membuka daftar terapis juga", async () => {
-    renderPanel(<Harness />)
+  it("menawarkan daftar kunjungan juga", async () => {
+    renderPanel(<Harness bookingOptions={[{ label: "12 Mei · Facial", value: "3" }]} />)
 
     fireEvent.click(screen.getAllByRole("button", { name: "" })[1])
 
-    expect(await screen.findByText("Mbak Rara")).toBeTruthy()
+    expect(await screen.findByText("12 Mei · Facial")).toBeTruthy()
   })
 
   it("tidak merender daftar saat wadahnya belum terpasang", async () => {

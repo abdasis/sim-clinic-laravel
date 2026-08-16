@@ -79,17 +79,33 @@ class TenantRelationIsolationTest extends TestCase
             ->assertJsonValidationErrors('booking_id');
     }
 
-    public function test_transaction_rejects_a_therapist_from_another_clinic(): void
+    public function test_transaction_rejects_a_performer_from_another_clinic(): void
     {
         $this->actingAsClinicUser(ClinicRole::Cashier);
 
         $this->postJson($this->tenantUrl('transactions'), [
             'patient_id' => $this->ownPatient()->id,
-            'therapist_id' => $this->foreignUser()->id,
+            'performer_ids' => [$this->foreignUser()->id],
             'items' => [['service_id' => $this->ownService()->id, 'qty' => 1]],
         ])
             ->assertStatus(422)
-            ->assertJsonValidationErrors('therapist_id');
+            ->assertJsonValidationErrors('performer_ids.0');
+    }
+
+    public function test_transaction_rejects_a_seller_from_another_clinic(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Cashier);
+
+        $this->postJson($this->tenantUrl('transactions'), [
+            'patient_id' => $this->ownPatient()->id,
+            'items' => [[
+                'service_id' => $this->ownService()->id,
+                'qty' => 1,
+                'offered_by' => $this->foreignUser()->id,
+            ]],
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('items.0.offered_by');
     }
 
     public function test_booking_rejects_relations_from_another_clinic(): void
