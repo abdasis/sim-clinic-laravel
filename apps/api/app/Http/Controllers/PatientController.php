@@ -7,6 +7,7 @@ use App\Http\Requests\PatientRequest;
 use App\Http\Resources\PatientResource;
 use App\Models\Patient;
 use App\Services\PatientService;
+use App\Support\PatientReferences;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -36,6 +37,12 @@ class PatientController extends Controller
         }
 
         $page = $query->paginate($params['per_page'], ['*'], 'page', $params['page']);
+
+        // Jejak seluruh baris halaman ini ditarik sekali, jadi kolom "boleh
+        // dihapus" tidak menembak satu kueri per pasien.
+        $references = new PatientReferences;
+        $references->preload(collect($page->items()));
+        $request->attributes->set('patient_references', $references);
 
         return response()->json([
             'data' => PatientResource::collection($page->items()),
@@ -91,11 +98,14 @@ class PatientController extends Controller
     {
         $this->authorize('delete', $patient);
 
-        $service->deactivate($patient);
+        $deleted = $service->delete($patient);
 
         return response()->json([
             'data' => new PatientResource($patient),
-            'meta' => ['message' => __('patient.deactivated')],
+            'meta' => [
+                'deleted' => $deleted,
+                'message' => $deleted ? __('patient.deleted') : __('patient.archived'),
+            ],
         ]);
     }
 

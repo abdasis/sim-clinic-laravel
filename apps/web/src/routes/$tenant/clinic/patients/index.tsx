@@ -12,6 +12,7 @@ import { useStats } from "#/hooks/use-stats.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
+import { PatientActionsCell } from "./components/patient-actions-cell.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/patients/")({
   component: PatientsPage,
@@ -23,6 +24,7 @@ interface PatientRow {
   phone: string
   gender: string
   gender_label: string
+  can_delete?: boolean
 }
 
 function PatientsPage() {
@@ -37,10 +39,19 @@ function PatientsPage() {
       {
         accessorKey: "gender",
         header: t("patient.gender"),
-        cell: ({ row }) => row.original.gender_label,
+        cell: ({ row }) => row.original.gender_label ?? "-",
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <div className="flex justify-end">
+            <PatientActionsCell tenant={tenant} patient={row.original} />
+          </div>
+        ),
       },
     ],
-    [t],
+    [t, tenant],
   )
 
   const { table, isLoading, meta, isError, refetch, error } = useDataTable<PatientRow>({

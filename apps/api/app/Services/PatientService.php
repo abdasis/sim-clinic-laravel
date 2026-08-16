@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Actions\Patient\CreatePatientAction;
 use App\Actions\Patient\DeactivatePatientAction;
+use App\Actions\Patient\DeletePatientAction;
 use App\Actions\Patient\UpdatePatientAction;
 use App\Models\Patient;
+use App\Support\PatientReferences;
 
 /**
  * Use case data pasien. Nomor telepon ganda hanya diperingatkan, tidak
@@ -38,6 +40,26 @@ class PatientService
     public function deactivate(Patient $patient): Patient
     {
         return app(DeactivatePatientAction::class)->handle($patient);
+    }
+
+    /**
+     * Hapus pasien: permanen bila belum meninggalkan jejak, diarsipkan bila
+     * sudah pernah datang. Rekam medis dan nota tidak boleh ikut hilang hanya
+     * karena datanya dirapikan.
+     *
+     * @return bool true bila benar-benar dihapus, false bila diarsipkan
+     */
+    public function delete(Patient $patient): bool
+    {
+        if (app(PatientReferences::class)->has($patient->id)) {
+            $this->deactivate($patient);
+
+            return false;
+        }
+
+        app(DeletePatientAction::class)->handle($patient);
+
+        return true;
     }
 
     /**
