@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import type { Control, FieldPath, FieldValues } from "react-hook-form"
 
 import {
   Combobox,
+  ComboboxCollection,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxInput,
@@ -17,6 +18,7 @@ import {
   FormMessage,
 } from "#/components/ui/form.tsx"
 import { FieldLabel } from "#/components/forms/field-label.tsx"
+import { useTrans } from "#/hooks/use-trans.ts"
 import type { SelectOption } from "#/components/forms/form-select.tsx"
 
 interface FormComboboxProps<T extends FieldValues> {
@@ -34,12 +36,26 @@ interface FormComboboxProps<T extends FieldValues> {
    * dalam drawer atau dialog.
    */
   container?: HTMLElement | null
+  /** Daftar pilihannya masih diambil dari server. */
+  loading?: boolean
+  /**
+   * Pengambilan daftar pilihan gagal. Tanpa ini, daftar yang gagal dimuat
+   * tampak sama dengan daftar yang memang kosong — dan pengguna menyimpulkan
+   * fieldnya rusak.
+   */
+  error?: boolean
 }
 
 /**
  * Select yang bisa dicari, terhubung ke react-hook-form. Dipakai saat daftar
  * pilihannya panjang — mencari pasien di antara ratusan nama lewat select
  * biasa tidak praktis.
+ *
+ * Penyaringan dan teks input sepenuhnya milik Base UI: `items` diberi objek
+ * `{label, value}` yang bentuknya sudah dikenali pustaka, sehingga label
+ * tampil sendiri saat terpilih. Sebelumnya wrapper ini mengendalikan `value`
+ * dan `onChange` milik input, yang menimpa penangan bawaan Base UI sehingga
+ * ketikan tidak pernah sampai ke pustaka dan daftarnya tidak pernah terbuka.
  */
 export function FormCombobox<T extends FieldValues>({
   control,
@@ -52,59 +68,49 @@ export function FormCombobox<T extends FieldValues>({
   description,
   required,
   container,
+  loading,
+  error,
 }: FormComboboxProps<T>) {
-  const [query, setQuery] = useState("")
+  const { t } = useTrans()
 
-  const filtered = useMemo(() => {
-    const keyword = query.trim().toLowerCase()
+  const emptyText = useMemo(() => {
+    if (loading) return t("general.loading")
+    if (error) return t("general.load_failed")
 
-    if (keyword === "") return options
-
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(keyword),
-    )
-  }, [options, query])
+    return emptyLabel ?? t("general.no_data")
+  }, [loading, error, emptyLabel, t])
 
   return (
     <FormField
       control={control}
       name={name}
       render={({ field }) => {
-        const selected = options.find((option) => option.value === field.value)
+        const selected =
+          options.find((option) => option.value === field.value) ?? null
 
         return (
           <FormItem>
             <FieldLabel label={label} required={required} />
             <FormControl>
               <Combobox
-                items={filtered}
-                value={field.value ?? ""}
-                onValueChange={(value: string | null) => {
-                  field.onChange(value ?? "")
-                  setQuery("")
-                }}
-                onOpenChange={(open: boolean) => {
-                  if (!open) setQuery("")
-                }}
-                disabled={disabled}
+                items={options}
+                value={selected}
+                onValueChange={(option: SelectOption | null) =>
+                  field.onChange(option?.value ?? "")
+                }
+                disabled={disabled || loading}
               >
-                <ComboboxInput
-                  placeholder={placeholder}
-                  value={query === "" ? (selected?.label ?? "") : query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  disabled={disabled}
-                />
-                {/* Query sengaja tidak dibersihkan saat blur: di layar sentuh
-                    blur terjadi sebelum ketukan pada pilihan selesai, dan
-                    daftarnya keburu tersusun ulang sehingga pilihan meleset. */}
+                <ComboboxInput placeholder={placeholder} disabled={disabled} />
                 <ComboboxContent container={container}>
-                  <ComboboxEmpty>{emptyLabel ?? "—"}</ComboboxEmpty>
+                  <ComboboxEmpty>{emptyText}</ComboboxEmpty>
                   <ComboboxList>
-                    {filtered.map((option) => (
-                      <ComboboxItem key={option.value} value={option.value}>
-                        {option.label}
-                      </ComboboxItem>
-                    ))}
+                    <ComboboxCollection>
+                      {(option: SelectOption) => (
+                        <ComboboxItem key={option.value} value={option}>
+                          {option.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxCollection>
                   </ComboboxList>
                 </ComboboxContent>
               </Combobox>

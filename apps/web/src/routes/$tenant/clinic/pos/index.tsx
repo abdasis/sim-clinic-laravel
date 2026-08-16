@@ -208,6 +208,8 @@ function PosPage() {
       onPaymentChange={handlePayment}
       patientFieldRef={patientFieldRef}
       popupContainer={isNarrow ? drawerEl : null}
+      optionsLoading={patients.isLoading || staff.isLoading}
+      optionsError={patients.isError || staff.isError}
     />
   )
 

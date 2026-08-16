@@ -38,6 +38,13 @@ interface PosCheckoutPanelProps {
   patientFieldRef?: React.Ref<HTMLDivElement>
   /** Wadah portal daftar pasien; diisi saat panel berada di dalam drawer. */
   popupContainer?: HTMLElement | null
+  /**
+   * Keadaan pengambilan daftar pilihan. Tanpa ini, daftar pasien yang gagal
+   * dimuat tampak sama dengan klinik yang memang belum punya pasien — dan
+   * kasir menyimpulkan fieldnya rusak.
+   */
+  optionsLoading?: boolean
+  optionsError?: boolean
 }
 
 /**
@@ -59,6 +66,8 @@ export function PosCheckoutPanel({
   onPaymentChange,
   patientFieldRef,
   popupContainer,
+  optionsLoading,
+  optionsError,
 }: PosCheckoutPanelProps) {
   const { t } = useTrans()
 
@@ -88,6 +97,8 @@ export function PosCheckoutPanel({
             options={patientOptions}
             required
             container={popupContainer}
+            loading={optionsLoading}
+            error={optionsError}
           />
 
           {/* Terapis menentukan fee bulanan, jadi diisi di kasir saat
@@ -101,6 +112,8 @@ export function PosCheckoutPanel({
               emptyLabel={t("general.no_data")}
               options={therapistOptions}
               container={popupContainer}
+              loading={optionsLoading}
+              error={optionsError}
             />
           </div>
         </div>

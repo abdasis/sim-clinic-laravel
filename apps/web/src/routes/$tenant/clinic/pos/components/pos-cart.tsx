@@ -105,59 +105,72 @@ function CartRow({
   const overStock = item.stock !== null && item.qty > item.stock
 
   return (
-    <li className="flex items-start gap-2 p-2.5">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{item.name}</p>
-        <p className="text-xs text-muted-foreground tabular-nums">
-          {formatCurrency(item.unitPrice)}
-        </p>
-        {overStock ? (
-          <p className="mt-0.5 text-xs font-medium text-destructive">
-            {t("pos.insufficient_stock")}
+    // Dua baris, bukan satu: nama, stepper, total, dan tombol hapus berebut
+    // lebar di panel 380px sampai totalnya terpotong. Dipisah begini semuanya
+    // muat tanpa mengecilkan target sentuh.
+    <li className="flex flex-col gap-1.5 p-2.5">
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{item.name}</p>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {formatCurrency(item.unitPrice)}
           </p>
-        ) : null}
+        </div>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
+              aria-label={`${t("pos.cart.remove")}: ${item.name}`}
+              onClick={() => onRemove(item.key)}
+            >
+              <HugeiconsIcon
+                icon={Delete02Icon}
+                strokeWidth={2}
+                className="size-3.5"
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t("pos.cart.remove")}</TooltipContent>
+        </Tooltip>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1">
-        <Stepper
-          label={t("pos.cart.decrease")}
-          icon={MinusSignIcon}
-          onClick={() => onStep(item.key, -1)}
-        />
-        <span
-          className={cn(
-            "w-6 text-center text-sm font-medium tabular-nums",
-            overStock && "text-destructive",
-          )}
-        >
-          {item.qty}
-        </span>
-        <Stepper
-          label={t("pos.cart.increase")}
-          icon={PlusSignIcon}
-          onClick={() => onStep(item.key, 1)}
-        />
-      </div>
-
-      <span className="w-24 shrink-0 text-right text-sm font-medium tabular-nums">
-        {formatCurrency(item.unitPrice * item.qty)}
-      </span>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
-            aria-label={`${t("pos.cart.remove")}: ${item.name}`}
-            onClick={() => onRemove(item.key)}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex shrink-0 items-center gap-1">
+          <Stepper
+            label={t("pos.cart.decrease")}
+            icon={MinusSignIcon}
+            onClick={() => onStep(item.key, -1)}
+          />
+          <span
+            className={cn(
+              "w-6 text-center text-sm font-medium tabular-nums",
+              overStock && "text-destructive",
+            )}
           >
-            <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{t("pos.cart.remove")}</TooltipContent>
-      </Tooltip>
+            {item.qty}
+          </span>
+          <Stepper
+            label={t("pos.cart.increase")}
+            icon={PlusSignIcon}
+            onClick={() => onStep(item.key, 1)}
+          />
+        </div>
+
+        {/* Tanpa lebar tetap: angka rupiah panjang tidak lagi terpotong. */}
+        <span className="min-w-0 truncate text-right text-sm font-medium tabular-nums">
+          {formatCurrency(item.unitPrice * item.qty)}
+        </span>
+      </div>
+
+      {overStock ? (
+        <p className="text-xs font-medium text-destructive">
+          {t("pos.insufficient_stock")}
+        </p>
+      ) : null}
     </li>
   )
 }
