@@ -84,6 +84,66 @@ class CompanyProfileDemoSeederTest extends TestCase
         $this->assertDatabaseCount('company_profile_settings', 0);
     }
 
+    /**
+     * `site_name` ikut terbaca kop nota kasir. Waktu seeder ini menanam nama
+     * merek tetap, nota klinik lain tercetak atas nama merek itu — jadi nama
+     * yang dipakai wajib nama tenant sendiri.
+     */
+    public function test_site_name_follows_the_tenant_name(): void
+    {
+        $tenant = $this->makeTenant('meba');
+
+        $this->seed(CompanyProfileDemoSeeder::class);
+
+        $settings = DB::table('company_profile_settings')
+            ->where('tenant_id', $tenant->id)
+            ->first();
+
+        $this->assertSame(
+            ['id' => $tenant->name, 'en' => $tenant->name],
+            json_decode((string) $settings->site_name, true),
+        );
+        $this->assertSame($tenant->name, $settings->copyright_text);
+    }
+
+    public function test_demo_copy_carries_no_foreign_brand(): void
+    {
+        $this->makeTenant('meba');
+
+        $this->seed(CompanyProfileDemoSeeder::class);
+
+        foreach (array_merge(self::CONTENT_TABLES, ['company_profile_settings', 'company_promos']) as $table) {
+            $rows = DB::table($table)->get();
+
+            // Tabel kosong membuat pemeriksaan di bawah lewat begitu saja.
+            $this->assertNotEmpty($rows, "Tabel {$table} kosong, jadi tidak ada yang diperiksa.");
+
+            foreach ($rows as $row) {
+                $this->assertStringNotContainsStringIgnoringCase(
+                    'zap',
+                    json_encode($row, JSON_UNESCAPED_UNICODE) ?: '',
+                    "Konten demo di {$table} masih menyebut merek pihak lain.",
+                );
+            }
+        }
+    }
+
+    public function test_chat_link_uses_the_tenant_phone_number(): void
+    {
+        $tenant = $this->makeTenant('meba');
+
+        $this->seed(CompanyProfileDemoSeeder::class);
+
+        $settings = DB::table('company_profile_settings')
+            ->where('tenant_id', $tenant->id)
+            ->first();
+
+        $channels = json_decode((string) $settings->chat_channels, true);
+
+        // 081234567890 dinormalkan jadi 6281234567890 untuk wa.me.
+        $this->assertSame('https://wa.me/6281234567890', $channels[0]['url']);
+    }
+
     private function makeTenant(string $slug = 'demo'): Tenant
     {
         return Tenant::create([

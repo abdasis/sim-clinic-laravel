@@ -7,7 +7,7 @@ import { SectionShell } from "./section-shell.tsx"
 interface TestimonialSectionProps {
   id?: string
   heading?: string
-  /** Pola label "ngeZAP Sejak 2022"; `:year` diganti tahun testimoni. */
+  /** Pola label "Pelanggan Sejak 2022"; `:year` diganti tahun testimoni. */
   sinceTemplate?: string
   items: CompanyTestimonial[]
   className?: string
