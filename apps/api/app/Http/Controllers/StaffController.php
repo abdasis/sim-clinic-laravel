@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\StoreStaffRequest;
+use App\Http\Requests\UpdateStaffRequest;
 use App\Http\Requests\UpdateStaffRoleRequest;
 use App\Http\Resources\StaffResource;
 use App\Models\User;
 use App\Services\StaffService;
+use App\Support\StaffReferences;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -40,6 +42,12 @@ class StaffController extends Controller
 
         $page = $query->paginate($params['per_page'], ['*'], 'page', $params['page']);
 
+        // Jejak seluruh baris halaman ini ditarik sekali, jadi kolom "boleh
+        // dihapus" tidak menembak satu kueri per staf.
+        $references = new StaffReferences;
+        $references->preload(collect($page->items()));
+        $request->attributes->set('staff_references', $references);
+
         return response()->json([
             'data' => StaffResource::collection($page->items()),
             'meta' => [
@@ -61,6 +69,30 @@ class StaffController extends Controller
             'data' => new StaffResource($staff),
             'meta' => ['message' => __('staff.created')],
         ], 201);
+    }
+
+    public function update(UpdateStaffRequest $request, User $staff, StaffService $service): JsonResponse
+    {
+        $this->authorize('update', $staff);
+
+        $service->update($staff, $request->validated());
+
+        return response()->json([
+            'data' => new StaffResource($staff),
+            'meta' => ['message' => __('staff.updated')],
+        ]);
+    }
+
+    public function destroy(User $staff, StaffService $service): JsonResponse
+    {
+        $this->authorize('delete', $staff);
+
+        $service->delete($staff);
+
+        return response()->json([
+            'data' => null,
+            'meta' => ['message' => __('staff.deleted')],
+        ]);
     }
 
     public function updateRole(UpdateStaffRoleRequest $request, User $staff, StaffService $service): JsonResponse

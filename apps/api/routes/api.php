@@ -96,6 +96,8 @@ Route::prefix('{tenant}/clinic')
         // US1 Staff
         Route::get('staff', [StaffController::class, 'index']);
         Route::post('staff', [StaffController::class, 'store']);
+        Route::put('staff/{staff}', [StaffController::class, 'update']);
+        Route::delete('staff/{staff}', [StaffController::class, 'destroy']);
         Route::patch('staff/{staff}/role', [StaffController::class, 'updateRole']);
         Route::post('staff/{staff}/deactivate', [StaffController::class, 'deactivate']);
 

@@ -3,8 +3,8 @@
 namespace App\Actions\Staff;
 
 use App\Actions\LogAuditAction;
+use App\Actions\Staff\Concerns\GuardsLastAdmin;
 use App\Enums\ClinicRole;
-use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ChangeStaffRoleAction
 {
+    use GuardsLastAdmin;
+
     public function handle(User $staff, ClinicRole $newRole): User
     {
         $oldRole = $staff->clinic_role;
@@ -31,25 +33,5 @@ class ChangeStaffRoleAction
         ], 'Peran staf '.$staff->name.' diubah dari '.($oldRole?->label() ?? '-').' ke '.$newRole->label().'.');
 
         return $staff;
-    }
-
-    /**
-     * Klinik tidak boleh kehilangan admin terakhirnya lewat penurunan peran.
-     */
-    private function guardLastAdmin(User $staff, ClinicRole $newRole): void
-    {
-        if ($staff->clinic_role !== ClinicRole::Admin || $newRole === ClinicRole::Admin) {
-            return;
-        }
-
-        $activeAdmins = User::query()
-            ->where('tenant_id', $staff->tenant_id)
-            ->where('clinic_role', ClinicRole::Admin)
-            ->where('status', UserStatus::Active)
-            ->count();
-
-        if ($activeAdmins <= 1) {
-            abort(422, __('clinic.last_admin'));
-        }
     }
 }

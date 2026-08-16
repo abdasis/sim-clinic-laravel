@@ -28,6 +28,7 @@ export interface StaffRow {
   clinic_role_label: string
   status: string
   status_label: string
+  can_delete?: boolean
 }
 
 function StaffPage() {

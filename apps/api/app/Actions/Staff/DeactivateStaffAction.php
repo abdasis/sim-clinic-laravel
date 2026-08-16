@@ -3,7 +3,7 @@
 namespace App\Actions\Staff;
 
 use App\Actions\LogAuditAction;
-use App\Enums\ClinicRole;
+use App\Actions\Staff\Concerns\GuardsLastAdmin;
 use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
  */
 class DeactivateStaffAction
 {
+    use GuardsLastAdmin;
+
     public function handle(User $staff): User
     {
         $this->guardLastAdmin($staff);
@@ -33,22 +35,5 @@ class DeactivateStaffAction
         );
 
         return $staff;
-    }
-
-    private function guardLastAdmin(User $staff): void
-    {
-        if ($staff->clinic_role !== ClinicRole::Admin) {
-            return;
-        }
-
-        $activeAdmins = User::query()
-            ->where('tenant_id', $staff->tenant_id)
-            ->where('clinic_role', ClinicRole::Admin)
-            ->where('status', UserStatus::Active)
-            ->count();
-
-        if ($activeAdmins <= 1) {
-            abort(422, __('clinic.last_admin'));
-        }
     }
 }
