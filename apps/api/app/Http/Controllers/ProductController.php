@@ -33,6 +33,14 @@ class ProductController extends Controller
         if ($status !== 'all') {
             $query->where('status', $status);
         }
+
+        // Kasir hanya boleh melihat barang jual; inventaris melihat semuanya.
+        $type = $params['filters']['type'] ?? null;
+
+        if ($type !== null && $type !== 'all') {
+            $query->where('type', $type);
+        }
+
         if ($params['sort']) {
             $query->orderBy($params['sort'], $params['direction']);
         } else {

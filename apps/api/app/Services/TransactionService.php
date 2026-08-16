@@ -100,6 +100,13 @@ class TransactionService
     {
         $product = Product::findOrFail($productId);
 
+        // Bahan pakai treatment habis di tangan terapis, bukan dibeli pasien.
+        // Penjagaannya di sini, bukan sekadar di daftar katalog, supaya
+        // permintaan yang menembak langsung pun tetap ditolak.
+        if (! $product->type->isSellable()) {
+            abort(422, __('pos.product_not_sellable'));
+        }
+
         if ($product->stock_balance < $qty) {
             abort(422, __('pos.insufficient_stock'));
         }

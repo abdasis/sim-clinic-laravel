@@ -144,8 +144,11 @@ export function usePosCatalog(tenant: string) {
   const products = useQuery({
     queryKey: ["products", tenant, "catalog"],
     queryFn: () =>
+      // Bahan pakai treatment disaring di server: aturan boleh-tidaknya
+      // dijual milik backend, bukan keputusan tampilan.
       apiGet<{ data: CatalogRow[] }>(`/${tenant}/clinic/products`, {
         per_page: 100,
+        filter: { type: "retail" },
       }),
   })
 

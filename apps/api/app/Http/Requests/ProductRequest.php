@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\ProductCategory;
+use App\Enums\ProductType;
 use App\Enums\ServiceStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
@@ -18,18 +19,39 @@ class ProductRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'type' => ['nullable', new Enum(ProductType::class)],
             'category' => ['nullable', new Enum(ProductCategory::class)],
             'unit' => ['required', 'string', 'max:50'],
             'min_threshold' => ['required', 'integer', 'gte:0'],
+            // Bahan pakai tidak dijual; harganya sudah dipaksa nol di
+            // prepareForValidation, jadi form tidak perlu mengirimnya.
             'price' => ['required', 'numeric', 'gte:0'],
             'status' => ['nullable', new Enum(ServiceStatus::class)],
         ];
+    }
+
+    private function isRetail(): bool
+    {
+        return ($this->input('type') ?? ProductType::Retail->value) === ProductType::Retail->value;
+    }
+
+    /**
+     * Bahan pakai selalu berharga jual nol: kolomnya wajib di database dan
+     * nilai selain nol akan menyesatkan laporan penjualan. Diisi sebelum
+     * validasi supaya ikut terbawa ke validated().
+     */
+    protected function prepareForValidation(): void
+    {
+        if (! $this->isRetail()) {
+            $this->merge(['price' => 0]);
+        }
     }
 
     public function attributes(): array
     {
         return [
             'name' => __('product.name'),
+            'type' => __('product.type'),
             'category' => __('product.category'),
             'unit' => __('product.unit'),
             'min_threshold' => __('product.min_threshold'),

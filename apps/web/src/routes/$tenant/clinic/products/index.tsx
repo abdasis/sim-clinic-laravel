@@ -27,6 +27,9 @@ export const Route = createFileRoute("/$tenant/clinic/products/")({
 interface ProductRow {
   id: number
   name: string
+  type?: string | null
+  type_label?: string | null
+  is_sellable?: boolean
   category?: string | null
   category_label?: string | null
   unit: string
@@ -47,6 +50,18 @@ function ProductsPage() {
   const columns = useMemo<ColumnDef<ProductRow>[]>(
     () => [
       { accessorKey: "name", header: t("product.name") },
+      {
+        accessorKey: "type",
+        header: t("product.type"),
+        cell: ({ row }) => (
+          <Badge
+            variant={row.original.is_sellable === false ? "outline" : "secondary"}
+            className="font-normal"
+          >
+            {row.original.type_label ?? t("product.type_retail")}
+          </Badge>
+        ),
+      },
       {
         accessorKey: "category",
         header: t("product.category"),

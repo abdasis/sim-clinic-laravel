@@ -25,6 +25,7 @@ return [
     'cancelled' => 'Transaksi berhasil dibatalkan.',
     'overpaid' => 'Jumlah pembayaran melebihi total transaksi.',
     'insufficient_stock' => 'Stok produk tidak mencukupi.',
+    'product_not_sellable' => 'Barang ini bahan pakai treatment, bukan barang jual. Pemakaiannya dicatat lewat Inventaris.',
     'paid_at' => 'Waktu Bayar',
     'payment_history' => 'Riwayat Pembayaran',
     'record_payment' => 'Catat Pembayaran',

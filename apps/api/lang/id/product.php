@@ -2,6 +2,10 @@
 
 return [
     'category' => 'Kategori',
+    'type' => 'Peruntukan',
+    'type_retail' => 'Barang Jual',
+    'type_consumable' => 'Bahan Pakai',
+    'type_consumable_hint' => 'Habis dipakai terapis saat treatment, tidak dijual ke pasien. Stoknya tetap dicatat lewat Inventaris.',
     'status_all' => 'Semua',
     'status_archived' => 'Arsip',
     'status_active' => 'Aktif',

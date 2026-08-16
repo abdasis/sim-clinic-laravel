@@ -22,6 +22,7 @@ import type { ApiError } from "#/lib/api.ts"
 // Saldo stok sengaja tidak ada di form — hanya berubah lewat mutasi stok.
 const schema = z.object({
   name: z.string().min(1),
+  type: z.string(),
   category: z.string().optional(),
   unit: z.string().min(1),
   min_threshold: z.coerce.number().gte(0),
@@ -33,6 +34,7 @@ type Values = z.infer<typeof schema>
 export interface ProductFormValues {
   id: number
   name: string
+  type?: string | null
   category?: string | null
   unit: string
   min_threshold: number
@@ -59,7 +61,14 @@ export function ProductFormModal({
   const isEdit = product !== undefined
 
   const form = useForm(schema, {
-    defaultValues: { name: "", category: "", unit: "", min_threshold: 0, price: 0 },
+    defaultValues: {
+      name: "",
+      type: "retail",
+      category: "",
+      unit: "",
+      min_threshold: 0,
+      price: 0,
+    },
   })
 
   useEffect(() => {
@@ -69,14 +78,24 @@ export function ProductFormModal({
       product
         ? {
             name: product.name,
+            type: product.type ?? "retail",
             category: product.category ?? "",
             unit: product.unit,
             min_threshold: Number(product.min_threshold),
             price: Number(product.price),
           }
-        : { name: "", category: "", unit: "", min_threshold: 0, price: 0 },
+        : {
+            name: "",
+            type: "retail",
+            category: "",
+            unit: "",
+            min_threshold: 0,
+            price: 0,
+          },
     )
   }, [open, product, form])
+
+  const isRetail = form.watch("type") !== "consumable"
 
   const mutation = useMutation({
     mutationFn: (values: Values) =>
@@ -115,6 +134,20 @@ export function ProductFormModal({
             />
             <FormSelect
               control={form.control}
+              name="type"
+              label={t("product.type")}
+              options={[
+                { label: t("product.type_retail"), value: "retail" },
+                { label: t("product.type_consumable"), value: "consumable" },
+              ]}
+            />
+            {!isRetail ? (
+              <p className="-mt-2 text-xs leading-relaxed text-muted-foreground">
+                {t("product.type_consumable_hint")}
+              </p>
+            ) : null}
+            <FormSelect
+              control={form.control}
               name="category"
               label={t("product.category")}
               options={[
@@ -137,12 +170,16 @@ export function ProductFormModal({
               label={t("product.min_threshold")}
               type="number"
             />
-            <FormInput
-              control={form.control}
-              name="price"
-              label={t("product.price")}
-              type="number"
-            />
+            {/* Bahan pakai tidak dijual, jadi harga jualnya tidak diminta —
+                memaksa mengisinya hanya melahirkan angka karangan. */}
+            {isRetail ? (
+              <FormInput
+                control={form.control}
+                name="price"
+                label={t("product.price")}
+                type="number"
+              />
+            ) : null}
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>
                 {t("general.save")}
