@@ -33,6 +33,10 @@ return [
     'empty_desc' => 'Tambahkan aturan seperti fee per pasien atau persentase dari omzet.',
     'no_result' => 'Tidak ada transaksi bertanda terapis pada periode ini.',
     'tier_note' => 'Untuk persentase omzet, hanya ambang tertinggi yang terlampaui yang dipakai — tidak dijumlahkan.',
+    'scope_note' => 'Aturan yang disetel untuk satu orang menggantikan aturan umum sejenis, bukan ditambahkan padanya.',
+    'rate_change_note' => 'Mengubah nominal atau persentase membuat tarif baru yang berlaku mulai sekarang. Periode yang sudah lewat tetap dihitung dengan tarif lamanya.',
+    'effective_since' => 'Berlaku sejak :date',
+    'effective_since_start' => 'Berlaku sejak awal',
     'type' => [
         'per_patient' => 'Fee per pasien',
         'per_new_patient' => 'Bonus pasien baru',

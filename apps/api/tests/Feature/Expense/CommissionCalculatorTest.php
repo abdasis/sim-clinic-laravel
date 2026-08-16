@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Expense;
 
+use App\Actions\Commission\SaveCommissionRuleAction;
 use App\Enums\ClinicRole;
 use App\Enums\CommissionRuleType;
 use App\Enums\PaymentStatus;
@@ -36,6 +37,212 @@ class CommissionCalculatorTest extends TestCase
         $this->actingAsClinicUser(ClinicRole::Admin);
         CommissionRule::query()->delete();
         $this->therapist = $this->makeTherapist();
+    }
+
+    /**
+     * Klinik memberi dokter 15rb dan terapis 5rb per pasien. Aturan khusus
+     * seseorang harus MENGGANTIKAN aturan umum sejenis; kalau ditambahkan,
+     * dokter pulang membawa 20rb tanpa ada yang memutuskan begitu.
+     */
+    public function test_personal_rate_replaces_the_general_one(): void
+    {
+        $this->seedRules();
+        $doctor = $this->makeDoctor();
+
+        CommissionRule::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Fee dokter',
+            'therapist_id' => $doctor->id,
+            'type' => 'per_patient',
+            'amount' => 15000,
+        ]);
+
+        $this->sale(100_000, '2026-05-02', null, $doctor);
+
+        $rows = collect((new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows'])
+            ->keyBy('therapist_name');
+
+        $perPatient = collect($rows['dr. Andi']['lines'])
+            ->firstWhere('type', CommissionRuleType::PerPatient);
+
+        $this->assertSame(15000.0, $perPatient['amount']);
+        $this->assertCount(
+            1,
+            collect($rows['dr. Andi']['lines'])->where('type', CommissionRuleType::PerPatient),
+            'Fee umum dan fee khusus tidak boleh sama-sama terhitung.',
+        );
+    }
+
+    public function test_general_rate_still_covers_staff_without_their_own(): void
+    {
+        $this->seedRules();
+        $doctor = $this->makeDoctor();
+
+        CommissionRule::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Fee dokter',
+            'therapist_id' => $doctor->id,
+            'type' => 'per_patient',
+            'amount' => 15000,
+        ]);
+
+        $this->sale(100_000, '2026-05-02');
+
+        $row = (new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows'][0];
+        $perPatient = collect($row['lines'])->firstWhere('type', CommissionRuleType::PerPatient);
+
+        $this->assertSame('Jasmin', $row['therapist_name']);
+        $this->assertSame(5000.0, $perPatient['amount']);
+    }
+
+    /**
+     * Kebijakan fee berubah mendadak dan tanpa tanggal berlaku yang diketik
+     * admin. Yang wajib dijaga: kenaikan hari ini tidak boleh ikut mengubah
+     * kunjungan yang sudah lewat.
+     */
+    public function test_a_rate_change_leaves_earlier_visits_alone(): void
+    {
+        $rule = CommissionRule::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Fee pasien',
+            'type' => 'per_patient',
+            'amount' => 5000,
+        ]);
+
+        $this->sale(100_000, '2026-05-02');
+
+        // Tarif naik hari ini; kunjungan Mei di atas tetap 5rb.
+        app(SaveCommissionRuleAction::class)->handle(
+            ['name' => 'Fee pasien', 'type' => 'per_patient', 'amount' => 7000, 'percent' => 0, 'min_revenue' => 0, 'is_active' => true],
+            $rule,
+        );
+
+        $row = (new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows'][0];
+
+        $this->assertSame(5000.0, collect($row['lines'])->firstWhere('type', CommissionRuleType::PerPatient)['amount']);
+        $this->assertSame(2, CommissionRule::count(), 'Tarif lama harus tetap tersimpan sebagai riwayat.');
+    }
+
+    public function test_a_visit_after_the_change_uses_the_new_rate(): void
+    {
+        $rule = CommissionRule::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Fee pasien',
+            'type' => 'per_patient',
+            'amount' => 5000,
+        ]);
+
+        app(SaveCommissionRuleAction::class)->handle(
+            ['name' => 'Fee pasien', 'type' => 'per_patient', 'amount' => 7000, 'percent' => 0, 'min_revenue' => 0, 'is_active' => true],
+            $rule,
+        );
+
+        // Kunjungan besok: sesudah tarif diganti.
+        $this->sale(100_000, now()->addDay()->format('Y-m-d'));
+
+        $result = (new CommissionCalculator(
+            now()->addDay()->format('Y-m-d'),
+            now()->addDay()->format('Y-m-d'),
+        ))->run();
+
+        $this->assertSame(
+            7000.0,
+            collect($result['rows'][0]['lines'])->firstWhere('type', CommissionRuleType::PerPatient)['amount'],
+        );
+    }
+
+    public function test_renaming_a_rule_does_not_create_a_new_version(): void
+    {
+        $rule = CommissionRule::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Fee pasien',
+            'type' => 'per_patient',
+            'amount' => 5000,
+        ]);
+
+        app(SaveCommissionRuleAction::class)->handle(
+            ['name' => 'Fee per kunjungan', 'type' => 'per_patient', 'amount' => 5000, 'percent' => 0, 'min_revenue' => 0, 'is_active' => true],
+            $rule,
+        );
+
+        $this->assertSame(1, CommissionRule::count());
+        $this->assertSame('Fee per kunjungan', $rule->fresh()->name);
+    }
+
+    public function test_new_patient_without_a_recorded_referrer_pays_no_bonus(): void
+    {
+        $this->seedRules();
+
+        // Pasien baru tanpa pembawa: fee kunjungannya tetap keluar, bonusnya
+        // tidak. Dulu bonus ini jatuh ke terapis yang kebetulan melayani.
+        $this->sale(100_000, '2026-05-02');
+
+        $row = (new CommissionCalculator('2026-05-01', '2026-05-31'))->run()['rows'][0];
+
+        $this->assertSame(0, $row['new_patients']);
+        $this->assertNull(
+            collect($row['lines'])->firstWhere('type', CommissionRuleType::PerNewPatient),
+        );
+    }
+
+    /**
+     * Menyimpan aturan lewat API sempat gagal 500: CommissionRule belum
+     * terdaftar di morph map, sementara pencatatan audit menjadikannya
+     * subjek. Tidak ada test yang menyentuh jalur ini, jadi lolos begitu saja.
+     */
+    public function test_rule_can_be_created_through_the_endpoint(): void
+    {
+        $response = $this->postJson($this->tenantUrl('commission-rules'), [
+            'name' => 'Fee dokter',
+            'type' => 'per_patient',
+            'amount' => 15000,
+            'percent' => 0,
+            'min_revenue' => 0,
+            'is_active' => true,
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('commission_rules', [
+            'name' => 'Fee dokter',
+            'amount' => 15000,
+            'tenant_id' => $this->tenant->id,
+        ]);
+    }
+
+    public function test_rule_can_be_updated_through_the_endpoint(): void
+    {
+        $rule = CommissionRule::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Fee pasien',
+            'type' => 'per_patient',
+            'amount' => 5000,
+        ]);
+
+        $this->putJson($this->tenantUrl('commission-rules/'.$rule->id), [
+            'name' => 'Fee pasien',
+            'type' => 'per_patient',
+            'amount' => 7000,
+            'percent' => 0,
+            'min_revenue' => 0,
+            'is_active' => true,
+        ])->assertOk();
+
+        // Tarif lama ditutup, bukan ditimpa.
+        $this->assertNotNull($rule->fresh()->effective_to);
+        $this->assertSame(2, CommissionRule::count());
+    }
+
+    private function makeDoctor(): User
+    {
+        return User::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'dr. Andi',
+            'email' => 'andi@klinik.test',
+            'password' => bcrypt('password123'),
+            'role' => UserRole::Member,
+            'status' => UserStatus::Active,
+            'clinic_role' => ClinicRole::Doctor,
+        ]);
     }
 
     private function makeTherapist(string $name = 'Jasmin'): User
@@ -100,12 +307,20 @@ class CommissionCalculatorTest extends TestCase
     {
         $this->seedRules();
 
-        $returning = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+        // Pembawa dicatat: bonus pasien baru hanya untuk yang membawa,
+        // tidak lagi jatuh ke terapis kunjungan pertama secara diam-diam.
+        $returning = Patient::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'referred_by' => $this->therapist->id,
+        ]);
         // Kunjungan pertama pasien ini jatuh sebelum periode -> bukan pasien baru.
         $this->sale(100_000, '2026-04-10', $returning);
 
         $this->sale(1_000_000, '2026-05-02', $returning);
-        $this->sale(1_000_000, '2026-05-05');
+        $this->sale(1_000_000, '2026-05-05', Patient::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'referred_by' => $this->therapist->id,
+        ]));
 
         $result = (new CommissionCalculator('2026-05-01', '2026-05-31'))->run();
         $row = $result['rows'][0];
@@ -221,7 +436,10 @@ class CommissionCalculatorTest extends TestCase
     public function test_new_patient_counted_once_across_periods(): void
     {
         $this->seedRules();
-        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+        $patient = Patient::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'referred_by' => $this->therapist->id,
+        ]);
 
         // Kunjungan pertama Mei -> bonus di Mei.
         $this->sale(100_000, '2026-05-02', $patient);

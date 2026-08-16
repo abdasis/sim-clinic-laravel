@@ -22,7 +22,15 @@ class CommissionRuleController extends Controller
 
         return response()->json([
             'data' => CommissionRuleResource::collection(
-                CommissionRule::query()->with('therapist')->orderBy('type')->orderBy('min_revenue')->get()
+                // Hanya tarif yang masih berlaku. Versi lama tetap tersimpan
+                // untuk menghitung periode yang sudah lewat, tapi menampilkan
+                // semuanya membuat daftar penuh duplikat bernama sama.
+                CommissionRule::query()
+                    ->current()
+                    ->with('therapist')
+                    ->orderBy('type')
+                    ->orderBy('min_revenue')
+                    ->get()
             ),
             'meta' => [],
         ]);

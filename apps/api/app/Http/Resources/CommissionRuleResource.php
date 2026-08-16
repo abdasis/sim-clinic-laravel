@@ -20,6 +20,9 @@ class CommissionRuleResource extends JsonResource
             'percent' => $this->percent,
             'min_revenue' => $this->min_revenue,
             'is_active' => $this->is_active,
+            // Null pada tarif perdana: berlaku sejak awal, tidak perlu
+            // ditampilkan sebagai tanggal apa pun.
+            'effective_from' => $this->effective_from?->toIso8601String(),
         ];
     }
 }

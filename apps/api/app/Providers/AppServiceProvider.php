@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Booking;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
+use App\Models\CommissionRule;
 use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
 use App\Models\CompanyNavigationItem;
@@ -58,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
         'product' => Product::class,
         'promo' => Promo::class,
         'expense' => Expense::class,
+        'commission_rule' => CommissionRule::class,
         'broadcast' => Broadcast::class,
         'broadcast_recipient' => BroadcastRecipient::class,
         'message_template' => MessageTemplate::class,

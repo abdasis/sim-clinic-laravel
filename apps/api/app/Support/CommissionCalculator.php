@@ -7,6 +7,8 @@ use App\Models\CommissionRule;
 use App\Models\Patient;
 use App\Models\Transaction;
 use App\Models\User;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -18,9 +20,12 @@ use Illuminate\Support\Collection;
  *
  * Satuan "pasien" adalah satu kunjungan berbayar (satu transaksi), mengikuti
  * laporan bulanan klinik. Bonus pasien baru jatuh ke PEMBAWANYA — kolom
- * referred_by pasien; bila kosong, ke terapis kunjungan pertamanya — dan
- * satu pasien hanya menghasilkan satu bonus untuk satu orang, sekali seumur
- * hidup pasien itu.
+ * referred_by pasien — dan satu pasien hanya menghasilkan satu bonus untuk
+ * satu orang, sekali seumur hidup pasien itu.
+ *
+ * Tarif dinilai per tanggal transaksi, bukan per tarif yang kebetulan aktif
+ * saat tombol hitung ditekan: menaikkan fee di tengah bulan tidak boleh ikut
+ * mengubah paruh bulan yang sudah lewat.
  */
 class CommissionCalculator
 {
@@ -34,7 +39,17 @@ class CommissionCalculator
      */
     public function run(): array
     {
-        $rules = CommissionRule::query()->where('is_active', true)->get();
+        // Semua versi yang menyentuh periode ini, bukan hanya yang berlaku
+        // sekarang — tarif bulan lalu tetap dibutuhkan untuk menghitungnya.
+        $rules = CommissionRule::query()
+            ->where('is_active', true)
+            ->where(fn ($q) => $q
+                ->whereNull('effective_from')
+                ->orWhere('effective_from', '<=', $this->to.' 23:59:59'))
+            ->where(fn ($q) => $q
+                ->whereNull('effective_to')
+                ->orWhere('effective_to', '>', $this->from.' 00:00:00'))
+            ->get();
 
         $transactions = Transaction::query()
             ->whereNull('cancelled_at')
@@ -44,22 +59,21 @@ class CommissionCalculator
             ->with(['therapist', 'items'])
             ->get();
 
-        $newPatientCounts = $this->newPatientCountsByBeneficiary();
+        $newPatients = $this->newPatientsByBeneficiary();
 
         $rows = $transactions
             ->groupBy('therapist_id')
             ->map(fn (Collection $group) => $this->rowFor(
                 $group->first()->therapist,
                 $rules,
-                (float) $group->sum(fn (Transaction $t) => (float) $t->subtotal),
-                $this->treatmentVisits($group),
-                (int) ($newPatientCounts[$group->first()->therapist_id] ?? 0),
+                $group,
+                collect($newPatients[$group->first()->therapist_id] ?? []),
             ));
 
         // Pembawa pasien baru yang tidak punya transaksi sendiri (mis. resepsionis
         // yang mereferensikan) tetap dapat barisnya — bonus tidak boleh hangus
         // hanya karena ia bukan terapis yang menangani.
-        foreach ($newPatientCounts as $userId => $count) {
+        foreach ($newPatients as $userId => $moments) {
             if ($rows->has($userId)) {
                 continue;
             }
@@ -70,7 +84,7 @@ class CommissionCalculator
                 continue;
             }
 
-            $rows->put($userId, $this->rowFor($user, $rules, 0.0, 0, $count));
+            $rows->put($userId, $this->rowFor($user, $rules, collect(), collect($moments)));
         }
 
         $rows = $rows
@@ -82,8 +96,44 @@ class CommissionCalculator
         return [
             'rows' => $rows,
             'total' => (float) collect($rows)->sum('total'),
-            'rules_used' => $rules->map(fn (CommissionRule $rule) => $rule->name)->all(),
+            'rules_used' => $rules
+                ->map(fn (CommissionRule $rule) => $rule->name)
+                ->unique()
+                ->values()
+                ->all(),
         ];
+    }
+
+    /**
+     * Aturan yang berlaku untuk satu orang pada satu saat.
+     *
+     * Aturan yang disetel khusus seseorang MENGGANTIKAN aturan umum sejenis,
+     * bukan ditambahkan padanya. Tanpa ini, dokter dengan fee 15rb tetap ikut
+     * menerima fee umum 5rb dan pulang membawa 20rb.
+     *
+     * @param  Collection<int, CommissionRule>  $rules
+     * @return Collection<int, CommissionRule>
+     */
+    private function rulesFor(Collection $rules, ?int $userId, CarbonInterface $moment): Collection
+    {
+        $applicable = $rules
+            ->filter(fn (CommissionRule $rule) => $rule->appliesTo($userId))
+            // `effective_from` kosong = tarif perdana, berlaku sejak awal.
+            ->filter(fn (CommissionRule $rule) => ($rule->effective_from === null
+                || $rule->effective_from->lessThanOrEqualTo($moment))
+                && ($rule->effective_to === null || $rule->effective_to->greaterThan($moment)));
+
+        return $applicable
+            ->groupBy(fn (CommissionRule $rule) => $rule->type->value)
+            ->map(function (Collection $ofType) use ($userId) {
+                $personal = $ofType->filter(
+                    fn (CommissionRule $rule) => $rule->therapist_id === $userId && $userId !== null
+                );
+
+                return $personal->isNotEmpty() ? $personal : $ofType;
+            })
+            ->flatten()
+            ->values();
     }
 
     /**
@@ -93,121 +143,183 @@ class CommissionCalculator
      * Omzet untuk komisi penjualan tetap menghitung produk.
      *
      * @param  Collection<int, Transaction>  $group
+     * @return Collection<int, Transaction>
      */
-    private function treatmentVisits(Collection $group): int
+    private function treatmentVisits(Collection $group): Collection
     {
-        return $group
-            ->filter(fn (Transaction $transaction) => $transaction->items
-                ->contains(fn ($item) => $item->service_id !== null))
-            ->count();
+        return $group->filter(fn (Transaction $transaction) => $transaction->items
+            ->contains(fn ($item) => $item->service_id !== null));
     }
 
     /**
      * @param  Collection<int, CommissionRule>  $rules
+     * @param  Collection<int, Transaction>  $transactions
+     * @param  Collection<int, CarbonInterface>  $newPatientMoments
      * @return array<string, mixed>
      */
     private function rowFor(
         ?User $beneficiary,
         Collection $rules,
-        float $revenue,
-        int $visits,
-        int $newPatients,
+        Collection $transactions,
+        Collection $newPatientMoments,
     ): array {
-        // Aturan yang dibatasi ke orang lain tidak menyentuh baris ini;
-        // kompetisi antar-tingkat pun hanya di antara aturan yang berlaku.
-        $rules = $rules
-            ->filter(fn (CommissionRule $rule) => $rule->appliesTo($beneficiary?->id))
-            ->values();
+        $userId = $beneficiary?->id;
+        $revenue = (float) $transactions->sum(fn (Transaction $t) => (float) $t->subtotal);
+        $visits = $this->treatmentVisits($transactions);
 
+        $lines = collect()
+            ->merge($this->perPatientLines($rules, $userId, $visits))
+            ->merge($this->newPatientLines($rules, $userId, $newPatientMoments))
+            ->merge($this->revenueLines($rules, $userId, $transactions, $revenue));
+
+        return [
+            'therapist_id' => $userId,
+            'therapist_name' => $beneficiary?->name,
+            'revenue' => $revenue,
+            'visits' => $visits->count(),
+            'new_patients' => $newPatientMoments->count(),
+            'lines' => $lines->values()->all(),
+            'total' => (float) $lines->sum('amount'),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, CommissionRule>  $rules
+     * @param  Collection<int, Transaction>  $visits
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function perPatientLines(Collection $rules, ?int $userId, Collection $visits): Collection
+    {
         $lines = [];
 
-        foreach ($rules as $rule) {
-            $line = $this->lineFor($rule, $rules, $revenue, $visits, $newPatients);
+        foreach ($visits as $visit) {
+            $moment = Carbon::parse($visit->issued_at);
 
-            if ($line !== null) {
-                $lines[] = $line;
+            foreach ($this->rulesFor($rules, $userId, $moment) as $rule) {
+                if ($rule->type !== CommissionRuleType::PerPatient) {
+                    continue;
+                }
+
+                $lines[] = ['rule' => $rule, 'amount' => (float) $rule->amount, 'basis' => 1];
             }
         }
 
-        return [
-            'therapist_id' => $beneficiary?->id,
-            'therapist_name' => $beneficiary?->name,
-            'revenue' => $revenue,
-            'visits' => $visits,
-            'new_patients' => $newPatients,
-            'lines' => $lines,
-            'total' => (float) collect($lines)->sum('amount'),
-        ];
+        return $this->fold($lines);
     }
 
     /**
      * @param  Collection<int, CommissionRule>  $rules
-     * @return array<string, mixed>|null
+     * @param  Collection<int, CarbonInterface>  $moments
+     * @return Collection<int, array<string, mixed>>
      */
-    private function lineFor(
-        CommissionRule $rule,
-        Collection $rules,
-        float $revenue,
-        int $visits,
-        int $newPatients,
-    ): ?array {
-        $amount = match ($rule->type) {
-            CommissionRuleType::PerPatient => (float) $rule->amount * $visits,
-            CommissionRuleType::PerNewPatient => (float) $rule->amount * $newPatients,
-            CommissionRuleType::RevenuePercent => $this->isWinningTier($rule, $rules, $revenue)
-                ? $revenue * (float) $rule->percent / 100
-                : 0.0,
-        };
-
-        if ($amount <= 0) {
-            return null;
-        }
-
-        return [
-            'rule_id' => $rule->id,
-            'rule_name' => $rule->name,
-            'type' => $rule->type,
-            'basis' => match ($rule->type) {
-                CommissionRuleType::PerPatient => $visits,
-                CommissionRuleType::PerNewPatient => $newPatients,
-                CommissionRuleType::RevenuePercent => $revenue,
-            },
-            'percent' => $rule->type === CommissionRuleType::RevenuePercent
-                ? (float) $rule->percent
-                : null,
-            'amount' => round($amount, 2),
-        ];
-    }
-
-    /**
-     * Dari beberapa tingkat persentase, hanya ambang tertinggi yang terlampaui
-     * yang berlaku — 5% dan 6% tidak pernah dijumlahkan.
-     *
-     * @param  Collection<int, CommissionRule>  $rules
-     */
-    private function isWinningTier(CommissionRule $rule, Collection $rules, float $revenue): bool
+    private function newPatientLines(Collection $rules, ?int $userId, Collection $moments): Collection
     {
-        if ($revenue < (float) $rule->min_revenue) {
-            return false;
+        $lines = [];
+
+        foreach ($moments as $moment) {
+            foreach ($this->rulesFor($rules, $userId, $moment) as $rule) {
+                if ($rule->type !== CommissionRuleType::PerNewPatient) {
+                    continue;
+                }
+
+                $lines[] = ['rule' => $rule, 'amount' => (float) $rule->amount, 'basis' => 1];
+            }
         }
 
-        $best = $rules
-            ->filter(fn (CommissionRule $other) => $other->type === CommissionRuleType::RevenuePercent
-                && $revenue >= (float) $other->min_revenue)
-            ->sortByDesc(fn (CommissionRule $other) => (float) $other->min_revenue)
-            ->first();
-
-        return $best?->id === $rule->id;
+        return $this->fold($lines);
     }
 
     /**
-     * Pasien baru pada periode ini, dihitung per penerima bonus. Pasien baru
-     * = kunjungan berbayar PERTAMA seumur hidupnya jatuh di dalam periode;
-     * kunjungan berikutnya tidak pernah dihitung lagi.
+     * Ambangnya dinilai dari omzet orang itu sepanjang periode — "10 juta
+     * sebulan" memang begitu bacanya. Persentasenya sendiri mengikuti tarif
+     * yang berlaku pada tanggal tiap transaksi.
      *
-     * @return array<int, int> user_id => jumlah pasien baru
+     * @param  Collection<int, CommissionRule>  $rules
+     * @param  Collection<int, Transaction>  $transactions
+     * @return Collection<int, array<string, mixed>>
      */
-    private function newPatientCountsByBeneficiary(): array
+    private function revenueLines(
+        Collection $rules,
+        ?int $userId,
+        Collection $transactions,
+        float $periodRevenue,
+    ): Collection {
+        $lines = [];
+
+        foreach ($transactions as $transaction) {
+            $moment = Carbon::parse($transaction->issued_at);
+            $subtotal = (float) $transaction->subtotal;
+
+            $tiers = $this->rulesFor($rules, $userId, $moment)
+                ->filter(fn (CommissionRule $rule) => $rule->type === CommissionRuleType::RevenuePercent)
+                ->filter(fn (CommissionRule $rule) => $periodRevenue >= (float) $rule->min_revenue);
+
+            // Dari beberapa tingkat, hanya ambang tertinggi yang terlampaui
+            // yang berlaku — 5% dan 6% tidak pernah dijumlahkan.
+            $winner = $tiers->sortByDesc(fn (CommissionRule $rule) => (float) $rule->min_revenue)->first();
+
+            if ($winner === null) {
+                continue;
+            }
+
+            $lines[] = [
+                'rule' => $winner,
+                'amount' => $subtotal * (float) $winner->percent / 100,
+                'basis' => $subtotal,
+            ];
+        }
+
+        return $this->fold($lines);
+    }
+
+    /**
+     * Gabungkan baris sejenis jadi satu ringkasan. Satu periode bisa memakai
+     * dua versi tarif dengan nama sama; yang dibaca admin tetap satu baris
+     * per aturan, dengan persentase dikosongkan bila memang berbeda-beda.
+     *
+     * @param  array<int, array<string, mixed>>  $lines
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function fold(array $lines): Collection
+    {
+        return collect($lines)
+            ->groupBy(fn (array $line) => $line['rule']->name)
+            ->map(function (Collection $group) {
+                /** @var CommissionRule $rule */
+                $rule = $group->first()['rule'];
+                $percents = $group
+                    ->map(fn (array $line) => (float) $line['rule']->percent)
+                    ->unique();
+
+                return [
+                    'rule_id' => $rule->id,
+                    'rule_name' => $rule->name,
+                    'type' => $rule->type,
+                    'basis' => $group->sum('basis'),
+                    'percent' => $rule->type === CommissionRuleType::RevenuePercent && $percents->count() === 1
+                        ? $percents->first()
+                        : null,
+                    'amount' => round((float) $group->sum('amount'), 2),
+                ];
+            })
+            ->filter(fn (array $line) => $line['amount'] > 0)
+            ->values();
+    }
+
+    /**
+     * Pasien baru pada periode ini beserta saat kunjungan pertamanya,
+     * dikelompokkan per penerima bonus. Pasien baru = kunjungan berbayar
+     * PERTAMA seumur hidupnya jatuh di dalam periode; kunjungan berikutnya
+     * tidak pernah dihitung lagi.
+     *
+     * Bonus hanya untuk yang tercatat membawa pasien itu. Dulu ada jalan
+     * mundur ke terapis kunjungan pertama bila kolom pembawanya kosong —
+     * itu menebak, dan sejak satu kunjungan boleh ditangani lebih dari satu
+     * orang, tebakannya tidak punya dasar sama sekali.
+     *
+     * @return array<int, array<int, CarbonInterface>> user_id => saat kunjungan pertama
+     */
+    private function newPatientsByBeneficiary(): array
     {
         $firstVisits = Transaction::query()
             ->whereNull('cancelled_at')
@@ -223,25 +335,15 @@ class CommissionCalculator
 
         $referrers = Patient::query()
             ->whereIn('id', $firstVisits->keys())
+            ->whereNotNull('referred_by')
             ->pluck('referred_by', 'id');
 
-        $firstTherapists = Transaction::query()
-            ->whereNull('cancelled_at')
-            ->whereIn('patient_id', $firstVisits->keys())
-            ->get(['patient_id', 'therapist_id', 'issued_at'])
-            ->groupBy('patient_id')
-            ->map(fn (Collection $group) => $group->sortBy('issued_at')->first()->therapist_id);
+        $byBeneficiary = [];
 
-        $counts = [];
-
-        foreach ($firstVisits->keys() as $patientId) {
-            $beneficiary = $referrers[$patientId] ?? $firstTherapists[$patientId] ?? null;
-
-            if ($beneficiary !== null) {
-                $counts[$beneficiary] = ($counts[$beneficiary] ?? 0) + 1;
-            }
+        foreach ($referrers as $patientId => $beneficiary) {
+            $byBeneficiary[$beneficiary][] = Carbon::parse($firstVisits[$patientId]);
         }
 
-        return $counts;
+        return $byBeneficiary;
     }
 }

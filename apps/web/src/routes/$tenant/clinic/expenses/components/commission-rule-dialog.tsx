@@ -31,6 +31,8 @@ export interface CommissionRule {
   percent: string | number
   min_revenue: string | number
   is_active: boolean
+  /** Null berarti tarif perdana: berlaku sejak awal. */
+  effective_from?: string | null
 }
 
 const schema = z.object({
@@ -141,6 +143,12 @@ export function CommissionRuleDialog({
             onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
             className="space-y-4"
           >
+            {isEdit ? (
+              <p className="rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+                {t("commission.rate_change_note")}
+              </p>
+            ) : null}
+
             <FormInput
               control={form.control}
               name="name"
@@ -152,6 +160,7 @@ export function CommissionRuleDialog({
               control={form.control}
               name="therapist_id"
               label={t("commission.therapist_scope")}
+              description={t("commission.scope_note")}
               options={[
                 { label: t("commission.all_therapists"), value: "" },
                 ...(staff.data?.data ?? [])

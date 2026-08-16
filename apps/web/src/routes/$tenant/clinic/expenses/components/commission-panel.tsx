@@ -18,7 +18,7 @@ import {
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete, apiGet, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
-import { formatCurrency } from "#/lib/format.ts"
+import { formatCurrency, formatDateTime } from "#/lib/format.ts"
 import { CommissionRuleDialog, type CommissionRule } from "./commission-rule-dialog.tsx"
 
 interface CommissionLine {
@@ -158,6 +158,17 @@ export function CommissionPanel({ tenant, from, to, onPost }: CommissionPanelPro
                     ? `${Number(rule.percent)}% · ${t("commission.min_revenue")} ${formatCurrency(Number(rule.min_revenue))}`
                     : formatCurrency(Number(rule.amount))}
                 </p>
+                {/* Tarif yang pernah diganti punya titik mulai; yang perdana
+                    tidak, dan menampilkannya sebagai tanggal justru mengarang
+                    kapan kebijakannya dimulai. */}
+                {rule.effective_from ? (
+                  <p className="text-2xs text-muted-foreground/80">
+                    {t("commission.effective_since").replace(
+                      ":date",
+                      formatDateTime(rule.effective_from),
+                    )}
+                  </p>
+                ) : null}
               </div>
               <Badge variant="outline" className="shrink-0 font-normal">
                 {rule.type_label}
