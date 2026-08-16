@@ -59,6 +59,7 @@ interface RecordDetail {
   allergy_history?: string | null
   created_at?: string | null
   updated_at?: string | null
+  booking?: { id: number; status?: string; start_at?: string | null } | null
   treatments?: TreatmentRow[]
   photos?: PhotoRow[]
 }
@@ -149,8 +150,10 @@ function MedicalRecordDetailPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 className="text-xl font-semibold tracking-tight">{heading}</h1>
+              {/* Waktu kunjungan yang ditonjolkan, bukan waktu tulis: catatan
+                  ini dibaca sebagai riwayat tindakan pasien. */}
               <p className="text-sm text-muted-foreground tabular-nums">
-                {formatDateTime(record.created_at)}
+                {formatDateTime(record.booking?.start_at ?? record.created_at)}
                 {record.author_name ? ` · ${record.author_name}` : ""}
               </p>
             </div>

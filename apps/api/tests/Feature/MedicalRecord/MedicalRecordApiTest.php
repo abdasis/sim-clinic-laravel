@@ -9,6 +9,7 @@ use App\Models\MedicalRecord;
 use App\Models\Patient;
 use App\Models\Service;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
@@ -165,6 +166,51 @@ class MedicalRecordApiTest extends TestCase
         $response->assertJsonPath('data.1.id', $newer->id);
     }
 
+    /**
+     * Dokter kerap merampungkan catatan setelah pasien pulang, kadang
+     * keesokan harinya. Kalau riwayatnya diurutkan dari waktu tulis,
+     * kunjungan lama yang dicatat belakangan melompat ke akhir dan
+     * perkembangan pasien terbaca terbalik.
+     */
+    public function test_patient_history_follows_visit_time_not_write_time(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Doctor);
+        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+
+        // Kunjungan lama, tapi catatannya baru ditulis hari ini.
+        $earlierVisit = $this->makeRecord([
+            'booking_id' => $this->makeBooking(BookingStatus::Done, now()->subMonth())->id,
+            'created_at' => now(),
+        ], $patient);
+
+        // Kunjungan baru, catatannya ditulis lebih dulu.
+        $laterVisit = $this->makeRecord([
+            'booking_id' => $this->makeBooking(BookingStatus::Done, now()->subDay())->id,
+            'created_at' => now()->subHour(),
+        ], $patient);
+
+        $response = $this->getJson(
+            $this->tenantUrl('patients/'.$patient->id.'/medical-records'),
+        );
+
+        $response->assertOk();
+        $response->assertJsonPath('data.0.id', $earlierVisit->id);
+        $response->assertJsonPath('data.1.id', $laterVisit->id);
+    }
+
+    public function test_patient_history_exposes_the_visit_time(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Doctor);
+        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+        $booking = $this->makeBooking(BookingStatus::Done, now()->subMonth());
+
+        $this->makeRecord(['booking_id' => $booking->id], $patient);
+
+        $this->getJson($this->tenantUrl('patients/'.$patient->id.'/medical-records'))
+            ->assertOk()
+            ->assertJsonPath('data.0.booking.start_at', $booking->start_at->toIso8601String());
+    }
+
     public function test_record_of_other_tenant_is_not_reachable(): void
     {
         $this->actingAsClinicUser(ClinicRole::Doctor);
@@ -200,8 +246,10 @@ class MedicalRecordApiTest extends TestCase
         )->assertNotFound();
     }
 
-    private function makeBooking(BookingStatus $status): Booking
+    private function makeBooking(BookingStatus $status, ?Carbon $startAt = null): Booking
     {
+        $startAt ??= now()->subDay();
+
         $service = Service::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Facial',
@@ -214,8 +262,8 @@ class MedicalRecordApiTest extends TestCase
             'patient_id' => Patient::factory()->create(['tenant_id' => $this->tenant->id])->id,
             'service_id' => $service->id,
             'assignee_id' => auth()->id(),
-            'start_at' => now()->subDay(),
-            'end_at' => now()->subDay()->addHour(),
+            'start_at' => $startAt,
+            'end_at' => (clone $startAt)->addHour(),
             'status' => $status,
         ]);
     }

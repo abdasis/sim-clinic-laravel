@@ -8,6 +8,7 @@ use App\Http\Requests\MedicalPhotoRequest;
 use App\Http\Requests\MedicalRecordRequest;
 use App\Http\Requests\TreatmentRecordRequest;
 use App\Http\Resources\MedicalRecordResource;
+use App\Models\Booking;
 use App\Models\MedicalRecord;
 use App\Models\Patient;
 use App\Services\MedicalRecordService;
@@ -70,9 +71,16 @@ class MedicalRecordController extends Controller
     {
         $this->authorize('viewAny', MedicalRecord::class);
 
+        // Diurutkan menurut waktu kunjungannya, bukan waktu catatannya ditulis.
+        // Dokter kerap merampungkan catatan setelah pasien pulang, kadang
+        // keesokan harinya — kalau riwayatnya diurutkan dari waktu tulis,
+        // perkembangan pasien terbaca dengan urutan yang salah.
         $records = MedicalRecord::where('patient_id', $patient->id)
-            ->with(['treatmentRecords', 'medicalPhotos', 'author', 'patient'])
-            ->orderBy('created_at')
+            ->with(['treatmentRecords', 'medicalPhotos', 'author', 'patient', 'booking'])
+            ->orderBy(
+                Booking::select('start_at')
+                    ->whereColumn('bookings.id', 'medical_records.booking_id'),
+            )
             ->get();
 
         return response()->json([

@@ -29,6 +29,7 @@ export const Route = createFileRoute(
 interface RecordRow {
   id: number
   created_at?: string | null
+  booking?: { id: number; status?: string; start_at?: string | null } | null
   patient_name?: string | null
   author_name?: string | null
   anamnesis?: string | null
@@ -59,6 +60,17 @@ function RecordField({
       )}
     </div>
   )
+}
+
+/**
+ * Benar kalau kedua waktu jatuh di tanggal yang berbeda. Dipakai untuk
+ * memutuskan perlu tidaknya menyebut waktu tulis: catatan yang dirampungkan
+ * di hari yang sama tidak perlu diterangkan, yang menyusul perlu.
+ */
+function differentDay(visit?: string | null, recorded?: string | null) {
+  if (!visit || !recorded) return false
+
+  return new Date(visit).toDateString() !== new Date(recorded).toDateString()
 }
 
 function PatientMedicalRecordsPage() {
@@ -119,15 +131,29 @@ function PatientMedicalRecordsPage() {
           {records.map((record) => (
             <Card key={record.id}>
               <CardHeader className="flex-row items-center justify-between gap-3">
-                <div>
+                <div className="min-w-0">
+                  {/* Yang jadi judul waktu kunjungannya, bukan waktu
+                      catatannya ditulis: pada riwayat perkembangan, yang
+                      dicari pembaca adalah kapan tindakannya terjadi. */}
                   <CardTitle className="text-base">
-                    {formatDateTime(record.created_at)}
+                    {formatDateTime(record.booking?.start_at ?? record.created_at)}
                   </CardTitle>
-                  {record.author_name ? (
-                    <p className="text-xs text-muted-foreground">
-                      {record.author_name}
-                    </p>
-                  ) : null}
+                  <p className="text-xs text-muted-foreground">
+                    {record.author_name ? (
+                      <span>{record.author_name}</span>
+                    ) : null}
+                    {/* Waktu tulis hanya disebut kalau memang beda harinya --
+                        kalau sama, mengulangnya cuma menambah bising. */}
+                    {differentDay(record.booking?.start_at, record.created_at) ? (
+                      <span className="text-muted-foreground/70">
+                        {record.author_name ? " · " : null}
+                        {t("medical_record.recorded_at").replace(
+                          ":time",
+                          formatDateTime(record.created_at),
+                        )}
+                      </span>
+                    ) : null}
+                  </p>
                 </div>
                 <Button asChild variant="ghost" size="sm">
                   <Link

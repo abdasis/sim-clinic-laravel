@@ -21,6 +21,8 @@ return [
     'already_exists' => 'Rekam medis untuk booking ini sudah ada.',
     'booking_not_done' => 'Rekam medis hanya dapat dibuat untuk booking yang sudah selesai.',
     'booking_hint' => 'Pasien mengikuti kunjungan yang dipilih, jadi tidak perlu diisi terpisah.',
+    'recorded_at' => 'dicatat :time',
+    'visit_date' => 'Tanggal Kunjungan',
     'no_open_booking' => 'Tidak ada kunjungan selesai yang belum punya rekam medis.',
     'date' => 'Tanggal',
     'patient' => 'Pasien',
