@@ -8,7 +8,10 @@ import {
 import { Button } from "#/components/ui/button.tsx"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { Kbd } from "#/components/ui/kbd.tsx"
-import { NativeSelect } from "#/components/ui/native-select.tsx"
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "#/components/ui/native-select.tsx"
 import {
   Tooltip,
   TooltipContent,
@@ -191,27 +194,31 @@ function CartRow({
         <span className="shrink-0 text-2xs text-muted-foreground">
           {t("pos.offered_by")}
         </span>
-        <NativeSelect size="sm" className="min-w-0 flex-1">
-          <select
-            data-slot="native-select"
-            data-size="sm"
-            aria-label={`${t("pos.offered_by")}: ${item.name}`}
-            value={item.offeredBy === null ? "" : String(item.offeredBy)}
-            onChange={(event) =>
-              onOfferedBy(
-                item.key,
-                event.target.value === "" ? null : Number(event.target.value),
-              )
-            }
-            className="h-7 w-full min-w-0 appearance-none rounded-md border border-input bg-transparent py-0.5 pr-7 pl-2 text-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-          >
-            <option value="">{t("pos.offered_by_none")}</option>
-            {staff.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
+        {/* NativeSelect sudah merender <select> sendiri dan meneruskan
+            children ke dalamnya, jadi isinya harus berupa <option> langsung.
+            Menaruh <select> di sini menghasilkan select di dalam select:
+            yang terlihat kosong tanpa opsi, yang berisi opsi berukuran nol,
+            dan kasir menekan sesuatu yang tidak pernah membuka apa pun. */}
+        <NativeSelect
+          size="sm"
+          className="min-w-0 flex-1"
+          aria-label={`${t("pos.offered_by")}: ${item.name}`}
+          value={item.offeredBy === null ? "" : String(item.offeredBy)}
+          onChange={(event) =>
+            onOfferedBy(
+              item.key,
+              event.target.value === "" ? null : Number(event.target.value),
+            )
+          }
+        >
+          <NativeSelectOption value="">
+            {t("pos.offered_by_none")}
+          </NativeSelectOption>
+          {staff.map((member) => (
+            <NativeSelectOption key={member.id} value={member.id}>
+              {member.name}
+            </NativeSelectOption>
+          ))}
         </NativeSelect>
       </label>
 

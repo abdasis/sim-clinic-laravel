@@ -5,6 +5,7 @@ namespace Tests\Feature\Transaction;
 use App\Enums\BookingStatus;
 use App\Enums\ClinicRole;
 use App\Models\Booking;
+use App\Models\CompanyProfileSetting;
 use App\Models\Patient;
 use App\Models\Product;
 use App\Models\Service;
@@ -169,6 +170,52 @@ class TransactionApiTest extends TestCase
         $this->getJson($this->tenantUrl('transactions'))
             ->assertOk()
             ->assertJsonPath('meta.total', 0);
+    }
+
+    /**
+     * Kop nota diambil dari `site_name` di profil perusahaan, dan baru jatuh
+     * ke nama tenant bila profilnya kosong. Urutan itu mudah mengejutkan:
+     * mengganti nama klinik di data tenant tidak mengubah nota selama profil
+     * masih menyimpan nama lain -- persis yang terjadi saat seeder demo
+     * menanam merek pihak lain ke sana.
+     */
+    public function test_receipt_header_follows_the_company_profile_name(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Cashier);
+        $transaction = $this->makeSale();
+
+        CompanyProfileSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'site_name' => ['id' => 'Meba Clinic', 'en' => 'Meba Clinic'],
+            'is_published' => true,
+        ]);
+
+        $this->getJson($this->tenantUrl('transactions/'.$transaction->id))
+            ->assertOk()
+            ->assertJsonPath('meta.clinic.name', 'Meba Clinic');
+    }
+
+    public function test_receipt_falls_back_to_the_tenant_name(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Cashier);
+        $transaction = $this->makeSale();
+
+        $this->getJson($this->tenantUrl('transactions/'.$transaction->id))
+            ->assertOk()
+            ->assertJsonPath('meta.clinic.name', $this->tenant->name);
+    }
+
+    private function makeSale(): Transaction
+    {
+        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+        $service = $this->makeService();
+
+        $id = $this->postJson($this->tenantUrl('transactions'), [
+            'patient_id' => $patient->id,
+            'items' => [['service_id' => $service->id, 'qty' => 1]],
+        ])->assertCreated()->json('data.id');
+
+        return Transaction::findOrFail($id);
     }
 
     private function makeService(): Service
