@@ -1,5 +1,5 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -26,7 +26,7 @@ import { useIsMobile } from "#/hooks/use-mobile.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
-import { formatCurrency } from "#/lib/format.ts"
+import { formatCurrency, formatDateTime } from "#/lib/format.ts"
 import type { PaymentData } from "./components/payment-panel.tsx"
 import {
   PosCheckoutPanel,
@@ -54,6 +54,12 @@ interface PatientRow {
   name: string
 }
 
+interface BookingRow {
+  id: number
+  service_name?: string | null
+  start_at?: string | null
+}
+
 function PosPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/pos/" })
   const { t } = useTrans()
@@ -79,10 +85,11 @@ function PosPage() {
   // Pasien wajib diisi; validasinya ikut skema supaya pesannya konsisten
   // dengan form lain, bukan alert manual.
   const patientForm = useForm(patientSchema, {
-    defaultValues: { patient_id: "", therapist_id: "" },
+    defaultValues: { patient_id: "", therapist_id: "", booking_id: "" },
   })
   const patientId = patientForm.watch("patient_id")
   const therapistId = patientForm.watch("therapist_id")
+  const bookingId = patientForm.watch("booking_id")
 
   // Hanya peran yang mengerjakan tindakan yang boleh jadi penerima fee.
   const staff = useQuery({
@@ -102,6 +109,27 @@ function PosPage() {
       }),
   })
 
+  // Kunjungan yang bisa ditagih hanya milik pasien yang sedang dilayani, dan
+  // hanya yang sudah selesai — server menolak sisanya. Baru diambil setelah
+  // pasiennya dipilih supaya tidak menarik daftar yang pasti tidak terpakai.
+  const bookings = useQuery({
+    enabled: patientId !== "",
+    queryKey: ["bookings", tenant, "billable", patientId],
+    queryFn: () =>
+      apiGet<{ data: BookingRow[] }>(`/${tenant}/clinic/bookings`, {
+        per_page: 100,
+        filter: { status: "done", patient_id: patientId },
+        sort: "start_at",
+        direction: "desc",
+      }),
+  })
+
+  // Kunjungan milik pasien sebelumnya tidak boleh ikut terbawa saat kasir
+  // berganti pasien — tagihannya akan menunjuk kunjungan orang lain.
+  useEffect(() => {
+    patientForm.setValue("booking_id", "")
+  }, [patientId, patientForm])
+
   const handlePayment = useCallback((next: PaymentData) => setPayment(next), [])
 
   const canSubmit = !cart.isEmpty && !cart.hasStockIssue
@@ -113,7 +141,7 @@ function PosPage() {
         {
           patient_id: patientId ? Number(patientId) : null,
           therapist_id: therapistId ? Number(therapistId) : null,
-          booking_id: null,
+          booking_id: bookingId ? Number(bookingId) : null,
           items: cart.items.map((item) =>
             item.kind === "product"
               ? { product_id: item.refId, qty: item.qty }
@@ -139,7 +167,7 @@ function PosPage() {
       // Katalog ikut disegarkan supaya saldo stoknya tidak basi setelah jualan.
       qc.invalidateQueries({ queryKey: ["products", tenant, "catalog"] })
       cart.clear()
-      patientForm.reset({ patient_id: "", therapist_id: "" })
+      patientForm.reset({ patient_id: "", therapist_id: "", booking_id: "" })
     },
     onError: (err: ApiError) => {
       // Pasien wajib diisi di server; tanpa ini tombol simpan terasa mati
@@ -208,6 +236,12 @@ function PosPage() {
       onPaymentChange={handlePayment}
       patientFieldRef={patientFieldRef}
       popupContainer={isNarrow ? drawerEl : undefined}
+      bookingOptions={(bookings.data?.data ?? []).map((booking) => ({
+        value: String(booking.id),
+        label: `${formatDateTime(booking.start_at)} · ${booking.service_name ?? "-"}`,
+      }))}
+      bookingsLoading={bookings.isLoading}
+      bookingsNeedPatient={patientId === ""}
       optionsLoading={patients.isLoading || staff.isLoading}
       optionsError={patients.isError || staff.isError}
     />

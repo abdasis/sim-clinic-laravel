@@ -46,6 +46,7 @@ function Harness(
       form={form}
       patientOptions={PATIENTS}
       therapistOptions={[{ label: "Mbak Rara", value: "9" }]}
+      bookingOptions={[]}
       created={null}
       items={[]}
       total={0}

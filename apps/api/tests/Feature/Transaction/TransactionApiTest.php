@@ -96,6 +96,43 @@ class TransactionApiTest extends TestCase
             ->assertJsonValidationErrors('booking_id');
     }
 
+    /**
+     * Kunjungan yang sama menjadi titik temu rekam medis dan tagihannya:
+     * rekam medis menunjuk booking, transaksi menunjuk booking yang sama.
+     * Tanpa tautan ini keduanya berjalan sendiri-sendiri dan tidak ada cara
+     * menelusuri tindakan mana yang sudah dibayar.
+     */
+    public function test_finished_booking_can_be_billed_and_stays_linked(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Cashier);
+        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+        $service = $this->makeService();
+
+        $booking = Booking::create([
+            'tenant_id' => $this->tenant->id,
+            'patient_id' => $patient->id,
+            'service_id' => $service->id,
+            'assignee_id' => auth()->id(),
+            'start_at' => now()->subDay(),
+            'end_at' => now()->subDay()->addHour(),
+            'status' => BookingStatus::Done,
+        ]);
+
+        $response = $this->postJson($this->tenantUrl('transactions'), [
+            'patient_id' => $patient->id,
+            'booking_id' => $booking->id,
+            'items' => [['service_id' => $service->id, 'qty' => 1]],
+        ]);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('transactions', [
+            'id' => $response->json('data.id'),
+            'booking_id' => $booking->id,
+            'patient_id' => $patient->id,
+        ]);
+    }
+
     public function test_transaction_of_other_tenant_is_not_reachable(): void
     {
         $this->actingAsClinicUser(ClinicRole::Cashier);

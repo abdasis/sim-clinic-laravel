@@ -35,6 +35,11 @@ class BookingController extends Controller
         if (($params['filters']['assignee_id'] ?? null)) {
             $query->where('assignee_id', $params['filters']['assignee_id']);
         }
+        // Kasir menautkan transaksi ke kunjungan pasien yang sedang dilayani,
+        // jadi daftarnya perlu bisa dipersempit ke satu pasien.
+        if (($params['filters']['patient_id'] ?? null)) {
+            $query->where('patient_id', $params['filters']['patient_id']);
+        }
         if ($params['sort']) {
             $query->orderBy($params['sort'], $params['direction']);
         } else {

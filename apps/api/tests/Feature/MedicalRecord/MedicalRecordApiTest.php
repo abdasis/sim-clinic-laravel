@@ -152,8 +152,15 @@ class MedicalRecordApiTest extends TestCase
         $this->actingAsClinicUser(ClinicRole::Doctor);
         $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
 
-        $older = $this->makeRecord(['created_at' => now()->subWeek()], $patient);
-        $newer = $this->makeRecord(['created_at' => now()], $patient);
+        // Waktu kunjungannya dipatok, bukan diserahkan ke factory: urutan
+        // riwayat ditentukan oleh kapan pasien datang, dan factory booking
+        // mengacak start_at sepanjang dua bulan.
+        $older = $this->makeRecord([
+            'booking_id' => $this->makeBooking(BookingStatus::Done, now()->subWeek())->id,
+        ], $patient);
+        $newer = $this->makeRecord([
+            'booking_id' => $this->makeBooking(BookingStatus::Done, now())->id,
+        ], $patient);
         $this->makeRecord();
 
         $response = $this->getJson(

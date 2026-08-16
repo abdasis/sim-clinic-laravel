@@ -128,6 +128,28 @@ class BookingPatientImmutableTest extends TestCase
         $this->assertTrue($rows[$withRecord->id]['has_medical_record']);
     }
 
+    /**
+     * Kasir menautkan transaksi ke kunjungan pasien yang sedang dilayani.
+     * Tanpa penyaringan ini, daftarnya berisi kunjungan seluruh pasien dan
+     * tagihan mudah menunjuk kunjungan orang lain.
+     */
+    public function test_index_can_be_filtered_by_patient(): void
+    {
+        $this->actingAsClinicUser();
+
+        $mine = $this->makeBooking();
+        $someoneElse = $this->makeBooking();
+
+        $ids = collect(
+            $this->getJson($this->tenantUrl('bookings?filter[patient_id]='.$mine->patient_id))
+                ->assertOk()
+                ->json('data'),
+        )->pluck('id');
+
+        $this->assertContains($mine->id, $ids);
+        $this->assertNotContains($someoneElse->id, $ids);
+    }
+
     private function makeDoctor(): User
     {
         return User::create([

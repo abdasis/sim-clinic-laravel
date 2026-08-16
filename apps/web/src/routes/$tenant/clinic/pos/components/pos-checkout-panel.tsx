@@ -13,6 +13,10 @@ export const patientSchema = z.object({
   patient_id: z.string().min(1),
   // Opsional: dipakai menghitung fee terapis, bukan syarat transaksi.
   therapist_id: z.string().optional(),
+  // Opsional juga: penjualan produk di etalase tidak berasal dari kunjungan
+  // mana pun. Diisi saat tagihan ini memang menagih kunjungan yang selesai,
+  // sehingga transaksi dan rekam medisnya tersambung lewat booking yang sama.
+  booking_id: z.string().optional(),
 })
 
 export type PatientFormValues = z.output<typeof patientSchema>
@@ -27,6 +31,11 @@ interface PosCheckoutPanelProps {
   form: UseFormReturn<PatientFormValues>
   patientOptions: { label: string; value: string }[]
   therapistOptions: { label: string; value: string }[]
+  /** Kunjungan selesai milik pasien terpilih; kosong sebelum pasien dipilih. */
+  bookingOptions: { label: string; value: string }[]
+  bookingsLoading?: boolean
+  /** Pasien belum dipilih, jadi daftar kunjungan memang belum bisa diisi. */
+  bookingsNeedPatient?: boolean
   created: CreatedTransaction | null
   items: LineItem[]
   total: number
@@ -64,6 +73,9 @@ export function PosCheckoutPanel({
   form,
   patientOptions,
   therapistOptions,
+  bookingOptions,
+  bookingsLoading,
+  bookingsNeedPatient,
   created,
   items,
   total,
@@ -121,6 +133,26 @@ export function PosCheckoutPanel({
               container={popupContainer}
               loading={optionsLoading}
               error={optionsError}
+            />
+          </div>
+
+          {/* Tautan ke kunjungan: inilah yang menyambungkan tagihan dengan
+              rekam medis, karena keduanya menunjuk booking yang sama. */}
+          <div className="mt-4">
+            <FormCombobox
+              control={form.control}
+              name="booking_id"
+              label={t("pos.booking_optional")}
+              placeholder={t("general.search")}
+              options={bookingOptions}
+              container={popupContainer}
+              loading={bookingsLoading}
+              emptyLabel={
+                bookingsNeedPatient
+                  ? t("pos.booking_pick_patient")
+                  : t("pos.booking_none")
+              }
+              description={t("pos.booking_hint")}
             />
           </div>
         </div>
