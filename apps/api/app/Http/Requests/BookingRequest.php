@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\ClinicRole;
 use App\Models\Booking;
 use App\Models\User;
+use App\Rules\TenantRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -18,9 +19,9 @@ class BookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'patient_id' => ['required', 'exists:patients,id'],
-            'service_id' => ['required', 'exists:services,id'],
-            'assignee_id' => ['required', 'exists:users,id'],
+            'patient_id' => ['required', TenantRule::exists('patients')],
+            'service_id' => ['required', TenantRule::exists('services')],
+            'assignee_id' => ['required', TenantRule::exists('users')],
             'start_at' => ['required', 'date', 'after:now'],
             'end_at' => ['required', 'date', 'after:start_at'],
             'notes' => ['nullable', 'string'],

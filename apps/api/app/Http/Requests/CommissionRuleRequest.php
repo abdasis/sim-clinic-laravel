@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\CommissionRuleType;
+use App\Rules\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
@@ -19,7 +20,7 @@ class CommissionRuleRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', new Enum(CommissionRuleType::class)],
-            'therapist_id' => ['nullable', 'exists:users,id'],
+            'therapist_id' => ['nullable', TenantRule::exists('users')],
             'amount' => ['nullable', 'numeric', 'gte:0'],
             'percent' => ['nullable', 'numeric', 'gte:0', 'max:100'],
             'min_revenue' => ['nullable', 'numeric', 'gte:0'],

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PatientRequest extends FormRequest
@@ -21,7 +22,7 @@ class PatientRequest extends FormRequest
             'whatsapp' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
-            'referred_by' => ['nullable', 'exists:users,id'],
+            'referred_by' => ['nullable', TenantRule::exists('users')],
             'whatsapp_opt_in' => ['nullable', 'boolean'],
         ];
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class MedicalRecordRequest extends FormRequest
@@ -17,7 +18,7 @@ class MedicalRecordRequest extends FormRequest
             // Kunjungan penentu milik siapa catatan ini, jadi tidak bisa
             // dipindah setelah rekam medisnya dibuat.
             ...$this->isMethod('POST')
-                ? ['booking_id' => ['required', 'exists:bookings,id']]
+                ? ['booking_id' => ['required', TenantRule::exists('bookings')]]
                 : ['booking_id' => ['prohibited']],
             'anamnesis' => ['nullable', 'string'],
             'skincare_history' => ['nullable', 'string'],

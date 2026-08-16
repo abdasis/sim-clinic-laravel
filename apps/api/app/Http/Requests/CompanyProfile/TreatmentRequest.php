@@ -3,6 +3,7 @@
 namespace App\Http\Requests\CompanyProfile;
 
 use App\Enums\CompanyTreatmentBadge;
+use App\Rules\TenantRule;
 use Illuminate\Validation\Rule;
 
 class TreatmentRequest extends CompanyContentRequest
@@ -20,7 +21,7 @@ class TreatmentRequest extends CompanyContentRequest
                     ->where('tenant_id', app('tenant')->id)
                     ->ignore($this->route('content')),
             ],
-            'service_id' => ['nullable', 'integer', 'exists:services,id'],
+            'service_id' => ['nullable', 'integer', TenantRule::exists('services')],
             'image_path' => ['nullable', 'string', 'max:255'],
             'badge' => ['nullable', Rule::enum(CompanyTreatmentBadge::class)],
             'category_tags' => ['nullable', 'array'],

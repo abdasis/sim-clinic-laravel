@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Rules\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -17,14 +18,14 @@ class TransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'patient_id' => ['required', 'exists:patients,id'],
-            'booking_id' => ['nullable', 'exists:bookings,id'],
-            'therapist_id' => ['nullable', 'exists:users,id'],
+            'patient_id' => ['required', TenantRule::exists('patients')],
+            'booking_id' => ['nullable', TenantRule::exists('bookings')],
+            'therapist_id' => ['nullable', TenantRule::exists('users')],
             'items' => ['required', 'array', 'min:1'],
             'items.*.qty' => ['required', 'integer', 'gt:0'],
             // Satu baris mewakili tepat satu layanan atau satu produk.
-            'items.*.service_id' => ['nullable', 'required_without:items.*.product_id', 'prohibits:items.*.product_id', 'exists:services,id'],
-            'items.*.product_id' => ['nullable', 'exists:products,id'],
+            'items.*.service_id' => ['nullable', 'required_without:items.*.product_id', 'prohibits:items.*.product_id', TenantRule::exists('services')],
+            'items.*.product_id' => ['nullable', TenantRule::exists('products')],
         ];
     }
 

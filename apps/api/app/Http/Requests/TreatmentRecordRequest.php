@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class TreatmentRecordRequest extends FormRequest
@@ -14,7 +15,7 @@ class TreatmentRecordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'service_id' => ['nullable', 'exists:services,id'],
+            'service_id' => ['nullable', TenantRule::exists('services')],
             'service_name' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
         ];

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\BroadcastAudience;
 use App\Enums\BroadcastKind;
+use App\Rules\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
@@ -25,7 +26,7 @@ class BroadcastRequest extends FormRequest
             'kind' => ['nullable', new Enum(BroadcastKind::class)],
             'audience_params' => ['nullable', 'array'],
             'audience_params.days' => ['nullable', 'integer', 'min:1', 'max:730'],
-            'audience_params.service_id' => ['nullable', 'exists:services,id'],
+            'audience_params.service_id' => ['nullable', TenantRule::exists('services')],
         ];
     }
 
