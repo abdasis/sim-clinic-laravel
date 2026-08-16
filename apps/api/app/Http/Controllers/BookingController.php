@@ -23,7 +23,11 @@ class BookingController extends Controller
 
         $params = $this->dataTableParams($request);
 
-        $query = Booking::query()->with(['patient', 'service', 'assignee']);
+        // Rekam medis ikut dimuat supaya `has_medical_record` di resource
+        // berisi keadaan sebenarnya. Tanpa ini flag itu selalu false, dan
+        // pemilih kunjungan di form rekam medis tetap menawarkan kunjungan
+        // yang catatannya sudah ada — baru ditolak setelah disimpan.
+        $query = Booking::query()->with(['patient', 'service', 'assignee', 'medicalRecord']);
 
         if (($params['filters']['status'] ?? null)) {
             $query->where('status', $params['filters']['status']);

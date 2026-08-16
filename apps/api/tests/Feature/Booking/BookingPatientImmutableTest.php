@@ -107,6 +107,27 @@ class BookingPatientImmutableTest extends TestCase
             ->assertJsonPath('data.has_medical_record', true);
     }
 
+    /**
+     * Form rekam medis menyaring pilihannya dengan flag ini. Waktu daftar
+     * booking tidak ikut memuat relasinya, flagnya selalu false — kunjungan
+     * yang catatannya sudah ada tetap ditawarkan, lalu ditolak server setelah
+     * dokter selesai mengetik.
+     */
+    public function test_index_exposes_has_medical_record_flag(): void
+    {
+        $this->actingAsClinicUser();
+
+        $plain = $this->makeBooking();
+        $withRecord = $this->makeBookingWithMedicalRecord();
+
+        $rows = collect(
+            $this->getJson($this->tenantUrl('bookings'))->assertOk()->json('data'),
+        )->keyBy('id');
+
+        $this->assertFalse($rows[$plain->id]['has_medical_record']);
+        $this->assertTrue($rows[$withRecord->id]['has_medical_record']);
+    }
+
     private function makeDoctor(): User
     {
         return User::create([

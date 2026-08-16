@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card.t
 import { Button } from "#/components/ui/button.tsx"
 import { Form } from "#/components/ui/form.tsx"
 import { FormTextarea } from "#/components/forms/form-textarea.tsx"
+import { FormCombobox } from "#/components/forms/form-combobox.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
@@ -42,6 +43,8 @@ interface BookingRow {
   id: number
   patient_name?: string
   service_name?: string
+  start_at?: string | null
+  has_medical_record?: boolean
   status: string
 }
 interface ServiceRow {
@@ -68,10 +71,20 @@ function NewMedicalRecordPage() {
   })
   const treatments = useFieldArray({ control: form.control, name: "treatments" })
 
+  // Status disaring di server, bukan setelah data sampai. Dulu halaman ini
+  // mengambil 100 kunjungan terbaru lalu membuang yang belum selesai di sisi
+  // klien — di klinik yang ramai, seratus kunjungan terbaru bisa sama sekali
+  // tidak berisi yang berstatus selesai, dan daftarnya kosong tanpa sebab
+  // yang kelihatan.
   const bookings = useQuery({
     queryKey: ["bookings", tenant, "done"],
     queryFn: () =>
-      apiGet<{ data: BookingRow[] }>(`/${tenant}/clinic/bookings`, { per_page: 100 }),
+      apiGet<{ data: BookingRow[] }>(`/${tenant}/clinic/bookings`, {
+        per_page: 100,
+        filter: { status: "done" },
+        sort: "start_at",
+        direction: "desc",
+      }),
   })
   const services = useQuery({
     queryKey: ["services", tenant, "catalog"],
@@ -79,10 +92,17 @@ function NewMedicalRecordPage() {
       apiGet<{ data: ServiceRow[] }>(`/${tenant}/clinic/services`, { per_page: 100 }),
   })
 
-  const doneBookings = (bookings.data?.data ?? []).filter((b) => b.status === "done")
+  // Kunjungan yang catatannya sudah ditulis tetap ditolak server, jadi lebih
+  // jujur kalau tidak ditawarkan sejak awal daripada ditolak setelah dokter
+  // selesai mengetik.
+  const doneBookings = (bookings.data?.data ?? []).filter(
+    (b) => b.status === "done" && !b.has_medical_record,
+  )
   const bookingOptions = doneBookings.map((b) => ({
     value: String(b.id),
-    label: `#${b.id} · ${b.patient_name ?? "-"} · ${b.service_name ?? "-"}`,
+    // Nama pasien didahulukan: yang dicari dokter adalah pasiennya, nomor
+    // kunjungan cuma pembeda saat satu pasien datang lebih dari sekali.
+    label: `${b.patient_name ?? "-"} · ${b.service_name ?? "-"} · #${b.id}`,
   }))
   const selectedBookingId = form.watch("booking_id")
   const selectedPatientName = doneBookings.find(
@@ -158,12 +178,19 @@ function NewMedicalRecordPage() {
               <CardTitle className="text-base">{t("medical_record.booking")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormSelect
+              {/* Combobox, bukan select: daftarnya bisa ratusan kunjungan dan
+                  yang dicari dokter adalah satu nama pasien di antaranya. */}
+              <FormCombobox
                 control={form.control}
                 name="booking_id"
                 label={t("medical_record.booking")}
-                placeholder={t("medical_record.booking")}
+                placeholder={t("general.search")}
                 options={bookingOptions}
+                required
+                loading={bookings.isLoading}
+                error={bookings.isError}
+                emptyLabel={t("medical_record.no_open_booking")}
+                description={t("medical_record.booking_hint")}
               />
               {/* Nama pasien tidak diketik ulang: ia melekat pada kunjungan
                   yang dipilih, jadi salah ketik di sini mustahil terjadi. */}
