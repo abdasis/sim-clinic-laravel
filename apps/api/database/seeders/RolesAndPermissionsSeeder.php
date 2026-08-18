@@ -70,12 +70,6 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private function modules(): array
     {
-        $modules = [];
-
-        foreach (SyncTenantClinicRolesAction::MATRIX as $byModule) {
-            $modules = array_merge($modules, array_keys($byModule));
-        }
-
-        return array_values(array_unique($modules));
+        return SyncTenantClinicRolesAction::modules();
     }
 }

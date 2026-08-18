@@ -58,8 +58,11 @@ class AcceptInvitationAction
             return;
         }
 
-        // Tenant lama bisa saja belum punya role klinik saat undangan diterima.
-        app(SyncTenantClinicRolesAction::class)->handle($invitation->tenant_id);
+        // Tenant lama bisa saja belum punya role klinik saat undangan
+        // diterima. Yang dipanggil hanya "pastikan perannya ada" — handle()
+        // akan mengembalikan seluruh izin klinik ke bawaan, menghapus
+        // pengaturan admin hanya karena ada staf baru bergabung.
+        app(SyncTenantClinicRolesAction::class)->ensureRolesExist($invitation->tenant_id);
 
         $registrar->setPermissionsTeamId($invitation->tenant_id);
         $user->assignRole($user->clinic_role->value);

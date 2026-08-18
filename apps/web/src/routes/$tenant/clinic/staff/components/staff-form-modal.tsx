@@ -18,6 +18,7 @@ import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { clinicRoleOptions } from "#/types/clinic-role.ts"
 import { apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 
@@ -90,12 +91,7 @@ export function StaffFormModal({
               control={form.control}
               name="clinic_role"
               label={t("staff.clinic_role")}
-              options={[
-                { label: t("clinic.role.admin"), value: "admin" },
-                { label: t("clinic.role.doctor"), value: "doctor" },
-                { label: t("clinic.role.therapist"), value: "therapist" },
-                { label: t("clinic.role.cashier"), value: "cashier" },
-              ]}
+              options={clinicRoleOptions(t)}
             />
             <FormPassword
               control={form.control}

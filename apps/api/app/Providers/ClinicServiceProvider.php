@@ -5,10 +5,12 @@ namespace App\Providers;
 use App\Models\CompanyProfileSetting;
 use App\Models\User;
 use App\Policies\CompanyProfileContentPolicy;
+use App\Policies\RolePolicy;
 use App\Policies\StaffPolicy;
 use App\Support\CompanyContentRegistry;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\Models\Role;
 
 class ClinicServiceProvider extends ServiceProvider
 {
@@ -25,5 +27,9 @@ class ClinicServiceProvider extends ServiceProvider
         }
 
         Gate::policy(CompanyProfileSetting::class, CompanyProfileContentPolicy::class);
+
+        // Role datang dari paket spatie, jadi auto-discovery tidak akan
+        // menemukan policy-nya di app/Policies.
+        Gate::policy(Role::class, RolePolicy::class);
     }
 }

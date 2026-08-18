@@ -16,6 +16,7 @@ import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { clinicRoleOptions } from "#/types/clinic-role.ts"
 import { apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 import type { StaffRow } from "../index.tsx"
@@ -27,8 +28,6 @@ const schema = z.object({
 })
 
 type Values = z.infer<typeof schema>
-
-const ROLE_VALUES = ["admin", "doctor", "therapist", "cashier"] as const
 
 interface StaffEditModalProps {
   tenant: string
@@ -108,10 +107,7 @@ export function StaffEditModal({
               control={form.control}
               name="clinic_role"
               label={t("staff.clinic_role")}
-              options={ROLE_VALUES.map((value) => ({
-                value,
-                label: t(`clinic.role.${value}`),
-              }))}
+              options={clinicRoleOptions(t)}
             />
             <div className="flex items-center justify-end gap-2">
               <Button

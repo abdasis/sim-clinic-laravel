@@ -25,6 +25,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromoController;
 use App\Http\Controllers\ReminderRuleController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StatsController;
@@ -106,6 +107,11 @@ Route::prefix('{tenant}/clinic')
         Route::delete('staff/{staff}', [StaffController::class, 'destroy']);
         Route::patch('staff/{staff}/role', [StaffController::class, 'updateRole']);
         Route::post('staff/{staff}/deactivate', [StaffController::class, 'deactivate']);
+
+        // Izin peran klinik — matriks kecil, tanpa paginasi
+        Route::get('roles', [RoleController::class, 'index']);
+        Route::put('roles/{role}', [RoleController::class, 'update']);
+        Route::post('roles/{role}/reset', [RoleController::class, 'reset']);
 
         // US2 Service
         // Hapus permanen dipisah dari destroy yang mengarsipkan.

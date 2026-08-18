@@ -21,6 +21,7 @@ import {
   Layers01Icon,
   PackageIcon,
   PaintBoardIcon,
+  SecurityLockIcon,
   StethoscopeIcon,
   TagsIcon,
   UserGroupIcon,
@@ -93,6 +94,7 @@ function ClinicLayout() {
   const items: NavItem[] = [
     { key: "", label: t("dashboard.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: DashboardSquare01Icon },
     { key: "staff", label: t("staff.title"), roles: ["admin"], icon: UserGroupIcon },
+    { key: "roles", label: t("role.title"), roles: ["admin"], icon: SecurityLockIcon },
     { key: "services", label: t("service.title"), roles: ["admin", "doctor", "therapist"], icon: StethoscopeIcon },
     { key: "patients", label: t("patient.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulseIcon },
     { key: "bookings", label: t("booking.title"), roles: ["admin", "doctor", "therapist"], icon: Calendar01Icon },
