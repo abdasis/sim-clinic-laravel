@@ -9,7 +9,6 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
-COPY apps/wa-gateway/package.json ./apps/wa-gateway/
 
 # Install all workspace deps from root lockfile
 RUN bun install --frozen-lockfile
