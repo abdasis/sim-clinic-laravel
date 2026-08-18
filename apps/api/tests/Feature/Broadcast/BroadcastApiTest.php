@@ -10,6 +10,7 @@ use App\Models\Broadcast;
 use App\Models\Patient;
 use App\Models\Service;
 use App\Models\Transaction;
+use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use App\Support\PhoneNumber;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -213,11 +214,16 @@ class BroadcastApiTest extends TestCase
     {
         $this->actingAsClinicUser();
 
+        // Server WAHA milik platform, nama sesi milik klinik. Keduanya harus
+        // terisi supaya klien terbentuk.
+        WahaSetting::create([
+            'base_url' => 'https://waha.test',
+            'api_key' => 'secret-token',
+        ]);
+
         WhatsappSetting::create([
             'tenant_id' => $this->tenant->id,
-            'driver' => 'gateway',
-            'api_url' => 'https://gateway.test/send',
-            'api_token' => 'secret-token',
+            'session' => 'klinik-uji',
         ]);
 
         $this->patient('Gagal', '082222222222');
@@ -229,7 +235,7 @@ class BroadcastApiTest extends TestCase
         Broadcast::find($broadcast)->update(['status' => BroadcastStatus::Sending]);
         $recipient = Broadcast::find($broadcast)->recipients()->first();
 
-        Http::fake(['gateway.test/*' => Http::response(['status' => false], 500)]);
+        Http::fake(['waha.test/*' => Http::response(['error' => true], 500)]);
 
         // Jalankan percobaan terakhir langsung: job harus menandai gagal
         // beserta pesan galatnya, bukan melempar tanpa jejak.
@@ -243,8 +249,9 @@ class BroadcastApiTest extends TestCase
         $this->assertSame('failed', $fresh->status->value);
         $this->assertNotNull($fresh->error);
 
-        Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'secret-token')
-            && $request['target'] === '6282222222222');
+        Http::assertSent(fn ($request) => $request->hasHeader('X-Api-Key', 'secret-token')
+            && $request['chatId'] === '6282222222222@c.us'
+            && $request['session'] === 'klinik-uji');
     }
 
     public function test_gateway_send_rejected_when_not_configured(): void
@@ -259,23 +266,25 @@ class BroadcastApiTest extends TestCase
         $this->postJson($this->tenantUrl("broadcasts/{$broadcast}/send"))->assertStatus(422);
     }
 
-    public function test_settings_keep_token_when_blank(): void
+    public function test_settings_store_the_session_name(): void
     {
         $this->actingAsClinicUser();
 
         $this->putJson($this->tenantUrl('broadcasts/settings'), [
-            'driver' => 'gateway',
-            'api_url' => 'https://gateway.test/send',
-            'api_token' => 'rahasia',
-        ])->assertOk()->assertJsonPath('data.has_token', true);
+            'session' => 'klinik-satu',
+        ])->assertOk()->assertJsonPath('data.session', 'klinik-satu');
 
-        // Simpan ulang tanpa token — token lama tidak boleh tercabut.
+        $this->assertSame('klinik-satu', WhatsappSetting::first()->session);
+    }
+
+    public function test_settings_reject_a_session_name_waha_cannot_use(): void
+    {
+        $this->actingAsClinicUser();
+
+        // WAHA hanya menerima huruf kecil, angka, dan strip.
         $this->putJson($this->tenantUrl('broadcasts/settings'), [
-            'driver' => 'gateway',
-            'api_url' => 'https://gateway.test/send',
-        ])->assertOk()->assertJsonPath('data.has_token', true);
-
-        $this->assertSame('rahasia', WhatsappSetting::first()->api_token);
+            'session' => 'Klinik Satu!',
+        ])->assertStatus(422)->assertJsonValidationErrors('session');
     }
 
     public function test_non_admin_cannot_touch_broadcasts(): void

@@ -11,7 +11,7 @@ use App\Enums\BroadcastStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
-use App\Support\WhatsappClientFactory;
+use App\Support\WahaClient;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -50,8 +50,8 @@ class BroadcastService
      */
     public function queueSend(Broadcast $broadcast): array
     {
-        if (app(WhatsappClientFactory::class)->forCurrentTenant() === null) {
-            abort(422, __('broadcast.gateway_not_ready'));
+        if (app(WahaClient::class) === null) {
+            abort(422, __('broadcast.waha_not_ready'));
         }
 
         $pendingIds = $broadcast->recipients()
@@ -108,10 +108,10 @@ class BroadcastService
      */
     public function sendTest(string $phone, string $message): void
     {
-        $client = app(WhatsappClientFactory::class)->forCurrentTenant();
+        $client = app(WahaClient::class);
 
         if ($client === null) {
-            abort(422, __('broadcast.gateway_not_ready'));
+            abort(422, __('broadcast.waha_not_ready'));
         }
 
         $client->send($phone, $message);

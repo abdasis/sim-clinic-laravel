@@ -85,14 +85,14 @@ function BroadcastDetailPage() {
   const { data, isLoading } = useQuery({
     queryKey,
     queryFn: () =>
-      apiGet<{ data: BroadcastDetail; meta: { gateway_ready: boolean } }>(
+      apiGet<{ data: BroadcastDetail; meta: { waha_ready: boolean } }>(
         `/${tenant}/clinic/broadcasts/${id}`,
       ),
   })
 
   const broadcast = data?.data
   useBreadcrumbTail(broadcast?.title)
-  const gatewayReady = data?.meta.gateway_ready ?? false
+  const wahaReady = data?.meta.waha_ready ?? false
 
   const mark = useMutation({
     mutationFn: ({ recipient, status }: { recipient: number; status: string }) =>
@@ -201,7 +201,7 @@ function BroadcastDetailPage() {
               </Button>
             </>
           ) : null}
-          {gatewayReady && broadcast.status !== "sending" && broadcast.status !== "paused" && broadcast.status !== "cancelled" && broadcast.recipients_pending > 0 ? (
+          {wahaReady && broadcast.status !== "sending" && broadcast.status !== "paused" && broadcast.status !== "cancelled" && broadcast.recipients_pending > 0 ? (
             <Button
               onClick={() => setConfirmSendAll(true)}
               disabled={sendAll.isPending}
@@ -233,6 +233,14 @@ function BroadcastDetailPage() {
           </Tooltip>
         </div>
       </div>
+
+      {/* Tanpa sesi WAHA tombol "Kirim Semua" tidak muncul. Alasannya
+          disebutkan supaya admin tidak mengira fiturnya rusak. */}
+      {!wahaReady && broadcast.recipients_pending > 0 ? (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-pretty text-amber-700 dark:text-amber-400">
+          {t("broadcast.waha_not_ready")}
+        </p>
+      ) : null}
 
       <Progress value={progress} className="h-2" />
 

@@ -7,7 +7,7 @@ use App\Enums\BroadcastStatus;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\Tenant;
-use App\Support\WhatsappClientFactory;
+use App\Support\WahaClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -61,12 +61,12 @@ class SendBroadcastRecipientJob implements ShouldQueue
             return;
         }
 
-        $client = app(WhatsappClientFactory::class)->forCurrentTenant();
+        $client = app(WahaClient::class);
 
         if ($client === null) {
             $recipient->update([
                 'status' => BroadcastRecipientStatus::Failed,
-                'error' => __('broadcast.gateway_not_ready'),
+                'error' => __('broadcast.waha_not_ready'),
             ]);
 
             return;

@@ -7,7 +7,7 @@ use App\Models\Broadcast;
 use App\Models\Tenant;
 use App\Services\BroadcastService;
 use App\Support\ReminderEngine;
-use App\Support\WhatsappClientFactory;
+use App\Support\WahaClient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -36,7 +36,7 @@ class SendTreatmentReminders extends Command
 
                 $this->info("{$tenant->slug}: {$result['created']} pengingat, {$result['recipients']} penerima.");
 
-                if (app(WhatsappClientFactory::class)->forCurrentTenant() !== null) {
+                if (app(WahaClient::class) !== null) {
                     Broadcast::query()
                         ->where('kind', 'reminder')
                         ->where('status', BroadcastStatus::Ready)

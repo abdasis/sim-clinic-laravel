@@ -11,6 +11,7 @@ use App\Models\Patient;
 use App\Models\ReminderRule;
 use App\Models\Service;
 use App\Models\Transaction;
+use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use App\Support\ReminderEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,14 +28,14 @@ class BroadcastPlatformTest extends TestCase
 {
     use InteractsWithTenant, RefreshDatabase;
 
-    private function gatewayReady(): void
+    private function wahaReady(): void
     {
         WhatsappSetting::create([
             'tenant_id' => $this->tenant->id,
-            'driver' => 'gateway',
-            'api_url' => 'https://gateway.test/send',
-            'api_token' => 'secret',
+            'session' => 'klinik-uji',
         ]);
+
+        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'secret']);
     }
 
     private function paidVisit(Patient $patient, Service $service, string $date): Transaction
@@ -65,7 +66,7 @@ class BroadcastPlatformTest extends TestCase
     {
         Queue::fake();
         $this->actingAsClinicUser();
-        $this->gatewayReady();
+        $this->wahaReady();
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '081111111111']);
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '082222222222']);
@@ -85,7 +86,7 @@ class BroadcastPlatformTest extends TestCase
     public function test_paused_campaign_job_does_not_send(): void
     {
         $this->actingAsClinicUser();
-        $this->gatewayReady();
+        $this->wahaReady();
         Http::fake();
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '081111111111']);
@@ -107,8 +108,8 @@ class BroadcastPlatformTest extends TestCase
     public function test_job_sends_and_closes_campaign_when_drained(): void
     {
         $this->actingAsClinicUser();
-        $this->gatewayReady();
-        Http::fake(['gateway.test/*' => Http::response(['status' => true])]);
+        $this->wahaReady();
+        Http::fake(['waha.test/*' => Http::response(['id' => 'true_628@c.us'])]);
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '081111111111']);
 
@@ -248,7 +249,7 @@ class BroadcastPlatformTest extends TestCase
             ->assertJsonPath('data.active_campaigns', 0);
     }
 
-    public function test_connection_reports_unavailable_without_sidecar(): void
+    public function test_connection_reports_unavailable_without_waha(): void
     {
         $this->actingAsClinicUser();
 
@@ -260,13 +261,13 @@ class BroadcastPlatformTest extends TestCase
     public function test_test_message_endpoint_sends_via_client(): void
     {
         $this->actingAsClinicUser();
-        $this->gatewayReady();
-        Http::fake(['gateway.test/*' => Http::response(['status' => true])]);
+        $this->wahaReady();
+        Http::fake(['waha.test/*' => Http::response(['id' => 'true_628@c.us'])]);
 
         $this->postJson($this->tenantUrl('broadcasts/test-message'), [
             'phone' => '0812-3456-7890', 'message' => 'Tes koneksi',
         ])->assertOk();
 
-        Http::assertSent(fn ($request) => $request['target'] === '6281234567890');
+        Http::assertSent(fn ($request) => $request['chatId'] === '6281234567890@c.us');
     }
 }

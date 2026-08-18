@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
   Building02Icon,
+  WhatsappIcon,
   DashboardSquare01Icon,
 } from "@hugeicons/core-free-icons"
 
@@ -61,6 +62,12 @@ function CentralLayout() {
       icon: Building02Icon,
       isActive: pathname.startsWith("/central/tenants"),
     },
+    {
+      title: t("waha.title"),
+      url: "/central/waha",
+      icon: WhatsappIcon,
+      isActive: pathname.startsWith("/central/waha"),
+    },
   ]
 
   const handleLogout = () => {
@@ -115,6 +122,8 @@ function CentralCrumbs({ pathname }: { pathname: string }) {
 
   if (pathname.startsWith("/central/tenants")) {
     items.push({ label: t("tenant.tenants") })
+  } else if (pathname.startsWith("/central/waha")) {
+    items.push({ label: t("waha.title") })
   } else {
     items.push({ label: t("central.dashboard") })
   }

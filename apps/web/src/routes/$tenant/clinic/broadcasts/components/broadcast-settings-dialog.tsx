@@ -13,20 +13,29 @@ import {
 } from "#/components/ui/dialog.tsx"
 import { Form } from "#/components/ui/form.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
-import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
+import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 
-const schema = z.object({
-  driver: z.string().min(1),
-  api_url: z.string().optional(),
-  api_token: z.string().optional(),
-})
+/**
+ * Pesannya diterjemahkan saat schema dibuat, bukan saat dirender: zod
+ * menyimpan string jadi, bukan kunci.
+ */
+function buildSchema(formatMessage: string) {
+  return z.object({
+    // Boleh kosong: klinik yang belum pakai WAHA tetap bisa kirim manual.
+    session: z
+      .string()
+      .max(100)
+      .regex(/^[a-z0-9-]*$/, formatMessage)
+      .optional(),
+  })
+}
 
-type Values = z.infer<typeof schema>
+type Values = z.infer<ReturnType<typeof buildSchema>>
 
 interface BroadcastSettingsDialogProps {
   tenant: string
@@ -35,8 +44,8 @@ interface BroadcastSettingsDialogProps {
 }
 
 /**
- * Pilih cara kirim: manual lewat tautan wa.me (tanpa setup, dari WhatsApp
- * klinik sendiri) atau gateway HTTP untuk blast otomatis dari server.
+ * Satu-satunya yang diatur klinik: nama sesi WAHA miliknya. Alamat server dan
+ * API key-nya milik pengelola platform, diisi di halaman central.
  */
 export function BroadcastSettingsDialog({
   tenant,
@@ -51,38 +60,37 @@ export function BroadcastSettingsDialog({
     queryFn: () =>
       apiGet<{
         data: {
-          driver: string
-          api_url?: string | null
-          has_token: boolean
-          sidecar_available?: boolean
+          session?: string | null
+          waha_available: boolean
         }
       }>(`/${tenant}/clinic/broadcasts/settings`),
     enabled: open,
   })
 
-  const form = useForm(schema, {
-    defaultValues: { driver: "manual", api_url: "", api_token: "" },
+  // Dibangun ulang tiap render: `t` baru bisa menjawab setelah terjemahan
+  // termuat, dan react-hook-form membaca resolver terbaru saat memvalidasi.
+  const form = useForm(buildSchema(t("broadcast.session_format")), {
+    defaultValues: { session: "" },
   })
-  const driver = form.watch("driver")
+
+  const current = settings.data?.data
 
   useEffect(() => {
-    if (!open || !settings.data) return
+    if (!open || !current) return
 
-    form.reset({
-      driver: settings.data.data.driver,
-      api_url: settings.data.data.api_url ?? "",
-      // Token tidak pernah dikirim balik; field kosong berarti "jangan ubah".
-      api_token: "",
-    })
-  }, [open, settings.data, form])
+    form.reset({ session: current.session ?? "" })
+  }, [open, current, form])
 
   const mutation = useMutation({
     mutationFn: (values: Values) =>
-      apiPut(`/${tenant}/clinic/broadcasts/settings`, values),
+      apiPut(`/${tenant}/clinic/broadcasts/settings`, {
+        session: values.session?.trim() || null,
+      }),
     onSuccess: () => {
       toast.success(t("broadcast.settings_saved"))
       qc.invalidateQueries({ queryKey: ["broadcast-settings"] })
       qc.invalidateQueries({ queryKey: ["broadcasts"] })
+      qc.invalidateQueries({ queryKey: ["wa-connection"] })
       onOpenChange(false)
     },
     onError: (err: ApiError) => {
@@ -96,63 +104,42 @@ export function BroadcastSettingsDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("broadcast.settings")}</DialogTitle>
-          <DialogDescription>
-            {t("broadcast.driver.manual")} · {t("broadcast.driver.gateway")}
+          <DialogDescription className="text-pretty">
+            {t("broadcast.session_hint")}
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-            className="space-y-4"
-          >
-            <FormSelect
-              control={form.control}
-              name="driver"
-              label={t("broadcast.driver_label")}
-              options={[
-                { label: t("broadcast.driver.manual"), value: "manual" },
-                { label: t("broadcast.driver.gateway"), value: "gateway" },
-                { label: t("broadcast.driver.qr"), value: "qr" },
-              ]}
-            />
+        {settings.isLoading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : (
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+              className="space-y-4"
+            >
+              {current && !current.waha_available ? (
+                <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-pretty text-amber-700 dark:text-amber-400">
+                  {t("broadcast.waha_not_configured")}
+                </p>
+              ) : null}
 
-            {driver === "qr" && !settings.data?.data.sidecar_available ? (
-              <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-                {t("broadcast.sidecar_missing")}
-              </p>
-            ) : null}
+              <FormInput
+                control={form.control}
+                name="session"
+                label={t("broadcast.session_label")}
+                placeholder="klinik-satu"
+                description={t("broadcast.session_empty")}
+                inputClassName="font-mono"
+              />
 
-            {driver === "gateway" ? (
-              <>
-                <FormInput
-                  control={form.control}
-                  name="api_url"
-                  label={t("broadcast.api_url")}
-                  placeholder="https://api.fonnte.com/send"
-                  required
-                />
-                <FormInput
-                  control={form.control}
-                  name="api_token"
-                  label={t("broadcast.api_token")}
-                  type="password"
-                  description={
-                    settings.data?.data.has_token
-                      ? t("broadcast.token_saved")
-                      : undefined
-                  }
-                />
-              </>
-            ) : null}
-
-            <DialogFooter>
-              <FormSubmit loading={mutation.isPending}>
-                {t("general.save")}
-              </FormSubmit>
-            </DialogFooter>
-          </form>
-        </Form>
+              <DialogFooter>
+                <FormSubmit loading={mutation.isPending}>
+                  {t("general.save")}
+                </FormSubmit>
+              </DialogFooter>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -34,6 +34,9 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\TreatmentRecord;
 use App\Models\User;
+use App\Models\WahaSetting;
+use App\Models\WhatsappSetting;
+use App\Support\WahaClient;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
@@ -84,9 +87,29 @@ class AppServiceProvider extends ServiceProvider
         'company_content_section' => CompanyContentSection::class,
     ];
 
+    /**
+     * Klien WAHA disusun dari dua sumber: alamat dan API key milik platform,
+     * nama sesi milik klinik yang sedang aktif. Bila salah satunya belum
+     * diisi, yang diberikan null — pemanggilnya memperlakukan itu sebagai
+     * "belum siap kirim", bukan galat.
+     */
     public function register(): void
     {
-        //
+        $this->app->bind(WahaClient::class, function (): ?WahaClient {
+            $server = WahaSetting::query()->first();
+
+            if ($server === null || ! $server->isConfigured()) {
+                return null;
+            }
+
+            $tenant = WhatsappSetting::query()->first();
+
+            if ($tenant === null || ! $tenant->isConfigured()) {
+                return null;
+            }
+
+            return new WahaClient($server->base_url, $server->api_key, $tenant->session);
+        });
     }
 
     public function boot(): void

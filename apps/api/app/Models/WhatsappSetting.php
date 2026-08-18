@@ -3,32 +3,23 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
-use App\Enums\WhatsappDriver;
 use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Bagian pengaturan WhatsApp yang memang milik tiap klinik: nama sesi WAHA.
+ * Alamat server dan API key-nya central, di WahaSetting.
+ */
 #[ScopedBy([TenantScope::class])]
 class WhatsappSetting extends Model
 {
     use BelongsToTenant;
 
-    protected $fillable = ['tenant_id', 'driver', 'api_url', 'api_token'];
+    protected $fillable = ['tenant_id', 'session'];
 
-    protected function casts(): array
+    public function isConfigured(): bool
     {
-        return [
-            'driver' => WhatsappDriver::class,
-        ];
-    }
-
-    /** Token disembunyikan dari response; cukup penanda sudah diisi. */
-    protected $hidden = ['api_token'];
-
-    public function isGatewayReady(): bool
-    {
-        return $this->driver === WhatsappDriver::Gateway
-            && filled($this->api_url)
-            && filled($this->api_token);
+        return filled($this->session);
     }
 }

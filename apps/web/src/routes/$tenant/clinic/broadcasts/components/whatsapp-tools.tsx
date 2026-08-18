@@ -28,7 +28,6 @@ import { NativeSelect, NativeSelectOption } from "#/components/ui/native-select.
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete, apiGet, apiPost, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
-import { formatDateTime } from "#/lib/format.ts"
 
 interface ToolDialogProps {
   tenant: string
@@ -37,7 +36,7 @@ interface ToolDialogProps {
 }
 
 /**
- * Koneksi WhatsApp lewat sidecar QR: status terhubung, atau QR untuk dipindai.
+ * Koneksi WhatsApp lewat WAHA: status terhubung, atau QR untuk dipindai.
  * Selagi belum terhubung, status di-poll tiap 4 detik supaya begitu admin
  * memindai, layarnya langsung berubah tanpa muat ulang.
  */
@@ -52,7 +51,7 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
           available: boolean
           connected: boolean
           number?: string | null
-          connected_at?: string | null
+          name?: string | null
           qr?: string | null
           error?: boolean
         }
@@ -69,14 +68,18 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("broadcast.connection")}</DialogTitle>
-          <DialogDescription>{t("broadcast.driver.qr")}</DialogDescription>
+          <DialogDescription className="text-pretty">
+            {t("broadcast.connection_hint")}
+          </DialogDescription>
         </DialogHeader>
 
         {connection.isLoading ? (
           <Skeleton className="h-48 w-full" />
         ) : !state?.available ? (
-          <p className="rounded-md border border-dashed border-border/60 px-4 py-6 text-center text-sm text-muted-foreground">
-            {t("broadcast.sidecar_missing")}
+          // Belum tersambung ke WAHA sama sekali: entah servernya belum diisi
+          // pengelola, entah kliniknya belum menyebut nama sesi.
+          <p className="rounded-md border border-dashed border-border/60 px-4 py-6 text-center text-sm text-pretty text-muted-foreground">
+            {t("broadcast.waha_session_missing")}
           </p>
         ) : state.connected ? (
           <div className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-4 text-sm">
@@ -87,10 +90,8 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
             {state.number ? (
               <p className="text-muted-foreground tabular-nums">+{state.number}</p>
             ) : null}
-            {state.connected_at ? (
-              <p className="text-xs text-muted-foreground">
-                {formatDateTime(state.connected_at)}
-              </p>
+            {state.name ? (
+              <p className="text-xs text-muted-foreground">{state.name}</p>
             ) : null}
           </div>
         ) : (
@@ -107,9 +108,11 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
             ) : (
               <Skeleton className="mx-auto size-64" />
             )}
-            <p className="text-xs text-muted-foreground">{t("broadcast.scan_hint")}</p>
+            <p className="text-xs text-pretty text-muted-foreground">
+              {t("broadcast.scan_hint")}
+            </p>
             {state.error ? (
-              <p className="text-xs text-destructive">{t("broadcast.sidecar_error")}</p>
+              <p className="text-xs text-destructive">{t("broadcast.waha_error")}</p>
             ) : null}
           </div>
         )}

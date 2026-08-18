@@ -6,18 +6,19 @@ use App\Enums\BroadcastAudience;
 use App\Enums\BroadcastRecipientStatus;
 use App\Enums\BroadcastStatus;
 use App\Http\Requests\BroadcastRequest;
+use App\Http\Requests\WhatsappSessionRequest;
 use App\Http\Resources\BroadcastRecipientResource;
 use App\Http\Resources\BroadcastResource;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
+use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use App\Services\BroadcastService;
 use App\Support\BroadcastAudienceBuilder;
 use App\Support\PhoneNumber;
-use App\Support\WhatsappClientFactory;
+use App\Support\WahaClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
@@ -96,7 +97,7 @@ class BroadcastController extends Controller
 
         return response()->json([
             'data' => new BroadcastResource($broadcast),
-            'meta' => ['gateway_ready' => app(WhatsappClientFactory::class)->forCurrentTenant() !== null],
+            'meta' => ['waha_ready' => app(WahaClient::class) !== null],
         ]);
     }
 
@@ -198,14 +199,19 @@ class BroadcastController extends Controller
     }
 
     /**
-     * Status koneksi sidecar QR: terhubung/tidak plus QR untuk discan.
-     * Diproksikan lewat backend supaya token sidecar tidak sampai ke browser.
+     * Keadaan sesi WAHA klinik ini, plus QR bila belum tersambung.
+     *
+     * `available` false berarti belum ada yang bisa ditampilkan sama sekali:
+     * entah server WAHA-nya belum diisi pengelola platform, atau klinik ini
+     * belum menyebut nama sesinya.
      */
     public function connection(): JsonResponse
     {
         $this->authorize('viewAny', Broadcast::class);
 
-        if (! WhatsappClientFactory::sidecarConfigured()) {
+        $client = app(WahaClient::class);
+
+        if ($client === null) {
             return response()->json([
                 'data' => ['available' => false, 'connected' => false, 'qr' => null],
                 'meta' => [],
@@ -213,37 +219,49 @@ class BroadcastController extends Controller
         }
 
         try {
-            $base = rtrim((string) config('services.wa_sidecar.url'), '/');
-            $token = (string) config('services.wa_sidecar.token');
-
-            $status = Http::timeout(8)->withHeaders(['Authorization' => $token])
-                ->get($base.'/status')->throw()->json();
-
-            $qr = null;
-
-            if (! ($status['connected'] ?? false)) {
-                $qr = Http::timeout(8)->withHeaders(['Authorization' => $token])
-                    ->get($base.'/qr')->json('qr');
-            }
+            $status = $client->sessionStatus();
+            $connected = ($status['status'] ?? null) === 'WORKING';
 
             return response()->json([
                 'data' => [
                     'available' => true,
-                    'connected' => (bool) ($status['connected'] ?? false),
-                    'number' => $status['number'] ?? null,
-                    'connected_at' => $status['connected_at'] ?? null,
-                    'qr' => $qr,
+                    'connected' => $connected,
+                    'number' => $this->accountNumber($status),
+                    'name' => $status['me']['pushName'] ?? null,
+                    // Sesi yang belum tersambung dimulai dulu; tanpa itu WAHA
+                    // tidak pernah menerbitkan QR untuk dipindai.
+                    'qr' => $connected ? null : $this->qrAfterStart($client),
                 ],
                 'meta' => [],
             ]);
         } catch (\Throwable $e) {
-            Log::error('Sidecar WhatsApp tidak merespons', ['exception' => $e]);
+            Log::error('WAHA tidak merespons', ['exception' => $e]);
 
             return response()->json([
                 'data' => ['available' => true, 'connected' => false, 'qr' => null, 'error' => true],
                 'meta' => [],
             ]);
         }
+    }
+
+    /**
+     * WAHA menyebut akunnya sebagai chat id (`628xx@c.us`); yang dibaca admin
+     * hanya nomornya.
+     *
+     * @param  array<string, mixed>  $status
+     */
+    private function accountNumber(array $status): ?string
+    {
+        $id = $status['me']['id'] ?? null;
+
+        return is_string($id) ? explode('@', $id)[0] : null;
+    }
+
+    private function qrAfterStart(WahaClient $client): ?string
+    {
+        $client->startSession();
+
+        return $client->qrCode();
     }
 
     /** Ringkasan dashboard WhatsApp: koneksi, pesan hari ini, campaign aktif. */
@@ -288,48 +306,27 @@ class BroadcastController extends Controller
     {
         $this->authorize('viewAny', Broadcast::class);
 
-        $setting = WhatsappSetting::query()->first();
-
         return response()->json([
             'data' => [
-                'driver' => $setting?->driver?->value ?? 'manual',
-                'api_url' => $setting?->api_url,
-                // Token tidak pernah dikirim balik; cukup penanda terpasang.
-                'has_token' => filled($setting?->api_token),
-                'sidecar_available' => WhatsappClientFactory::sidecarConfigured(),
+                'session' => WhatsappSetting::query()->first()?->session,
+                // Klinik tidak bisa berbuat apa-apa sampai pengelola platform
+                // mengisi alamat servernya, jadi keadaannya ikut disebut.
+                'waha_available' => WahaSetting::query()->first()?->isConfigured() ?? false,
             ],
             'meta' => [],
         ]);
     }
 
-    public function updateSettings(Request $request): JsonResponse
+    public function updateSettings(WhatsappSessionRequest $request): JsonResponse
     {
-        $this->authorize('create', Broadcast::class);
-
-        $validated = $request->validate([
-            'driver' => ['required', Rule::in(['manual', 'gateway', 'qr'])],
-            'api_url' => ['nullable', 'required_if:driver,gateway', 'url', 'max:255'],
-            'api_token' => ['nullable', 'string', 'max:255'],
-        ]);
+        $validated = $request->validated();
 
         $setting = WhatsappSetting::query()->firstOrNew([]);
-        $setting->driver = $validated['driver'];
-        $setting->api_url = $validated['api_url'] ?? null;
-
-        // Token lama dipertahankan bila form mengirim kosong — menyimpan ulang
-        // setelan lain tidak boleh diam-diam mencabut kredensial.
-        if (filled($validated['api_token'] ?? null)) {
-            $setting->api_token = $validated['api_token'];
-        }
-
+        $setting->session = $validated['session'] ?? null;
         $setting->save();
 
         return response()->json([
-            'data' => [
-                'driver' => $setting->driver->value,
-                'api_url' => $setting->api_url,
-                'has_token' => filled($setting->api_token),
-            ],
+            'data' => ['session' => $setting->session],
             'meta' => ['message' => __('broadcast.settings_saved')],
         ]);
     }

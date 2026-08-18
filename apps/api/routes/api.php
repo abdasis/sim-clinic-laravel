@@ -5,6 +5,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\CentralAuthController;
 use App\Http\Controllers\CentralStatsController;
+use App\Http\Controllers\CentralWahaSettingController;
 use App\Http\Controllers\CommissionRuleController;
 use App\Http\Controllers\CompanyContentController;
 use App\Http\Controllers\CompanyProfileController;
@@ -51,6 +52,9 @@ Route::middleware(['auth:sanctum', 'permission.team'])->prefix('central')->group
     Route::get('/stats', [CentralStatsController::class, 'index']);
     Route::get('/tenants', [PlatformTenantController::class, 'index']);
     Route::patch('/tenants/{tenant}/status', [PlatformTenantController::class, 'status']);
+    // Server WAHA dipakai bersama seluruh klinik, jadi pengaturannya di sini.
+    Route::get('/waha', [CentralWahaSettingController::class, 'show']);
+    Route::put('/waha', [CentralWahaSettingController::class, 'update']);
 });
 
 // =========================================================================

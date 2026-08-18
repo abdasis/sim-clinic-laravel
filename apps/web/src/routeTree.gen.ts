@@ -34,6 +34,7 @@ import { Route as MarketingStoreIndexRouteImport } from './routes/_marketing/sto
 import { Route as MarketingTreatmentSlugRouteImport } from './routes/_marketing/treatment/$slug'
 import { Route as MarketingTreatmentsIndexRouteImport } from './routes/_marketing/treatments/index'
 import { Route as CentralTenantsIndexRouteImport } from './routes/central/tenants/index'
+import { Route as CentralWahaIndexRouteImport } from './routes/central/waha/index'
 import { Route as TenantClinicBookingsIndexRouteImport } from './routes/$tenant/clinic/bookings/index'
 import { Route as TenantClinicBroadcastsIndexRouteImport } from './routes/$tenant/clinic/broadcasts/index'
 import { Route as TenantClinicBroadcastsIdRouteImport } from './routes/$tenant/clinic/broadcasts/$id'
@@ -187,6 +188,11 @@ const MarketingTreatmentsIndexRoute =
 const CentralTenantsIndexRoute = CentralTenantsIndexRouteImport.update({
   id: '/tenants/',
   path: '/tenants/',
+  getParentRoute: () => CentralRouteRoute,
+} as any)
+const CentralWahaIndexRoute = CentralWahaIndexRouteImport.update({
+  id: '/waha/',
+  path: '/waha/',
   getParentRoute: () => CentralRouteRoute,
 } as any)
 const TenantClinicBookingsIndexRoute =
@@ -379,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/store/': typeof MarketingStoreIndexRoute
   '/treatments/': typeof MarketingTreatmentsIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
+  '/central/waha/': typeof CentralWahaIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -430,6 +437,7 @@ export interface FileRoutesByTo {
   '/store': typeof MarketingStoreIndexRoute
   '/treatments': typeof MarketingTreatmentsIndexRoute
   '/central/tenants': typeof CentralTenantsIndexRoute
+  '/central/waha': typeof CentralWahaIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -486,6 +494,7 @@ export interface FileRoutesById {
   '/_marketing/store/': typeof MarketingStoreIndexRoute
   '/_marketing/treatments/': typeof MarketingTreatmentsIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
+  '/central/waha/': typeof CentralWahaIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -542,6 +551,7 @@ export interface FileRouteTypes {
     | '/store/'
     | '/treatments/'
     | '/central/tenants/'
+    | '/central/waha/'
     | '/$tenant/clinic/broadcasts/$id'
     | '/$tenant/clinic/company-profile/settings'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -593,6 +603,7 @@ export interface FileRouteTypes {
     | '/store'
     | '/treatments'
     | '/central/tenants'
+    | '/central/waha'
     | '/$tenant/clinic/broadcasts/$id'
     | '/$tenant/clinic/company-profile/settings'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -648,6 +659,7 @@ export interface FileRouteTypes {
     | '/_marketing/store/'
     | '/_marketing/treatments/'
     | '/central/tenants/'
+    | '/central/waha/'
     | '/$tenant/clinic/broadcasts/$id'
     | '/$tenant/clinic/company-profile/settings'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -869,6 +881,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CentralTenantsIndexRouteImport
       parentRoute: typeof CentralRouteRoute
     }
+    '/central/waha/': {
+      id: '/central/waha/'
+      path: '/waha'
+      fullPath: '/central/waha/'
+      preLoaderRoute: typeof CentralWahaIndexRouteImport
+      parentRoute: typeof CentralRouteRoute
+    }
     '/$tenant/clinic/bookings/': {
       id: '/$tenant/clinic/bookings/'
       path: '/bookings'
@@ -1072,12 +1091,14 @@ interface CentralRouteRouteChildren {
   CentralLoginRoute: typeof CentralLoginRoute
   CentralIndexRoute: typeof CentralIndexRoute
   CentralTenantsIndexRoute: typeof CentralTenantsIndexRoute
+  CentralWahaIndexRoute: typeof CentralWahaIndexRoute
 }
 
 const CentralRouteRouteChildren: CentralRouteRouteChildren = {
   CentralLoginRoute: CentralLoginRoute,
   CentralIndexRoute: CentralIndexRoute,
   CentralTenantsIndexRoute: CentralTenantsIndexRoute,
+  CentralWahaIndexRoute: CentralWahaIndexRoute,
 }
 
 const CentralRouteRouteWithChildren = CentralRouteRoute._addFileChildren(
