@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent } from "#/components/ui/card.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiGet } from "#/lib/api.ts"
@@ -36,20 +36,9 @@ function PatientHistoryPage() {
 
   const entries = data?.data ?? []
 
+  useBreadcrumbTail(t("patient.history"))
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic/patients", params: { tenant } },
-          { label: t("clinic.clinic") },
-          {
-            label: t("patient.title"),
-            to: "/$tenant/clinic/patients",
-            params: { tenant },
-          },
-          { label: t("patient.history") },
-        ]}
-      />
       <h1 className="mb-4 text-xl font-semibold">{t("patient.history")}</h1>
       {isLoading ? (
         <div className="space-y-2">

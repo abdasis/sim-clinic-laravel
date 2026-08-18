@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "#/components/ui/alert-dialog.tsx"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -64,20 +64,9 @@ function NewPatientPage() {
     },
   })
 
+  useBreadcrumbTail(t("patient.add"))
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic/patients", params: { tenant } },
-          { label: t("clinic.clinic") },
-          {
-            label: t("patient.title"),
-            to: "/$tenant/clinic/patients",
-            params: { tenant },
-          },
-          { label: t("patient.add") },
-        ]}
-      />
       <div className="mb-4">
         <h1 className="text-xl font-semibold tracking-tight">{t("patient.add")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">

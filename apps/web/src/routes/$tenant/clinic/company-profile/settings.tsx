@@ -3,13 +3,13 @@ import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { Textarea } from "#/components/ui/textarea.tsx"
 import { Label } from "#/components/ui/label.tsx"
 import { Input } from "#/components/ui/input.tsx"
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -101,19 +101,9 @@ function CompanyProfileSettingsPage() {
 
   const hasJsonError = Object.values(jsonErrors).some(Boolean)
 
+  useBreadcrumbTail(t("company_profile.settings"))
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-          {
-            label: t("company_profile.title"),
-            to: "/$tenant/clinic/company-profile",
-            params: { tenant },
-          },
-          { label: t("company_profile.settings") },
-        ]}
-      />
       <h1 className="mb-4 text-xl font-semibold tracking-tight">
         {t("company_profile.settings")}
       </h1>

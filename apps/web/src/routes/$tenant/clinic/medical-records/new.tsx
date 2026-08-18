@@ -5,7 +5,6 @@ import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { z } from "zod"
 import { Trash2Icon } from "lucide-react"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { Form } from "#/components/ui/form.tsx"
@@ -15,6 +14,7 @@ import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { PhotoUploader, type SelectedPhoto } from "#/components/medical-photos/photo-uploader.tsx"
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost, apiUpload } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -153,19 +153,9 @@ function NewMedicalRecordPage() {
     },
   })
 
+  useBreadcrumbTail(t("medical_record.add"))
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-          {
-            label: t("medical_record.title"),
-            to: "/$tenant/clinic/medical-records",
-            params: { tenant },
-          },
-          { label: t("general.create") },
-        ]}
-      />
       <h1 className="mb-4 text-xl font-semibold">{t("medical_record.add")}</h1>
 
       <Form {...form}>

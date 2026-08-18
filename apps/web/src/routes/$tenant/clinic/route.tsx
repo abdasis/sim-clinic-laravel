@@ -32,6 +32,14 @@ import {
   SidebarTrigger,
 } from "#/components/ui/sidebar.tsx"
 import { Separator } from "#/components/ui/separator.tsx"
+import {
+  BreadcrumbTailProvider,
+  useBreadcrumbTailValue,
+} from "#/components/breadcrumb-tail.tsx"
+import {
+  ShellBreadcrumb,
+  type ShellCrumb,
+} from "#/components/shell-breadcrumb.tsx"
 import { useAuthUser } from "#/hooks/use-auth-user.ts"
 import { useMe } from "#/hooks/use-appearance.ts"
 import { normalizeAppearance } from "#/types/appearance.ts"
@@ -159,20 +167,95 @@ function ClinicLayout() {
           onLogout={handleLogout}
         />
       ) : null}
-      <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-          {mounted ? <SidebarTrigger /> : null}
-          <Separator orientation="vertical" className="mr-1 h-4" />
-          <h1 className="text-sm font-semibold">
-            {mounted ? (sectionTitle(pathname, base, visible) ?? tenant) : tenant}
-          </h1>
-        </header>
-        <main className="flex-1 p-4">
-          <Outlet />
-        </main>
-      </SidebarInset>
+      <BreadcrumbTailProvider>
+        <SidebarInset>
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+            {mounted ? <SidebarTrigger /> : null}
+            <Separator orientation="vertical" className="mr-1 h-4" />
+            <ShellCrumbs
+              tenant={tenant}
+              base={base}
+              pathname={pathname}
+              visible={visible}
+              mounted={mounted}
+            />
+          </header>
+          <main className="flex-1 p-4">
+            <Outlet />
+          </main>
+        </SidebarInset>
+      </BreadcrumbTailProvider>
     </SidebarProvider>
   )
+}
+
+/**
+ * Breadcrumb shell klinik, disusun dari hierarki menu yang sudah dihitung
+ * sidebar — jadi tidak ada lagi daftar crumb yang ditulis ulang di tiap
+ * halaman dan bisa berbeda-beda bentuknya.
+ *
+ * Sebelum sidebar terpasang, hanya nama klinik yang ditampilkan: peran
+ * pengguna dibaca dari localStorage dan belum tersedia saat render pertama,
+ * sehingga menu yang terlihat pun belum bisa dipastikan.
+ */
+function ShellCrumbs({
+  tenant,
+  base,
+  pathname,
+  visible,
+  mounted,
+}: {
+  tenant: string
+  base: string
+  pathname: string
+  visible: NavItem[]
+  mounted: boolean
+}) {
+  const { t } = useTrans()
+  const tail = useBreadcrumbTailValue()
+
+  if (!mounted) {
+    return <ShellBreadcrumb items={[{ label: tenant }]} />
+  }
+
+  const items: ShellCrumb[] = [
+    { label: tenant, to: "/$tenant/clinic", params: { tenant } },
+    { label: t("clinic.clinic") },
+  ]
+
+  const parent = visible.find((item) => isActiveItem(pathname, base, item))
+
+  if (parent && parent.key !== "") {
+    items.push({ label: parent.label })
+
+    const childKey = activeChildKey(pathname, base, parent)
+    const child = parent.children?.find((c) => c.key === childKey)
+
+    if (child) {
+      items.push({ label: child.label })
+    }
+  } else if (!parent) {
+    // Halaman di luar menu, mis. Preferensi. Tanpa cadangan ini breadcrumb
+    // berhenti di nama klinik dan tidak menyebut halaman yang sedang dibuka.
+    items.push({ label: outsideNavLabel(pathname, base, t) })
+  }
+
+  if (tail) {
+    items.push({ label: tail })
+  }
+
+  return <ShellBreadcrumb items={items} />
+}
+
+/** Label halaman yang tidak punya entri menu. */
+function outsideNavLabel(
+  pathname: string,
+  base: string,
+  t: (key: string) => string,
+): string {
+  if (pathname.startsWith(`${base}/preferences`)) return t("preferences.title")
+
+  return t("dashboard.title")
 }
 
 function isActiveItem(pathname: string, base: string, item: NavItem): boolean {
@@ -202,19 +285,4 @@ function activeChildKey(
     ?.filter((child) => pathname.startsWith(`${base}/${child.key}`))
     .sort((a, b) => b.key.length - a.key.length)
     .at(0)?.key
-}
-
-function sectionTitle(
-  pathname: string,
-  base: string,
-  visible: NavItem[],
-): string | undefined {
-  const parent = visible.find((item) => isActiveItem(pathname, base, item))
-
-  if (!parent) return undefined
-
-  const childKey = activeChildKey(pathname, base, parent)
-  const child = parent.children?.find((c) => c.key === childKey)
-
-  return child ? `${parent.label} / ${child.label}` : parent.label
 }

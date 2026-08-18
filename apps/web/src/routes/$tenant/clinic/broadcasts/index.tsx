@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { BubbleChatIcon, Link01Icon, Settings02Icon } from "@hugeicons/core-free-icons"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
@@ -77,13 +76,6 @@ function BroadcastsPage() {
 
   return (
     <div className="space-y-4">
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic/broadcasts", params: { tenant } },
-          { label: t("clinic.clinic") },
-          { label: t("broadcast.title") },
-        ]}
-      />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">{t("broadcast.title")}</h1>

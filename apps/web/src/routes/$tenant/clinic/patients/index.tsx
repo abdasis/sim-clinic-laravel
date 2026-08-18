@@ -5,7 +5,6 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { Button } from "#/components/ui/button.tsx"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useStats } from "#/hooks/use-stats.ts"
@@ -70,13 +69,6 @@ function PatientsPage() {
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic/patients", params: { tenant } },
-          { label: t("clinic.clinic") },
-          { label: t("patient.title") },
-        ]}
-      />
       <IndexCta
         icon={UserAdd01Icon}
         tone="lagoon"

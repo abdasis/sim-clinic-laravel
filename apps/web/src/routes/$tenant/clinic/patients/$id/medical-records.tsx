@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import {
   Card,
@@ -10,6 +9,7 @@ import {
   CardTitle,
 } from "#/components/ui/card.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiGet } from "#/lib/api.ts"
@@ -89,21 +89,10 @@ function PatientMedicalRecordsPage() {
 
   const records = data?.data ?? []
   const patientName = records[0]?.patient_name ?? t("patient.title")
+  useBreadcrumbTail(patientName)
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-          {
-            label: t("patient.title"),
-            to: "/$tenant/clinic/patients",
-            params: { tenant },
-          },
-          { label: patientName },
-          { label: t("medical_record.title") },
-        ]}
-      />
       <div className="mb-4">
         <h1 className="text-xl font-semibold tracking-tight">
           {t("medical_record.history")}

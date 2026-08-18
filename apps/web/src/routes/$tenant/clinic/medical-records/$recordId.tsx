@@ -8,7 +8,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +33,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete, apiGet } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -123,20 +123,10 @@ function MedicalRecordDetailPage() {
   })
 
   const heading = record?.patient_name ?? t("medical_record.detail")
+  useBreadcrumbTail(heading)
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-          {
-            label: t("medical_record.title"),
-            to: "/$tenant/clinic/medical-records",
-            params: { tenant },
-          },
-          { label: heading },
-        ]}
-      />
 
       {isLoading ? (
         <div className="space-y-4">

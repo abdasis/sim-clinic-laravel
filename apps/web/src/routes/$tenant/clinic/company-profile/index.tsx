@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ExternalLink } from "lucide-react"
 import { toast } from "sonner"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { Card, CardContent } from "#/components/ui/card.tsx"
@@ -58,12 +57,6 @@ function CompanyProfileOverviewPage() {
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-          { label: t("company_profile.title") },
-        ]}
-      />
 
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>

@@ -3,7 +3,6 @@ import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
@@ -142,13 +141,6 @@ function ExpensesPage() {
 
   return (
     <div className="space-y-4">
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic/expenses", params: { tenant } },
-          { label: t("clinic.clinic") },
-          { label: t("expense.title") },
-        ]}
-      />
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>

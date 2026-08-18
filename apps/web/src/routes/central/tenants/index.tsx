@@ -3,7 +3,6 @@ import { useMemo } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useCentralStats } from "#/hooks/use-stats.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
@@ -63,12 +62,6 @@ function TenantsPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
-      <ClinicBreadcrumb
-        items={[
-          { label: t("general.central"), to: "/central/tenants" },
-          { label: t("tenant.tenants") },
-        ]}
-      />
       <StatsSection
         className="mt-2"
         rangeLabel={t("stats.last_weeks").replace(

@@ -8,7 +8,6 @@ import {
   ARCHIVABLE_STATUS_VARIANTS,
   StatusBadge,
 } from "#/components/ui/status-badge.tsx"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useStats } from "#/hooks/use-stats.ts"
@@ -117,13 +116,6 @@ function ServicesPage() {
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic/services", params: { tenant } },
-          { label: t("clinic.clinic") },
-          { label: t("service.title") },
-        ]}
-      />
       <IndexCta
         icon={TagsIcon}
         tone="palm"

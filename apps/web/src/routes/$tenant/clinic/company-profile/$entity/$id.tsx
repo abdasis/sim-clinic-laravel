@@ -1,8 +1,8 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import { ContentForm } from "../components/content-form.tsx"
@@ -35,24 +35,9 @@ function EditContentPage() {
     return <p className="text-sm text-muted-foreground">{t("general.no_data")}</p>
   }
 
+  useBreadcrumbTail(`${t("general.edit")} — ${t(schema.titleKey)}`)
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-          {
-            label: t("company_profile.title"),
-            to: "/$tenant/clinic/company-profile",
-            params: { tenant },
-          },
-          {
-            label: t(schema.titleKey),
-            to: "/$tenant/clinic/company-profile/$entity",
-            params: { tenant, entity },
-          },
-          { label: t("general.edit") },
-        ]}
-      />
       <h1 className="mb-4 text-xl font-semibold tracking-tight">
         {t("general.edit")} — {t(schema.titleKey)}
       </h1>

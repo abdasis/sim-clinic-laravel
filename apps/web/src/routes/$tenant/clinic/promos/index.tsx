@@ -2,7 +2,6 @@ import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
@@ -137,13 +136,6 @@ function PromosPage() {
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic/promos", params: { tenant } },
-          { label: t("clinic.clinic") },
-          { label: t("promo.title") },
-        ]}
-      />
 
       <div className="mt-4 mb-4 flex items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">{t("promo.title")}</h1>

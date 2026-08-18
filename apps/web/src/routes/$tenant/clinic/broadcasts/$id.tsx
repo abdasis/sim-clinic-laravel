@@ -22,7 +22,6 @@ import {
 } from "#/components/ui/alert-dialog.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Progress } from "#/components/ui/progress.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import {
@@ -30,6 +29,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete, apiGet, apiPatch, apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -91,6 +91,7 @@ function BroadcastDetailPage() {
   })
 
   const broadcast = data?.data
+  useBreadcrumbTail(broadcast?.title)
   const gatewayReady = data?.meta.gateway_ready ?? false
 
   const mark = useMutation({
@@ -166,17 +167,6 @@ function BroadcastDetailPage() {
 
   return (
     <div className="space-y-4">
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic/broadcasts", params: { tenant } },
-          {
-            label: t("broadcast.title"),
-            to: "/$tenant/clinic/broadcasts",
-            params: { tenant },
-          },
-          { label: broadcast.title },
-        ]}
-      />
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">

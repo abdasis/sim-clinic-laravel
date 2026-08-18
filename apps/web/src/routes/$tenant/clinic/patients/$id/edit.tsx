@@ -15,7 +15,7 @@ import { Form } from "#/components/ui/form.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -84,20 +84,9 @@ function EditPatientPage() {
     },
   })
 
+  useBreadcrumbTail(t("patient.edit"))
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic/patients", params: { tenant } },
-          { label: t("clinic.clinic") },
-          {
-            label: t("patient.title"),
-            to: "/$tenant/clinic/patients",
-            params: { tenant },
-          },
-          { label: t("patient.edit") },
-        ]}
-      />
       <div className="mb-4">
         <h1 className="text-xl font-semibold tracking-tight">{t("patient.edit")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">

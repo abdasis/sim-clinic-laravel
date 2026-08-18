@@ -1,7 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useStats } from "#/hooks/use-stats.ts"
 import { Button } from "#/components/ui/button.tsx"
@@ -66,13 +65,6 @@ function ReportsPage() {
   if (!isAdmin) {
     return (
       <div>
-        <ClinicBreadcrumb
-          items={[
-            { label: tenant, to: "/$tenant/clinic", params: { tenant } },
-            { label: t("clinic.clinic") },
-            { label: t("report.title") },
-          ]}
-        />
         <p className="text-muted-foreground">{t("clinic.forbidden")}</p>
       </div>
     )
@@ -82,13 +74,6 @@ function ReportsPage() {
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic", params: { tenant } },
-          { label: t("clinic.clinic") },
-          { label: t("report.title") },
-        ]}
-      />
       <h1 className="mb-4 text-xl font-semibold">{t("report.title")}</h1>
 
       <StatsSection

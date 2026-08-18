@@ -5,7 +5,6 @@ import { UserGroupIcon } from "@hugeicons/core-free-icons"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useStats } from "#/hooks/use-stats.ts"
@@ -87,13 +86,6 @@ function StaffPage() {
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic/staff", params: { tenant } },
-          { label: t("clinic.clinic") },
-          { label: t("staff.title") },
-        ]}
-      />
       <IndexCta
         icon={UserGroupIcon}
         tone="ink"

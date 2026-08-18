@@ -1,7 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useCallback, useState } from "react"
 import { DeliveryBox01Icon } from "@hugeicons/core-free-icons"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
@@ -37,13 +36,6 @@ function InventoryPage() {
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic", params: { tenant } },
-          { label: t("clinic.clinic") },
-          { label: t("inventory.title") },
-        ]}
-      />
 
       <IndexCta
         icon={DeliveryBox01Icon}

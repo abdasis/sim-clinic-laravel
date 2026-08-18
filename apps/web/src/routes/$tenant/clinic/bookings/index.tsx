@@ -8,7 +8,6 @@ import {
   endOfWeek,
 } from "date-fns"
 import { CalendarCheckIcon } from "@hugeicons/core-free-icons"
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
@@ -69,12 +68,6 @@ function BookingsPage() {
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-          { label: t("booking.title") },
-        ]}
-      />
       <IndexCta
         icon={CalendarCheckIcon}
         tone="palm"

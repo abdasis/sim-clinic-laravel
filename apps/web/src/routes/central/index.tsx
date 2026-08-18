@@ -3,7 +3,6 @@ import { useEffect } from "react"
 import { Building2 } from "lucide-react"
 import { Building03Icon } from "@hugeicons/core-free-icons"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { Button } from "#/components/ui/button.tsx"
@@ -59,12 +58,6 @@ function CentralDashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
-      <ClinicBreadcrumb
-        items={[
-          { label: t("general.central"), to: "/central/tenants" },
-          { label: t("central.dashboard") },
-        ]}
-      />
 
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">

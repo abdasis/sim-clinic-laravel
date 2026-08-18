@@ -10,7 +10,6 @@ import {
   Sun03Icon,
 } from "@hugeicons/core-free-icons"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import {
   Tooltip,
@@ -129,13 +128,6 @@ function PreferencesPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <ClinicBreadcrumb
-        items={[
-          { label: tenant, to: "/$tenant/clinic", params: { tenant } },
-          { label: t("clinic.clinic") },
-          { label: t("preferences.title") },
-        ]}
-      />
 
       <div className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight">

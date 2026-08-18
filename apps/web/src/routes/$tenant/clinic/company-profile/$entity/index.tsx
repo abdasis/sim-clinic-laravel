@@ -3,7 +3,6 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "#/components/ui/table.tsx"
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiDelete, apiGet, apiPost } from "#/lib/api.ts"
@@ -104,19 +104,9 @@ function ContentListPage() {
     reorder.mutate(next.map((row) => row.id))
   }
 
+  useBreadcrumbTail(t(schema.titleKey))
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-          {
-            label: t("company_profile.title"),
-            to: "/$tenant/clinic/company-profile",
-            params: { tenant },
-          },
-          { label: t(schema.titleKey) },
-        ]}
-      />
 
       <div className="mb-4 flex items-center justify-between gap-4">
         <h1 className="text-xl font-semibold tracking-tight">

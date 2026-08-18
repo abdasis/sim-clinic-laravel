@@ -11,6 +11,14 @@ import {
   SidebarTrigger,
 } from "#/components/ui/sidebar.tsx"
 import { Separator } from "#/components/ui/separator.tsx"
+import {
+  BreadcrumbTailProvider,
+  useBreadcrumbTailValue,
+} from "#/components/breadcrumb-tail.tsx"
+import {
+  ShellBreadcrumb,
+  type ShellCrumb,
+} from "#/components/shell-breadcrumb.tsx"
 import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { useAuthUser } from "#/hooks/use-auth-user.ts"
@@ -76,22 +84,44 @@ function CentralLayout() {
           onLogout={handleLogout}
         />
       ) : null}
-      <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-          {mounted ? <SidebarTrigger /> : null}
-          <Separator orientation="vertical" className="mr-1 h-4" />
-          <h1 className="text-sm font-semibold">{sectionTitle(pathname, t)}</h1>
-        </header>
-        <main className="flex-1 p-4">
-          <Outlet />
-        </main>
-      </SidebarInset>
+      <BreadcrumbTailProvider>
+        <SidebarInset>
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+            {mounted ? <SidebarTrigger /> : null}
+            <Separator orientation="vertical" className="mr-1 h-4" />
+            <CentralCrumbs pathname={pathname} />
+          </header>
+          <main className="flex-1 p-4">
+            <Outlet />
+          </main>
+        </SidebarInset>
+      </BreadcrumbTailProvider>
     </SidebarProvider>
   )
 }
 
-function sectionTitle(pathname: string, t: (key: string) => string): string {
-  if (pathname.startsWith("/central/tenants")) return t("tenant.tenants")
-  if (pathname === "/central") return t("central.dashboard")
-  return t("general.central")
+/**
+ * Breadcrumb shell central. Modulnya sedikit dan tetap, jadi hierarkinya
+ * disebut langsung — memaksakan penurunan dari daftar menu di sini hanya
+ * menambah lapisan tanpa menghilangkan satu pun pengulangan.
+ */
+function CentralCrumbs({ pathname }: { pathname: string }) {
+  const { t } = useTrans()
+  const tail = useBreadcrumbTailValue()
+
+  const items: ShellCrumb[] = [
+    { label: t("general.central"), to: "/central" },
+  ]
+
+  if (pathname.startsWith("/central/tenants")) {
+    items.push({ label: t("tenant.tenants") })
+  } else {
+    items.push({ label: t("central.dashboard") })
+  }
+
+  if (tail) {
+    items.push({ label: tail })
+  }
+
+  return <ShellBreadcrumb items={items} />
 }

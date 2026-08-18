@@ -3,7 +3,6 @@ import { useMemo } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Notebook01Icon } from "@hugeicons/core-free-icons"
 
-import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useStats } from "#/hooks/use-stats.ts"
@@ -131,12 +130,6 @@ function MedicalRecordsPage() {
 
   return (
     <div>
-      <ClinicBreadcrumb
-        items={[
-          { label: t("clinic.clinic"), to: "/$tenant/clinic", params: { tenant } },
-          { label: t("medical_record.title") },
-        ]}
-      />
       <IndexCta
         icon={Notebook01Icon}
         tone="lagoon"
