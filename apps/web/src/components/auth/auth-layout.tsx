@@ -90,7 +90,7 @@ export function AuthLayout({
           <Link
             to="/"
             search={{ lang: undefined }}
-            className="mt-8 inline-flex items-center gap-1.5 text-sm text-sea-ink-soft no-underline transition-colors hover:text-sea-ink"
+            className="mt-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground no-underline transition-colors hover:text-primary"
           >
             <HugeiconsIcon
               icon={ArrowLeft01Icon}
@@ -137,7 +137,7 @@ function BrandPanel({
               <HugeiconsIcon
                 icon={point.icon}
                 strokeWidth={2}
-                className="mt-0.5 size-5 shrink-0 text-lagoon-deep"
+                className="mt-0.5 size-5 shrink-0 text-primary"
               />
               {point.label}
             </li>

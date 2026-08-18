@@ -194,22 +194,57 @@ body::after {
 }
 
 /*
+ * Warna teks tautan, diturunkan dari accent yang dipilih pengguna.
+ *
+ * Bukan --primary apa adanya: token itu ditala sebagai warna isian tombol,
+ * dipasangkan dengan --primary-foreground di atasnya. Dipakai langsung sebagai
+ * teks di atas --background, sebagian accent jatuh di bawah ambang keterbacaan
+ * WCAG — teal gelap cuma 2,6:1 dan kuning terang 2,9:1, keduanya di bawah
+ * batas 3:1 sekalipun.
+ *
+ * Karena itu terangnya dijepit ke rentang yang aman untuk teks: di latar
+ * terang maksimal 0.55, di latar gelap minimal 0.72. Rona dan kroma accent
+ * tidak disentuh, jadi warnanya tetap terbaca sebagai accent yang dipilih.
+ */
+:root {
+  --link: var(--primary);
+}
+
+@supports (color: oklch(from red l c h)) {
+  :root {
+    --link: oklch(from var(--primary) min(l, 0.53) c h);
+  }
+
+  .dark {
+    --link: oklch(from var(--primary) max(l, 0.72) c h);
+  }
+}
+
+/*
  * Dibungkus @layer base agar kalah dari utility Tailwind (yang ada di
- * @layer utilities). Tanpa ini, warna link brand --lagoon-deep menimpa
- * token sidebar (text-sidebar-foreground dll) karena aturan unlayered selalu
- * menang dari aturan berlapis, apa pun spesifitasnya — jadi link sidebar
- * tetap hijau meski accent diganti.
+ * @layer utilities). Tanpa ini warna link menimpa token sidebar
+ * (text-sidebar-foreground dll) karena aturan unlayered selalu menang dari
+ * aturan berlapis, apa pun spesifitasnya.
  */
 @layer base {
   a {
-    color: var(--lagoon-deep);
-    text-decoration-color: rgba(50, 143, 151, 0.4);
+    color: var(--link);
+    text-decoration-color: color-mix(in oklab, var(--link) 40%, transparent);
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
+    transition: color 150ms ease;
   }
 
   a:hover {
-    color: #246f76;
+    color: color-mix(in oklab, var(--link), black 12%);
+  }
+
+  /*
+   * Di latar gelap tautannya sudah terang, jadi menggelapkan saat hover
+   * justru mengurangi kontras. Arahnya dibalik: menuju putih.
+   */
+  .dark a:hover {
+    color: color-mix(in oklab, var(--link), white 14%);
   }
 }
 
@@ -480,12 +515,14 @@ a {
   color: var(--kicker);
 }
 
+/* Ikut accent lewat --link, sama seperti aturan `a` di atas. */
 .nav-link {
   position: relative;
   display: inline-flex;
   align-items: center;
   text-decoration: none;
-  color: var(--sea-ink-soft);
+  color: var(--link);
+  transition: color 170ms ease;
 }
 
 .nav-link::after {
@@ -497,13 +534,22 @@ a {
   height: 2px;
   transform: scaleX(0);
   transform-origin: left;
-  background: linear-gradient(90deg, var(--lagoon), #7ed3bf);
+  background: linear-gradient(
+    90deg,
+    var(--primary),
+    color-mix(in oklab, var(--primary), white 30%)
+  );
   transition: transform 170ms ease;
 }
 
 .nav-link:hover,
 .nav-link.is-active {
-  color: var(--sea-ink);
+  color: color-mix(in oklab, var(--link), black 12%);
+}
+
+.dark .nav-link:hover,
+.dark .nav-link.is-active {
+  color: color-mix(in oklab, var(--link), white 14%);
 }
 
 .nav-link:hover::after,

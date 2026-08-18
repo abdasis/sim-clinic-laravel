@@ -47,7 +47,7 @@ export default function Header() {
             <div className="mt-2 min-w-56 rounded-xl border border-line bg-header-bg p-2 shadow-lg sm:absolute sm:right-0">
               <a
                 href="/demo/tanstack-query"
-                className="block rounded-lg px-3 py-2 text-sm text-sea-ink-soft no-underline transition hover:bg-link-bg-hover hover:text-sea-ink"
+                className="block rounded-lg px-3 py-2 text-sm text-primary no-underline transition hover:bg-link-bg-hover"
               >
                 TanStack Query
               </a>
@@ -60,7 +60,7 @@ export default function Header() {
             href="https://x.com/tan_stack"
             target="_blank"
             rel="noreferrer"
-            className="hidden rounded-xl p-2 text-sea-ink-soft transition hover:bg-link-bg-hover hover:text-sea-ink sm:block"
+            className="hidden rounded-xl p-2 text-muted-foreground transition hover:bg-link-bg-hover hover:text-primary sm:block"
           >
             <span className="sr-only">Follow TanStack on X</span>
             <svg viewBox="0 0 16 16" aria-hidden="true" width="24" height="24">
@@ -74,7 +74,7 @@ export default function Header() {
             href="https://github.com/TanStack"
             target="_blank"
             rel="noreferrer"
-            className="hidden rounded-xl p-2 text-sea-ink-soft transition hover:bg-link-bg-hover hover:text-sea-ink sm:block"
+            className="hidden rounded-xl p-2 text-muted-foreground transition hover:bg-link-bg-hover hover:text-primary sm:block"
           >
             <span className="sr-only">Go to TanStack GitHub</span>
             <svg viewBox="0 0 16 16" aria-hidden="true" width="24" height="24">
