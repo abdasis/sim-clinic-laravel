@@ -114,6 +114,10 @@ Route::prefix('{tenant}/clinic')
         Route::post('roles/{role}/reset', [RoleController::class, 'reset']);
 
         // US2 Service
+        // Impor didaftarkan lebih dulu supaya `services/import/template`
+        // tidak ditangkap `services/{service}` sebagai detail layanan.
+        Route::post('services/import', [ServiceController::class, 'import']);
+        Route::get('services/import/template', [ServiceController::class, 'importTemplate']);
         // Hapus permanen dipisah dari destroy yang mengarsipkan.
         Route::delete('services/{service}/force', [ServiceController::class, 'forceDestroy']);
         Route::apiResource('services', ServiceController::class);
@@ -131,6 +135,8 @@ Route::prefix('{tenant}/clinic')
         // US6 Product & Inventory
         Route::get('products/{product}/stock-movements', [StockMovementController::class, 'indexByProduct']);
         Route::post('products/{product}/stock-movements', [StockMovementController::class, 'store']);
+        Route::post('products/import', [ProductController::class, 'import']);
+        Route::get('products/import/template', [ProductController::class, 'importTemplate']);
         Route::delete('products/{product}/force', [ProductController::class, 'forceDestroy']);
         Route::apiResource('products', ProductController::class);
 

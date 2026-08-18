@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'import' => 'Impor Produk',
+    'import_template' => 'Template Produk',
     'deleted' => 'Produk berhasil dihapus permanen.',
     'delete' => 'Hapus permanen',
     'delete_confirm' => 'Produk ini dihapus selamanya beserta riwayat mutasi stoknya, dan tidak bisa dikembalikan. Kalau sekadar ingin menyembunyikannya, pakai Arsipkan.',

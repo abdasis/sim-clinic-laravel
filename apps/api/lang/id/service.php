@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'import' => 'Impor Layanan',
+    'import_template' => 'Template Layanan',
     'deleted' => 'Layanan berhasil dihapus permanen.',
     'delete' => 'Hapus permanen',
     'delete_confirm' => 'Layanan ini dihapus selamanya dan tidak bisa dikembalikan. Kalau sekadar ingin menyembunyikannya dari katalog, pakai Arsipkan.',

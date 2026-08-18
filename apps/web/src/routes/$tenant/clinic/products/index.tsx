@@ -16,6 +16,7 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { Button } from "#/components/ui/button.tsx"
+import { CatalogImportDialog } from "#/components/import/catalog-import-dialog.tsx"
 import { ProductActionsCell } from "./components/product-actions-cell.tsx"
 import { ProductFormModal } from "./components/product-form-modal.tsx"
 
@@ -46,6 +47,7 @@ function ProductsPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/products/" })
   const { t } = useTrans()
   const [createOpen, setCreateOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const stats = useStats({ tenant, module: "products" })
 
   const columns = useMemo<ColumnDef<ProductRow>[]>(
@@ -148,12 +150,25 @@ function ProductsPage() {
 
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("product.title")}</h1>
-        <Button onClick={() => setCreateOpen(true)}>{t("product.add")}</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            {t("product.import")}
+          </Button>
+          <Button onClick={() => setCreateOpen(true)}>{t("product.add")}</Button>
+        </div>
       </div>
       <ProductFormModal
         tenant={tenant}
         open={createOpen}
         onOpenChange={setCreateOpen}
+      />
+      <CatalogImportDialog
+        tenant={tenant}
+        resource="products"
+        templateName="template-produk.xlsx"
+        queryKey="products"
+        open={importOpen}
+        onOpenChange={setImportOpen}
       />
       <DataTable
         table={table}

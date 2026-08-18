@@ -4,13 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Enums\ServiceStatus;
 use App\Http\Concerns\InteractsWithDataTable;
+use App\Http\Requests\ImportServicesRequest;
 use App\Http\Requests\ServiceRequest;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
+use App\Services\ImportService;
 use App\Services\ServiceCatalogService;
 use App\Support\PromoPricing;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ServiceController extends Controller
 {
@@ -116,6 +120,36 @@ class ServiceController extends Controller
         return response()->json([
             'data' => new ServiceResource($service->fresh()),
             'meta' => ['message' => __('service.archived')],
+        ]);
+    }
+
+    /**
+     * Impor massal dari template. Baris bermasalah dikembalikan apa adanya
+     * supaya pengisi tahu baris mana yang perlu dibetulkan — baris lainnya
+     * tetap masuk.
+     */
+    public function import(ImportServicesRequest $request, ImportService $imports): JsonResponse
+    {
+        $result = $imports->importServices($request->file('file'), $request->user());
+
+        return response()->json([
+            'data' => $result,
+            'meta' => ['message' => __('import.result_title')],
+        ]);
+    }
+
+    /** Template berisi contoh isian dan daftar kategori klinik ini. */
+    public function importTemplate(ImportService $imports): StreamedResponse
+    {
+        $this->authorize('viewAny', Service::class);
+
+        $spreadsheet = $imports->template('service');
+
+        return new StreamedResponse(function () use ($spreadsheet): void {
+            (new Xlsx($spreadsheet))->save('php://output');
+        }, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="template-layanan.xlsx"',
         ]);
     }
 }

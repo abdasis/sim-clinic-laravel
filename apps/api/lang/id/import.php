@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'file' => 'Berkas',
+    'title' => 'Impor dari Template',
+    'template_hint' => 'Unduh template, isi barisnya, lalu unggah kembali. Kolom kategori boleh diisi nama baru — kategorinya dibuat otomatis saat impor.',
+    'download_template' => 'Unduh Template',
+    'upload' => 'Impor',
+    'select_file' => 'Pilih berkas',
+    'selected_file' => 'Berkas terpilih',
+    'result_title' => 'Hasil impor',
+    'imported' => 'Baru ditambahkan',
+    'updated' => 'Diperbarui',
+    'errors' => 'Baris bermasalah',
+    'row' => 'Baris',
+    'field' => 'Kolom',
+    'message' => 'Keterangan',
+    'no_errors' => 'Semua baris masuk tanpa masalah.',
+    'name_conflict_hint' => 'Nama yang sudah ada akan diperbarui, bukan digandakan.',
+    'no_rows' => 'Berkasnya belum berisi baris data.',
+    'unreadable' => 'Berkasnya tidak bisa dibaca. Pastikan yang diunggah berkas xlsx dari template ini.',
+    'header_invalid' => 'Kolom :columns tidak ada di berkas. Pakai template yang diunduh dari halaman ini.',
+    'too_many_rows' => 'Maksimal :max baris sekali impor. Bagi berkasnya jadi beberapa bagian.',
+    'category_not_found' => 'Kategori tidak ditemukan dan tidak bisa dibuat.',
+];

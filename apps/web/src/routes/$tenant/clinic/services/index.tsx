@@ -19,6 +19,7 @@ import { ServiceActionsCell } from "./components/service-actions-cell.tsx"
 import { ServiceFormDialog } from "./components/service-form-dialog.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
+import { CatalogImportDialog } from "#/components/import/catalog-import-dialog.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/services/")({
   component: ServicesPage,
@@ -42,6 +43,7 @@ function ServicesPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/services/" })
   const { t } = useTrans()
   const [createOpen, setCreateOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const stats = useStats({ tenant, module: "services" })
 
   const columns = useMemo<ColumnDef<ServiceRow>[]>(
@@ -138,12 +140,25 @@ function ServicesPage() {
 
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("service.title")}</h1>
-        <Button onClick={() => setCreateOpen(true)}>{t("service.add")}</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            {t("service.import")}
+          </Button>
+          <Button onClick={() => setCreateOpen(true)}>{t("service.add")}</Button>
+        </div>
       </div>
       <ServiceFormDialog
         tenant={tenant}
         open={createOpen}
         onOpenChange={setCreateOpen}
+      />
+      <CatalogImportDialog
+        tenant={tenant}
+        resource="services"
+        templateName="template-layanan.xlsx"
+        queryKey="services"
+        open={importOpen}
+        onOpenChange={setImportOpen}
       />
       <DataTable
         table={table}
