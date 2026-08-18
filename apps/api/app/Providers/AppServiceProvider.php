@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Booking;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
+use App\Models\BroadcastReminderSetting;
 use App\Models\CommissionRule;
 use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
@@ -67,6 +68,7 @@ class AppServiceProvider extends ServiceProvider
         'broadcast_recipient' => BroadcastRecipient::class,
         'message_template' => MessageTemplate::class,
         'reminder_rule' => ReminderRule::class,
+        'broadcast_reminder_setting' => BroadcastReminderSetting::class,
         'promo_item' => PromoItem::class,
         'stock_movement' => StockMovement::class,
         'transaction' => Transaction::class,

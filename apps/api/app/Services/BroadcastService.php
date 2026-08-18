@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Actions\Broadcast\CreateBroadcastAction;
 use App\Actions\Broadcast\DeleteBroadcastAction;
+use App\Actions\Broadcast\SaveAutoReminderSettingAction;
 use App\Actions\Broadcast\UpdateRecipientStatusAction;
 use App\Actions\LogAuditAction;
 use App\Enums\BroadcastRecipientStatus;
@@ -11,6 +12,7 @@ use App\Enums\BroadcastStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
+use App\Models\BroadcastReminderSetting;
 use App\Support\WahaClient;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +37,14 @@ class BroadcastService
     public function delete(Broadcast $broadcast): void
     {
         DB::transaction(fn () => app(DeleteBroadcastAction::class)->handle($broadcast));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function saveAutoReminderSetting(array $data): BroadcastReminderSetting
+    {
+        return DB::transaction(fn () => app(SaveAutoReminderSettingAction::class)->handle($data));
     }
 
     public function markRecipient(BroadcastRecipient $recipient, BroadcastRecipientStatus $status): BroadcastRecipient

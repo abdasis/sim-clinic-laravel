@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BroadcastAutoReminderController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\CentralAuthController;
 use App\Http\Controllers\CentralStatsController;
@@ -137,6 +138,8 @@ Route::prefix('{tenant}/clinic')
         Route::get('broadcasts/audience-preview', [BroadcastController::class, 'preview']);
         Route::get('broadcasts/settings', [BroadcastController::class, 'settings']);
         Route::put('broadcasts/settings', [BroadcastController::class, 'updateSettings']);
+        Route::get('broadcasts/auto-reminder', [BroadcastAutoReminderController::class, 'show']);
+        Route::put('broadcasts/auto-reminder', [BroadcastAutoReminderController::class, 'update']);
         Route::get('broadcasts/connection', [BroadcastController::class, 'connection']);
         Route::get('broadcasts/dashboard', [BroadcastController::class, 'dashboard']);
         Route::post('broadcasts/test-message', [BroadcastController::class, 'sendTest']);

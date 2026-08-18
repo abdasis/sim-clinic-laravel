@@ -13,6 +13,7 @@ use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
+use App\Rules\TenantRule;
 use App\Services\BroadcastService;
 use App\Support\BroadcastAudienceBuilder;
 use App\Support\PhoneNumber;
@@ -56,7 +57,9 @@ class BroadcastController extends Controller
         $validated = $request->validate([
             'audience' => ['required', Rule::enum(BroadcastAudience::class)],
             'days' => ['nullable', 'integer', 'min:1', 'max:730'],
-            'service_id' => ['nullable', 'exists:services,id'],
+            // Layanan klinik lain tidak boleh dipakai menyaring penerima:
+            // jumlah dan nama pasien yang muncul jadi bocoran lintas klinik.
+            'service_id' => ['nullable', TenantRule::exists('services')],
         ]);
 
         $built = $builder->build(BroadcastAudience::from($validated['audience']), $validated);

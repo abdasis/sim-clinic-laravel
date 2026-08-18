@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Broadcast;
 use App\Models\ReminderRule;
+use App\Rules\TenantRule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -39,9 +40,16 @@ class ReminderRuleController extends Controller
         $this->authorize('create', Broadcast::class);
 
         $validated = $request->validate([
-            'service_id' => ['required', 'exists:services,id', Rule::unique('reminder_rules', 'service_id')],
+            // Tanpa TenantRule, `exists:` lolos untuk layanan klinik lain:
+            // aturannya berjalan lewat query builder, jadi TenantScope tidak
+            // ikut berlaku.
+            //
+            // Unique-nya sengaja tetap global: satu layanan hanya dimiliki
+            // satu klinik, jadi "satu aturan per layanan" sudah otomatis
+            // berarti "per klinik".
+            'service_id' => ['required', TenantRule::exists('services'), Rule::unique('reminder_rules', 'service_id')],
             'days_after' => ['required', 'integer', 'min:1', 'max:730'],
-            'message_template_id' => ['nullable', 'exists:message_templates,id'],
+            'message_template_id' => ['nullable', TenantRule::exists('message_templates')],
             'is_active' => ['nullable', 'boolean'],
         ], [], [
             'service_id' => __('service.title'),
@@ -62,7 +70,7 @@ class ReminderRuleController extends Controller
 
         $validated = $request->validate([
             'days_after' => ['required', 'integer', 'min:1', 'max:730'],
-            'message_template_id' => ['nullable', 'exists:message_templates,id'],
+            'message_template_id' => ['nullable', TenantRule::exists('message_templates')],
             'is_active' => ['nullable', 'boolean'],
         ]);
 

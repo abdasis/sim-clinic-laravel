@@ -2,7 +2,12 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { BubbleChatIcon, Link01Icon, Settings02Icon } from "@hugeicons/core-free-icons"
+import {
+  BubbleChatIcon,
+  Link01Icon,
+  Settings02Icon,
+  TimeQuarterPassIcon,
+} from "@hugeicons/core-free-icons"
 
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
@@ -18,6 +23,7 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import { formatDateTime } from "#/lib/format.ts"
 import { BroadcastFormDialog } from "./components/broadcast-form-dialog.tsx"
+import { AutoReminderDialog } from "./components/auto-reminder-dialog.tsx"
 import { BroadcastSettingsDialog } from "./components/broadcast-settings-dialog.tsx"
 import {
   ConnectionDialog,
@@ -51,6 +57,7 @@ function BroadcastsPage() {
   const [connectionOpen, setConnectionOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [remindersOpen, setRemindersOpen] = useState(false)
+  const [autoReminderOpen, setAutoReminderOpen] = useState(false)
 
   const dashboard = useQuery({
     queryKey: ["wa-dashboard", tenant],
@@ -90,6 +97,26 @@ function BroadcastsPage() {
           <Button variant="outline" size="sm" onClick={() => setRemindersOpen(true)}>
             {t("broadcast.reminders")}
           </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAutoReminderOpen(true)}
+                className="gap-1.5"
+              >
+                <HugeiconsIcon
+                  icon={TimeQuarterPassIcon}
+                  strokeWidth={2}
+                  className="size-3.5"
+                />
+                {t("broadcast.auto_reminder_title")}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-64 text-pretty">
+              {t("broadcast.auto_reminder_hint")}
+            </TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -228,6 +255,11 @@ function BroadcastsPage() {
         tenant={tenant}
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
+      />
+      <AutoReminderDialog
+        tenant={tenant}
+        open={autoReminderOpen}
+        onOpenChange={setAutoReminderOpen}
       />
       <ConnectionDialog tenant={tenant} open={connectionOpen} onOpenChange={setConnectionOpen} />
       <TemplatesDialog tenant={tenant} open={templatesOpen} onOpenChange={setTemplatesOpen} />
