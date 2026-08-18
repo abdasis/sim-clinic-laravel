@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'deleted' => 'Layanan berhasil dihapus permanen.',
+    'delete' => 'Hapus permanen',
+    'delete_confirm' => 'Layanan ini dihapus selamanya dan tidak bisa dikembalikan. Kalau sekadar ingin menyembunyikannya dari katalog, pakai Arsipkan.',
     'archive_confirm' => 'Layanan yang diarsipkan tidak lagi muncul saat membuat booking baru. Riwayat yang sudah ada tetap tersimpan.',
     'archive' => 'Arsipkan',
     'edit' => 'Ubah Layanan',

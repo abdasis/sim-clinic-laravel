@@ -89,6 +89,23 @@ class ServiceController extends Controller
         ]);
     }
 
+    /**
+     * Hapus permanen, berbeda dari destroy yang mengarsipkan. Dipisah jadi
+     * rute sendiri supaya tindakan yang tidak bisa dibatalkan tidak pernah
+     * terpanggil tanpa sengaja oleh tombol hapus yang lama.
+     */
+    public function forceDestroy(Service $service, ServiceCatalogService $catalog): JsonResponse
+    {
+        $this->authorize('delete', $service);
+
+        $catalog->delete($service);
+
+        return response()->json([
+            'data' => null,
+            'meta' => ['message' => __('service.deleted')],
+        ]);
+    }
+
     public function destroy(Service $service, ServiceCatalogService $catalog): JsonResponse
     {
         $this->authorize('delete', $service);

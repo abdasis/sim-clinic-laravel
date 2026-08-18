@@ -4,6 +4,7 @@ import type { UseFormReturn } from "react-hook-form"
 
 import { Form } from "#/components/ui/form.tsx"
 import { FormCombobox } from "#/components/forms/form-combobox.tsx"
+import { FormDatePicker } from "#/components/forms/form-date-picker.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { PaymentPanel, type PaymentData } from "./payment-panel.tsx"
 import { PerformerPicker, type StaffOption } from "./performer-picker.tsx"
@@ -16,6 +17,9 @@ export const patientSchema = z.object({
   // mana pun. Diisi saat tagihan ini memang menagih kunjungan yang selesai,
   // sehingga transaksi dan rekam medisnya tersambung lewat booking yang sama.
   booking_id: z.string().optional(),
+  // Kosong berarti hari ini. Diisi saat admin mencatat penjualan yang
+  // terlewat; server menolak tanggal di masa depan.
+  issued_at: z.string().optional(),
 })
 
 export type PatientFormValues = z.output<typeof patientSchema>
@@ -97,6 +101,9 @@ export function PosCheckoutPanel({
   optionsError,
 }: PosCheckoutPanelProps) {
   const { t } = useTrans()
+  // Batas atas tanggal: nota bertanggal besok tidak punya arti, dan server
+  // menolaknya juga.
+  const today = new Date().toISOString().slice(0, 10)
 
   return (
     <div className="space-y-4">
@@ -127,6 +134,16 @@ export function PosCheckoutPanel({
             loading={optionsLoading}
             error={optionsError}
           />
+
+          <div className="mt-4">
+            <FormDatePicker
+              control={form.control}
+              name="issued_at"
+              label={t("pos.transaction_date")}
+              max={today}
+              description={t("pos.transaction_date_hint")}
+            />
+          </div>
 
           {/* Tautan ke kunjungan: inilah yang menyambungkan tagihan dengan
               rekam medis, karena keduanya menunjuk booking yang sama. */}

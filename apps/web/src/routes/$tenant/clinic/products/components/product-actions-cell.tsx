@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Archive, MoreHorizontal, Pencil } from "lucide-react"
+import { Archive, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -46,6 +46,7 @@ export function ProductActionsCell({
   const qc = useQueryClient()
   const [editOpen, setEditOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const archive = useMutation({
     mutationFn: () => apiDelete(`/${tenant}/clinic/products/${product.id}`),
@@ -57,6 +58,21 @@ export function ProductActionsCell({
     onError: (err: ApiError) => {
       toast.error(err.message)
       setArchiveOpen(false)
+    },
+  })
+
+  // Hapus permanen berbeda dari arsip: barisnya benar-benar hilang, dan
+  // server menolaknya bila produknya sudah pernah terpakai.
+  const destroy = useMutation({
+    mutationFn: () => apiDelete(`/${tenant}/clinic/products/${product.id}/force`),
+    onSuccess: () => {
+      toast.success(t("product.deleted"))
+      qc.invalidateQueries({ queryKey: ["products"] })
+      setDeleteOpen(false)
+    },
+    onError: (err: ApiError) => {
+      toast.error(err.message)
+      setDeleteOpen(false)
     },
   })
 
@@ -99,6 +115,15 @@ export function ProductActionsCell({
             {t("product.archive")}
             <Kbd className="ml-auto">a</Kbd>
           </DropdownMenuItem>
+          {/* Hapus permanen dipisah dari arsip dan diberi ikon berbeda:
+              keduanya sama-sama merah, dan yang satu tidak bisa dibatalkan. */}
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="size-4" />
+            {t("product.delete")}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -131,6 +156,33 @@ export function ProductActionsCell({
               }}
             >
               {archive.isPending ? t("general.loading") : t("product.archive")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("product.delete")} — {product.name}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("product.delete_confirm")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={destroy.isPending}>
+              {t("general.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={destroy.isPending}
+              onClick={(e) => {
+                e.preventDefault()
+                destroy.mutate()
+              }}
+            >
+              {destroy.isPending ? t("general.loading") : t("product.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

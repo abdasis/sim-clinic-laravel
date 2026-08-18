@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Archive, MoreHorizontal, Pencil } from "lucide-react"
+import { Archive, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -46,6 +46,7 @@ export function ServiceActionsCell({
   const qc = useQueryClient()
   const [editOpen, setEditOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const archive = useMutation({
     mutationFn: () => apiDelete(`/${tenant}/clinic/services/${service.id}`),
@@ -57,6 +58,21 @@ export function ServiceActionsCell({
     onError: (err: ApiError) => {
       toast.error(err.message)
       setArchiveOpen(false)
+    },
+  })
+
+  // Hapus permanen berbeda dari arsip: barisnya benar-benar hilang, dan
+  // server menolaknya bila entrinya sudah pernah terpakai.
+  const destroy = useMutation({
+    mutationFn: () => apiDelete(`/${tenant}/clinic/services/${service.id}/force`),
+    onSuccess: () => {
+      toast.success(t("service.deleted"))
+      qc.invalidateQueries({ queryKey: ["services"] })
+      setDeleteOpen(false)
+    },
+    onError: (err: ApiError) => {
+      toast.error(err.message)
+      setDeleteOpen(false)
     },
   })
 
@@ -101,6 +117,15 @@ export function ServiceActionsCell({
             {t("service.archive")}
             <Kbd className="ml-auto">a</Kbd>
           </DropdownMenuItem>
+          {/* Hapus permanen dipisah dari arsip dan diberi ikon berbeda:
+              keduanya sama-sama merah, dan yang satu tidak bisa dibatalkan. */}
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="size-4" />
+            {t("service.delete")}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -133,6 +158,33 @@ export function ServiceActionsCell({
               }}
             >
               {archive.isPending ? t("general.loading") : t("service.archive")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("service.delete")} — {service.name}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("service.delete_confirm")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={destroy.isPending}>
+              {t("general.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={destroy.isPending}
+              onClick={(e) => {
+                e.preventDefault()
+                destroy.mutate()
+              }}
+            >
+              {destroy.isPending ? t("general.loading") : t("service.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

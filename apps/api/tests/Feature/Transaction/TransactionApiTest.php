@@ -205,6 +205,69 @@ class TransactionApiTest extends TestCase
             ->assertJsonPath('meta.clinic.name', $this->tenant->name);
     }
 
+    /**
+     * Admin memasukkan penjualan sebulan mundur untuk menutup pembukuan yang
+     * terlewat. Tanggalnya harus benar-benar tersimpan, karena seluruh
+     * perhitungan fee dan laporan bulanan bersandar padanya.
+     */
+    public function test_transaction_can_be_backdated(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Cashier);
+        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+        $service = $this->makeService();
+
+        $response = $this->postJson($this->tenantUrl('transactions'), [
+            'patient_id' => $patient->id,
+            'issued_at' => '2026-07-15 10:00:00',
+            'items' => [['service_id' => $service->id, 'qty' => 1]],
+        ])->assertCreated();
+
+        $transaction = Transaction::findOrFail($response->json('data.id'));
+
+        $this->assertSame('2026-07-15', $transaction->issued_at->toDateString());
+        // Nomor nota ikut tanggal transaksinya, bukan tanggal pencatatan --
+        // nomor bertanggal hari ini di nota bulan lalu saling bertentangan.
+        $this->assertSame('INV-20260715-0001', $transaction->invoice_number);
+    }
+
+    public function test_backdated_numbers_stay_unique_per_date(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Cashier);
+        $service = $this->makeService();
+
+        $numbers = [];
+
+        foreach (range(1, 3) as $i) {
+            $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+
+            $numbers[] = $this->postJson($this->tenantUrl('transactions'), [
+                'patient_id' => $patient->id,
+                'issued_at' => '2026-07-15 10:00:00',
+                'items' => [['service_id' => $service->id, 'qty' => 1]],
+            ])->assertCreated()->json('data.invoice_number');
+        }
+
+        $this->assertSame(
+            ['INV-20260715-0001', 'INV-20260715-0002', 'INV-20260715-0003'],
+            $numbers,
+        );
+    }
+
+    public function test_future_dated_transaction_is_rejected(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Cashier);
+        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+        $service = $this->makeService();
+
+        $this->postJson($this->tenantUrl('transactions'), [
+            'patient_id' => $patient->id,
+            'issued_at' => now()->addWeek()->toDateTimeString(),
+            'items' => [['service_id' => $service->id, 'qty' => 1]],
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('issued_at');
+    }
+
     private function makeSale(): Transaction
     {
         $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);

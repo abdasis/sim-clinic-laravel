@@ -102,6 +102,8 @@ Route::prefix('{tenant}/clinic')
         Route::post('staff/{staff}/deactivate', [StaffController::class, 'deactivate']);
 
         // US2 Service
+        // Hapus permanen dipisah dari destroy yang mengarsipkan.
+        Route::delete('services/{service}/force', [ServiceController::class, 'forceDestroy']);
         Route::apiResource('services', ServiceController::class);
 
         // US3 Patient
@@ -117,6 +119,7 @@ Route::prefix('{tenant}/clinic')
         // US6 Product & Inventory
         Route::get('products/{product}/stock-movements', [StockMovementController::class, 'indexByProduct']);
         Route::post('products/{product}/stock-movements', [StockMovementController::class, 'store']);
+        Route::delete('products/{product}/force', [ProductController::class, 'forceDestroy']);
         Route::apiResource('products', ProductController::class);
 
         // Pengeluaran klinik + aturan fee terapis

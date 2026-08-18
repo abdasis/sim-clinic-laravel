@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Actions\Product\ArchiveProductAction;
 use App\Actions\Product\CreateProductAction;
+use App\Actions\Product\DeleteProductAction;
 use App\Actions\Product\UpdateProductAction;
 use App\Models\Product;
 
@@ -26,6 +27,12 @@ class ProductService
     public function update(Product $product, array $attributes): Product
     {
         return app(UpdateProductAction::class)->handle($product, $attributes);
+    }
+
+    /** Hapus permanen; ditolak bila entrinya sudah meninggalkan jejak. */
+    public function delete(Product $product): void
+    {
+        app(DeleteProductAction::class)->handle($product);
     }
 
     public function archive(Product $product): Product

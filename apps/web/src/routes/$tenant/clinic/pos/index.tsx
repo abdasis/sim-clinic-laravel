@@ -85,10 +85,11 @@ function PosPage() {
   // Pasien wajib diisi; validasinya ikut skema supaya pesannya konsisten
   // dengan form lain, bukan alert manual.
   const patientForm = useForm(patientSchema, {
-    defaultValues: { patient_id: "", booking_id: "" },
+    defaultValues: { patient_id: "", booking_id: "", issued_at: "" },
   })
   const patientId = patientForm.watch("patient_id")
   const bookingId = patientForm.watch("booking_id")
+  const issuedAt = patientForm.watch("issued_at")
   // Pelaksana kunjungan; di luar form karena bukan satu nilai teks dan
   // tidak punya aturan validasi sendiri.
   const [performerIds, setPerformerIds] = useState<number[]>([])
@@ -150,6 +151,7 @@ function PosPage() {
           patient_id: patientId ? Number(patientId) : null,
           performer_ids: performerIds,
           booking_id: bookingId ? Number(bookingId) : null,
+          issued_at: issuedAt ? issuedAt : null,
           items: cart.items.map((item) => ({
             ...(item.kind === "product"
               ? { product_id: item.refId }
@@ -178,7 +180,9 @@ function PosPage() {
       qc.invalidateQueries({ queryKey: ["products", tenant, "catalog"] })
       cart.clear()
       setPerformerIds([])
-      patientForm.reset({ patient_id: "", booking_id: "" })
+      // Tanggal sengaja dipertahankan: admin yang mencatat penjualan
+      // sebulan lalu biasanya memasukkan beberapa nota untuk hari yang sama.
+      patientForm.reset({ patient_id: "", booking_id: "", issued_at: issuedAt })
     },
     onError: (err: ApiError) => {
       // Pasien wajib diisi di server; tanpa ini tombol simpan terasa mati

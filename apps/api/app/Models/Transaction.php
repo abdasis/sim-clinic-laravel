@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\BelongsToTenant;
 use App\Enums\PaymentStatus;
 use App\Scopes\TenantScope;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -112,23 +113,33 @@ class Transaction extends Model
      * simpan pada detik yang sama di hari kosong, unique (tenant_id,
      * invoice_number) tetap pertahanan terakhir.
      */
-    public static function generateInvoiceNumber(): string
+    /**
+     * Nomor nota mengikuti tanggal transaksinya, bukan tanggal pencatatannya.
+     * Admin yang memasukkan penjualan bulan lalu akan mendapat nomor
+     * bertanggal hari ini kalau memakai now() — nomornya bertentangan dengan
+     * tanggal di badan notanya sendiri.
+     *
+     * Urutannya pun dihitung per tanggal itu, supaya nomor yang terbit tetap
+     * unik: menghitung dari tanggal lain akan mengulang nomor yang sudah ada.
+     */
+    public static function generateInvoiceNumber(?CarbonInterface $issuedAt = null): string
     {
+        $issuedAt ??= now();
         $tenantId = app()->bound('tenant') && app('tenant') !== null ? app('tenant')->id : null;
 
-        // PostgreSQL menolak FOR UPDATE bersama fungsi agregat, jadi baris
-        // hari ini diambil dulu (terkunci) lalu dihitung di PHP.
-        $countToday = static::withoutGlobalScope(TenantScope::class)
+        // PostgreSQL menolak FOR UPDATE bersama fungsi agregat, jadi barisnya
+        // diambil dulu (terkunci) lalu dihitung di PHP.
+        $countOnDate = static::withoutGlobalScope(TenantScope::class)
             ->withTrashed()
             ->where('tenant_id', $tenantId)
-            ->whereDate('created_at', now()->toDateString())
+            ->whereDate('issued_at', $issuedAt->toDateString())
             ->lockForUpdate()
             ->pluck('id')
             ->count();
 
-        $sequence = str_pad((string) ($countToday + 1), 4, '0', STR_PAD_LEFT);
+        $sequence = str_pad((string) ($countOnDate + 1), 4, '0', STR_PAD_LEFT);
 
-        return 'INV-'.now()->format('Ymd').'-'.$sequence;
+        return 'INV-'.$issuedAt->format('Ymd').'-'.$sequence;
     }
 
     /**

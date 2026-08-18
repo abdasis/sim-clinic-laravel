@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'deleted' => 'Produk berhasil dihapus permanen.',
+    'delete' => 'Hapus permanen',
+    'delete_confirm' => 'Produk ini dihapus selamanya beserta riwayat mutasi stoknya, dan tidak bisa dikembalikan. Kalau sekadar ingin menyembunyikannya, pakai Arsipkan.',
     'category' => 'Kategori',
     'type' => 'Peruntukan',
     'type_retail' => 'Barang Jual',

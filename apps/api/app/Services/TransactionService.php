@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Service;
 use App\Models\Transaction;
 use App\Support\PromoPricing;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -22,6 +23,12 @@ class TransactionService
     public function create(array $data): Transaction
     {
         $transaction = DB::transaction(function () use ($data): Transaction {
+            // Tanggal boleh dimundurkan untuk mencatat penjualan yang
+            // terlewat; server yang menolak tanggal di masa depan.
+            $issuedAt = isset($data['issued_at'])
+                ? Carbon::parse($data['issued_at'])
+                : now();
+
             $lines = $this->buildLines($data['items'] ?? []);
             $subtotal = array_sum(array_column($lines, 'subtotal'));
 
@@ -30,11 +37,11 @@ class TransactionService
                 'booking_id' => $data['booking_id'] ?? null,
                 'cashier_id' => Auth::id(),
                 // Nomor diambil di dalam transaction agar barisnya terkunci.
-                'invoice_number' => Transaction::generateInvoiceNumber(),
+                'invoice_number' => Transaction::generateInvoiceNumber($issuedAt),
                 'subtotal' => $subtotal,
                 'paid_amount' => 0,
                 'payment_status' => PaymentStatus::Unpaid,
-                'issued_at' => now(),
+                'issued_at' => $issuedAt,
             ]);
 
             // Pelaksana kunjungan: dasar fee per pasien, bisa lebih dari satu.

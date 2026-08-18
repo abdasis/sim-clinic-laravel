@@ -24,6 +24,9 @@ class TransactionRequest extends FormRequest
             // penjualan produk yang tidak melibatkan tindakan.
             'performer_ids' => ['nullable', 'array'],
             'performer_ids.*' => [TenantRule::exists('users')],
+            // Boleh mundur untuk mencatat penjualan yang terlewat, tidak
+            // boleh maju: nota bertanggal besok tidak punya arti.
+            'issued_at' => ['nullable', 'date', 'before_or_equal:now'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.qty' => ['required', 'integer', 'gt:0'],
             // Satu baris mewakili tepat satu layanan atau satu produk.
@@ -58,6 +61,7 @@ class TransactionRequest extends FormRequest
         return [
             'patient_id' => __('pos.patient'),
             'booking_id' => __('booking.title'),
+            'issued_at' => __('pos.transaction_date'),
             'performer_ids' => __('pos.performers'),
             'performer_ids.*' => __('pos.performers'),
             'items.*.offered_by' => __('pos.offered_by'),

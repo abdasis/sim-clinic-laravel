@@ -97,6 +97,23 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Hapus permanen, berbeda dari destroy yang mengarsipkan. Dipisah jadi
+     * rute sendiri supaya tindakan yang tidak bisa dibatalkan tidak pernah
+     * terpanggil tanpa sengaja oleh tombol hapus yang lama.
+     */
+    public function forceDestroy(Product $product, ProductService $service): JsonResponse
+    {
+        $this->authorize('delete', $product);
+
+        $service->delete($product);
+
+        return response()->json([
+            'data' => null,
+            'meta' => ['message' => __('product.deleted')],
+        ]);
+    }
+
     public function destroy(Product $product, ProductService $service): JsonResponse
     {
         $this->authorize('delete', $product);

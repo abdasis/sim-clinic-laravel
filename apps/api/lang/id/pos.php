@@ -14,6 +14,8 @@ return [
     'already_cancelled' => 'Transaksi ini sudah dibatalkan sebelumnya.',
     'title' => 'Kasir (POS)',
     'patient' => 'Pasien',
+    'transaction_date' => 'Tanggal Transaksi',
+    'transaction_date_hint' => 'Kosongkan untuk hari ini. Boleh dimundurkan untuk mencatat penjualan yang terlewat.',
     'performers' => 'Yang Mengerjakan',
     'performers_hint' => 'Boleh lebih dari satu. Tiap orang menerima fee kunjungannya masing-masing.',
     'offered_by' => 'Ditawarkan Oleh',
