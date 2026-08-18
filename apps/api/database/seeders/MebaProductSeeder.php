@@ -32,7 +32,7 @@ class MebaProductSeeder extends Seeder
     private const UNIT = 'pcs';
 
     /** Tenant pemilik katalog ini. */
-    private const TENANT_SLUG = 'demo';
+    private const TENANT_SLUG = 'mebaclinic';
 
     /**
      * @var array<int, array{name: string, category: ProductCategory, price: int}>

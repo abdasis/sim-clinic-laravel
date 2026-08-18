@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\DB;
 class MebaServiceSeeder extends Seeder
 {
     /** Tenant pemilik katalog ini. */
-    private const TENANT_SLUG = 'demo';
+    private const TENANT_SLUG = 'mebaclinic';
 
     /**
      * @var array<int, array{name: string, category: ServiceCategory, price: int}>

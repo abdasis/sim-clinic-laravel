@@ -14,16 +14,20 @@ use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Data demo klinik (spec 002, T014): 1 tenant demo, 4 staf (1 per peran),
- * beberapa pasien, plus katalog layanan dan produk final.
+ * Satu-satunya tenant klinik yang disemai (spec 002, T014): Mebaclinic,
+ * lengkap dengan 4 staf (1 per peran), beberapa pasien, plus katalog layanan
+ * dan produk final.
+ *
+ * Sebelumnya bernama ClinicDemoSeeder dan menumbuhkan tenant `demo` di samping
+ * `klinik-sehat`. Keduanya dihapus: yang tersisa hanya `central` dan tenant ini.
  */
-class ClinicDemoSeeder extends Seeder
+class MebaclinicSeeder extends Seeder
 {
     public function run(): void
     {
         $tenant = Tenant::query()->firstOrCreate(
-            ['slug' => 'demo'],
-            ['name' => 'Klinik Cantik Demo', 'phone' => '081234567890', 'status' => 'active'],
+            ['slug' => 'mebaclinic'],
+            ['name' => 'Mebaclinic', 'phone' => '081234567890', 'status' => 'active'],
         );
 
         app()->instance('tenant', $tenant);
@@ -32,10 +36,10 @@ class ClinicDemoSeeder extends Seeder
         app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
 
         $staff = [
-            ['name' => 'Admin Klinik', 'email' => 'admin@demo.test', 'clinic_role' => ClinicRole::Admin],
-            ['name' => 'dr. Sari', 'email' => 'dokter@demo.test', 'clinic_role' => ClinicRole::Doctor],
-            ['name' => 'Terapis Ratna', 'email' => 'terapis@demo.test', 'clinic_role' => ClinicRole::Therapist],
-            ['name' => 'Kasir Dewi', 'email' => 'kasir@demo.test', 'clinic_role' => ClinicRole::Cashier],
+            ['name' => 'Admin Klinik', 'email' => 'admin@mebaclinic.test', 'clinic_role' => ClinicRole::Admin],
+            ['name' => 'dr. Sari', 'email' => 'dokter@mebaclinic.test', 'clinic_role' => ClinicRole::Doctor],
+            ['name' => 'Terapis Ratna', 'email' => 'terapis@mebaclinic.test', 'clinic_role' => ClinicRole::Therapist],
+            ['name' => 'Kasir Dewi', 'email' => 'kasir@mebaclinic.test', 'clinic_role' => ClinicRole::Cashier],
         ];
 
         foreach ($staff as $s) {
@@ -65,12 +69,12 @@ class ClinicDemoSeeder extends Seeder
             );
         }
 
-        // Katalog layanan memakai pricelist final MEBA Clinic; seeder demo
+        // Katalog layanan memakai pricelist final MEBA Clinic; seeder ini
         // tidak lagi membuat treatment contoh sendiri supaya seed ulang tidak
         // memunculkan kembali layanan percobaan.
         app(MebaServiceSeeder::class)->seedTenant($tenant);
 
-        // Katalog produk memakai daftar final MEBA Clinic; seeder demo tidak
+        // Katalog produk memakai daftar final MEBA Clinic; seeder ini tidak
         // lagi membuat produk contoh sendiri supaya seed ulang tidak
         // memunculkan kembali produk percobaan.
         app(MebaProductSeeder::class)->seedTenant($tenant);

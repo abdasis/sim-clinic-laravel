@@ -11,10 +11,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             CentralTenantSeeder::class,
-            TenantAdminSeeder::class,
-            // Katalog produk disemai dari ClinicDemoSeeder karena terikat pada
-            // satu tenant klinik, bukan data platform yang berlaku umum.
-            ClinicDemoSeeder::class,
+            // Hanya satu tenant klinik: Mebaclinic. Katalog layanan dan produk
+            // disemai dari sini karena terikat pada tenant itu, bukan data
+            // platform yang berlaku umum.
+            MebaclinicSeeder::class,
             CompanyProfileDemoSeeder::class,
         ]);
     }
