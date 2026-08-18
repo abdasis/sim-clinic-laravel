@@ -17,25 +17,14 @@ import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { FormTextarea } from "#/components/forms/form-textarea.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
+import { useCategoryOptions } from "#/hooks/use-category-options.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiPost, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 
-/** Sama persis dengan enum di backend; label-nya datang dari i18n. */
-export const EXPENSE_CATEGORIES = [
-  "operational",
-  "salary",
-  "incentive",
-  "purchase",
-  "rent",
-  "utility",
-  "marketing",
-  "other",
-] as const
-
 const schema = z.object({
   spent_at: z.string().min(1),
-  category: z.string().min(1),
+  category_id: z.string().min(1),
   description: z.string().min(1),
   amount: z.coerce.number().gt(0),
   note: z.string().optional(),
@@ -46,7 +35,7 @@ type Values = z.infer<typeof schema>
 export interface ExpenseFormValues {
   id: number
   spent_at: string
-  category: string
+  category_id?: number | null
   description: string
   amount: string | number
   note?: string | null
@@ -58,7 +47,11 @@ interface ExpenseFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Nilai awal untuk pencatatan dari pratinjau fee. */
-  preset?: Partial<Values>
+  /**
+   * Nilai awal untuk pencatatan dari pratinjau fee. Kategorinya disebut lewat
+   * nama, bukan id: pemanggilnya tidak tahu id kategori klinik ini.
+   */
+  preset?: Partial<Values> & { category_name?: string }
 }
 
 function today() {
@@ -76,9 +69,11 @@ export function ExpenseFormDialog({
   const qc = useQueryClient()
   const isEdit = expense !== undefined
 
+  const categories = useCategoryOptions(tenant, "expense", { enabled: open })
+
   const empty: Values = {
     spent_at: today(),
-    category: "operational",
+    category_id: "",
     description: "",
     amount: 0,
     note: "",
@@ -93,7 +88,7 @@ export function ExpenseFormDialog({
       expense
         ? {
             spent_at: expense.spent_at,
-            category: expense.category,
+            category_id: expense.category_id ? String(expense.category_id) : "",
             description: expense.description,
             amount: Number(expense.amount),
             note: expense.note ?? "",
@@ -105,11 +100,28 @@ export function ExpenseFormDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, expense, preset, form])
 
+  // Preset menyebut kategori lewat nama; id-nya baru diketahui setelah
+  // daftar kategori klinik ini termuat.
+  useEffect(() => {
+    if (!open || isEdit || !preset?.category_name) return
+
+    const match = categories.options.find(
+      (option) => option.label === preset.category_name,
+    )
+
+    if (match) {
+      form.setValue("category_id", match.value)
+    }
+  }, [open, isEdit, preset?.category_name, categories.options, form])
+
   const mutation = useMutation({
-    mutationFn: (values: Values) =>
-      isEdit
-        ? apiPut(`/${tenant}/clinic/expenses/${expense.id}`, values)
-        : apiPost(`/${tenant}/clinic/expenses`, values),
+    mutationFn: ({ category_id, ...values }: Values) => {
+      const payload = { ...values, category_id: Number(category_id) }
+
+      return isEdit
+        ? apiPut(`/${tenant}/clinic/expenses/${expense.id}`, payload)
+        : apiPost(`/${tenant}/clinic/expenses`, payload)
+    },
     onSuccess: () => {
       toast.success(isEdit ? t("expense.updated") : t("expense.created"))
       qc.invalidateQueries({ queryKey: ["expenses"] })
@@ -144,12 +156,10 @@ export function ExpenseFormDialog({
               />
               <FormSelect
                 control={form.control}
-                name="category"
+                name="category_id"
                 label={t("expense.category_label")}
-                options={EXPENSE_CATEGORIES.map((value) => ({
-                  label: t(`expense.category.${value}`),
-                  value,
-                }))}
+                required
+                options={categories.options}
               />
             </div>
 

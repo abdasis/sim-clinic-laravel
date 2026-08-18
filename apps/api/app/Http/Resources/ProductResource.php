@@ -16,8 +16,11 @@ class ProductResource extends JsonResource
             'type' => $this->type,
             'type_label' => $this->type?->label(),
             'is_sellable' => $this->type?->isSellable() ?? true,
-            'category' => $this->category,
-            'category_label' => $this->category?->label(),
+            'category_id' => $this->assignedCategory()?->id,
+            // Dua kunci lama dipertahankan supaya frontend tidak putus; isinya
+            // kini nama kategori entitas, bukan nilai enum.
+            'category' => $this->assignedCategory()?->name,
+            'category_label' => $this->assignedCategory()?->name,
             'unit' => $this->unit,
             'stock_balance' => $this->stock_balance,
             'min_threshold' => $this->min_threshold,

@@ -21,7 +21,7 @@ class ExpenseController extends Controller
         $params = $this->dataTableParams($request);
 
         $query = Expense::query()
-            ->with('recorder')
+            ->with(['recorder', 'categories'])
             ->between($params['filters']['from'] ?? null, $params['filters']['to'] ?? null);
 
         if ($params['search']) {
@@ -33,7 +33,8 @@ class ExpenseController extends Controller
         $category = $params['filters']['category'] ?? 'all';
 
         if ($category !== 'all') {
-            $query->where('category', $category);
+            // Nilainya kini id kategori, bukan nilai enum.
+            $query->whereHas('categories', fn ($q) => $q->where('categories.id', $category));
         }
 
         if ($params['sort']) {
@@ -66,17 +67,24 @@ class ExpenseController extends Controller
         $from = $request->query('from');
         $to = $request->query('to');
 
+        // Pengeluaran tanpa kategori tetap dihitung sebagai satu baris,
+        // supaya jumlah per kategori selalu sama dengan totalnya.
         $rows = Expense::query()
             ->between(is_string($from) ? $from : null, is_string($to) ? $to : null)
-            ->selectRaw('category, SUM(amount) as total, COUNT(*) as entries')
-            ->groupBy('category')
+            ->leftJoin('categorizables', function ($join): void {
+                $join->on('categorizables.categorizable_id', '=', 'expenses.id')
+                    ->where('categorizables.categorizable_type', '=', 'expense');
+            })
+            ->leftJoin('categories', 'categories.id', '=', 'categorizables.category_id')
+            ->selectRaw('categories.id as category_id, categories.name as category_name, SUM(expenses.amount) as total, COUNT(*) as entries')
+            ->groupBy('categories.id', 'categories.name')
             ->get();
 
         return response()->json([
             'data' => [
                 'by_category' => $rows->map(fn ($row) => [
-                    'category' => $row->category,
-                    'category_label' => $row->category?->label(),
+                    'category' => $row->category_id !== null ? (string) $row->category_id : null,
+                    'category_label' => $row->category_name ?? __('category.none'),
                     'total' => (float) $row->total,
                     'entries' => (int) $row->entries,
                 ])->sortByDesc('total')->values(),

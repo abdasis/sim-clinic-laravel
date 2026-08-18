@@ -3,7 +3,6 @@
 namespace Tests\Feature\Product;
 
 use App\Enums\PaymentStatus;
-use App\Enums\ProductCategory;
 use App\Models\Patient;
 use App\Models\Product;
 use App\Models\Promo;
@@ -39,14 +38,14 @@ class MebaProductCatalogTest extends TestCase
         $this->assertSame(self::EXPECTED_TOTAL, Product::query()->count());
 
         $perCategory = Product::query()->get()
-            ->groupBy(fn (Product $product) => $product->category->value)
+            ->groupBy(fn (Product $product) => $product->assignedCategory()?->name)
             ->map->count();
 
-        $this->assertSame(3, $perCategory[ProductCategory::FacialWash->value]);
-        $this->assertSame(2, $perCategory[ProductCategory::Toner->value]);
-        $this->assertSame(4, $perCategory[ProductCategory::Sunscreen->value]);
-        $this->assertSame(6, $perCategory[ProductCategory::Serum->value]);
-        $this->assertSame(5, $perCategory[ProductCategory::NightCream->value]);
+        $this->assertSame(3, $perCategory['Facial Wash']);
+        $this->assertSame(2, $perCategory['Toner']);
+        $this->assertSame(4, $perCategory['Sunscreen']);
+        $this->assertSame(6, $perCategory['Serum']);
+        $this->assertSame(5, $perCategory['Night Cream']);
     }
 
     public function test_prices_match_the_official_list(): void
@@ -103,7 +102,7 @@ class MebaProductCatalogTest extends TestCase
 
         $this->assertSame(1, Product::query()->where('name', 'Cleansing Toner')->count());
         $this->assertEqualsWithDelta(65_000, (float) $product->price, 0.01);
-        $this->assertSame(ProductCategory::Toner, $product->category);
+        $this->assertSame('Toner', $product->assignedCategory()?->name);
         // Satuan yang sudah disesuaikan operator tidak ditimpa.
         $this->assertSame('botol', $product->unit);
     }

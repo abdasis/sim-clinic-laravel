@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\BroadcastReminderSetting;
+use App\Models\Category;
 use App\Models\CommissionRule;
 use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
@@ -63,6 +64,7 @@ class AppServiceProvider extends ServiceProvider
         'product' => Product::class,
         'promo' => Promo::class,
         'expense' => Expense::class,
+        'category' => Category::class,
         'commission_rule' => CommissionRule::class,
         'broadcast' => Broadcast::class,
         'broadcast_recipient' => BroadcastRecipient::class,

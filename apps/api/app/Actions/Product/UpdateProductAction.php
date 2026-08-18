@@ -22,6 +22,12 @@ class UpdateProductAction
 
         $product->update($attributes);
 
+        // `category_id` bukan kolom di tabel ini melainkan baris pivot, jadi
+        // tidak ikut terbawa mass assignment dan dipasang terpisah.
+        if (array_key_exists('category_id', $attributes)) {
+            $product->syncCategory($attributes['category_id'] !== null ? (int) $attributes['category_id'] : null);
+        }
+
         app(LogAuditAction::class)->handle(
             'product.updated',
             $product->fresh(),

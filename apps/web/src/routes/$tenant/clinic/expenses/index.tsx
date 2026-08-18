@@ -29,7 +29,7 @@ interface ExpenseRow extends ExpenseFormValues {
 }
 
 interface SummaryRow {
-  category: string
+  category: string | null
   category_label: string
   total: number
   entries: number
@@ -179,7 +179,7 @@ function ExpensesPage() {
           <dl className="mt-3 space-y-1">
             {(summary.data?.data.by_category ?? []).map((row) => (
               <div
-                key={row.category}
+                key={row.category ?? "none"}
                 className="flex items-baseline justify-between gap-3 text-sm"
               >
                 <dt className="truncate text-muted-foreground">
@@ -220,7 +220,7 @@ function ExpensesPage() {
             ? {
                 amount: preset.amount,
                 description: preset.description,
-                category: "incentive",
+                category_name: "Fee & Insentif",
                 spent_at: to,
               }
             : undefined

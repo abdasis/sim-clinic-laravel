@@ -163,15 +163,24 @@ class ReportService
             'total' => (float) ($paymentRows[$method->value] ?? 0),
         ])->values()->all();
 
+        // Kategori pengeluaran kini entitas, bukan kolom enum: pengelompokan
+        // lewat pivot polimorfik. Pengeluaran tanpa kategori tetap muncul
+        // sebagai satu baris — kalau disembunyikan, total per kategori tidak
+        // akan pernah sama dengan total keseluruhan.
         $expenseRows = Expense::query()
             ->between($from, $to)
-            ->selectRaw('category, SUM(amount) as total')
-            ->groupBy('category')
+            ->leftJoin('categorizables', function ($join): void {
+                $join->on('categorizables.categorizable_id', '=', 'expenses.id')
+                    ->where('categorizables.categorizable_type', '=', 'expense');
+            })
+            ->leftJoin('categories', 'categories.id', '=', 'categorizables.category_id')
+            ->selectRaw('categories.id as category_id, categories.name as category_name, SUM(expenses.amount) as total')
+            ->groupBy('categories.id', 'categories.name')
             ->get();
 
         $expenses = $expenseRows->map(fn ($row) => [
-            'category' => $row->category?->value,
-            'category_label' => $row->category?->label(),
+            'category' => $row->category_id !== null ? (string) $row->category_id : null,
+            'category_label' => $row->category_name ?? __('category.none'),
             'total' => (float) $row->total,
         ])->sortByDesc('total')->values()->all();
 

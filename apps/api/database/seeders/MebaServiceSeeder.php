@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Enums\CategorizableType;
 use App\Enums\ServiceCategory;
+use App\Models\Category;
 use App\Models\Service;
 use App\Models\Tenant;
 use Illuminate\Database\Seeder;
@@ -112,13 +114,25 @@ class MebaServiceSeeder extends Seeder
             $service = Service::query()->firstOrNew(['name' => $item['name']]);
 
             $service->fill([
-                'category' => $item['category'],
                 'price' => $item['price'],
                 'status' => 'active',
             ]);
 
             $service->save();
+
+            // Kategori kini entitas: barisnya dibuat sekali per klinik, lalu
+            // ditempelkan lewat pivot.
+            $service->syncCategory($this->categoryId($item['category']->label()));
         }
+    }
+
+    /** Kategori layanan milik klinik ini, dibuat bila belum ada. */
+    private function categoryId(string $name): int
+    {
+        return Category::query()->firstOrCreate(
+            ['name' => $name, 'type' => CategorizableType::Service],
+            ['status' => 'active'],
+        )->id;
     }
 
     /**

@@ -28,12 +28,16 @@ class SyncTenantClinicRolesAction
             'medical_record' => 'rw', 'product' => 'rw', 'inventory' => 'rw',
             'transaction' => 'rw', 'invoice' => 'rw', 'report' => 'rw',
             'content' => 'rw', 'promo' => 'rw', 'expense' => 'rw', 'broadcast' => 'rw',
+            'category' => 'rw',
         ],
         'doctor' => [
             'patient' => 'rw', 'booking' => 'rw', 'medical_record' => 'rw', 'service' => 'r',
+            // Perlu membaca kategori layanan saat menelusuri katalog.
+            'category' => 'r',
         ],
         'therapist' => [
             'patient' => 'r', 'booking' => 'rw', 'medical_record' => 'rw', 'service' => 'r',
+            'category' => 'r',
         ],
         'cashier' => [
             'patient' => 'rw', 'transaction' => 'rw', 'invoice' => 'rw',

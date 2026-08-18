@@ -22,7 +22,8 @@ class ServiceController extends Controller
 
         $params = $this->dataTableParams($request);
 
-        $query = Service::query();
+        // Tanpa eager load, resource memanggil relasi kategori per baris.
+        $query = Service::query()->with('categories');
 
         if ($params['search']) {
             $query->where('name', 'like', '%'.$params['search'].'%');

@@ -2,9 +2,10 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\ProductCategory;
+use App\Enums\CategorizableType;
 use App\Enums\ProductType;
 use App\Enums\ServiceStatus;
+use App\Rules\TenantRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 
@@ -20,7 +21,10 @@ class ProductRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', new Enum(ProductType::class)],
-            'category' => ['nullable', new Enum(ProductCategory::class)],
+            'category_id' => [
+                'nullable',
+                TenantRule::exists('categories')->where('type', CategorizableType::Product->value),
+            ],
             'unit' => ['required', 'string', 'max:50'],
             'min_threshold' => ['required', 'integer', 'gte:0'],
             // Bahan pakai tidak dijual; harganya sudah dipaksa nol di
@@ -52,7 +56,7 @@ class ProductRequest extends FormRequest
         return [
             'name' => __('product.name'),
             'type' => __('product.type'),
-            'category' => __('product.category'),
+            'category_id' => __('product.category'),
             'unit' => __('product.unit'),
             'min_threshold' => __('product.min_threshold'),
             'price' => __('product.price'),

@@ -4,7 +4,6 @@ namespace Tests\Feature\Service;
 
 use App\Enums\ClinicRole;
 use App\Enums\PaymentStatus;
-use App\Enums\ServiceCategory;
 use App\Models\Patient;
 use App\Models\Promo;
 use App\Models\PromoItem;
@@ -41,14 +40,14 @@ class MebaServiceCatalogTest extends TestCase
         $this->assertSame(self::EXPECTED_TOTAL, Service::query()->count());
 
         $perCategory = Service::query()->get()
-            ->groupBy(fn (Service $service) => $service->category->value)
+            ->groupBy(fn (Service $service) => $service->assignedCategory()?->name)
             ->map->count();
 
         $this->assertCount(4, $perCategory);
-        $this->assertSame(13, $perCategory[ServiceCategory::Skinbooster->value]);
-        $this->assertSame(5, $perCategory[ServiceCategory::DermaTreatment->value]);
-        $this->assertSame(8, $perCategory[ServiceCategory::FacialPeeling->value]);
-        $this->assertSame(4, $perCategory[ServiceCategory::Other->value]);
+        $this->assertSame(13, $perCategory['Skinbooster']);
+        $this->assertSame(5, $perCategory['Derma Treatment']);
+        $this->assertSame(8, $perCategory['Facial & Peeling']);
+        $this->assertSame(4, $perCategory['Treatment Lainnya']);
     }
 
     public function test_prices_match_the_official_pricelist(): void
@@ -116,7 +115,7 @@ class MebaServiceCatalogTest extends TestCase
 
         $this->assertSame(1, Service::query()->where('name', 'Facial Basic')->count());
         $this->assertEqualsWithDelta(100_000, (float) $service->price, 0.01);
-        $this->assertSame(ServiceCategory::FacialPeeling, $service->category);
+        $this->assertSame('Facial & Peeling', $service->assignedCategory()?->name);
         // Durasi tidak ada di pricelist, jadi yang sudah diatur tidak ditimpa.
         $this->assertSame(45, $service->duration_minutes);
     }

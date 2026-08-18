@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Enums\CategorizableType;
 use App\Enums\ProductCategory;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Tenant;
 use Illuminate\Database\Seeder;
@@ -103,7 +105,6 @@ class MebaProductSeeder extends Seeder
             $product = Product::query()->firstOrNew(['name' => $item['name']]);
 
             $product->fill([
-                'category' => $item['category'],
                 'price' => $item['price'],
                 'status' => 'active',
             ]);
@@ -115,7 +116,20 @@ class MebaProductSeeder extends Seeder
             }
 
             $product->save();
+
+            // Kategori kini entitas: barisnya dibuat sekali per klinik, lalu
+            // ditempelkan lewat pivot.
+            $product->syncCategory($this->categoryId($item['category']->label()));
         }
+    }
+
+    /** Kategori produk milik klinik ini, dibuat bila belum ada. */
+    private function categoryId(string $name): int
+    {
+        return Category::query()->firstOrCreate(
+            ['name' => $name, 'type' => CategorizableType::Product],
+            ['status' => 'active'],
+        )->id;
     }
 
     /**

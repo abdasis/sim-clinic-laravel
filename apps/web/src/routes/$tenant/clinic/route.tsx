@@ -22,6 +22,7 @@ import {
   PackageIcon,
   PaintBoardIcon,
   StethoscopeIcon,
+  TagsIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons"
 
@@ -97,6 +98,7 @@ function ClinicLayout() {
     { key: "bookings", label: t("booking.title"), roles: ["admin", "doctor", "therapist"], icon: Calendar01Icon },
     { key: "medical-records", label: t("medical_record.title"), roles: ["admin", "doctor", "therapist"], icon: File02Icon },
     { key: "products", label: t("product.title"), roles: ["admin"], icon: PackageIcon },
+    { key: "categories", label: t("category.title"), roles: ["admin"], icon: TagsIcon },
     { key: "inventory", label: t("inventory.title"), roles: ["admin"], icon: Layers01Icon },
     {
       key: "pos",

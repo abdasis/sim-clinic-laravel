@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
-use App\Enums\ExpenseCategory;
+use App\Concerns\HasCategory;
 use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,12 +15,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[ScopedBy([TenantScope::class])]
 class Expense extends Model
 {
-    use BelongsToTenant, HasFactory, SoftDeletes;
+    use BelongsToTenant, HasCategory, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'tenant_id',
         'spent_at',
-        'category',
         'description',
         'amount',
         'note',
@@ -31,7 +30,6 @@ class Expense extends Model
     {
         return [
             'spent_at' => 'date',
-            'category' => ExpenseCategory::class,
             'amount' => 'decimal:2',
         ];
     }

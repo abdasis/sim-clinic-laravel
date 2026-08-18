@@ -29,6 +29,8 @@ interface ProductRow {
   type?: string | null
   type_label?: string | null
   is_sellable?: boolean
+  /** Dibawa untuk prefill dialog ubah; tabelnya menampilkan category_label. */
+  category_id?: number | null
   category?: string | null
   category_label?: string | null
   unit: string

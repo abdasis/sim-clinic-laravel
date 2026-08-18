@@ -15,6 +15,7 @@ import { FormInput } from "#/components/forms/form-input.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
+import { useCategoryOptions } from "#/hooks/use-category-options.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiPost, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -23,7 +24,7 @@ import type { ApiError } from "#/lib/api.ts"
 const schema = z.object({
   name: z.string().min(1),
   type: z.string(),
-  category: z.string().optional(),
+  category_id: z.string().optional(),
   unit: z.string().min(1),
   min_threshold: z.coerce.number().gte(0),
   price: z.coerce.number().gte(0),
@@ -35,7 +36,7 @@ export interface ProductFormValues {
   id: number
   name: string
   type?: string | null
-  category?: string | null
+  category_id?: number | null
   unit: string
   min_threshold: number
   price: string | number
@@ -64,7 +65,7 @@ export function ProductFormModal({
     defaultValues: {
       name: "",
       type: "retail",
-      category: "",
+      category_id: "",
       unit: "",
       min_threshold: 0,
       price: 0,
@@ -79,7 +80,7 @@ export function ProductFormModal({
         ? {
             name: product.name,
             type: product.type ?? "retail",
-            category: product.category ?? "",
+            category_id: product.category_id ? String(product.category_id) : "",
             unit: product.unit,
             min_threshold: Number(product.min_threshold),
             price: Number(product.price),
@@ -87,7 +88,7 @@ export function ProductFormModal({
         : {
             name: "",
             type: "retail",
-            category: "",
+            category_id: "",
             unit: "",
             min_threshold: 0,
             price: 0,
@@ -97,11 +98,20 @@ export function ProductFormModal({
 
   const isRetail = form.watch("type") !== "consumable"
 
+  const categories = useCategoryOptions(tenant, "product", {
+    enabled: open,
+    emptyLabel: t("category.none"),
+  })
+
   const mutation = useMutation({
-    mutationFn: (values: Values) =>
-      isEdit
-        ? apiPut(`/${tenant}/clinic/products/${product.id}`, values)
-        : apiPost(`/${tenant}/clinic/products`, values),
+    mutationFn: ({ category_id, ...values }: Values) => {
+      // Kategori kini id entitas; string kosong berarti tanpa kategori.
+      const payload = { ...values, category_id: category_id ? Number(category_id) : null }
+
+      return isEdit
+        ? apiPut(`/${tenant}/clinic/products/${product.id}`, payload)
+        : apiPost(`/${tenant}/clinic/products`, payload)
+    },
     onSuccess: () => {
       toast.success(isEdit ? t("product.updated") : t("product.created"))
       qc.invalidateQueries({ queryKey: ["products"] })
@@ -148,16 +158,9 @@ export function ProductFormModal({
             ) : null}
             <FormSelect
               control={form.control}
-              name="category"
+              name="category_id"
               label={t("product.category")}
-              options={[
-                { label: "—", value: "" },
-                { label: "Facial Wash", value: "facial_wash" },
-                { label: "Toner", value: "toner" },
-                { label: "Sunscreen", value: "sunscreen" },
-                { label: "Serum", value: "serum" },
-                { label: "Night Cream", value: "night_cream" },
-              ]}
+              options={categories.options}
             />
             <FormInput
               control={form.control}

@@ -17,13 +17,14 @@ import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { FormTextarea } from "#/components/forms/form-textarea.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
+import { useCategoryOptions } from "#/hooks/use-category-options.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiPost, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 
 const schema = z.object({
   name: z.string().min(1),
-  category: z.string().optional(),
+  category_id: z.string().optional(),
   description: z.string().optional(),
   price: z.coerce.number().gte(0),
   duration_minutes: z.coerce.number().int().gte(1).lte(600),
@@ -35,7 +36,7 @@ type Values = z.infer<typeof schema>
 export interface ServiceFormValues {
   id: number
   name: string
-  category?: string | null
+  category_id?: number | null
   description?: string | null
   price: string | number
   duration_minutes: number
@@ -69,7 +70,7 @@ export function ServiceFormDialog({
   const form = useForm(schema, {
     defaultValues: {
       name: "",
-      category: "",
+      category_id: "",
       description: "",
       price: 0,
       duration_minutes: 30,
@@ -87,7 +88,9 @@ export function ServiceFormDialog({
       service
         ? {
             name: service.name,
-            category: service.category ?? "",
+            category_id: service.category_id
+              ? String(service.category_id)
+              : "",
             description: service.description ?? "",
             price: Number(service.price),
             duration_minutes: service.duration_minutes ?? 30,
@@ -95,7 +98,7 @@ export function ServiceFormDialog({
           }
         : {
             name: "",
-            category: "",
+            category_id: "",
             description: "",
             price: 0,
             duration_minutes: 30,
@@ -104,11 +107,20 @@ export function ServiceFormDialog({
     )
   }, [open, service, form])
 
+  const categories = useCategoryOptions(tenant, "service", {
+    enabled: open,
+    emptyLabel: t("category.none"),
+  })
+
   const mutation = useMutation({
-    mutationFn: (values: Values) =>
-      isEdit
-        ? apiPut(`/${tenant}/clinic/services/${service.id}`, values)
-        : apiPost(`/${tenant}/clinic/services`, values),
+    mutationFn: ({ category_id, ...values }: Values) => {
+      // Kategori kini id entitas; string kosong berarti tanpa kategori.
+      const payload = { ...values, category_id: category_id ? Number(category_id) : null }
+
+      return isEdit
+        ? apiPut(`/${tenant}/clinic/services/${service.id}`, payload)
+        : apiPost(`/${tenant}/clinic/services`, payload)
+    },
     onSuccess: () => {
       setFailure(null)
       toast.success(isEdit ? t("service.updated") : t("service.created"))
@@ -146,21 +158,9 @@ export function ServiceFormDialog({
             />
             <FormSelect
               control={form.control}
-              name="category"
+              name="category_id"
               label={t("service.category")}
-              options={[
-                { label: t("service.category_none"), value: "" },
-                { label: t("service.category_skinbooster"), value: "skinbooster" },
-                {
-                  label: t("service.category_derma_treatment"),
-                  value: "derma_treatment",
-                },
-                {
-                  label: t("service.category_facial_peeling"),
-                  value: "facial_peeling",
-                },
-                { label: t("service.category_other"), value: "other" },
-              ]}
+              options={categories.options}
             />
             <FormTextarea
               control={form.control}

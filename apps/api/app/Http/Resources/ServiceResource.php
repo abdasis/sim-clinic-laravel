@@ -13,8 +13,11 @@ class ServiceResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'category' => $this->category,
-            'category_label' => $this->category?->label(),
+            'category_id' => $this->assignedCategory()?->id,
+            // Dua kunci lama dipertahankan supaya frontend tidak putus; isinya
+            // kini nama kategori entitas, bukan nilai enum.
+            'category' => $this->assignedCategory()?->name,
+            'category_label' => $this->assignedCategory()?->name,
             'description' => $this->description,
             'price' => $this->price,
             'duration_minutes' => $this->duration_minutes,

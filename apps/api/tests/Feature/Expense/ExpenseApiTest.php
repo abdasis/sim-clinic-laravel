@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Expense;
 
+use App\Enums\CategorizableType;
 use App\Enums\ClinicRole;
+use App\Models\Category;
 use App\Models\Expense;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\InteractsWithTenant;
@@ -17,10 +19,18 @@ class ExpenseApiTest extends TestCase
         // Operan kiri menang pada `+`, jadi override harus di kiri.
         return $overrides + [
             'spent_at' => '2026-05-31',
-            'category' => 'operational',
+            'category_id' => $this->categoryId('Operasional Klinik'),
             'description' => 'Pengeluaran klinik',
             'amount' => 3_800_000,
         ];
+    }
+
+    private function categoryId(string $name): int
+    {
+        return Category::query()->firstOrCreate(
+            ['name' => $name, 'type' => CategorizableType::Expense],
+            ['status' => 'active'],
+        )->id;
     }
 
     public function test_records_expense_with_recorder(): void
@@ -47,17 +57,17 @@ class ExpenseApiTest extends TestCase
         $this->actingAsClinicUser();
 
         // Tiga baris "Rincian Pengeluaran" dari laporan bulanan klinik.
-        Expense::factory()->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-05-10', 'category' => 'operational', 'amount' => 3_800_000]);
-        Expense::factory()->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-05-20', 'category' => 'salary', 'amount' => 1_000_000]);
-        Expense::factory()->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-05-25', 'category' => 'incentive', 'amount' => 500_000]);
+        Expense::factory()->category('Operasional Klinik')->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-05-10', 'amount' => 3_800_000]);
+        Expense::factory()->category('Gaji')->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-05-20', 'amount' => 1_000_000]);
+        Expense::factory()->category('Fee & Insentif')->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-05-25', 'amount' => 500_000]);
         // Di luar periode, tidak boleh ikut terhitung.
-        Expense::factory()->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-06-02', 'category' => 'salary', 'amount' => 9_000_000]);
+        Expense::factory()->category('Gaji')->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-06-02', 'amount' => 9_000_000]);
 
         $this->getJson($this->tenantUrl('expenses/summary?from=2026-05-01&to=2026-05-31'))
             ->assertOk()
             ->assertJsonPath('data.total', 5_300_000)
             ->assertJsonPath('data.entries', 3)
-            ->assertJsonPath('data.by_category.0.category', 'operational')
+            ->assertJsonPath('data.by_category.0.category_label', 'Operasional Klinik')
             ->assertJsonPath('data.by_category.0.total', 3_800_000);
     }
 
@@ -65,10 +75,10 @@ class ExpenseApiTest extends TestCase
     {
         $this->actingAsClinicUser();
 
-        Expense::factory()->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-05-10', 'category' => 'salary']);
-        Expense::factory()->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-05-11', 'category' => 'rent']);
+        Expense::factory()->category('Gaji')->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-05-10']);
+        Expense::factory()->category('Sewa')->create(['tenant_id' => $this->tenant->id, 'spent_at' => '2026-05-11']);
 
-        $this->getJson($this->tenantUrl('expenses?filter[category]=rent'))
+        $this->getJson($this->tenantUrl('expenses?filter[category]='.$this->categoryId('Sewa')))
             ->assertOk()
             ->assertJsonCount(1, 'data');
 

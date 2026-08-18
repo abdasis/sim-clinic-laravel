@@ -27,6 +27,8 @@ export const Route = createFileRoute("/$tenant/clinic/services/")({
 interface ServiceRow {
   id: number
   name: string
+  /** Dibawa untuk prefill dialog ubah; tabelnya menampilkan category_label. */
+  category_id?: number | null
   category?: string | null
   category_label?: string | null
   description?: string | null

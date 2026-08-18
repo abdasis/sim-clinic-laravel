@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BroadcastAutoReminderController;
 use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CentralAuthController;
 use App\Http\Controllers\CentralStatsController;
 use App\Http\Controllers\CentralWahaSettingController;
@@ -133,6 +134,10 @@ Route::prefix('{tenant}/clinic')
         Route::get('commission-rules/calculate', [CommissionRuleController::class, 'calculate']);
         Route::apiResource('commission-rules', CommissionRuleController::class)
             ->only(['index', 'store', 'update', 'destroy']);
+
+        // Kategori terpusat untuk layanan, produk, dan pengeluaran
+        Route::delete('categories/{category}/force', [CategoryController::class, 'forceDestroy']);
+        Route::apiResource('categories', CategoryController::class);
 
         // Broadcast WhatsApp — pengingat perawatan & promo ke pasien
         Route::get('broadcasts/audience-preview', [BroadcastController::class, 'preview']);

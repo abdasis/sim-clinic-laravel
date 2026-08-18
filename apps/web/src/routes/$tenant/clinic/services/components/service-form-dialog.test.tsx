@@ -9,6 +9,7 @@ const TRANSLATIONS = {
   service: {
     add: "Tambah Layanan",
     name: "Nama",
+    category: "Kategori",
     description: "Deskripsi",
     price: "Harga",
     status: "Status",
@@ -29,6 +30,21 @@ function mockFetch(api: { ok: boolean; status: number; body: unknown }) {
     void init
     if (String(input).includes("/translations")) {
       return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
+    }
+
+    // Pilihan kategori dimuat dari server sekarang; tanpa jawaban ini,
+    // formulirnya gagal karena alasan yang tidak sedang diuji.
+    if (String(input).includes("/categories")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            { id: 4, name: "Skinbooster" },
+            { id: 5, name: "Facial & Peeling" },
+          ],
+        }),
+      }
     }
 
     return { ok: api.ok, status: api.status, json: async () => api.body }
@@ -103,6 +119,38 @@ describe("ServiceFormDialog", () => {
       await screen.findByText("Anda tidak memiliki izin untuk mengakses modul ini."),
     ).toBeTruthy()
     expect(screen.getByRole("alert")).toBeTruthy()
+  })
+
+  /**
+   * Kategori tidak ikut ditampilkan di tabel sebagai id, jadi kalau baris yang
+   * dioper ke dialog tidak membawanya, formulir ubah terbuka tanpa kategori —
+   * dan menyimpannya melepas kategori layanan itu tanpa ada yang meminta.
+   */
+  it("mengisi kategori tersimpan saat membuka mode ubah", async () => {
+    mockFetch({ ok: true, status: 200, body: { data: { id: 9 } } })
+
+    wrap(
+      <ServiceFormDialog
+        tenant="demo"
+        service={{
+          id: 9,
+          name: "Facial Basic",
+          category_id: 5,
+          description: null,
+          price: 250000,
+          duration_minutes: 45,
+          status: "active",
+        }}
+        open
+        onOpenChange={() => {}}
+      />,
+    )
+
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Kategori") as HTMLSelectElement).value,
+      ).toBe("5"),
+    )
   })
 
   it("error per-field tetap menempel di fieldnya, bukan di kepala form", async () => {

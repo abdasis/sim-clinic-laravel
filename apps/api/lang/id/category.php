@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'title' => 'Kategori',
+    'add' => 'Tambah Kategori',
+    'edit' => 'Ubah Kategori',
+    'name' => 'Nama Kategori',
+    'type' => 'Jenis',
+    'type_service' => 'Layanan',
+    'type_product' => 'Produk',
+    'type_expense' => 'Pengeluaran',
+    'type_locked' => 'Jenis tidak bisa diubah setelah kategori dibuat — item yang sudah memakainya akan terlepas.',
+    'description' => 'Keterangan',
+    'status' => 'Status',
+    'usage_count' => 'Dipakai',
+    'used_by' => ':count item memakai kategori ini.',
+    'unused' => 'Belum dipakai',
+    'none' => 'Tanpa Kategori',
+    'created' => 'Kategori berhasil ditambahkan.',
+    'updated' => 'Kategori berhasil diperbarui.',
+    'archived' => 'Kategori diarsipkan. Item yang sudah memakainya tetap menampilkan namanya.',
+    'deleted' => 'Kategori dihapus permanen.',
+    'delete_confirm' => 'Kategori ini dihapus permanen dan tidak bisa dikembalikan.',
+    'archive_confirm' => 'Kategori diarsipkan dan tidak lagi muncul saat menambah item baru.',
+    'in_use' => 'Kategori ini masih dipakai :count item, jadi tidak bisa dihapus permanen. Arsipkan saja, atau pindahkan item-itemnya dulu.',
+    'empty_title' => 'Belum ada kategori',
+    'empty_desc' => 'Kategori membantu mengelompokkan layanan, produk, dan pengeluaran supaya laporannya lebih terbaca.',
+];
