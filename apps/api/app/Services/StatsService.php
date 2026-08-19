@@ -6,6 +6,7 @@ use App\Enums\BookingStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\StatsModule;
 use App\Enums\StockMovementType;
+use App\Support\TenantCache;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,22 @@ class StatsService
      * @return array{data: array<string, mixed>, meta: array<string, mixed>}
      */
     public function forModule(StatsModule $module, int $days): array
+    {
+        // Agregasi lintas beberapa tabel untuk satu kartu ringkasan; ditahan
+        // semenit supaya berpindah antar-modul dan kembali lagi tidak
+        // menghitung ulang semuanya dari nol. Sama seperti laporan, umurnya
+        // pendek karena transaksi bertanggal mundur bisa mengubah angkanya.
+        return TenantCache::remember(
+            'stats:'.$module->value.':'.$days,
+            TenantCache::TTL_LIVE,
+            fn () => $this->buildModule($module, $days),
+        );
+    }
+
+    /**
+     * @return array{data: array<string, mixed>, meta: array<string, mixed>}
+     */
+    private function buildModule(StatsModule $module, int $days): array
     {
         $tenantId = app('tenant')->id;
         $to = Carbon::today();

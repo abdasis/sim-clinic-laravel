@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\BroadcastAudience;
 use App\Enums\BroadcastRecipientStatus;
 use App\Enums\BroadcastStatus;
+use App\Http\Requests\BroadcastPreviewRequest;
+use App\Http\Requests\BroadcastRecipientStatusRequest;
 use App\Http\Requests\BroadcastRequest;
+use App\Http\Requests\BroadcastStatusRequest;
+use App\Http\Requests\BroadcastTestRequest;
 use App\Http\Requests\WhatsappSessionRequest;
 use App\Http\Resources\BroadcastRecipientResource;
 use App\Http\Resources\BroadcastResource;
@@ -13,15 +17,14 @@ use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
-use App\Rules\TenantRule;
 use App\Services\BroadcastService;
 use App\Support\BroadcastAudienceBuilder;
 use App\Support\PhoneNumber;
+use App\Support\TenantCache;
 use App\Support\WahaClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 
 class BroadcastController extends Controller
 {
@@ -50,17 +53,11 @@ class BroadcastController extends Controller
      * Hitung calon penerima sebelum broadcast dibuat — admin melihat berapa
      * yang terjangkau (dan berapa yang tak bernomor) sebelum menekan kirim.
      */
-    public function preview(Request $request, BroadcastAudienceBuilder $builder): JsonResponse
+    public function preview(BroadcastPreviewRequest $request, BroadcastAudienceBuilder $builder): JsonResponse
     {
         $this->authorize('create', Broadcast::class);
 
-        $validated = $request->validate([
-            'audience' => ['required', Rule::enum(BroadcastAudience::class)],
-            'days' => ['nullable', 'integer', 'min:1', 'max:730'],
-            // Layanan klinik lain tidak boleh dipakai menyaring penerima:
-            // jumlah dan nama pasien yang muncul jadi bocoran lintas klinik.
-            'service_id' => ['nullable', TenantRule::exists('services')],
-        ]);
+        $validated = $request->validated();
 
         $built = $builder->build(BroadcastAudience::from($validated['audience']), $validated);
 
@@ -120,7 +117,7 @@ class BroadcastController extends Controller
      * Jalur manual: admin menandai penerima setelah membuka tautan wa.me.
      */
     public function updateRecipient(
-        Request $request,
+        BroadcastRecipientStatusRequest $request,
         Broadcast $broadcast,
         BroadcastRecipient $recipient,
         BroadcastService $broadcasts,
@@ -129,9 +126,7 @@ class BroadcastController extends Controller
 
         abort_unless($recipient->broadcast_id === $broadcast->id, 404);
 
-        $validated = $request->validate([
-            'status' => ['required', Rule::in(['sent', 'skipped', 'pending'])],
-        ]);
+        $validated = $request->validated();
 
         $recipient = $broadcasts->markRecipient(
             $recipient,
@@ -161,13 +156,11 @@ class BroadcastController extends Controller
     }
 
     /** Jeda / lanjut / batalkan campaign yang sedang berjalan. */
-    public function changeStatus(Request $request, Broadcast $broadcast, BroadcastService $broadcasts): JsonResponse
+    public function changeStatus(BroadcastStatusRequest $request, Broadcast $broadcast, BroadcastService $broadcasts): JsonResponse
     {
         $this->authorize('update', $broadcast);
 
-        $validated = $request->validate([
-            'status' => ['required', Rule::in(['sending', 'paused', 'cancelled'])],
-        ]);
+        $validated = $request->validated();
 
         $broadcast = $broadcasts->changeStatus($broadcast, BroadcastStatus::from($validated['status']));
 
@@ -180,14 +173,11 @@ class BroadcastController extends Controller
     }
 
     /** Kirim pesan uji ke satu nomor sebelum blast sungguhan. */
-    public function sendTest(Request $request, BroadcastService $broadcasts): JsonResponse
+    public function sendTest(BroadcastTestRequest $request, BroadcastService $broadcasts): JsonResponse
     {
         $this->authorize('create', Broadcast::class);
 
-        $validated = $request->validate([
-            'phone' => ['required', 'string', 'max:32'],
-            'message' => ['required', 'string', 'max:4000'],
-        ]);
+        $validated = $request->validated();
 
         $phone = PhoneNumber::normalize($validated['phone']);
 
@@ -288,18 +278,45 @@ class BroadcastController extends Controller
     {
         $this->authorize('viewAny', Broadcast::class);
 
-        $today = BroadcastRecipient::query()
-            ->whereDate('updated_at', today())
-            ->selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
+        // whereDate membungkus kolomnya dengan fungsi tanggal, dan kolom yang
+        // dibungkus fungsi tidak bisa dipakai index — pemindaian penuh tabel
+        // penerima yang justru paling cepat menggemuk. Rentang antara awal
+        // dan akhir hari membandingkan nilai apa adanya, sehingga indexnya
+        // terpakai.
+        $dayStart = today()->startOfDay();
+        $dayEnd = today()->endOfDay();
 
-        $reminderToday = BroadcastRecipient::query()
-            ->whereNotNull('reminder_rule_id')
-            ->whereDate('created_at', today())
-            ->selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
+        // Ditahan sebentar: dashboard ini yang paling sering ditinggal terbuka
+        // di layar depan klinik, dan angkanya tidak perlu tepat per detik.
+        $counts = TenantCache::remember(
+            'broadcast:dashboard',
+            TenantCache::TTL_LIVE,
+            function () use ($dayStart, $dayEnd): array {
+                $today = BroadcastRecipient::query()
+                    ->whereBetween('updated_at', [$dayStart, $dayEnd])
+                    ->selectRaw('status, COUNT(*) as total')
+                    ->groupBy('status')
+                    ->pluck('total', 'status');
+
+                $reminderToday = BroadcastRecipient::query()
+                    ->whereNotNull('reminder_rule_id')
+                    ->whereBetween('created_at', [$dayStart, $dayEnd])
+                    ->selectRaw('status, COUNT(*) as total')
+                    ->groupBy('status')
+                    ->pluck('total', 'status');
+
+                return [
+                    'today' => $today->all(),
+                    'reminder_today' => $reminderToday->all(),
+                    'active_campaigns' => Broadcast::query()
+                        ->whereIn('status', [BroadcastStatus::Sending, BroadcastStatus::Paused])
+                        ->count(),
+                ];
+            },
+        );
+
+        $today = collect($counts['today']);
+        $reminderToday = collect($counts['reminder_today']);
 
         return response()->json([
             'data' => [
@@ -313,9 +330,7 @@ class BroadcastController extends Controller
                     'sent' => (int) ($reminderToday['sent'] ?? 0),
                     'failed' => (int) ($reminderToday['failed'] ?? 0),
                 ],
-                'active_campaigns' => Broadcast::query()
-                    ->whereIn('status', [BroadcastStatus::Sending, BroadcastStatus::Paused])
-                    ->count(),
+                'active_campaigns' => (int) $counts['active_campaigns'],
             ],
             'meta' => [],
         ]);

@@ -7,7 +7,9 @@ use App\Models\Expense;
 use App\Models\Payment;
 use App\Models\Transaction;
 use App\Support\CommissionCalculator;
+use App\Support\TenantCache;
 use Carbon\Carbon;
+use Closure;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,7 +26,36 @@ class ReportService
         return app('tenant')->id;
     }
 
+    /**
+     * Bungkus satu laporan dengan cache berumur pendek.
+     *
+     * Umurnya sengaja hanya semenit, bukan sehari untuk periode yang sudah
+     * lewat. Alasannya ada di POS: tanggal terbit transaksi boleh dimundurkan
+     * untuk mencatat penjualan yang terlewat, jadi laporan bulan lalu masih
+     * bisa berubah hari ini. Menyimpannya lama berarti ada kemungkinan
+     * akuntan membaca angka yang sudah tidak benar tanpa tahu.
+     *
+     * Yang diredam cukup: membuka laporan, mengganti tab, lalu kembali —
+     * pola yang menghasilkan tiga kali perhitungan penuh dalam sepuluh detik.
+     *
+     * @param  Closure(): array<string, mixed>  $build
+     * @return array<string, mixed>
+     */
+    private function cached(string $name, string $from, string $to, Closure $build): array
+    {
+        return TenantCache::remember(
+            'report:'.$name.':'.$from.':'.$to,
+            TenantCache::TTL_LIVE,
+            $build,
+        );
+    }
+
     public function revenue(string $from, string $to): array
+    {
+        return $this->cached('revenue', $from, $to, fn () => $this->buildRevenue($from, $to));
+    }
+
+    private function buildRevenue(string $from, string $to): array
     {
         $tenantId = $this->tenantId();
         $start = Carbon::parse($from)->startOfDay();
@@ -49,6 +80,11 @@ class ReportService
     }
 
     public function servicesReport(string $from, string $to): array
+    {
+        return $this->cached('servicesReport', $from, $to, fn () => $this->buildServicesReport($from, $to));
+    }
+
+    private function buildServicesReport(string $from, string $to): array
     {
         $tenantId = $this->tenantId();
         $start = Carbon::parse($from)->startOfDay();
@@ -77,6 +113,11 @@ class ReportService
     }
 
     public function productsReport(string $from, string $to): array
+    {
+        return $this->cached('productsReport', $from, $to, fn () => $this->buildProductsReport($from, $to));
+    }
+
+    private function buildProductsReport(string $from, string $to): array
     {
         $tenantId = $this->tenantId();
         $start = Carbon::parse($from)->startOfDay();
@@ -115,6 +156,11 @@ class ReportService
      * dua kali berarti melaporkan laba lebih kecil dari kenyataan.
      */
     public function monthly(string $from, string $to): array
+    {
+        return $this->cached('monthly', $from, $to, fn () => $this->buildMonthly($from, $to));
+    }
+
+    private function buildMonthly(string $from, string $to): array
     {
         $tenantId = $this->tenantId();
         $start = Carbon::parse($from)->startOfDay();

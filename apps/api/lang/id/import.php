@@ -9,6 +9,7 @@ return [
     'select_file' => 'Pilih berkas',
     'selected_file' => 'Berkas terpilih',
     'result_title' => 'Hasil impor',
+    'too_many_rows' => 'Berkasnya berisi :count baris, sementara sekali impor maksimal :max baris. Pecah dulu jadi beberapa berkas ya.',
     'imported' => 'Baru ditambahkan',
     'updated' => 'Diperbarui',
     'errors' => 'Baris bermasalah',

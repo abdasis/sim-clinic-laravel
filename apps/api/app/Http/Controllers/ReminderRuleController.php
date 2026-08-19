@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ReminderRuleRequest;
 use App\Models\Broadcast;
 use App\Models\ReminderRule;
-use App\Rules\TenantRule;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * Master pengingat perawatan: layanan X diingatkan setelah N hari. Scheduler
@@ -35,26 +33,11 @@ class ReminderRuleController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(ReminderRuleRequest $request): JsonResponse
     {
         $this->authorize('create', Broadcast::class);
 
-        $validated = $request->validate([
-            // Tanpa TenantRule, `exists:` lolos untuk layanan klinik lain:
-            // aturannya berjalan lewat query builder, jadi TenantScope tidak
-            // ikut berlaku.
-            //
-            // Unique-nya sengaja tetap global: satu layanan hanya dimiliki
-            // satu klinik, jadi "satu aturan per layanan" sudah otomatis
-            // berarti "per klinik".
-            'service_id' => ['required', TenantRule::exists('services'), Rule::unique('reminder_rules', 'service_id')],
-            'days_after' => ['required', 'integer', 'min:1', 'max:730'],
-            'message_template_id' => ['nullable', TenantRule::exists('message_templates')],
-            'is_active' => ['nullable', 'boolean'],
-        ], [], [
-            'service_id' => __('service.title'),
-            'days_after' => __('broadcast.reminder_days'),
-        ]);
+        $validated = $request->validated();
 
         $rule = ReminderRule::create($validated);
 
@@ -64,15 +47,11 @@ class ReminderRuleController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, ReminderRule $reminderRule): JsonResponse
+    public function update(ReminderRuleRequest $request, ReminderRule $reminderRule): JsonResponse
     {
         $this->authorize('update', Broadcast::class);
 
-        $validated = $request->validate([
-            'days_after' => ['required', 'integer', 'min:1', 'max:730'],
-            'message_template_id' => ['nullable', TenantRule::exists('message_templates')],
-            'is_active' => ['nullable', 'boolean'],
-        ]);
+        $validated = $request->validated();
 
         $reminderRule->update($validated);
 

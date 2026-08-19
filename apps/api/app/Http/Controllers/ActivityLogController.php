@@ -8,6 +8,7 @@ use App\Models\Activity;
 use App\Models\User;
 use App\Scopes\TenantScope;
 use App\Support\ActivityLabel;
+use App\Support\TenantCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -96,6 +97,28 @@ class ActivityLogController extends Controller
     {
         $this->authorize('viewAny', Activity::class);
 
+        // Tiga kueri DISTINCT di atas tabel yang paling cepat menggemuk, untuk
+        // mengisi tiga dropdown yang isinya nyaris tidak pernah berubah dalam
+        // sehari. Disimpan sejam.
+        //
+        // Konsekuensinya diketahui: modul baru atau staf yang baru pertama
+        // kali beraksi belum muncul di penyaring sampai satu jam berlalu.
+        // Yang tertunda hanya isi dropdown — datanya sendiri tetap tampil di
+        // tabel log sejak detik pertama.
+        $payload = TenantCache::remember(
+            'activity-log:filters',
+            TenantCache::TTL_SLOW,
+            fn () => $this->buildFilters(),
+        );
+
+        return response()->json(['data' => $payload, 'meta' => []]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildFilters(): array
+    {
         $modules = $this->scoped()
             ->whereNotNull('log_name')
             ->distinct()
@@ -119,24 +142,21 @@ class ActivityLogController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return response()->json([
-            'data' => [
-                'modules' => $modules->map(fn (string $module) => [
-                    'value' => $module,
-                    'label' => ActivityLabel::module($module),
-                ])->values(),
-                'events' => $events->map(fn (string $event) => [
-                    'value' => $event,
-                    'label' => ActivityLabel::event($event),
-                    'module' => str_contains($event, '.') ? strtok($event, '.') : null,
-                ])->values(),
-                'causers' => $causers->map(fn (User $user) => [
-                    'value' => (string) $user->id,
-                    'label' => $user->name,
-                ])->values(),
-            ],
-            'meta' => [],
-        ]);
+        return [
+            'modules' => $modules->map(fn (string $module) => [
+                'value' => $module,
+                'label' => ActivityLabel::module($module),
+            ])->values()->all(),
+            'events' => $events->map(fn (string $event) => [
+                'value' => $event,
+                'label' => ActivityLabel::event($event),
+                'module' => str_contains($event, '.') ? strtok($event, '.') : null,
+            ])->values()->all(),
+            'causers' => $causers->map(fn (User $user) => [
+                'value' => (string) $user->id,
+                'label' => $user->name,
+            ])->values()->all(),
+        ];
     }
 
     /**

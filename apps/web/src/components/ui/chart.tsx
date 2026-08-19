@@ -1,8 +1,15 @@
 "use client"
 
 import * as React from "react"
-import * as RechartsPrimitive from "recharts"
-import type { TooltipValueType } from "recharts"
+// Named import, bukan namespace: `import * as` menahan seluruh recharts di
+// bundel karena bundler tidak bisa membuktikan anggota mana yang tidak
+// dipakai. Yang benar-benar dipakai hanya lima nama di bawah.
+import { Legend, ResponsiveContainer, Tooltip } from "recharts"
+import type {
+  DefaultLegendContentProps,
+  DefaultTooltipContentProps,
+  TooltipValueType,
+} from "recharts"
 
 import { cn } from "#/lib/utils.ts"
 
@@ -49,7 +56,7 @@ function ChartContainer({
 }: React.ComponentProps<"div"> & {
   config: ChartConfig
   children: React.ComponentProps<
-    typeof RechartsPrimitive.ResponsiveContainer
+    typeof ResponsiveContainer
   >["children"]
   initialDimension?: {
     width: number
@@ -71,11 +78,11 @@ function ChartContainer({
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer
+        <ResponsiveContainer
           initialDimension={initialDimension}
         >
           {children}
-        </RechartsPrimitive.ResponsiveContainer>
+        </ResponsiveContainer>
       </div>
     </ChartContext.Provider>
   )
@@ -141,7 +148,7 @@ ${colorConfig
   )
 }
 
-const ChartTooltip = RechartsPrimitive.Tooltip
+const ChartTooltip = Tooltip
 
 function ChartTooltipContent({
   active,
@@ -157,7 +164,7 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+}: React.ComponentProps<typeof Tooltip> &
   React.ComponentProps<"div"> & {
     hideLabel?: boolean
     hideIndicator?: boolean
@@ -165,7 +172,7 @@ function ChartTooltipContent({
     nameKey?: string
     labelKey?: string
   } & Omit<
-    RechartsPrimitive.DefaultTooltipContentProps<
+    DefaultTooltipContentProps<
       TooltipValueType,
       TooltipNameType
     >,
@@ -297,7 +304,7 @@ function ChartTooltipContent({
   )
 }
 
-const ChartLegend = RechartsPrimitive.Legend
+const ChartLegend = Legend
 
 function ChartLegendContent({
   className,
@@ -308,7 +315,7 @@ function ChartLegendContent({
 }: React.ComponentProps<"div"> & {
   hideIcon?: boolean
   nameKey?: string
-} & RechartsPrimitive.DefaultLegendContentProps) {
+} & DefaultLegendContentProps) {
   const { config } = useChart()
 
   if (!payload?.length) {

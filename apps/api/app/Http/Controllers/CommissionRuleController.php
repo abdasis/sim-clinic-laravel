@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CommissionCalculateRequest;
 use App\Http\Requests\CommissionRuleRequest;
 use App\Http\Requests\CommissionSettingRequest;
 use App\Http\Resources\CommissionRuleResource;
@@ -10,7 +11,6 @@ use App\Models\CommissionSetting;
 use App\Models\Expense;
 use App\Services\CommissionService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /**
  * Aturan fee terapis menempel pada modul pengeluaran: fee yang dihitung di
@@ -104,14 +104,11 @@ class CommissionRuleController extends Controller
      * Pratinjau fee satu periode. Tidak menyimpan apa pun — admin yang
      * memutuskan membukukannya sebagai pengeluaran.
      */
-    public function calculate(Request $request, CommissionService $commissions): JsonResponse
+    public function calculate(CommissionCalculateRequest $request, CommissionService $commissions): JsonResponse
     {
         $this->authorize('viewAny', Expense::class);
 
-        $validated = $request->validate([
-            'from' => ['required', 'date'],
-            'to' => ['required', 'date', 'after_or_equal:from'],
-        ]);
+        $validated = $request->validated();
 
         return response()->json([
             'data' => $commissions->calculate($validated['from'], $validated['to']),

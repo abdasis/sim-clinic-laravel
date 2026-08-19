@@ -9,7 +9,9 @@ use App\Models\Product;
 use App\Models\Service;
 use App\Models\Transaction;
 use App\Support\PromoPricing;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -95,13 +97,40 @@ class TransactionService
         // Harga promo dihitung ulang di server, bukan diterima dari klien —
         // kasir tidak bisa menawar harga lewat payload.
         $pricing = new PromoPricing;
+
+        // Master diambil sekali untuk seluruh keranjang. Sebelumnya tiap baris
+        // menembak findOrFail sendiri, jadi satu transaksi berisi sepuluh item
+        // berarti sepuluh kueri — dan promonya sepuluh kueri lagi.
+        $collected = collect($items);
+        $productIds = $collected
+            ->filter(fn (array $item) => ($item['product_id'] ?? null) !== null)
+            ->map(fn (array $item) => (int) $item['product_id'])
+            ->unique();
+        $serviceIds = $collected
+            ->filter(fn (array $item) => ($item['product_id'] ?? null) === null)
+            ->map(fn (array $item) => (int) $item['service_id'])
+            ->unique();
+
+        $products = Product::query()->whereKey($productIds)->get()->keyBy('id');
+        $services = Service::query()->whereKey($serviceIds)->get()->keyBy('id');
+
+        $pricing->preload($products->values()->merge($services->values()));
+
         $lines = [];
 
         foreach ($items as $item) {
             $qty = (int) $item['qty'];
-            $line = isset($item['product_id']) && $item['product_id'] !== null
-                ? $this->productLine((int) $item['product_id'], $qty, $pricing)
-                : $this->serviceLine((int) $item['service_id'], $qty, $pricing);
+            $line = ($item['product_id'] ?? null) !== null
+                ? $this->productLine(
+                    $this->mustFind($products, (int) $item['product_id'], Product::class),
+                    $qty,
+                    $pricing,
+                )
+                : $this->serviceLine(
+                    $this->mustFind($services, (int) $item['service_id'], Service::class),
+                    $qty,
+                    $pricing,
+                );
 
             $line['offered_by'] = $item['offered_by'] ?? null;
             $lines[] = $line;
@@ -110,9 +139,32 @@ class TransactionService
         return $lines;
     }
 
-    private function productLine(int $productId, int $qty, PromoPricing $pricing): array
+    /**
+     * Ambil satu master dari hasil muat massal, atau lempar galat yang sama
+     * dengan findOrFail sebelumnya.
+     *
+     * Bentuk galatnya sengaja dipertahankan: id yang tidak ada tetap dijawab
+     * 404, bukan 500, sama seperti saat tiap baris masih mencarinya sendiri.
+     *
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Collection<int, TModel>  $models
+     * @param  class-string<TModel>  $class
+     * @return TModel
+     */
+    private function mustFind(Collection $models, int $id, string $class)
     {
-        $product = Product::findOrFail($productId);
+        $model = $models->get($id);
+
+        if ($model === null) {
+            throw (new ModelNotFoundException)->setModel($class, [$id]);
+        }
+
+        return $model;
+    }
+
+    private function productLine(Product $product, int $qty, PromoPricing $pricing): array
+    {
 
         // Bahan pakai treatment habis di tangan terapis, bukan dibeli pasien.
         // Penjagaannya di sini, bukan sekadar di daftar katalog, supaya
@@ -139,10 +191,8 @@ class TransactionService
         ];
     }
 
-    private function serviceLine(int $serviceId, int $qty, PromoPricing $pricing): array
+    private function serviceLine(Service $service, int $qty, PromoPricing $pricing): array
     {
-        $service = Service::findOrFail($serviceId);
-
         $unitPrice = $pricing->priceFor($service);
 
         return [

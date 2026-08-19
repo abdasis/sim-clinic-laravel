@@ -8,12 +8,12 @@ use App\Http\Requests\MedicalPhotoRequest;
 use App\Http\Requests\MedicalRecordRequest;
 use App\Http\Requests\TreatmentRecordRequest;
 use App\Http\Resources\MedicalRecordResource;
-use App\Models\Booking;
 use App\Models\MedicalRecord;
 use App\Models\Patient;
 use App\Services\MedicalRecordService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MedicalRecordController extends Controller
 {
@@ -67,7 +67,7 @@ class MedicalRecordController extends Controller
     /**
      * Riwayat rekam medis satu pasien, urut kronologis.
      */
-    public function patientRecords(Patient $patient): JsonResponse
+    public function patientRecords(Patient $patient, Request $request): JsonResponse
     {
         $this->authorize('viewAny', MedicalRecord::class);
 
@@ -75,17 +75,37 @@ class MedicalRecordController extends Controller
         // Dokter kerap merampungkan catatan setelah pasien pulang, kadang
         // keesokan harinya — kalau riwayatnya diurutkan dari waktu tulis,
         // perkembangan pasien terbaca dengan urutan yang salah.
-        $records = MedicalRecord::where('patient_id', $patient->id)
+        //
+        // Digabung lewat leftJoin, bukan subquery berkorelasi di ORDER BY:
+        // bentuk yang lama menjalankan satu subquery untuk setiap baris yang
+        // diurutkan. Left, bukan inner — catatan yang ditulis tanpa booking
+        // tidak boleh hilang dari riwayat, dan waktu tulisnya yang dipakai
+        // sebagai gantinya.
+        //
+        // Urutannya tetap dari kunjungan terlama ke terbaru, sama seperti
+        // sebelumnya — itu urutan yang dibaca dokter, dan mengubahnya demi
+        // paginasi berarti menukar kebenaran dengan kecepatan. Yang berubah
+        // hanya cara datangnya: riwayat panjang tidak lagi dimuat sekaligus
+        // berikut seluruh foto dan tindakannya.
+        $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
+
+        $page = MedicalRecord::query()
+            ->where('medical_records.patient_id', $patient->id)
+            ->leftJoin('bookings', 'bookings.id', '=', 'medical_records.booking_id')
+            ->select('medical_records.*')
+            ->orderBy(DB::raw('COALESCE(bookings.start_at, medical_records.created_at)'))
+            ->orderBy('medical_records.id')
             ->with(['treatmentRecords', 'medicalPhotos', 'author', 'patient', 'booking'])
-            ->orderBy(
-                Booking::select('start_at')
-                    ->whereColumn('bookings.id', 'medical_records.booking_id'),
-            )
-            ->get();
+            ->paginate($perPage, ['*'], 'page', max((int) $request->integer('page', 1), 1));
 
         return response()->json([
-            'data' => MedicalRecordResource::collection($records),
-            'meta' => ['total' => $records->count()],
+            'data' => MedicalRecordResource::collection($page->items()),
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+                'last_page' => $page->lastPage(),
+            ],
         ]);
     }
 

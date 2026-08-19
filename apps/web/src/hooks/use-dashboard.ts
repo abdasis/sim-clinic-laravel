@@ -56,7 +56,7 @@ export interface DashboardMeta {
  * Seluruh isi dasbor dalam satu permintaan — halaman menampilkan lima blok
  * sekaligus, jadi memecahnya jadi lima request hanya membuatnya berkedip.
  */
-export function useDashboardSummary(tenant: string, days = 14) {
+export function useDashboardSummary(tenant: string, days = 14, enabled = true) {
   return useQuery({
     queryKey: ["dashboard", tenant, days],
     queryFn: () =>
@@ -64,6 +64,11 @@ export function useDashboardSummary(tenant: string, days = 14) {
         `/${tenant}/clinic/dashboard/summary`,
         { days },
       ),
-    enabled: Boolean(tenant),
+    // `enabled` diisi pemanggil dengan keadaan sudah-terpasang. Token ada di
+    // localStorage, yang tidak terbaca saat halaman dirakit di server —
+    // permintaan yang berangkat di sana pasti dijawab 401, dan hasilnya
+    // bukan cuma kerja sia-sia: layar sempat menampilkan keadaan galat
+    // sepersekian detik sebelum permintaan asli dari peramban tiba.
+    enabled: enabled && Boolean(tenant),
   })
 }

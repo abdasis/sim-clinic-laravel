@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
-import { useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery } from "@tanstack/react-query"
 
 import { Button } from "#/components/ui/button.tsx"
 import {
@@ -73,21 +73,37 @@ function differentDay(visit?: string | null, recorded?: string | null) {
   return new Date(visit).toDateString() !== new Date(recorded).toDateString()
 }
 
+interface RecordsResponse {
+  data: RecordRow[]
+  meta: { current_page: number; last_page: number; total: number }
+}
+
 function PatientMedicalRecordsPage() {
   const { tenant, id } = useParams({
     from: "/$tenant/clinic/patients/$id/medical-records",
   })
   const { t } = useTrans()
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["patient-medical-records", tenant, id],
-    queryFn: () =>
-      apiGet<{ data: RecordRow[] }>(
-        `/${tenant}/clinic/patients/${id}/medical-records`,
-      ),
-  })
+  // Riwayat panjang datang bertahap: server memotongnya per 20 catatan
+  // supaya foto dan tindakan tidak ikut terangkut sekaligus. Urutannya tetap
+  // dari kunjungan terlama, jadi halaman berikutnya cukup disambung di
+  // belakang tanpa perlu diurut ulang.
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ["patient-medical-records", tenant, id],
+      initialPageParam: 1,
+      queryFn: ({ pageParam }) =>
+        apiGet<RecordsResponse>(
+          `/${tenant}/clinic/patients/${id}/medical-records`,
+          { page: pageParam },
+        ),
+      getNextPageParam: (last) =>
+        last.meta.current_page < last.meta.last_page
+          ? last.meta.current_page + 1
+          : undefined,
+    })
 
-  const records = data?.data ?? []
+  const records = data?.pages.flatMap((page) => page.data) ?? []
   const patientName = records[0]?.patient_name ?? t("patient.title")
   useBreadcrumbTail(patientName)
 
@@ -180,6 +196,23 @@ function PatientMedicalRecordsPage() {
               </CardContent>
             </Card>
           ))}
+
+          {/* Tombolnya hanya muncul saat memang masih ada yang tersisa —
+              tombol mati di ujung riwayat cuma bikin orang menebak apakah
+              catatannya habis atau gagal dimuat. */}
+          {hasNextPage ? (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage
+                  ? t("general.loading")
+                  : t("medical_record.load_older")}
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
     </div>

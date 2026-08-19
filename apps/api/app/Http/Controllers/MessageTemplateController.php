@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\MessageTemplateRequest;
 use App\Models\Broadcast;
 use App\Models\MessageTemplate;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /**
  * Templat pesan WhatsApp yang bisa dipakai ulang oleh broadcast dan aturan
@@ -25,14 +25,11 @@ class MessageTemplateController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(MessageTemplateRequest $request): JsonResponse
     {
         $this->authorize('create', Broadcast::class);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'body' => ['required', 'string', 'max:4000'],
-        ]);
+        $validated = $request->validated();
 
         $template = MessageTemplate::create($validated);
 
@@ -42,14 +39,11 @@ class MessageTemplateController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, MessageTemplate $messageTemplate): JsonResponse
+    public function update(MessageTemplateRequest $request, MessageTemplate $messageTemplate): JsonResponse
     {
         $this->authorize('update', Broadcast::class);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'body' => ['required', 'string', 'max:4000'],
-        ]);
+        $validated = $request->validated();
 
         $messageTemplate->update($validated);
 

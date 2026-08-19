@@ -23,7 +23,10 @@ class TransactionController extends Controller
 
         $params = $this->dataTableParams($request);
 
-        $query = Transaction::query()->with('patient');
+        // Kasir ikut dimuat karena TransactionResource menyebut namanya di
+        // setiap baris; tanpa ini satu halaman berisi 25 transaksi menembak
+        // 25 kueri tambahan.
+        $query = Transaction::query()->with(['patient', 'cashier:id,name']);
 
         if ($params['search']) {
             $query->where('invoice_number', 'like', '%'.$params['search'].'%');

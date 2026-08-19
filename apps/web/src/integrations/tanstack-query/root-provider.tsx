@@ -20,7 +20,25 @@ function shouldRetry(failureCount: number, error: unknown): boolean {
 export function getContext() {
   const queryClient = new QueryClient({
     defaultOptions: {
-      queries: { retry: shouldRetry },
+      queries: {
+        retry: shouldRetry,
+        /**
+         * Semenit dianggap masih segar. Tanpa ini setiap perpindahan halaman
+         * yang memakai kueri yang sama menembak ulang ke server, padahal
+         * datanya baru saja diambil beberapa detik sebelumnya.
+         */
+        staleTime: 60_000,
+        /**
+         * Kembali ke tab tidak lagi memicu pengambilan ulang serentak. Di
+         * klinik, jendela aplikasi ditinggal terbuka sepanjang hari dan
+         * di-fokus ulang puluhan kali — tiap kali itu berarti satu gelombang
+         * permintaan untuk data yang belum tentu berubah.
+         *
+         * Yang memang perlu segar setelah aksi tetap disegarkan lewat
+         * invalidateQueries di mutasinya masing-masing, bukan lewat fokus.
+         */
+        refetchOnWindowFocus: false,
+      },
     },
   })
 

@@ -10,6 +10,7 @@ import { Button } from "#/components/ui/button.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useAuthUser } from "#/hooks/use-auth-user.ts"
 import { useDashboardSummary } from "#/hooks/use-dashboard.ts"
+import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { BookingStatusChart } from "./components/booking-status-chart.tsx"
 import { DashboardHero } from "./components/dashboard-hero.tsx"
@@ -29,8 +30,16 @@ function DashboardPage() {
   const { t } = useTrans()
   const user = useAuthUser()
 
-  const { data, isLoading, isError } = useDashboardSummary(tenant, TREND_DAYS)
+  // Sebelum terpasang, kerangkanya yang tampil — sama seperti shell klinik.
+  // Tanpa itu SSR dan render pertama di peramban menghasilkan markup berbeda.
+  const mounted = useIsMounted()
+  const { data, isLoading, isError } = useDashboardSummary(
+    tenant,
+    TREND_DAYS,
+    mounted,
+  )
   const summary = data?.data
+  const loading = isLoading || !mounted
 
   return (
     <div className="space-y-4">
@@ -51,7 +60,7 @@ function DashboardPage() {
       <DashboardKpiRow
         kpis={summary?.kpis}
         trend={summary?.revenue_trend}
-        isLoading={isLoading}
+        isLoading={loading}
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -64,7 +73,7 @@ function DashboardPage() {
           )}
           delay={90}
         >
-          {isLoading || !summary ? (
+          {loading || !summary ? (
             <Skeleton className="h-56 w-full" />
           ) : (
             <RevenueTrendChart points={summary.revenue_trend} />
@@ -76,7 +85,7 @@ function DashboardPage() {
           subtitle={t("dashboard.booking_status_subtitle")}
           delay={135}
         >
-          {isLoading || !summary ? (
+          {loading || !summary ? (
             <Skeleton className="h-56 w-full" />
           ) : (
             <BookingStatusChart items={summary.booking_status_counts} />
@@ -90,7 +99,7 @@ function DashboardPage() {
           subtitle={t("dashboard.top_services_subtitle")}
           delay={180}
         >
-          {isLoading || !summary ? (
+          {loading || !summary ? (
             <Skeleton className="h-56 w-full" />
           ) : (
             <TopServicesChart items={summary.top_services} />
@@ -109,7 +118,7 @@ function DashboardPage() {
             </Button>
           }
         >
-          {isLoading || !summary ? (
+          {loading || !summary ? (
             <Skeleton className="h-56 w-full" />
           ) : (
             <TodaySchedule tenant={tenant} entries={summary.schedule_today} />

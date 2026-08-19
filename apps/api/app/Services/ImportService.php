@@ -9,6 +9,7 @@ use App\Actions\Import\ParseImportFileAction;
 use App\Actions\LogAuditAction;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -23,11 +24,32 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 class ImportService
 {
     /**
+     * Batas baris per unggahan.
+     *
+     * Impor berjalan di dalam permintaan HTTP, satu transaksi basis data, dan
+     * satu proses PHP. Berkas 2 MB masih bisa berisi puluhan ribu baris —
+     * cukup untuk menembus batas waktu server, dan yang terjadi kemudian
+     * bukan pesan galat melainkan koneksi yang putus dengan transaksi
+     * menggantung di tengah jalan.
+     *
+     * Angkanya dipilih supaya katalog klinik terbesar sekalipun muat dalam
+     * sekali unggah, sementara berkas yang jauh di atas itu hampir pasti
+     * salah kirim.
+     *
+     * ponytail: batas, bukan antrean. Ceiling-nya di situ — klinik yang
+     * benar-benar perlu memasukkan lebih dari seribu baris harus memecah
+     * berkasnya. Upgrade path-nya memindahkan impor ke job dengan halaman
+     * status, yang butuh perubahan di sisi tampilan juga.
+     */
+    private const MAX_ROWS = 1000;
+
+    /**
      * @return array{imported: int, updated: int, errors: array<int, array<string, mixed>>}
      */
     public function importServices(UploadedFile $file, User $actor): array
     {
         $parsed = app(ParseImportFileAction::class)->handle($file, ImportServicesAction::HEADER);
+        $this->guardRowCount($parsed['rows']);
 
         return $this->run(
             fn () => app(ImportServicesAction::class)->handle($parsed['rows']),
@@ -44,6 +66,7 @@ class ImportService
     public function importProducts(UploadedFile $file, User $actor): array
     {
         $parsed = app(ParseImportFileAction::class)->handle($file, ImportProductsAction::HEADER);
+        $this->guardRowCount($parsed['rows']);
 
         return $this->run(
             fn () => app(ImportProductsAction::class)->handle($parsed['rows']),
@@ -52,6 +75,23 @@ class ImportService
             $file,
             $actor,
         );
+    }
+
+    /**
+     * Tolak berkas yang terlalu panjang sebelum satu baris pun ditulis.
+     *
+     * @param  Collection<int, mixed>|array<int, mixed>  $rows
+     */
+    private function guardRowCount(Collection|array $rows): void
+    {
+        $count = is_array($rows) ? count($rows) : $rows->count();
+
+        if ($count > self::MAX_ROWS) {
+            abort(422, __('import.too_many_rows', [
+                'max' => self::MAX_ROWS,
+                'count' => $count,
+            ]));
+        }
     }
 
     public function template(string $type): Spreadsheet

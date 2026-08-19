@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'load_older' => 'Muat riwayat berikutnya',
     'history' => 'Riwayat Rekam Medis',
     'deleted' => 'Rekam medis berhasil dihapus.',
     'updated' => 'Rekam medis berhasil diperbarui.',

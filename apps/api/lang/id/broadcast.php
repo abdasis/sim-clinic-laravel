@@ -26,6 +26,8 @@ return [
     'queued_summary' => ':queued pesan masuk antrean kirim.',
     'invalid_phone' => 'Nomor telepon tidak valid.',
     'test_sent' => 'Pesan uji terkirim.',
+    'test_phone_label' => 'Nomor tujuan',
+    'test_message_label' => 'Isi pesan uji',
     'test_message' => 'Kirim Pesan Uji',
     'template_saved' => 'Templat pesan tersimpan.',
     'template_deleted' => 'Templat pesan dihapus.',
