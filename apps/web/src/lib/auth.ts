@@ -10,6 +10,14 @@ export interface AuthUser {
   tenant_id: number
   /** Preferensi tampilan; belum ada untuk akun yang belum mengaturnya. */
   appearance?: Appearance | null
+  /**
+   * Izin efektif milik akun ini di klinik yang sedang dibuka.
+   *
+   * Belum ada untuk sesi yang login sebelum ini dipasang; pembacanya harus
+   * memperlakukan `undefined` sebagai "belum tahu", bukan "tidak punya
+   * apa-apa".
+   */
+  permissions?: string[]
 }
 
 const USER_KEY = "clinic_user"
@@ -57,4 +65,17 @@ export function hasPlatformRole(): boolean {
 export function hasClinicRole(...roles: string[]): boolean {
   const user = getAuthUser()
   return user?.clinic_role != null && roles.includes(user.clinic_role)
+}
+
+/**
+ * Izin efektif akun yang sedang login, atau `null` bila belum diketahui.
+ *
+ * Dibedakan dari daftar kosong: sesi lama belum menyimpannya, dan
+ * memperlakukan itu sebagai "tidak punya izin apa pun" akan mengosongkan
+ * seluruh menu sampai /me selesai dimuat.
+ */
+export function getPermissions(): string[] | null {
+  const permissions = getAuthUser()?.permissions
+
+  return Array.isArray(permissions) ? permissions : null
 }

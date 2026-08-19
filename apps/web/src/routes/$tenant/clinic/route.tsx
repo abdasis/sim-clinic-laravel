@@ -62,7 +62,16 @@ interface NavChild {
 interface NavItem {
   key: string
   label: string
-  roles: string[] // peran klinik yang boleh melihat modul
+  /**
+   * Izin yang menentukan modul ini boleh dibuka. Tanpa ini, item selalu
+   * tampil — dipakai dasbor, yang terbuka untuk siapa pun yang login.
+   */
+  permission?: string
+  /**
+   * Peran klinik bawaan. Hanya dipakai sebagai cadangan untuk sesi lama yang
+   * belum menyimpan daftar izin; begitu izinnya diketahui, izin yang menang.
+   */
+  roles: string[]
   icon: IconSvgElement
   children?: NavChild[]
 }
@@ -76,6 +85,7 @@ function ClinicLayout() {
   const mounted = useIsMounted()
   const user = useAuthUser()
   const role = user?.clinic_role ?? ""
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : null
   // Preferensi ikut antar-perangkat: localStorage disegarkan dari server
   // sekali per pemasangan shell, lalu diterapkan ke DOM oleh hook-nya.
   useMe(tenant, mounted)
@@ -93,18 +103,19 @@ function ClinicLayout() {
 
   const items: NavItem[] = [
     { key: "", label: t("dashboard.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: DashboardSquare01Icon },
-    { key: "staff", label: t("staff.title"), roles: ["admin"], icon: UserGroupIcon },
-    { key: "roles", label: t("role.title"), roles: ["admin"], icon: SecurityLockIcon },
-    { key: "services", label: t("service.title"), roles: ["admin", "doctor", "therapist"], icon: StethoscopeIcon },
-    { key: "patients", label: t("patient.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulseIcon },
-    { key: "bookings", label: t("booking.title"), roles: ["admin", "doctor", "therapist"], icon: Calendar01Icon },
-    { key: "medical-records", label: t("medical_record.title"), roles: ["admin", "doctor", "therapist"], icon: File02Icon },
-    { key: "products", label: t("product.title"), roles: ["admin"], icon: PackageIcon },
-    { key: "categories", label: t("category.title"), roles: ["admin"], icon: TagsIcon },
-    { key: "inventory", label: t("inventory.title"), roles: ["admin"], icon: Layers01Icon },
+    { key: "staff", label: t("staff.title"), permission: "staff.view", roles: ["admin"], icon: UserGroupIcon },
+    { key: "roles", label: t("role.title"), permission: "role.view", roles: ["admin"], icon: SecurityLockIcon },
+    { key: "services", label: t("service.title"), permission: "service.view", roles: ["admin", "doctor", "therapist"], icon: StethoscopeIcon },
+    { key: "patients", label: t("patient.title"), permission: "patient.view", roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulseIcon },
+    { key: "bookings", label: t("booking.title"), permission: "booking.view", roles: ["admin", "doctor", "therapist"], icon: Calendar01Icon },
+    { key: "medical-records", label: t("medical_record.title"), permission: "medical_record.view", roles: ["admin", "doctor", "therapist"], icon: File02Icon },
+    { key: "products", label: t("product.title"), permission: "product.view", roles: ["admin"], icon: PackageIcon },
+    { key: "categories", label: t("category.title"), permission: "category.view", roles: ["admin"], icon: TagsIcon },
+    { key: "inventory", label: t("inventory.title"), permission: "inventory.view", roles: ["admin"], icon: Layers01Icon },
     {
       key: "pos",
       label: t("pos.title"),
+      permission: "transaction.view",
       roles: ["admin", "cashier"],
       // Tidak ada ikon keranjang di set gratis; POS di klinik = meja kasir.
       icon: CashierIcon,
@@ -113,14 +124,25 @@ function ClinicLayout() {
         { key: "pos/transactions", label: t("pos.transactions") },
       ],
     },
-    { key: "promos", label: t("promo.title"), roles: ["admin", "cashier"], icon: DiscountTag01Icon },
-    { key: "expenses", label: t("expense.title"), roles: ["admin"], icon: MoneyBag02Icon },
-    { key: "broadcasts", label: t("broadcast.title"), roles: ["admin"], icon: BubbleChatIcon },
-    { key: "company-profile", label: t("company_profile.title"), roles: ["admin"], icon: Globe02Icon },
-    { key: "reports", label: t("report.title"), roles: ["admin"], icon: BarChartIcon },
+    { key: "promos", label: t("promo.title"), permission: "promo.view", roles: ["admin", "cashier"], icon: DiscountTag01Icon },
+    { key: "expenses", label: t("expense.title"), permission: "expense.view", roles: ["admin"], icon: MoneyBag02Icon },
+    { key: "broadcasts", label: t("broadcast.title"), permission: "broadcast.view", roles: ["admin"], icon: BubbleChatIcon },
+    { key: "company-profile", label: t("company_profile.title"), permission: "content.view", roles: ["admin"], icon: Globe02Icon },
+    { key: "reports", label: t("report.title"), permission: "report.view", roles: ["admin"], icon: BarChartIcon },
   ]
 
-  const visible = items.filter((item) => item.roles.includes(role))
+  // Menu mengikuti izin sungguhan, bukan peran yang di-hardcode. Sebelumnya
+  // keduanya bisa berbeda: menunya tampil, lalu servernya menolak saat
+  // diklik — dan admin tidak punya cara menebak kenapa.
+  //
+  // Sesi lama belum menyimpan daftar izin. Selama belum diketahui, peran
+  // bawaan yang dipakai supaya menunya tidak mendadak kosong sampai /me
+  // selesai memuat.
+  const visible = items.filter((item) =>
+    permissions === null
+      ? item.roles.includes(role)
+      : item.permission === undefined || permissions.includes(item.permission),
+  )
 
   const navMain: SidebarNavItem[] = visible.map((item) => {
     const activeChild = activeChildKey(pathname, base, item)
