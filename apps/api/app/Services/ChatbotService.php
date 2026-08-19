@@ -32,6 +32,14 @@ class ChatbotService
     /** Riwayat sekadar konteks, bukan arsip — terlalu panjang malah mahal. */
     private const HISTORY_LIMIT = 10;
 
+    /**
+     * Jeda yang dianggap "pasien kembali", bukan "percakapan berlanjut".
+     *
+     * ponytail: angkanya dipatok di sini. Pindahkan ke ChatbotSetting begitu
+     * ada klinik yang ingin ambangnya berbeda.
+     */
+    private const INACTIVITY_THRESHOLD_MINUTES = 15;
+
     public function __construct(
         private readonly ?DeepSeekClient $ai,
         private readonly SaveChatMessageAction $messages,
@@ -59,6 +67,11 @@ class ChatbotService
 
         $patient = app(FindPatientByPhoneAction::class)->handle($senderPhone);
 
+        // Diukur sebelum pesan masuk ini ikut tersimpan; kalau sesudah, yang
+        // terbaca sebagai "pesan terakhir" adalah pesan barusan dan jedanya
+        // selalu nol.
+        $returning = $this->hasBeenQuietFor($senderPhone);
+
         $this->messages->handle($senderPhone, 'in', $incoming, 'user');
 
         $answer = $this->converse($setting, $senderPhone, $incoming, $patient);
@@ -68,6 +81,10 @@ class ChatbotService
             // tercatat harus persis teks yang dibaca pasien, kalau tidak
             // penelusuran keluhan berujung pada teks yang tidak pernah ada.
             $answer = WhatsAppText::normalize($answer);
+
+            if ($returning) {
+                $answer .= "\n\n".__('chatbot.closing_offer');
+            }
 
             $this->messages->handle($senderPhone, 'out', $answer, 'assistant');
         }
@@ -85,6 +102,26 @@ class ChatbotService
     public function isActive(): bool
     {
         return (bool) ChatbotSetting::query()->value('is_active');
+    }
+
+    /**
+     * Pasien ini sempat lama tidak terdengar?
+     *
+     * Nomor yang belum punya riwayat sama sekali tidak dihitung: itu percakapan
+     * pertama, bukan orang yang kembali setelah menghilang.
+     */
+    private function hasBeenQuietFor(string $senderPhone): bool
+    {
+        $last = ChatMessage::query()
+            ->where('sender_phone', $senderPhone)
+            ->latest('id')
+            ->value('created_at');
+
+        if ($last === null) {
+            return false;
+        }
+
+        return now()->diffInMinutes($last, absolute: true) >= self::INACTIVITY_THRESHOLD_MINUTES;
     }
 
     /**

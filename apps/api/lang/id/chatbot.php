@@ -32,6 +32,7 @@ return [
     // Balasan ke pasien
     'fallback' => 'Maaf, saat ini saya sedang kesulitan memproses pesan Anda. Boleh dicoba lagi sebentar lagi, atau hubungi klinik langsung ya.',
     'tool_failed' => 'Data yang diminta sedang tidak bisa diambil.',
+    'closing_offer' => 'Ada lagi yang bisa saya bantu? Tinggal chat saja ya kapan saja.',
 
     // Penolakan booking — ditulis agar bisa langsung dibacakan ke pasien
     // Pendaftaran mandiri
