@@ -20,6 +20,9 @@ class ChatbotWebhookTest extends TestCase
 
     private const TOKEN = 'token-uji';
 
+    /** Nomor klinik pada envelope webhook; penerima yang sah bagi pesan masuk. */
+    private const ME = '628110000000@c.us';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,6 +42,7 @@ class ChatbotWebhookTest extends TestCase
     {
         return $this->postJson('/api/whatsapp/webhook/'.$token, [
             'session' => $session,
+            'me' => ['id' => self::ME],
             'payload' => $payload,
         ]);
     }
@@ -46,7 +50,13 @@ class ChatbotWebhookTest extends TestCase
     /** @return array<string, mixed> */
     private function message(string $body = 'Halo, berapa harga facial?'): array
     {
-        return ['from' => '6281234567890@c.us', 'body' => $body, 'fromMe' => false, 'hasMedia' => false];
+        return [
+            'from' => '6281234567890@c.us',
+            'to' => self::ME,
+            'body' => $body,
+            'fromMe' => false,
+            'hasMedia' => false,
+        ];
     }
 
     public function test_a_valid_message_is_queued(): void

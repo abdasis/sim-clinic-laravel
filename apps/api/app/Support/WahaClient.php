@@ -21,6 +21,17 @@ use Throwable;
  */
 class WahaClient
 {
+    /**
+     * Sumber pesan yang tidak pernah boleh sampai ke aplikasi: status/story,
+     * grup, saluran, dan daftar siaran. Semuanya bukan percakapan berdua.
+     */
+    private const IGNORED_SOURCES = [
+        'status' => true,
+        'groups' => true,
+        'channels' => true,
+        'broadcast' => true,
+    ];
+
     public function __construct(
         private readonly string $baseUrl,
         private readonly string $apiKey,
@@ -201,6 +212,11 @@ class WahaClient
      * WAHA menyimpan webhook sebagai bagian dari config sesi, jadi ini menimpa
      * seluruh daftarnya — bukan menambah. Itu memang yang dikehendaki: satu
      * sesi milik satu klinik, dan satu klinik hanya punya satu alamat webhook.
+     *
+     * Sekaligus memasang saringan bawaan gateway. Status, grup, saluran, dan
+     * daftar siaran dihentikan sebelum sempat menjadi permintaan HTTP ke
+     * aplikasi — lalu lintas yang tidak pernah datang tidak bisa lolos
+     * saringan mana pun.
      */
     public function setWebhook(string $url): void
     {
@@ -209,12 +225,48 @@ class WahaClient
                 'webhooks' => [
                     ['url' => $url, 'events' => ['message']],
                 ],
+                'ignore' => self::IGNORED_SOURCES,
             ],
         ]);
 
         if (! $response->successful()) {
             throw new RuntimeException('WAHA menolak pendaftaran webhook: HTTP '.$response->status());
         }
+
+        // ponytail: keberhasilan pendaftaran tidak menjamin saringannya
+        // tersimpan — versi WAHA yang belum mengenal `config.ignore` menerima
+        // permintaannya lalu mengabaikan bagian itu diam-diam. Yang bisa
+        // dilakukan sekarang hanya mencatat config yang benar-benar tersimpan
+        // supaya selisihnya terlihat saat ditelusuri. Ceiling-nya di situ:
+        // aplikasi tidak tahu apakah gateway menurut. Upgrade path-nya
+        // memeriksa versi lewat GET /api/version dan menolak menyalakan
+        // chatbot pada versi yang tidak mendukungnya. Sampai itu ada, lapis
+        // kedua di InboundMessageController yang menjaga.
+        $this->logIgnoreSupport($response->json());
+    }
+
+    /**
+     * Catat apakah saringan bawaan benar-benar tersimpan di sesi.
+     *
+     * @param  mixed  $session
+     */
+    private function logIgnoreSupport($session): void
+    {
+        $stored = data_get($session, 'config.ignore');
+
+        if (blank($stored)) {
+            Log::channel('chatbot')->warning('Gateway tidak menyimpan saringan bawaan; saringan aplikasi yang menjaga.', [
+                'session' => $this->session,
+                'expected' => self::IGNORED_SOURCES,
+            ]);
+
+            return;
+        }
+
+        Log::channel('chatbot')->info('Saringan bawaan gateway terpasang.', [
+            'session' => $this->session,
+            'ignore' => $stored,
+        ]);
     }
 
     private function request(): PendingRequest

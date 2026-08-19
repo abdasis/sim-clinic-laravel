@@ -68,6 +68,10 @@ class SetupChatbotWebhookCommand extends Command
 
         $this->newLine();
         $this->info("Selesai: {$done} klinik terdaftar, {$skipped} dilewati.");
+        // Saringan bawaan gateway ikut terpasang di call yang sama, jadi sesi
+        // lama baru berhenti mengirim status dan grup setelah command ini
+        // dijalankan ulang. Disebut di sini supaya tidak perlu ditebak.
+        $this->line('Status, grup, saluran, dan daftar siaran ikut disaring di gateway.');
 
         return self::SUCCESS;
     }

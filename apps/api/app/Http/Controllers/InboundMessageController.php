@@ -67,12 +67,15 @@ class InboundMessageController extends Controller
         // tanpa saringan ini, orang yang memasang status berisi kabar duka
         // atau tautan TikTok akan menerima balasan pribadi dari klinik
         // padahal ia tidak pernah mengirim pesan apa pun ke klinik.
-        $chatJid = (string) ($payload['from'] ?? $payload['_data']['key']['remoteJid'] ?? '');
+        $chatJid = (string) (data_get($payload, 'from') ?? data_get($payload, '_data.key.remoteJid') ?? '');
+        $meId = $request->input('me.id');
 
-        if (! $this->isDirectChat($chatJid, $payload)) {
+        if (! $this->isDirectChat($chatJid, $payload, is_string($meId) ? $meId : null)) {
             Log::channel('chatbot')->warning('Pesan masuk ditolak: bukan percakapan berdua', [
                 'session' => $session,
                 'from' => $chatJid,
+                'to' => data_get($payload, 'to'),
+                'me' => $meId,
                 'payload' => $payload,
             ]);
 
@@ -102,7 +105,7 @@ class InboundMessageController extends Controller
         // dipakai tanpa syarat, payload yang `from`-nya bukan nomor seseorang
         // — status, grup, siaran — tetap bisa menyelundupkan nomor lewat
         // kolom alt dan berbalas ke orang yang tidak pernah menghubungi klinik.
-        $remoteJidAlt = (string) ($payload['_data']['key']['remoteJidAlt'] ?? '');
+        $remoteJidAlt = (string) (data_get($payload, '_data.key.remoteJidAlt') ?? '');
         $rawFrom = str_ends_with($chatJid, '@lid') && $remoteJidAlt !== ''
             ? $remoteJidAlt
             : $chatJid;
@@ -134,24 +137,44 @@ class InboundMessageController extends Controller
     /**
      * Percakapan berdua, bukan status/grup/saluran/siaran.
      *
-     * Dua penjaga sekaligus, karena payload tiap engine WAHA berbeda bentuk.
-     * Pertama alamat obrolannya sendiri: hanya JID pengguna yang diterima.
-     * Kedua keberadaan `participant` — kolom itu menyebut "siapa yang menulis
-     * di dalam ruang bersama", jadi kehadirannya sudah cukup menandakan pesan
-     * ini bukan berasal dari obrolan berdua, apa pun bentuk alamatnya.
+     * Tiga penjaga sekaligus, karena payload tiap engine WAHA berbeda bentuk
+     * dan tidak satu pun dari ketiganya bisa dipercaya sendirian.
+     *
+     * Yang paling menentukan justru penerimanya. Status dan siaran sering
+     * terlihat seperti DM — `from`-nya nomor kontak sungguhan — tapi `to`-nya
+     * bukan nomor klinik. Karena itu identitas klinik dari envelope (`me.id`)
+     * yang dijadikan patokan, dan ketiadaannya berarti tolak: tanpa tahu siapa
+     * penerimanya, tidak ada cara memastikan pesan ini memang ditujukan ke sini.
      *
      * @param  array<string, mixed>  $payload
      */
-    private function isDirectChat(string $chatJid, array $payload): bool
+    private function isDirectChat(string $chatJid, array $payload, ?string $meId): bool
     {
         if ($chatJid === '') {
             return false;
         }
 
-        $participant = $payload['participant'] ?? $payload['_data']['key']['participant'] ?? null;
-
-        if (filled($participant)) {
+        // Gagal menutup, bukan gagal membuka. Envelope tanpa identitas klinik
+        // adalah keadaan yang tidak bisa diverifikasi, dan membalas dalam
+        // keadaan itu persis yang membuat orang menerima pesan pribadi tanpa
+        // pernah menghubungi klinik.
+        if (blank($meId)) {
             return false;
+        }
+
+        $to = data_get($payload, 'to');
+
+        if (! is_string($to) || $to !== $meId) {
+            return false;
+        }
+
+        // `participant` menyebut "siapa yang menulis di dalam ruang bersama",
+        // jadi kehadirannya di path mana pun sudah cukup menandakan pesan ini
+        // bukan berasal dari obrolan berdua.
+        foreach (['participant', '_data.participant', '_data.key.participant'] as $path) {
+            if (filled(data_get($payload, $path))) {
+                return false;
+            }
         }
 
         // Payload lama menyebut nomor tanpa domain sama sekali. Itu tidak

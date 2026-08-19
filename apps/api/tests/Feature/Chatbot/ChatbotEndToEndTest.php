@@ -48,8 +48,10 @@ class ChatbotEndToEndTest extends TestCase
         $this->postJson('/api/whatsapp/webhook/tok', [
             'event' => 'message',
             'session' => 'klinik-uji',
+            'me' => ['id' => '628110000000@c.us'],
             'payload' => [
                 'from' => '6281234567890@c.us',
+                'to' => '628110000000@c.us',
                 'body' => 'halo, berapa harga facial?',
                 'fromMe' => false,
                 'hasMedia' => false,
