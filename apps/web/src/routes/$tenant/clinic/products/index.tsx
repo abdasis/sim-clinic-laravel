@@ -178,6 +178,16 @@ function ProductsPage() {
         onRetry={() => void refetch()}
         searchPlaceholder={t("general.search")}
         meta={meta}
+        faceted={[
+          {
+            columnId: "status",
+            title: t("product.status"),
+            options: [
+              { label: t("product.status_active"), value: "active" },
+              { label: t("product.status_archived"), value: "archived" },
+            ],
+          },
+        ]}
         emptyIllustration="products"
         emptyTitle={t("product.empty_title")}
         emptyDescription={t("product.empty_desc")}

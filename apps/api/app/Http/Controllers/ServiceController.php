@@ -35,8 +35,10 @@ class ServiceController extends Controller
         // Katalog default hanya menampilkan layanan aktif; arsip diminta eksplisit.
         $status = $params['filters']['status'] ?? ServiceStatus::Active->value;
 
+        // Penyaring status bisa memuat lebih dari satu nilai (mis.
+        // "active,archived") karena kendalinya di tabel bersifat pilih-banyak.
         if ($status !== 'all') {
-            $query->where('status', $status);
+            $query->whereIn('status', array_filter(explode(',', (string) $status)));
         }
         if ($params['sort']) {
             $query->orderBy($params['sort'], $params['direction']);

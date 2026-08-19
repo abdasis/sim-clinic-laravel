@@ -168,6 +168,16 @@ function ServicesPage() {
         onRetry={() => void refetch()}
         searchPlaceholder={t("general.search")}
         meta={meta}
+        faceted={[
+          {
+            columnId: "status",
+            title: t("service.status"),
+            options: [
+              { label: t("service.status_active"), value: "active" },
+              { label: t("service.status_archived"), value: "archived" },
+            ],
+          },
+        ]}
         emptyIllustration="default"
         emptyTitle={t("service.empty_title")}
         emptyDescription={t("service.empty_desc")}

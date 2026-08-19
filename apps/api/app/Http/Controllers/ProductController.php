@@ -35,8 +35,10 @@ class ProductController extends Controller
         // Master produk default hanya menampilkan yang aktif; arsip diminta eksplisit.
         $status = $params['filters']['status'] ?? ServiceStatus::Active->value;
 
+        // Penyaring status bisa memuat lebih dari satu nilai (mis.
+        // "active,archived") karena kendalinya di tabel bersifat pilih-banyak.
         if ($status !== 'all') {
-            $query->where('status', $status);
+            $query->whereIn('status', array_filter(explode(',', (string) $status)));
         }
 
         // Kasir hanya boleh melihat barang jual; inventaris melihat semuanya.
