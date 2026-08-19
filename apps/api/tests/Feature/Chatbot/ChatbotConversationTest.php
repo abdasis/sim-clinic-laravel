@@ -157,6 +157,29 @@ class ChatbotConversationTest extends TestCase
         });
     }
 
+    /**
+     * Tanggal hari ini wajib ikut ke AI.
+     *
+     * Tanpa itu, "besok jam 2" dihitung dari tebakan model, dan tebakan itu
+     * lolos penjaga "waktu belum lewat" karena biasanya masih di masa depan —
+     * jadwalnya mendarat di hari yang salah tanpa ada yang tahu.
+     */
+    public function test_the_ai_is_told_what_day_it_is(): void
+    {
+        ChatbotSetting::factory()->create(['tenant_id' => $this->tenant->id]);
+        Http::fake(['ai.uji/*' => Http::response(self::text('Baik.'))]);
+
+        $this->reply('mau booking besok');
+
+        Http::assertSent(function ($request): bool {
+            $prompt = $request->data()['messages'][0]['content'];
+
+            $this->assertStringContainsString(now()->translatedFormat('d F Y'), $prompt);
+
+            return true;
+        });
+    }
+
     /** Model yang terjebak meminta tool terus tidak boleh menghabiskan kuota. */
     public function test_an_endless_tool_loop_is_cut_off(): void
     {

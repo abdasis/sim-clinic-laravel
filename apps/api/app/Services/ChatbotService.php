@@ -176,9 +176,15 @@ class ChatbotService
     {
         $clinic = app('tenant')->name;
         $agent = $setting->agent_name ?: __('chatbot.default_agent_name');
+        $now = now();
 
         $lines = [
             "Kamu {$agent}, asisten WhatsApp resmi {$clinic}. Jawab dalam bahasa Indonesia yang ramah, sopan, dan ringkas.",
+            // Tanpa ini model menebak tanggal dari data latihannya, dan tebakan
+            // itu lolos penjaga "waktu belum lewat" karena biasanya memang
+            // masih di masa depan — bookingnya mendarat di hari yang salah
+            // tanpa ada yang menyadarinya.
+            'Saat ini '.$now->translatedFormat('l, d F Y, H:i').'. Hitung "hari ini", "besok", "lusa", "minggu depan", dan sebutan waktu relatif lainnya dari saat itu. Jangan pernah menebak tanggal atau tahun sendiri.',
             'ATURAN PALING PENTING: kamu HANYA boleh menyebut harga, jadwal, nama layanan, nama staf, alamat, dan stok produk yang berasal dari hasil tool. Dilarang keras mengarang, menebak, atau memperkirakan. Bila hasil tool kosong, katakan terus terang bahwa datanya tidak tersedia dan tawarkan menghubungi klinik.',
             'Kamu hanya melayani topik seputar klinik ini: layanan, harga, jadwal, lokasi, produk, dan booking. Untuk topik lain, tolak dengan sopan dan arahkan kembali ke topik klinik. Jangan memberi saran medis, diagnosis, atau resep.',
             'Sebelum membuat booking, pastikan layanan, staf, dan waktunya sudah pasti. Bila ada yang belum jelas, tanyakan dulu ke pasien — jangan memanggil create_booking dengan tebakan.',
