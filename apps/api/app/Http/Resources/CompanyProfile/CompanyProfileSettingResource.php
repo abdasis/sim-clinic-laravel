@@ -18,6 +18,7 @@ class CompanyProfileSettingResource extends JsonResource
             'logo_url' => $this->mediaUrl($this->logo_path),
             'address' => $this->address,
             'tagline' => $this->tagline,
+            'operating_hours' => $this->operating_hours,
             'receipt_note' => $this->receipt_note,
             'copyright_text' => $this->copyright_text,
             'chat_channels' => $this->chat_channels ?? [],

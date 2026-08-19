@@ -2,9 +2,13 @@
 
 namespace App\Support;
 
+use App\Actions\Chatbot\CancelMyBookingAction;
+use App\Actions\Chatbot\CheckAvailabilityAction;
 use App\Actions\Chatbot\CreateChatBookingAction;
+use App\Actions\Chatbot\GetActivePromosAction;
 use App\Actions\Chatbot\GetClinicInfoAction;
 use App\Actions\Chatbot\GetProductStockAction;
+use App\Actions\Chatbot\ListPatientBookingsAction;
 use App\Actions\Chatbot\SearchServicesAction;
 use App\Actions\Chatbot\SearchStaffAction;
 use App\Models\Patient;
@@ -56,6 +60,32 @@ class ChatTools
                 ['keyword' => ['type' => 'string', 'description' => 'Kata kunci nama produk. Kosongkan untuk mengambil seluruh produk.']],
             ),
             self::tool(
+                'get_active_promos',
+                'Ambil promo atau diskon yang sedang berjalan hari ini. Pakai saat pasien bertanya soal promo.',
+                [],
+            ),
+            self::tool(
+                'check_availability',
+                'Cek apakah slot waktu benar-benar kosong dan klinik buka. WAJIB dipanggil sebelum create_booking. Kosongkan assignee_id untuk mendapatkan daftar staf yang bebas di jam itu.',
+                [
+                    'service_id' => ['type' => 'integer', 'description' => 'Id layanan dari search_services.'],
+                    'assignee_id' => ['type' => 'integer', 'description' => 'Id dokter atau terapis dari search_staff. Kosongkan untuk mencari staf yang bebas.'],
+                    'start_at' => ['type' => 'string', 'description' => 'Waktu mulai, format Y-m-d H:i (contoh 2026-09-01 14:00).'],
+                ],
+                ['service_id', 'start_at'],
+            ),
+            self::tool(
+                'list_my_bookings',
+                'Tampilkan booking mendatang milik pasien yang sedang chat. Pakai saat pasien menanyakan jadwalnya, dan untuk mendapatkan booking_id sebelum membatalkan.',
+                [],
+            ),
+            self::tool(
+                'cancel_my_booking',
+                'Batalkan booking pasien yang sedang chat. Hanya miliknya sendiri dan yang belum selesai. booking_id WAJIB berasal dari list_my_bookings, jangan ditebak.',
+                ['booking_id' => ['type' => 'integer', 'description' => 'Id booking dari list_my_bookings.']],
+                ['booking_id'],
+            ),
+            self::tool(
                 'create_booking',
                 'Buat jadwal booking untuk pasien yang sedang chat. Panggil HANYA jika layanan, staf, dan waktu sudah pasti — tanyakan dulu ke pasien bila ada yang belum jelas.',
                 [
@@ -88,6 +118,18 @@ class ChatTools
                 'search_staff' => app(SearchStaffAction::class)->handle($keyword),
                 'get_clinic_info' => app(GetClinicInfoAction::class)->handle(),
                 'get_product_stock' => app(GetProductStockAction::class)->handle($keyword),
+                'get_active_promos' => app(GetActivePromosAction::class)->handle(),
+                'check_availability' => app(CheckAvailabilityAction::class)->handle(
+                    (int) ($arguments['service_id'] ?? 0),
+                    isset($arguments['assignee_id']) ? (int) $arguments['assignee_id'] : null,
+                    (string) ($arguments['start_at'] ?? ''),
+                ),
+                'list_my_bookings' => $patient === null
+                    ? ['error' => __('chatbot.booking_patient_unknown')]
+                    : app(ListPatientBookingsAction::class)->handle($patient),
+                'cancel_my_booking' => $patient === null
+                    ? ['error' => __('chatbot.booking_patient_unknown')]
+                    : app(CancelMyBookingAction::class)->handle($patient, (int) ($arguments['booking_id'] ?? 0)),
                 'create_booking' => self::book($arguments, $patient),
                 default => ['error' => 'Tool tidak dikenal: '.$name],
             };

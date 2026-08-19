@@ -21,6 +21,12 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 import { ContentField } from "../company-profile/components/content-field.tsx"
+import {
+  OperatingHoursCard,
+  emptyOperatingHours,
+  mergeOperatingHours,
+  type OperatingHours,
+} from "./components/operating-hours-card.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/settings/")({
   component: ClinicSettingsPage,
@@ -31,6 +37,7 @@ interface ClinicSettings {
   logo_path?: string | null
   address?: string | null
   tagline?: string | null
+  operating_hours?: Partial<OperatingHours> | null
 }
 
 /**
@@ -50,6 +57,7 @@ function ClinicSettingsPage() {
   const [logoPath, setLogoPath] = useState("")
   const [address, setAddress] = useState("")
   const [tagline, setTagline] = useState("")
+  const [operatingHours, setOperatingHours] = useState<OperatingHours>(emptyOperatingHours)
 
   const { data, isLoading } = useQuery({
     queryKey: ["company-settings", tenant],
@@ -71,6 +79,7 @@ function ClinicSettingsPage() {
     setLogoPath(data.logo_path ?? "")
     setAddress(data.address ?? "")
     setTagline(data.tagline ?? "")
+    setOperatingHours(mergeOperatingHours(data.operating_hours))
   }, [data])
 
   const save = useMutation({
@@ -80,6 +89,7 @@ function ClinicSettingsPage() {
         logo_path: logoPath,
         address,
         tagline,
+        operating_hours: operatingHours,
       }),
     onSuccess: () => {
       toast.success(t("company_profile.settings_updated"))
@@ -207,6 +217,12 @@ function ClinicSettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          <OperatingHoursCard
+            value={operatingHours}
+            onChange={setOperatingHours}
+            disabled={save.isPending}
+          />
 
           <div className="flex justify-end">
             <Tooltip>

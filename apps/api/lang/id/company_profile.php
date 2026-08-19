@@ -120,4 +120,22 @@ return [
         'estore_cta' => 'Ajakan E-Store',
     ],
     'empty_section_desc' => 'Belum ada konten di bagian ini. Tambahkan satu entri untuk mulai mengisinya.',
+
+    // Jam operasional. Kunci harinya bahasa Inggris karena itu yang tersimpan
+    // di basis data dan dibaca CompanyProfileSetting::isOpenAt().
+    'operating_hours' => 'Jam Operasional',
+    'operating_hours_hint' => 'Chatbot memakai jam ini untuk menolak jadwal di luar jam buka. Selama belum diisi, semua jam dianggap buka.',
+    'operating_open' => 'Buka',
+    'operating_close' => 'Tutup',
+    'operating_closed_day' => 'Tutup',
+    'operating_toggle_hint' => 'Matikan bila klinik tutup di hari ini.',
+    'days' => [
+        'monday' => 'Senin',
+        'tuesday' => 'Selasa',
+        'wednesday' => 'Rabu',
+        'thursday' => 'Kamis',
+        'friday' => 'Jumat',
+        'saturday' => 'Sabtu',
+        'sunday' => 'Minggu',
+    ],
 ];

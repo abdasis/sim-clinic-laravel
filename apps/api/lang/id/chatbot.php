@@ -38,4 +38,18 @@ return [
     'booking_staff_unknown' => 'Dokter atau terapis yang dimaksud tidak ditemukan.',
     'booking_time_invalid' => 'Waktu yang diminta tidak bisa dibaca. Sebutkan tanggal dan jamnya ya.',
     'booking_time_past' => 'Waktu yang diminta sudah lewat. Silakan pilih jadwal berikutnya.',
+    'booking_outside_hours' => 'Klinik sedang tutup pada jam itu. Silakan pilih waktu lain di dalam jam operasional.',
+    'booking_not_found' => 'Booking dengan nomor itu tidak ditemukan.',
+    'booking_not_yours' => 'Booking dengan nomor itu tidak ditemukan pada data Anda.',
+    'booking_not_cancellable' => 'Booking ini sudah tidak bisa dibatalkan karena statusnya sudah selesai atau memang sudah dibatalkan.',
+    'booking_cancelled' => 'Booking Anda sudah dibatalkan.',
+
+    // Pengecekan ketersediaan
+    'availability_time_invalid' => 'Waktu yang diminta tidak bisa dibaca. Sebutkan tanggal dan jamnya ya.',
+    'availability_time_past' => 'Waktu yang diminta sudah lewat. Silakan pilih jadwal berikutnya.',
+    'availability_clinic_closed' => 'Klinik tutup pada jam itu.',
+    'availability_staff_busy' => 'Staf yang diminta sudah ada jadwal lain pada jam itu.',
+    'availability_no_staff' => 'Semua dokter dan terapis sudah terisi pada jam itu.',
+    'no_active_promos' => 'Saat ini belum ada promo yang berjalan.',
+    'no_upcoming_bookings' => 'Belum ada jadwal mendatang atas nama Anda.',
 ];

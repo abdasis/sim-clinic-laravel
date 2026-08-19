@@ -9,6 +9,7 @@ use App\Enums\ServiceStatus;
 use App\Enums\UserStatus;
 use App\Models\Booking;
 use App\Models\ChatbotSetting;
+use App\Models\CompanyProfileSetting;
 use App\Models\Patient;
 use App\Models\Service;
 use App\Models\User;
@@ -64,6 +65,15 @@ class CreateChatBookingAction
 
         if ($start->isPast()) {
             return $this->reject(__('chatbot.booking_time_past'));
+        }
+
+        // Penjaga terakhir. AI sudah disuruh memanggil check_availability
+        // dulu, tapi "disuruh" bukan jaminan — dan jadwal di hari klinik
+        // tutup berakhir sebagai pasien yang datang ke pintu terkunci.
+        $profile = CompanyProfileSetting::query()->first();
+
+        if ($profile !== null && ! $profile->isOpenAt($start)) {
+            return $this->reject(__('chatbot.booking_outside_hours'));
         }
 
         return ['booking' => $this->create($patient, $service, $assignee, $start), 'error' => null];

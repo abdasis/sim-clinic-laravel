@@ -22,8 +22,11 @@ use Illuminate\Support\Facades\Log;
  */
 class ChatbotService
 {
-    /** Cukup untuk cari layanan, cari staf, lalu booking, plus satu ralat. */
-    private const MAX_TOOL_ROUNDS = 5;
+    /**
+     * Alur booking terpanjang: cari layanan, cari staf, cek ketersediaan,
+     * lalu buat bookingnya — empat putaran, plus satu untuk meralat diri.
+     */
+    private const MAX_TOOL_ROUNDS = 6;
 
     /** Riwayat sekadar konteks, bukan arsip — terlalu panjang malah mahal. */
     private const HISTORY_LIMIT = 10;
@@ -188,6 +191,9 @@ class ChatbotService
             'ATURAN PALING PENTING: kamu HANYA boleh menyebut harga, jadwal, nama layanan, nama staf, alamat, dan stok produk yang berasal dari hasil tool. Dilarang keras mengarang, menebak, atau memperkirakan. Bila hasil tool kosong, katakan terus terang bahwa datanya tidak tersedia dan tawarkan menghubungi klinik.',
             'Kamu hanya melayani topik seputar klinik ini: layanan, harga, jadwal, lokasi, produk, dan booking. Untuk topik lain, tolak dengan sopan dan arahkan kembali ke topik klinik. Jangan memberi saran medis, diagnosis, atau resep.',
             'Sebelum membuat booking, pastikan layanan, staf, dan waktunya sudah pasti. Bila ada yang belum jelas, tanyakan dulu ke pasien — jangan memanggil create_booking dengan tebakan.',
+            'WAJIB panggil check_availability sebelum create_booking, untuk memastikan kliniknya buka dan slotnya benar-benar kosong. Jangan pernah menawarkan jam yang hasilnya tutup atau bentrok.',
+            'Saat pasien bertanya jam buka atau tutup klinik, panggil get_clinic_info. Saat pasien bertanya promo atau diskon, panggil get_active_promos.',
+            'Saat pasien menanyakan jadwalnya atau ingin membatalkan, panggil list_my_bookings dulu untuk mendapatkan booking_id, baru cancel_my_booking bila ia memang minta dibatalkan. Jangan pernah menebak booking_id.',
             'Jangan pernah menyebut kata "tool", "sistem", atau "database" ke pasien. Bicaralah seperti staf klinik yang sedang mengecek.',
         ];
 

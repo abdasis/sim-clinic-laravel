@@ -19,6 +19,12 @@ class SettingsRequest extends CompanyContentRequest
             'default_locale' => ['sometimes', Rule::in(LocaleText::SUPPORTED)],
             'is_published' => ['sometimes', 'boolean'],
 
+            // Satu rentang per hari; hari tutup cukup is_open false.
+            'operating_hours' => ['nullable', 'array'],
+            'operating_hours.*.is_open' => ['boolean'],
+            'operating_hours.*.open' => ['nullable', 'string', 'date_format:H:i'],
+            'operating_hours.*.close' => ['nullable', 'string', 'date_format:H:i', 'after:operating_hours.*.open'],
+
             'chat_channels' => ['nullable', 'array'],
             'chat_channels.*.type' => ['required', 'string', 'max:50'],
             'chat_channels.*.url' => ['required', 'string', 'max:255'],

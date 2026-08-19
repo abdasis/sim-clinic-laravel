@@ -187,7 +187,9 @@ class ChatbotConversationTest extends TestCase
         Http::fake(['ai.uji/*' => Http::response(self::toolCall('search_services'))]);
 
         $this->assertSame(__('chatbot.fallback'), $this->reply('halo'));
-        Http::assertSentCount(5);
+        // Sama dengan MAX_TOOL_ROUNDS: cari layanan, cari staf, cek
+        // ketersediaan, buat booking, plus satu untuk meralat diri.
+        Http::assertSentCount(6);
     }
 
     public function test_booking_via_chat_creates_a_booking_for_the_registered_patient(): void
