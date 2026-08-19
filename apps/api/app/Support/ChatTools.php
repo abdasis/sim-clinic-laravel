@@ -7,6 +7,7 @@ use App\Actions\Chatbot\CheckAvailabilityAction;
 use App\Actions\Chatbot\CreateChatBookingAction;
 use App\Actions\Chatbot\GetActivePromosAction;
 use App\Actions\Chatbot\GetClinicInfoAction;
+use App\Actions\Chatbot\GetProductInfoAction;
 use App\Actions\Chatbot\GetProductStockAction;
 use App\Actions\Chatbot\ListPatientBookingsAction;
 use App\Actions\Chatbot\RegisterPatientAction;
@@ -58,6 +59,11 @@ class ChatTools
             self::tool(
                 'get_product_stock',
                 'Periksa ketersediaan dan harga produk skincare di klinik. Pakai ini sebelum menyatakan sebuah produk ada atau habis.',
+                ['keyword' => ['type' => 'string', 'description' => 'Kata kunci nama produk. Kosongkan untuk mengambil seluruh produk.']],
+            ),
+            self::tool(
+                'get_product_info',
+                'Ambil informasi dan manfaat produk. Pakai ini saat pasien bertanya kegunaan, manfaat, atau detail sebuah produk — BUKAN untuk stok atau harga.',
                 ['keyword' => ['type' => 'string', 'description' => 'Kata kunci nama produk. Kosongkan untuk mengambil seluruh produk.']],
             ),
             self::tool(
@@ -134,6 +140,7 @@ class ChatTools
                 'search_staff' => app(SearchStaffAction::class)->handle($keyword),
                 'get_clinic_info' => app(GetClinicInfoAction::class)->handle(),
                 'get_product_stock' => app(GetProductStockAction::class)->handle($keyword),
+                'get_product_info' => app(GetProductInfoAction::class)->handle($keyword),
                 'get_active_promos' => app(GetActivePromosAction::class)->handle(),
                 'check_availability' => app(CheckAvailabilityAction::class)->handle(
                     (int) ($arguments['service_id'] ?? 0),

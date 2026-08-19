@@ -27,6 +27,11 @@ interface TiptapEditorProps {
   placeholder?: string
   disabled?: boolean
   className?: string
+  /**
+   * Sembunyikan tombol gambar. Untuk field yang isinya dibaca mesin, bukan
+   * dirender — gambar tidak punya arti di sana dan hanya jadi tautan mati.
+   */
+  disableImage?: boolean
 }
 
 /**
@@ -39,6 +44,7 @@ export function TiptapEditor({
   placeholder,
   disabled,
   className,
+  disableImage = false,
 }: TiptapEditorProps) {
   const editor = useEditor({
     extensions: RICH_TEXT_EXTENSIONS,
@@ -163,19 +169,24 @@ export function TiptapEditor({
         >
           <Link2 className="size-3.5" />
         </ToolbarButton>
-        <ToolbarButton
-          label="Gambar"
-          disabled={disabled}
-          onClick={() => {
-            const src = window.prompt("Alamat gambar", "https://")
+        {/* Ekstensi gambarnya sengaja tidak dilepas: dokumen lama yang sudah
+            memuat gambar tetap harus bisa dibuka dan disimpan tanpa isinya
+            hilang. Yang dimatikan hanya cara menambah yang baru. */}
+        {disableImage ? null : (
+          <ToolbarButton
+            label="Gambar"
+            disabled={disabled}
+            onClick={() => {
+              const src = window.prompt("Alamat gambar", "https://")
 
-            if (!src) return
+              if (!src) return
 
-            editor.chain().focus().setImage({ src }).run()
-          }}
-        >
-          <ImageIcon className="size-3.5" />
-        </ToolbarButton>
+              editor.chain().focus().setImage({ src }).run()
+            }}
+          >
+            <ImageIcon className="size-3.5" />
+          </ToolbarButton>
+        )}
       </div>
 
       <EditorContent editor={editor} />

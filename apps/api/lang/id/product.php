@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'knowledge' => 'Informasi Produk',
+    'knowledge_hint' => 'Manfaat dan kegunaan produk. Teks ini yang dibacakan chatbot saat pasien bertanya produk ini untuk apa.',
     'import' => 'Impor Produk',
     'import_template' => 'Template Produk',
     'deleted' => 'Produk berhasil dihapus permanen.',

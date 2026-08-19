@@ -17,6 +17,7 @@ import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { Button } from "#/components/ui/button.tsx"
 import { CatalogImportDialog } from "#/components/import/catalog-import-dialog.tsx"
+import type { RichTextDoc } from "#/lib/tiptap-render.tsx"
 import { ProductActionsCell } from "./components/product-actions-cell.tsx"
 import { ProductFormModal } from "./components/product-form-modal.tsx"
 
@@ -41,6 +42,8 @@ interface ProductRow {
   min_threshold: number
   price: string
   status: string
+  /** Dibawa untuk prefill editor Informasi Produk di dialog ubah. */
+  knowledge?: RichTextDoc | null
   status_label: string
   is_low_stock: boolean
 }

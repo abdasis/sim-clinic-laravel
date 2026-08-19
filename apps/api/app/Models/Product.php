@@ -20,7 +20,7 @@ class Product extends Model
 
     // `unit` string masih ikut terisi selama masa peralihan: kolomnya belum
     // dibuang supaya migrasi FK bisa dibatalkan tanpa kehilangan nilai lama.
-    protected $fillable = ['tenant_id', 'name', 'type', 'unit', 'unit_id', 'stock_balance', 'min_threshold', 'price', 'status'];
+    protected $fillable = ['tenant_id', 'name', 'type', 'unit', 'unit_id', 'stock_balance', 'min_threshold', 'price', 'status', 'knowledge'];
 
     protected $appends = ['is_low_stock'];
 
@@ -32,6 +32,7 @@ class Product extends Model
             'status' => ServiceStatus::class,
             'stock_balance' => 'integer',
             'min_threshold' => 'integer',
+            'knowledge' => 'array',
         ];
     }
 

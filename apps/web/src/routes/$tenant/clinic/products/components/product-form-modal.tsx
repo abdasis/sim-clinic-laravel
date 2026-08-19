@@ -13,6 +13,9 @@ import {
 import { Form } from "#/components/ui/form.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
+import { Label } from "#/components/ui/label.tsx"
+import { TiptapEditor } from "#/components/ui/tiptap-editor.tsx"
+import type { RichTextDoc } from "#/lib/tiptap-render.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { useCategoryOptions } from "#/hooks/use-category-options.ts"
@@ -29,6 +32,9 @@ const schema = z.object({
   unit_id: z.string().optional(),
   min_threshold: z.coerce.number().gte(0),
   price: z.coerce.number().gte(0),
+  // Dokumen Tiptap. Tidak divalidasi bentuknya: isinya datang dari editor,
+  // dan skema node-nya milik Tiptap, bukan milik formulir ini.
+  knowledge: z.any().optional(),
 })
 
 type Values = z.infer<typeof schema>
@@ -42,6 +48,7 @@ export interface ProductFormValues {
   min_threshold: number
   price: string | number
   status: string
+  knowledge?: RichTextDoc | null
 }
 
 interface ProductFormModalProps {
@@ -70,6 +77,7 @@ export function ProductFormModal({
       unit_id: "",
       min_threshold: 0,
       price: 0,
+      knowledge: null,
     },
   })
 
@@ -85,6 +93,7 @@ export function ProductFormModal({
             unit_id: product.unit_id ? String(product.unit_id) : "",
             min_threshold: Number(product.min_threshold),
             price: Number(product.price),
+            knowledge: product.knowledge ?? null,
           }
         : {
             name: "",
@@ -93,6 +102,7 @@ export function ProductFormModal({
             unit_id: "",
             min_threshold: 0,
             price: 0,
+            knowledge: null,
           },
     )
   }, [open, product, form])
@@ -146,8 +156,13 @@ export function ProductFormModal({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
-            className="space-y-4"
+            className="flex max-h-[75vh] flex-col gap-4"
           >
+            {/* Editor Informasi Produk membuat formulir ini jauh lebih tinggi
+                dari sebelumnya. Tanpa area gulir, di layar 720px tombol Simpan
+                terdorong keluar dan formulirnya tidak bisa dikirim sama
+                sekali. Footer sengaja di luar area gulir. */}
+            <div className="-mr-1 flex-1 space-y-4 overflow-y-auto pr-1">
             <FormInput
               control={form.control}
               name="name"
@@ -195,6 +210,27 @@ export function ProductFormModal({
                 type="number"
               />
             ) : null}
+
+            {/* Editor rich-text tidak terhubung ke react-hook-form lewat
+                register; nilainya dititipkan ke form supaya ikut terkirim
+                bersama field lain tanpa jalur simpan sendiri. */}
+            <div className="space-y-1.5">
+              <Label>{t("product.knowledge")}</Label>
+              <TiptapEditor
+                disableImage
+                value={form.watch("knowledge") as RichTextDoc | null}
+                disabled={mutation.isPending}
+                placeholder={t("product.knowledge_hint")}
+                onChange={(doc) =>
+                  form.setValue("knowledge", doc, { shouldDirty: true })
+                }
+              />
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {t("product.knowledge_hint")}
+              </p>
+            </div>
+            </div>
+
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>
                 {t("general.save")}

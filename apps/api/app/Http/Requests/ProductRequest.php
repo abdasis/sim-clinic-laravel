@@ -37,6 +37,9 @@ class ProductRequest extends FormRequest
             // prepareForValidation, jadi form tidak perlu mengirimnya.
             'price' => ['required', 'numeric', 'gte:0'],
             'status' => ['nullable', new Enum(ServiceStatus::class)],
+            // Dokumen Tiptap; bentuk node-nya tidak divalidasi karena isinya
+            // datang dari editor admin, bukan dari luar.
+            'knowledge' => ['nullable', 'array'],
         ];
     }
 

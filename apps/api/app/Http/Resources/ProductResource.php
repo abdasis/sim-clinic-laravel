@@ -33,6 +33,7 @@ class ProductResource extends JsonResource
             // Harga promo dihitung di server supaya kasir dan struk memakai
             // angka yang sama persis.
             'promo' => $this->promoPayload($request),
+            'knowledge' => $this->knowledge,
             'status' => $this->status,
             'status_label' => $this->status?->label(),
             'is_low_stock' => $this->is_low_stock,
