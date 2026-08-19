@@ -42,7 +42,7 @@ function CompanyLandingPage() {
 
   return (
     <CompanyLocaleProvider locale={locale}>
-      <div className="flex min-h-svh flex-col font-brand">
+      <div className="public-site flex min-h-svh flex-col font-brand">
         <CompanyHeader
           tenant={tenant}
           settings={data?.settings ?? null}

@@ -333,7 +333,10 @@ class CompanyProfileDemoSeeder extends Seeder
         $sections = [
             [
                 CompanySectionKey::PharmaBanner,
-                CompanySectionLayout::Split,
+                // Pita selebar layar, senada dengan ajakan booking di
+                // bawahnya tapi berwarna lain — dua bidang penuh yang
+                // berbeda nada jadi jeda alami di tengah halaman.
+                CompanySectionLayout::Banner,
                 ['id' => 'RACIKAN TIM MEDIS KAMI', 'en' => 'FORMULATED BY OUR MEDICAL TEAM'],
                 ['id' => "Rangkaian skincare {$brand} diracik dokter kami sebagai kelanjutan treatment di klinik — supaya hasil perawatanmu tetap terjaga di rumah.", 'en' => "The {$brand} skincare line is formulated by our doctors as a continuation of in-clinic treatment, so your results keep holding at home."],
                 ['id' => 'Konsultasi Produk', 'en' => 'Ask About Products'],

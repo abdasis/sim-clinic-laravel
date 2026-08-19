@@ -37,30 +37,28 @@ export function ValuePropsSection({
       tone={tone}
       className={className}
     >
-      {/* Kisi berjarak satu piksel: garis pemisahnya berasal dari latar yang
-          menembus celah, jadi tidak ada border ganda di pertemuan kartu. */}
-      <div className="grid gap-px overflow-hidden rounded-xl border border-border/60 bg-border/60 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Daftar berikon besar, bukan kotak berbingkai. Enam kartu bergaris
+          terbaca sebagai tabel keunggulan yang harus dibaca satu-satu;
+          ikon besar tanpa bingkai membuat tiap butir berdiri sendiri dan
+          matanya bebas melompat ke yang menarik perhatiannya. */}
+      <div className="mx-auto grid max-w-5xl gap-x-12 gap-y-9 sm:grid-cols-2">
         {items.map((item) => (
-          <article
-            key={item.id}
-            className="group/prop relative bg-background p-6 transition-colors duration-200 hover:bg-muted/50"
-          >
-            {/* Lencana ikon memakai warna merek, bukan abu-abu: enam kotak
-                netral berjajar terbaca sebagai daftar, dan tidak ada satu pun
-                yang menahan pandangan. */}
-            <span className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-primary/8 text-primary ring-1 ring-primary/10 transition-all duration-200 group-hover/prop:scale-105 group-hover/prop:bg-primary/12">
+          <article key={item.id} className="group/prop flex gap-5">
+            <span className="shrink-0 text-primary transition-transform duration-200 group-hover/prop:scale-105">
               <HugeiconsIcon
                 icon={valuePropIcon(item.icon)}
-                strokeWidth={1.8}
-                className="size-5"
+                strokeWidth={1.4}
+                className="size-11"
               />
             </span>
-            <h3 className="text-sm font-semibold tracking-tight">
-              {text(item.title)}
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
-              {text(item.description)}
-            </p>
+            <div className="min-w-0 pt-1">
+              <h3 className="text-base font-semibold tracking-tight text-primary">
+                {text(item.title)}
+              </h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-pretty text-muted-foreground">
+                {text(item.description)}
+              </p>
+            </div>
           </article>
         ))}
       </div>

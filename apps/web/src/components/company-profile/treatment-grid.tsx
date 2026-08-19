@@ -2,13 +2,12 @@ import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Link } from "@tanstack/react-router"
 
-import { Badge } from "#/components/ui/badge.tsx"
 import type { CompanyTreatment } from "#/hooks/use-company-profile.ts"
 import { useContentLocale, useContentText } from "./locale-context.tsx"
 import { SectionShell, type SectionTone } from "./section-shell.tsx"
 
 const CARD_CLASS =
-  "group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-background transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+  "group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/25 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 
 interface TreatmentGridProps {
   id?: string
@@ -109,13 +108,23 @@ function TreatmentCard({
           />
         ) : null}
         {treatment.badge_label ? (
-          <Badge className="absolute top-3 left-3" variant="secondary">
+          // Pita bertakik, bukan lencana kotak: bentuknya menempel di tepi
+          // gambar dan terbaca sebagai label yang ditempelkan klinik, bukan
+          // elemen antarmuka yang mengambang di atas foto.
+          <span
+            className="absolute top-4 left-0 bg-primary py-1.5 pr-5 pl-4 text-2xs font-semibold tracking-[0.08em] text-primary-foreground uppercase shadow-sm"
+            style={{
+              clipPath: "polygon(0 0, 100% 0, calc(100% - 0.55rem) 50%, 100% 100%, 0 100%)",
+            }}
+          >
             {treatment.badge_label}
-          </Badge>
+          </span>
         ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-4">
-        <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+      <div className="flex flex-1 flex-col gap-1.5 p-5">
+        <h3 className="text-base leading-snug font-semibold tracking-tight text-balance">
+          {title}
+        </h3>
         {description ? (
           <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
             {description}
@@ -126,7 +135,7 @@ function TreatmentCard({
             {treatment.category_tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="rounded-sm bg-muted px-1.5 py-0.5 text-2xs text-muted-foreground"
+                className="rounded-full bg-primary/8 px-2.5 py-1 text-2xs font-medium text-primary"
               >
                 {tag}
               </span>

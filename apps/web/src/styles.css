@@ -652,6 +652,8 @@ a {
   /* Batas bawah nota thermal: di bawah 9px kepala termal 203dpi mulai
      menggabungkan garis huruf jadi noda. */
   --text-3xs: 0.5625rem;
+  --color-blush: var(--blush);
+  --color-blush-ink: var(--blush-ink);
   --color-chart-cat-1: var(--chart-cat-1);
   --color-chart-cat-2: var(--chart-cat-2);
   --color-chart-cat-3: var(--chart-cat-3);
@@ -807,6 +809,30 @@ a {
     transition-duration: 0.01ms !important;
     transform: none !important;
   }
+}
+
+/*
+ * Palet halaman publik.
+ *
+ * Aplikasi klinik berlatar putih netral karena dipandangi berjam-jam; halaman
+ * yang ditemui calon pasien justru perlu terasa hangat sejak detik pertama.
+ * Token-nya ditimpa di dalam pembungkus ini saja, jadi ruang kerja staf tidak
+ * ikut berubah nada.
+ */
+.public-site {
+  --background: oklch(0.985 0.006 70);
+  --card: oklch(1 0 0);
+  --muted: oklch(0.965 0.012 65);
+  --muted-foreground: oklch(0.505 0.015 60);
+  --border: oklch(0.9 0.012 65);
+  --secondary: oklch(0.955 0.02 60);
+  --accent: oklch(0.955 0.02 60);
+  /* Merah muda ZAP dipakai sebagai aksen kedua untuk blok testimoni dan
+     pita ajakan — hijau saja membuat halaman terasa satu nada. */
+  --blush: oklch(0.895 0.045 25);
+  --blush-ink: oklch(0.42 0.06 25);
+
+  background-color: var(--background);
 }
 
 /* Pratinjau layar: kertas struk cuma 48mm, jadi diperbesar agar nyaman dibaca

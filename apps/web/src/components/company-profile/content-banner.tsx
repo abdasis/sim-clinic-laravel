@@ -40,11 +40,12 @@ export function ContentBanner({
     <section
       id={id ?? section.section_key}
       className={cn(
-        "scroll-mt-16 border-t border-border/40 py-16 sm:py-20",
+        "scroll-mt-16 border-t border-border/40",
+        isSplit ? "py-16 sm:py-20" : "",
         className,
       )}
     >
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+      <div className={cn(isSplit ? "mx-auto w-full max-w-6xl px-4 sm:px-6" : "")}>
         {isSplit ? (
           <div className="grid items-stretch overflow-hidden rounded-xl border border-border/60 bg-background md:grid-cols-2">
             {section.image_url ? (
@@ -77,64 +78,69 @@ export function ContentBanner({
               />
             </div>
           </div>
-        ) : (
-          <div className="relative overflow-hidden rounded-xl border border-border/60">
-            {section.image_url ? (
-              <>
-                <img
-                  src={section.image_url}
-                  alt=""
-                  aria-hidden="true"
-                  loading="lazy"
-                  className="absolute inset-0 size-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/85 via-neutral-950/65 to-neutral-950/35" />
-              </>
-            ) : (
-              <div
-                className={cn(
-                  "absolute inset-0",
-                  emphasis ? "bg-muted/60" : "bg-muted/30",
-                )}
-              />
+        ) : null}
+      </div>
+
+      {!isSplit ? (
+        // Selebar layar, bukan kartu di dalam kolom. Ajakan yang paling ingin
+        // diklik tidak seharusnya duduk di dalam bingkai yang sama dengan
+        // daftar-daftar di atasnya — bidang penuh membuat mata berhenti.
+        <div className="relative isolate overflow-hidden">
+          {section.image_url ? (
+            <img
+              src={section.image_url}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="absolute inset-0 size-full object-cover"
+            />
+          ) : null}
+
+          {/* Lapisan warna merek, bukan hitam. Foto di baliknya tetap terbaca
+              sebagai suasana klinik, sementara warnanya yang memberi tahu
+              bagian ini milik siapa. */}
+          <div
+            className={cn(
+              "absolute inset-0",
+              emphasis ? "bg-primary/88" : "bg-blush/85",
             )}
+          />
+
+          <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center gap-5 px-4 py-16 text-center sm:px-6 sm:py-20">
+            {title ? (
+              <h2
+                className={cn(
+                  "text-lg font-semibold tracking-[0.14em] text-balance uppercase sm:text-2xl",
+                  emphasis ? "text-primary-foreground" : "text-blush-ink",
+                )}
+              >
+                {title}
+              </h2>
+            ) : null}
 
             <div
               className={cn(
-                "relative flex flex-col gap-5 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-12",
-                section.image_url ? "text-white" : "",
+                "prose prose-sm max-w-xl text-pretty dark:prose-invert",
+                emphasis
+                  ? "text-primary-foreground/85 prose-p:text-primary-foreground/85"
+                  : "text-blush-ink/80 prose-p:text-blush-ink/80",
               )}
             >
-              <div className="max-w-2xl space-y-2.5">
-                {title ? (
-                  <h2 className="text-xl font-semibold tracking-tight text-balance sm:text-2xl">
-                    {title}
-                  </h2>
-                ) : null}
-                <div
-                  className={cn(
-                    "prose prose-sm max-w-none dark:prose-invert",
-                    section.image_url
-                      ? "text-white/75 prose-p:text-white/75"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  {renderRichText(text(section.body))}
-                </div>
-              </div>
-              <CtaLink
-                tenant={tenant}
-                label={section.cta_label}
-                type={section.cta_type}
-                url={section.cta_url}
-                size="lg"
-                variant={section.image_url || emphasis ? "default" : "outline"}
-                className="shrink-0 self-start transition-transform duration-200 hover:-translate-y-0.5 sm:self-auto"
-              />
+              {renderRichText(text(section.body))}
             </div>
+
+            <CtaLink
+              tenant={tenant}
+              label={section.cta_label}
+              type={section.cta_type}
+              url={section.cta_url}
+              size="lg"
+              variant="secondary"
+              className="mt-1 rounded-full bg-background px-8 text-foreground shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:bg-background"
+            />
           </div>
-        )}
-      </div>
+        </div>
+      ) : null}
     </section>
   )
 }

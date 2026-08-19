@@ -39,40 +39,42 @@ export function TestimonialSection({
       {/* Kolom yang mengalir, bukan grid kaku: jumlah testimoni tidak pernah
           pas dibagi tiga, dan sisa satu kartu di baris terakhir meninggalkan
           lubang selebar dua kartu. */}
-      <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid">
+      <div className="columns-1 gap-5 sm:columns-2 lg:columns-3 [&>*]:mb-5 [&>*]:break-inside-avoid">
         {items.map((testimonial) => (
           <figure
             key={testimonial.id}
-            className="flex flex-col gap-4 rounded-xl border border-border/60 bg-background p-6 transition-colors duration-200 hover:border-border"
+            // Latar merah muda lembut, bukan kartu putih bergaris. Blok
+            // testimoni memang bagian yang boleh terasa hangat — di sinilah
+            // halaman berhenti berbicara sebagai klinik dan mulai berbicara
+            // sebagai orang.
+            className="flex flex-col items-center gap-4 rounded-2xl bg-blush/45 p-7 text-center transition-transform duration-200 hover:-translate-y-0.5"
           >
-            <blockquote className="prose prose-sm max-w-none flex-1 text-muted-foreground dark:prose-invert">
+            <Avatar className="size-14 ring-4 ring-background/70">
+              {testimonial.avatar_url ? (
+                <AvatarImage
+                  src={testimonial.avatar_url}
+                  alt={testimonial.author_name}
+                />
+              ) : null}
+              <AvatarFallback className="bg-background/80 text-sm font-medium text-blush-ink">
+                {testimonial.author_name.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+
+            <blockquote className="prose prose-sm max-w-none flex-1 text-pretty text-foreground/75 dark:prose-invert">
               {renderRichText(text(testimonial.quote))}
             </blockquote>
-            <figcaption className="flex items-center gap-2.5 border-t border-border/50 pt-3">
-              <Avatar className="size-8">
-                {testimonial.avatar_url ? (
-                  <AvatarImage
-                    src={testimonial.avatar_url}
-                    alt={testimonial.author_name}
-                  />
-                ) : null}
-                <AvatarFallback className="text-xs">
-                  {testimonial.author_name.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">
-                  {testimonial.author_name}
+
+            <figcaption>
+              <p className="text-sm font-semibold">{testimonial.author_name}</p>
+              {testimonial.since_year ? (
+                <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                  {(sinceTemplate ?? ":year").replace(
+                    ":year",
+                    String(testimonial.since_year),
+                  )}
                 </p>
-                {testimonial.since_year ? (
-                  <p className="truncate text-xs text-muted-foreground tabular-nums">
-                    {(sinceTemplate ?? ":year").replace(
-                      ":year",
-                      String(testimonial.since_year),
-                    )}
-                  </p>
-                ) : null}
-              </div>
+              ) : null}
             </figcaption>
           </figure>
         ))}
