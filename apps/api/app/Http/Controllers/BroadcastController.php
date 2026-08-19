@@ -18,7 +18,6 @@ use App\Services\BroadcastService;
 use App\Support\BroadcastAudienceBuilder;
 use App\Support\PhoneNumber;
 use App\Support\WahaClient;
-use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -224,30 +223,32 @@ class BroadcastController extends Controller
 
         try {
             $status = $client->sessionStatus();
-        } catch (RequestException $e) {
-            // 404 = sesi belum dibuat di WAHA — buat dulu, lalu ambil status segar.
-            // Retry path tetap dijaga: create/status ulang bisa melempar (mis. 409
-            // saat dua poll bersamaan), jangan sampai jadi 500 mentah.
-            if ($e->response->status() === 404) {
-                try {
-                    $client->createSession();
-                    $status = $client->sessionStatus();
-                } catch (\Throwable $retryError) {
-                    Log::error('WAHA create/retry status gagal', ['exception' => $retryError]);
+            $statusValue = $status['status'] ?? 'NOT_FOUND';
 
-                    return response()->json([
-                        'data' => ['available' => true, 'connected' => false, 'qr' => null, 'error' => true],
-                        'meta' => [],
-                    ]);
-                }
-            } else {
-                Log::error('WAHA tidak merespons', ['exception' => $e]);
-
+            if ($statusValue === 'WORKING') {
                 return response()->json([
-                    'data' => ['available' => true, 'connected' => false, 'qr' => null, 'error' => true],
+                    'data' => [
+                        'available' => true,
+                        'connected' => true,
+                        'qr' => null,
+                        'number' => $this->accountNumber($status),
+                        'name' => $status['me']['pushName'] ?? null,
+                    ],
                     'meta' => [],
                 ]);
             }
+
+            if ($statusValue === 'NOT_FOUND') {
+                $client->createSession();
+            } elseif ($statusValue === 'FAILED') {
+                $client->restartSession();
+            } else {
+                // STARTING / SCAN_QR_CODE — sesi sudah ada, tinggal dijalankan.
+                $client->startSession();
+            }
+
+            // null aman kalau masih STARTING dan QR belum terbit.
+            $qr = $client->qrCode();
         } catch (\Throwable $e) {
             Log::error('WAHA tidak merespons', ['exception' => $e]);
 
@@ -257,17 +258,13 @@ class BroadcastController extends Controller
             ]);
         }
 
-        $connected = ($status['status'] ?? null) === 'WORKING';
-
         return response()->json([
             'data' => [
                 'available' => true,
-                'connected' => $connected,
-                'number' => $this->accountNumber($status),
-                'name' => $status['me']['pushName'] ?? null,
-                // Sesi yang belum tersambung dimulai dulu; tanpa itu WAHA
-                // tidak pernah menerbitkan QR untuk dipindai.
-                'qr' => $connected ? null : $this->qrAfterStart($client),
+                'connected' => false,
+                'qr' => $qr,
+                'number' => null,
+                'name' => null,
             ],
             'meta' => [],
         ]);
@@ -284,13 +281,6 @@ class BroadcastController extends Controller
         $id = $status['me']['id'] ?? null;
 
         return is_string($id) ? explode('@', $id)[0] : null;
-    }
-
-    private function qrAfterStart(WahaClient $client): ?string
-    {
-        $client->startSession();
-
-        return $client->qrCode();
     }
 
     /** Ringkasan dashboard WhatsApp: koneksi, pesan hari ini, campaign aktif. */

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -47,13 +48,22 @@ class WahaClient
         }
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Keadaan sesi. 404 (belum dibuat) tidak dianggap error — balik
+     * NOT_FOUND agar pemanggil bisa membuatnya. Error lain tetap dilempar.
+     *
+     * @return array<string, mixed>
+     */
     public function sessionStatus(): array
     {
-        return (array) $this->request()
-            ->get($this->url('/api/sessions/'.$this->session))
-            ->throw()
-            ->json();
+        $response = $this->request()
+            ->get($this->url('/api/sessions/'.$this->session));
+
+        if ($response->status() === 404) {
+            return ['status' => 'NOT_FOUND'];
+        }
+
+        return (array) $response->throw()->json();
     }
 
     /** Idempoten di sisi WAHA: sesi yang sudah jalan tidak dimulai dua kali. */
@@ -64,11 +74,43 @@ class WahaClient
             ->throw();
     }
 
-    /** Buat sesi WAHA bila belum ada. Gagal create dilempar ke pemanggil. */
+    /** Buat sesi WAHA bila belum ada. 409 (sudah ada) dianggap sukses. */
     public function createSession(): void
     {
+        $response = $this->request()
+            ->post($this->url('/api/sessions'), ['name' => $this->session]);
+
+        if ($response->status() !== 409) {
+            $response->throw();
+        }
+    }
+
+    /**
+     * Mulai ulang sesi yang gagal: hentikan tanpa logout (nomor terhubung
+     * tidak hilang), lalu jalankan lagi. Stop yang balas 404/409 diabaikan —
+     * sesi memang sudah berhenti — tapi start tetap dijalankan.
+     */
+    public function restartSession(): void
+    {
+        try {
+            $this->stopSession(false);
+        } catch (RequestException $e) {
+            if (! in_array($e->response->status(), [404, 409], true)) {
+                throw $e;
+            }
+        }
+
+        $this->startSession();
+    }
+
+    /** Hentikan sesi. logout=true memutus nomor; false hanya menghentikan. */
+    private function stopSession(bool $logout): void
+    {
         $this->request()
-            ->post($this->url('/api/sessions'), ['name' => $this->session])
+            ->post($this->url('/api/sessions/stop'), [
+                'name' => $this->session,
+                'logout' => $logout,
+            ])
             ->throw();
     }
 
@@ -86,12 +128,7 @@ class WahaClient
 
     public function logout(): void
     {
-        $this->request()
-            ->post($this->url('/api/sessions/stop'), [
-                'name' => $this->session,
-                'logout' => true,
-            ])
-            ->throw();
+        $this->stopSession(true);
     }
 
     /**
