@@ -7,7 +7,6 @@ use App\Enums\BroadcastKind;
 use App\Enums\BroadcastRecipientStatus;
 use App\Enums\BroadcastStatus;
 use App\Models\Broadcast;
-use App\Models\BroadcastRecipient;
 use App\Models\ReminderRule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -76,14 +75,11 @@ class ReminderEngine
             ->havingRaw('MAX(transactions.issued_at) <= ?', [$cutoff->endOfDay()])
             ->get();
 
-        return $lastVisitWithService->filter(function (object $visit) use ($rule) {
-            // Sudah pernah diingatkan untuk kunjungan ini? Lewati.
-            return ! BroadcastRecipient::query()
-                ->where('patient_id', $visit->patient_id)
-                ->where('reminder_rule_id', $rule->id)
-                ->where('created_at', '>', $visit->last_at)
-                ->exists();
-        })->values();
+        // Satu kunjungan cukup satu pengingat, siapa pun pengirimnya —
+        // termasuk follow-up otomatis yang berjalan setengah jam kemudian.
+        return $lastVisitWithService->filter(
+            fn (object $visit) => ! ReminderHistory::remindedSince($visit->patient_id, $visit->last_at)
+        )->values();
     }
 
     /**

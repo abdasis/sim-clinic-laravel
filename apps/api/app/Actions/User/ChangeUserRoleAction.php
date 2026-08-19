@@ -3,8 +3,8 @@
 namespace App\Actions\User;
 
 use App\Actions\LogAuditAction;
+use App\Actions\User\Concerns\GuardsLastTenantAdmin;
 use App\Enums\UserRole;
-use App\Enums\UserStatus;
 use App\Http\Middleware\SetPermissionTeamId;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +15,8 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class ChangeUserRoleAction
 {
+    use GuardsLastTenantAdmin;
+
     public function handle(User $user, UserRole $newRole): User
     {
         $oldRole = $user->role;
@@ -34,25 +36,5 @@ class ChangeUserRoleAction
         ], 'Peran pengguna '.$user->name.' ('.$user->email.') diubah dari '.$oldRole->label().' ke '.$newRole->label().'.');
 
         return $user;
-    }
-
-    /**
-     * Tenant harus selalu punya minimal satu admin aktif.
-     */
-    private function guardLastTenantAdmin(User $user, UserRole $newRole): void
-    {
-        if ($user->role !== UserRole::TenantAdmin || $newRole === UserRole::TenantAdmin) {
-            return;
-        }
-
-        $activeAdmins = User::query()
-            ->where('tenant_id', $user->tenant_id)
-            ->where('role', UserRole::TenantAdmin)
-            ->where('status', UserStatus::Active)
-            ->count();
-
-        if ($activeAdmins <= 1) {
-            abort(422, __('tenant.last_admin'));
-        }
     }
 }

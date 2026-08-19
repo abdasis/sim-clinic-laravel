@@ -8,7 +8,6 @@ use App\Enums\BroadcastKind;
 use App\Enums\BroadcastRecipientStatus;
 use App\Enums\BroadcastStatus;
 use App\Models\Broadcast;
-use App\Models\BroadcastRecipient;
 use App\Models\BroadcastReminderSetting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -93,21 +92,11 @@ class AutoReminderEngine
             ->selectRaw('medical_records.patient_id, last.last_at, MIN(treatment_records.service_name) as last_service')
             ->get();
 
-        return $rows->filter(fn (object $row) => ! $this->alreadyRemindedSince($row->patient_id, $row->last_at))
-            ->values();
-    }
-
-    /**
-     * Sudah pernah dikirimi follow-up otomatis setelah tindakan ini? Kalau
-     * belum ada tindakan baru, tidak ada yang perlu diingatkan lagi.
-     */
-    private function alreadyRemindedSince(int $patientId, string $lastAt): bool
-    {
-        return BroadcastRecipient::query()
-            ->where('patient_id', $patientId)
-            ->where('created_at', '>', $lastAt)
-            ->whereHas('broadcast', fn ($q) => $q->where('audience_params->auto', true))
-            ->exists();
+        // Satu kunjungan cukup satu pengingat, siapa pun pengirimnya —
+        // termasuk aturan per layanan yang berjalan setengah jam sebelumnya.
+        return $rows->filter(
+            fn (object $row) => ! ReminderHistory::remindedSince($row->patient_id, $row->last_at)
+        )->values();
     }
 
     /**
