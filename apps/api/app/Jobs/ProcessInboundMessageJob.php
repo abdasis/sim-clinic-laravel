@@ -70,6 +70,28 @@ class ProcessInboundMessageJob implements ShouldQueue
             return;
         }
 
+        // Pendekatan B: indikator dinyalakan sebelum AI bekerja, bukan sekejap
+        // sebelum pesan terkirim. Jeda yang perlu ditemani justru jeda
+        // penyusunan balasan — itulah detik-detik saat pasien menatap layar
+        // diam. Konsekuensinya stopTyping wajib jalan di semua jalur keluar,
+        // termasuk saat balasannya null, jadi seluruh sisa proses dibungkus
+        // finally.
+        // Chatbot yang mati harus benar-benar diam: memunculkan "sedang
+        // mengetik" untuk balasan yang tidak akan pernah datang justru
+        // menjanjikan sesuatu yang tidak ditepati.
+        $client = app(ChatbotService::class)->isActive() ? $this->client() : null;
+        $client?->startTyping($this->senderPhone);
+
+        try {
+            $this->respond($client);
+        } finally {
+            $client?->stopTyping($this->senderPhone);
+        }
+    }
+
+    /** Susun balasan lalu kirim; dipanggil di antara start/stop typing. */
+    private function respond(?WahaClient $client): void
+    {
         try {
             $answer = app(ChatbotService::class)->reply($this->senderPhone, $this->body);
         } catch (Throwable $e) {
@@ -104,7 +126,27 @@ class ProcessInboundMessageJob implements ShouldQueue
             'answer' => $answer,
         ]);
 
-        $this->send($answer);
+        $this->send($answer, $client);
+    }
+
+    /**
+     * Gateway WhatsApp klinik ini, atau null bila belum disetel. Diambil
+     * sekali supaya indikator mengetik dan pengiriman memakai sesi yang sama.
+     */
+    private function client(): ?WahaClient
+    {
+        $client = app(WahaClient::class);
+
+        if (! $client instanceof WahaClient) {
+            Log::error('Balasan chatbot tidak terkirim: gateway WhatsApp belum siap.', [
+                'tenant_id' => $this->tenantId,
+                'sender_phone' => $this->senderPhone,
+            ]);
+
+            return null;
+        }
+
+        return $client;
     }
 
     private function withinRateLimit(): bool
@@ -125,16 +167,9 @@ class ProcessInboundMessageJob implements ShouldQueue
         return true;
     }
 
-    private function send(string $answer): void
+    private function send(string $answer, ?WahaClient $client): void
     {
-        $client = app(WahaClient::class);
-
-        if (! $client instanceof WahaClient) {
-            Log::error('Balasan chatbot tidak terkirim: gateway WhatsApp belum siap.', [
-                'tenant_id' => $this->tenantId,
-                'sender_phone' => $this->senderPhone,
-            ]);
-
+        if ($client === null) {
             return;
         }
 

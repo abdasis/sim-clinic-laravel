@@ -40,6 +40,18 @@ class ChatbotService
      * Balasan untuk satu pesan masuk, atau null bila chatbot memang tidak
      * seharusnya menjawab (dimatikan admin, atau penyedia AI belum disetel).
      */
+    /**
+     * Apakah chatbot klinik ini menyala.
+     *
+     * Dibuka supaya pemanggil bisa tahu sebelum memulai efek samping yang
+     * terlihat pasien — indikator mengetik tidak boleh muncul untuk bot yang
+     * memang tidak akan pernah menjawab.
+     */
+    public function isActive(): bool
+    {
+        return (bool) ChatbotSetting::query()->value('is_active');
+    }
+
     public function reply(string $senderPhone, string $incoming): ?string
     {
         $setting = ChatbotSetting::query()->first();

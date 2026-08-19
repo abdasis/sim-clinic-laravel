@@ -5,7 +5,9 @@ namespace App\Support;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Throwable;
 
 /**
  * Klien WAHA (WhatsApp HTTP API) — satu-satunya penyedia WhatsApp.
@@ -31,7 +33,7 @@ class WahaClient
      */
     public function send(string $phone, string $message): void
     {
-        $chatId = PhoneNumber::normalize($phone);
+        $chatId = $this->chatId($phone);
 
         if ($chatId === null) {
             throw new RuntimeException('Nomor tujuan tidak valid: '.$phone);
@@ -39,13 +41,75 @@ class WahaClient
 
         $response = $this->request()->post($this->url('/api/sendText'), [
             'session' => $this->session,
-            'chatId' => $chatId.'@c.us',
+            'chatId' => $chatId,
             'text' => $message,
         ]);
 
         if (! $response->successful()) {
             throw new RuntimeException('WAHA menolak pengiriman: HTTP '.$response->status());
         }
+    }
+
+    /**
+     * Nyalakan indikator "sedang mengetik" di layar pasien.
+     *
+     * Sengaja tidak pernah melempar. Indikator ini penyempurnaan rasa, bukan
+     * fungsi inti: engine WAHA tertentu bisa menolaknya, dan menjatuhkan
+     * seluruh balasan hanya karena animasi titik-titik gagal muncul adalah
+     * tukar-tambah yang salah. Kegagalannya tercatat, tidak ditelan.
+     */
+    public function startTyping(string $phone): void
+    {
+        $this->typing('/api/startTyping', $phone, ['typing' => true]);
+    }
+
+    /** Matikan indikator. Sama seperti startTyping, tidak pernah melempar. */
+    public function stopTyping(string $phone): void
+    {
+        $this->typing('/api/stopTyping', $phone);
+    }
+
+    /**
+     * @param  array<string, mixed>  $extra
+     */
+    private function typing(string $path, string $phone, array $extra = []): void
+    {
+        $chatId = $this->chatId($phone);
+
+        if ($chatId === null) {
+            Log::warning('Indikator mengetik dilewati: nomor tujuan tidak valid.', ['phone' => $phone]);
+
+            return;
+        }
+
+        try {
+            $response = $this->request()->post($this->url($path), [
+                'session' => $this->session,
+                'chatId' => $chatId,
+            ] + $extra);
+
+            if (! $response->successful()) {
+                Log::warning('WAHA menolak indikator mengetik.', [
+                    'path' => $path,
+                    'phone' => $phone,
+                    'status' => $response->status(),
+                ]);
+            }
+        } catch (Throwable $e) {
+            Log::warning('Indikator mengetik gagal dikirim.', [
+                'exception' => $e,
+                'path' => $path,
+                'phone' => $phone,
+            ]);
+        }
+    }
+
+    /** Alamat chat WAHA dari nomor telepon, atau null bila nomornya tidak sah. */
+    private function chatId(string $phone): ?string
+    {
+        $normalized = PhoneNumber::normalize($phone);
+
+        return $normalized === null ? null : $normalized.'@c.us';
     }
 
     /**

@@ -81,6 +81,43 @@ class ChatbotEndToEndTest extends TestCase
         $this->assertDatabaseHas('chat_messages', ['direction' => 'out', 'content' => 'Halo, ada yang bisa dibantu?']);
     }
 
+    /**
+     * Indikator mengetik menemani jeda penyusunan balasan, jadi urutannya
+     * yang penting: menyala sebelum AI dipanggil, padam setelah pesan pergi.
+     */
+    public function test_the_typing_indicator_wraps_the_whole_reply(): void
+    {
+        ChatbotSetting::factory()->create(['tenant_id' => $this->tenant->id]);
+
+        Http::fake([
+            'ai.uji/*' => Http::response(['choices' => [[
+                'message' => ['role' => 'assistant', 'content' => 'Halo, ada yang bisa dibantu?'],
+                'finish_reason' => 'stop',
+            ]]]),
+            'waha.uji/*' => Http::response(['ok' => true]),
+        ]);
+
+        $this->incoming();
+
+        $paths = collect(Http::recorded())
+            ->map(fn ($pair) => parse_url((string) $pair[0]->url(), PHP_URL_PATH))
+            ->values()
+            ->all();
+
+        $this->assertContains('/api/startTyping', $paths);
+        $this->assertContains('/api/stopTyping', $paths);
+        $this->assertLessThan(
+            array_search('/api/sendText', $paths, true),
+            array_search('/api/startTyping', $paths, true),
+            'Indikator harus menyala sebelum balasan dikirim.',
+        );
+        $this->assertGreaterThan(
+            array_search('/api/sendText', $paths, true),
+            array_search('/api/stopTyping', $paths, true),
+            'Indikator baru padam setelah balasan dikirim.',
+        );
+    }
+
     /** Chatbot mati berarti AI tidak dipanggil sama sekali, bukan sekadar tidak dibalas. */
     public function test_nothing_is_called_when_the_chatbot_is_off(): void
     {
