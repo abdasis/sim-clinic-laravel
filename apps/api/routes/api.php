@@ -9,6 +9,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CentralAuthController;
 use App\Http\Controllers\CentralStatsController;
 use App\Http\Controllers\CentralWahaSettingController;
+use App\Http\Controllers\ClinicIdentityController;
 use App\Http\Controllers\CommissionRuleController;
 use App\Http\Controllers\CompanyContentController;
 use App\Http\Controllers\CompanyProfileController;
@@ -191,6 +192,10 @@ Route::prefix('{tenant}/clinic')
         Route::delete('medical-records/{medicalRecord}', [MedicalRecordController::class, 'destroy']);
         Route::post('medical-records/{medicalRecord}/treatments', [MedicalRecordController::class, 'addTreatment']);
         Route::post('medical-records/{medicalRecord}/photos', [MedicalRecordController::class, 'addPhoto']);
+
+        // Identitas klinik untuk brand sidebar — dibaca semua peran, jadi
+        // diletakkan di luar prefix company-profile yang dijaga content.view.
+        Route::get('identity', [ClinicIdentityController::class, 'show']);
 
         // Company profile CMS (spec 010)
         Route::prefix('company-profile')->group(function (): void {

@@ -2,6 +2,7 @@
 
 return [
     'clinic' => 'Klinik',
+    'settings' => 'Pengaturan Klinik',
     // Label grup menu sidebar. Item tanpa grup (mis. Dasbor) tampil tanpa
     // label, langsung di puncak menu.
     'menu_group' => [

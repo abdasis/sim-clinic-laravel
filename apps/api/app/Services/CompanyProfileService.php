@@ -152,6 +152,19 @@ class CompanyProfileService
     /**
      * Detail satu treatment untuk halaman publiknya sendiri.
      */
+    /**
+     * Identitas klinik untuk kop nota dan brand sidebar.
+     *
+     * Tidak mengembalikan CompanyProfileSetting melainkan Tenant-nya, karena
+     * nama dan telepon punya cadangan di tabel tenant — klinik yang belum
+     * pernah menyentuh halaman profil tetap punya identitas yang bisa
+     * ditampilkan. Perakitannya sendiri milik ClinicIdentityResource.
+     */
+    public function identity(Tenant $tenant): Tenant
+    {
+        return $tenant->loadMissing('companyProfile');
+    }
+
     public function treatmentDetail(string $slug): CompanyTreatment
     {
         $published = CompanyProfileSetting::query()->value('is_published');

@@ -23,6 +23,7 @@ import {
   PackageIcon,
   PaintBoardIcon,
   SecurityLockIcon,
+  Settings02Icon,
   StethoscopeIcon,
   TagsIcon,
   UserGroupIcon,
@@ -45,6 +46,7 @@ import {
 } from "#/components/shell-breadcrumb.tsx"
 import { useAuthUser } from "#/hooks/use-auth-user.ts"
 import { useMe } from "#/hooks/use-appearance.ts"
+import { useClinicIdentity } from "#/hooks/use-clinic-identity.ts"
 import { normalizeAppearance } from "#/types/appearance.ts"
 import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
@@ -96,6 +98,8 @@ function ClinicLayout() {
   // Preferensi ikut antar-perangkat: localStorage disegarkan dari server
   // sekali per pemasangan shell, lalu diterapkan ke DOM oleh hook-nya.
   useMe(tenant, mounted)
+  // Identitas dipakai brand sidebar; dibaca semua peran, bukan cuma admin.
+  const { data: identity } = useClinicIdentity(tenant, mounted)
   const appearance = normalizeAppearance(user?.appearance)
 
   const base = `/${tenant}/clinic`
@@ -200,8 +204,20 @@ function ClinicLayout() {
               {t("preferences.title")}
             </Link>
           }
-          brandTitle={tenant}
-          brandSubtitle={t("clinic.clinic")}
+          clinicSettingsTo={
+            // Hanya yang boleh mengubah identitas yang melihat pintunya.
+            permissions?.includes("content.manage") ? (
+              <Link to="/$tenant/clinic/settings" params={{ tenant }}>
+                <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
+                {t("clinic.settings")}
+              </Link>
+            ) : undefined
+          }
+          // Slug hanya cadangan: klinik yang belum mengisi profil tetap
+          // punya sesuatu yang bisa dikenali di kepala sidebar.
+          brandTitle={identity?.name ?? tenant}
+          brandSubtitle={identity?.tagline ?? t("clinic.clinic")}
+          brandLogoUrl={identity?.logo_url}
           brandTo={navMain[0]?.url ?? base}
           navMain={navMain}
           user={sidebarUser}
@@ -281,7 +297,9 @@ function ShellCrumbs({
     items.push({ label: outsideNavLabel(pathname, base, t) })
   }
 
-  if (tail) {
+  // Halaman di luar menu sudah dilabeli outsideNavLabel; kalau halamannya
+  // juga menyetel ekor yang sama, breadcrumb-nya menyebut dirinya dua kali.
+  if (tail && items[items.length - 1]?.label !== tail) {
     items.push({ label: tail })
   }
 
@@ -295,6 +313,7 @@ function outsideNavLabel(
   t: (key: string) => string,
 ): string {
   if (pathname.startsWith(`${base}/preferences`)) return t("preferences.title")
+  if (pathname.startsWith(`${base}/settings`)) return t("clinic.settings")
 
   return t("dashboard.title")
 }

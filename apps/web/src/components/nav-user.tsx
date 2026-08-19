@@ -43,6 +43,7 @@ export function NavUser({
   user,
   onLogout,
   preferencesTo,
+  clinicSettingsTo,
 }: {
   user: {
     name: string
@@ -52,6 +53,8 @@ export function NavUser({
   onLogout?: () => void
   /** Ditampilkan hanya bila diisi — shell central tidak punya halaman ini. */
   preferencesTo?: React.ReactNode
+  /** Hanya diisi untuk peran yang boleh mengubah identitas kliniknya. */
+  clinicSettingsTo?: React.ReactNode
 }) {
   const { t } = useTrans()
   const { isMobile } = useSidebar()
@@ -112,6 +115,9 @@ export function NavUser({
               </DropdownMenuItem>
               {preferencesTo ? (
                 <DropdownMenuItem asChild>{preferencesTo}</DropdownMenuItem>
+              ) : null}
+              {clinicSettingsTo ? (
+                <DropdownMenuItem asChild>{clinicSettingsTo}</DropdownMenuItem>
               ) : null}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

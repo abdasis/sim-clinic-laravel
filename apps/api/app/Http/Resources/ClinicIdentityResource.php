@@ -24,6 +24,9 @@ class ClinicIdentityResource extends JsonResource
         $profile = $this->companyProfile;
 
         return [
+            // Slug permanen — sidebar memakainya untuk menautkan brand ke
+            // beranda kliniknya sendiri, bukan menebak dari URL yang aktif.
+            'slug' => $this->slug,
             'name' => LocaleText::pick($profile?->site_name, app()->getLocale()) ?: $this->name,
             'tagline' => $profile?->tagline,
             'address' => $profile?->address,

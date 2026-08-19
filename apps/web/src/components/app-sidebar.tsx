@@ -46,6 +46,10 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onLogout?: () => void
   /** Item "Preferensi" di menu pengguna; hanya shell klinik yang mengisinya. */
   preferencesTo?: React.ReactNode
+  /** Item "Pengaturan Klinik"; hanya diisi untuk peran yang boleh mengubahnya. */
+  clinicSettingsTo?: React.ReactNode
+  /** Logo klinik; bila kosong, lencana ikon bawaan yang dipakai. */
+  brandLogoUrl?: string | null
 }
 
 export function AppSidebar({
@@ -58,6 +62,8 @@ export function AppSidebar({
   user,
   onLogout,
   preferencesTo,
+  clinicSettingsTo,
+  brandLogoUrl,
   ...props
 }: AppSidebarProps) {
   return (
@@ -65,14 +71,29 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild className="active:scale-[0.96]">
+            {/* Tooltip-nya baru terlihat saat sidebar diciutkan — di situ
+                lencana logo tinggal sendirian tanpa nama kliniknya. */}
+            <SidebarMenuButton
+              size="lg"
+              asChild
+              tooltip={brandTitle}
+              className="active:scale-[0.96]"
+            >
               <Link to={brandTo}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <HugeiconsIcon
-                    icon={SourceCodeIcon}
-                    strokeWidth={2}
-                    className="size-4"
-                  />
+                <div className="flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  {brandLogoUrl ? (
+                    <img
+                      src={brandLogoUrl}
+                      alt={brandTitle}
+                      className="size-full object-contain"
+                    />
+                  ) : (
+                    <HugeiconsIcon
+                      icon={SourceCodeIcon}
+                      strokeWidth={2}
+                      className="size-4"
+                    />
+                  )}
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{brandTitle}</span>
@@ -90,7 +111,12 @@ export function AppSidebar({
         ) : null}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} onLogout={onLogout} preferencesTo={preferencesTo} />
+        <NavUser
+          user={user}
+          onLogout={onLogout}
+          preferencesTo={preferencesTo}
+          clinicSettingsTo={clinicSettingsTo}
+        />
       </SidebarFooter>
     </Sidebar>
   )
