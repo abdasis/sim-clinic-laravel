@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'Profil Perusahaan',
+    'title' => 'Company Profile',
     'subtitle' => 'Kelola isi halaman publik klinik.',
     'settings' => 'Pengaturan',
     'navigation' => 'Menu Navigasi',
