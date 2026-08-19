@@ -9,6 +9,7 @@ import { CompanyFooter } from "#/components/company-profile/company-footer.tsx"
 import { CompanyHeader } from "#/components/company-profile/company-header.tsx"
 import { ContentBanner } from "#/components/company-profile/content-banner.tsx"
 import { HeroCarousel } from "#/components/company-profile/hero-carousel.tsx"
+import { FaqSection } from "#/components/company-profile/faq-section.tsx"
 import { CompanyLocaleProvider } from "#/components/company-profile/locale-context.tsx"
 import { PromoSection } from "#/components/company-profile/promo-section.tsx"
 import { TestimonialSection } from "#/components/company-profile/testimonial-section.tsx"
@@ -41,7 +42,7 @@ function CompanyLandingPage() {
 
   return (
     <CompanyLocaleProvider locale={locale}>
-      <div className="flex min-h-svh flex-col">
+      <div className="flex min-h-svh flex-col font-brand">
         <CompanyHeader
           tenant={tenant}
           settings={data?.settings ?? null}
@@ -120,7 +121,14 @@ function CompanyLandingPage() {
                 heading={t("company_profile.landing_brands")}
                 items={data.brands}
               />
+              <FaqSection
+                id="faq"
+                eyebrow={t("company_profile.faq")}
+                heading={t("company_profile.faq_heading")}
+                items={data.faqs}
+              />
               <TestimonialSection
+                tone="muted"
                 id="testimoni"
                 eyebrow={t("company_profile.testimonials")}
                 heading={t("company_profile.landing_testimonials")}

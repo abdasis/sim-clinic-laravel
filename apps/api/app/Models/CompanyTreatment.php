@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Etalase treatment di landing. Boleh menaut ke master `Service`, boleh juga
@@ -48,5 +49,11 @@ class CompanyTreatment extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+
+    /** Tanya-jawab khusus treatment ini. */
+    public function faqs(): HasMany
+    {
+        return $this->hasMany(CompanyFaq::class, 'company_treatment_id');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Http\Requests\CompanyProfile\BrandRequest;
 use App\Http\Requests\CompanyProfile\ContentSectionRequest;
+use App\Http\Requests\CompanyProfile\FaqRequest;
 use App\Http\Requests\CompanyProfile\NavigationItemRequest;
 use App\Http\Requests\CompanyProfile\PromoRequest;
 use App\Http\Requests\CompanyProfile\SlideRequest;
@@ -12,6 +13,7 @@ use App\Http\Requests\CompanyProfile\TreatmentRequest;
 use App\Http\Requests\CompanyProfile\ValuePropRequest;
 use App\Http\Resources\CompanyProfile\CompanyBrandResource;
 use App\Http\Resources\CompanyProfile\CompanyContentSectionResource;
+use App\Http\Resources\CompanyProfile\CompanyFaqResource;
 use App\Http\Resources\CompanyProfile\CompanyNavigationItemResource;
 use App\Http\Resources\CompanyProfile\CompanyProfileSlideResource;
 use App\Http\Resources\CompanyProfile\CompanyPromoResource;
@@ -20,6 +22,7 @@ use App\Http\Resources\CompanyProfile\CompanyTreatmentResource;
 use App\Http\Resources\CompanyProfile\CompanyValuePropResource;
 use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
+use App\Models\CompanyFaq;
 use App\Models\CompanyNavigationItem;
 use App\Models\CompanyProfileSlide;
 use App\Models\CompanyPromo;
@@ -78,6 +81,12 @@ class CompanyContentRegistry
             'request' => TestimonialRequest::class,
             'resource' => CompanyTestimonialResource::class,
             'searchable' => ['author_name'],
+        ],
+        'faqs' => [
+            'model' => CompanyFaq::class,
+            'request' => FaqRequest::class,
+            'resource' => CompanyFaqResource::class,
+            'searchable' => ['question'],
         ],
         'content-sections' => [
             'model' => CompanyContentSection::class,

@@ -30,6 +30,7 @@ class CompanyProfileLandingResource extends JsonResource
             'promos' => CompanyPromoResource::collection($data['promos']),
             'brands' => CompanyBrandResource::collection($data['brands']),
             'testimonials' => CompanyTestimonialResource::collection($data['testimonials']),
+            'faqs' => CompanyFaqResource::collection($data['faqs']),
             // Dipetakan per section_key supaya frontend memilih slot langsung
             // tanpa mencari di dalam array.
             'content_sections' => array_map(

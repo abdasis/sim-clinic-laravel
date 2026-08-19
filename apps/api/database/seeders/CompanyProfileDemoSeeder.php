@@ -11,6 +11,7 @@ use App\Enums\CompanyTreatmentBadge;
 use App\Enums\TenantStatus;
 use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
+use App\Models\CompanyFaq;
 use App\Models\CompanyNavigationItem;
 use App\Models\CompanyProfileSetting;
 use App\Models\CompanyProfileSlide;
@@ -18,6 +19,7 @@ use App\Models\CompanyPromo;
 use App\Models\CompanyTestimonial;
 use App\Models\CompanyTreatment;
 use App\Models\CompanyValueProp;
+use App\Models\Service;
 use App\Models\Tenant;
 use App\Support\PhoneNumber;
 use Illuminate\Database\Seeder;
@@ -63,6 +65,7 @@ class CompanyProfileDemoSeeder extends Seeder
             $this->seedPromos($tenant);
             $this->seedBrands($tenant);
             $this->seedTestimonials($tenant);
+            $this->seedFaqs($tenant->id);
             $this->seedContentSections($tenant);
         });
     }
@@ -231,10 +234,18 @@ class CompanyProfileDemoSeeder extends Seeder
             ['underarm-body-rejuvenation-combo', ['id' => 'Underarm Body Rejuvenation Combo (ZPL + Laser)', 'en' => 'Underarm Body Rejuvenation Combo (ZPL + Laser)'], ['id' => 'Kombinasi perawatan selalu lebih baik dan lebih cepat hasilnya dibandingkan dengan satu metode perawatan. Underarm Body Rejuvenation Combo menggabungkan ZPL dan Laser.', 'en' => 'Combo treatments are always better and faster than a single method. Underarm Body Rejuvenation Combo combines ZPL and Laser.'], CompanyTreatmentBadge::Current, ['brightening', 'rejuvenation']],
         ];
 
+        // Nama layanan katalog dipetakan sekali di memori: halaman treatment
+        // menampilkan harga dan durasi dari katalog, bukan dari salinan yang
+        // cepat atau lambat berbeda.
+        $services = Service::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->pluck('id', 'name');
+
         foreach ($treatments as $index => [$slug, $title, $description, $badge, $tags]) {
             CompanyTreatment::query()->updateOrCreate(
                 ['tenant_id' => $tenantId, 'slug' => $slug],
                 [
+                    'service_id' => $services[$title['id']] ?? null,
                     'title' => $title,
                     'description' => $description,
                     'image_path' => 'company-profile/demo/'.$slug.'.jpg',
@@ -383,5 +394,65 @@ class CompanyProfileDemoSeeder extends Seeder
             ],
             $pair,
         );
+    }
+
+    /**
+     * Pertanyaan yang benar-benar sering masuk lewat WhatsApp. Tiga umum,
+     * sisanya menempel ke treatment yang paling sering ditanyakan.
+     */
+    private function seedFaqs(int $tenantId): void
+    {
+        $general = [
+            [
+                ['id' => 'Perlu buat janji dulu atau bisa langsung datang?', 'en' => 'Do I need an appointment or can I walk in?'],
+                ['id' => 'Sebaiknya buat janji dulu supaya tidak menunggu, apalagi di akhir pekan. Kamu bisa booking lewat WhatsApp kami atau langsung dari halaman ini.', 'en' => 'Booking ahead is better so you do not wait, especially on weekends. You can book via WhatsApp or straight from this page.'],
+            ],
+            [
+                ['id' => 'Konsultasi dokter dikenakan biaya?', 'en' => 'Is the doctor consultation charged?'],
+                ['id' => 'Konsultasi sebelum treatment tidak dipungut biaya. Dokter akan memeriksa kondisi kulitmu dulu dan menyarankan perawatan yang sesuai.', 'en' => 'Consultation before a treatment is free. Our doctor examines your skin first and recommends what suits you.'],
+            ],
+            [
+                ['id' => 'Metode pembayaran apa saja yang diterima?', 'en' => 'Which payment methods do you accept?'],
+                ['id' => 'Tunai, kartu debit, transfer bank, dan QRIS. Nota pembayaran diberikan setiap selesai treatment.', 'en' => 'Cash, debit card, bank transfer, and QRIS. A receipt is issued after every treatment.'],
+            ],
+        ];
+
+        foreach ($general as $order => [$question, $answer]) {
+            CompanyFaq::query()->updateOrCreate(
+                ['tenant_id' => $tenantId, 'company_treatment_id' => null, 'sort_order' => $order + 1],
+                ['question' => $question, 'answer' => $answer, 'is_active' => true],
+            );
+        }
+
+        $treatment = CompanyTreatment::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->orderBy('sort_order')
+            ->first();
+
+        if ($treatment === null) {
+            return;
+        }
+
+        $specific = [
+            [
+                ['id' => 'Prosesnya sakit tidak?', 'en' => 'Does it hurt?'],
+                ['id' => 'Sebagian besar pasien menggambarkannya seperti sentakan karet kecil dan masih nyaman. Bila kamu sensitif, sampaikan ke terapis — tingkat energinya bisa disesuaikan.', 'en' => 'Most patients describe it as a small rubber-band snap and still comfortable. Tell your therapist if you are sensitive; the energy level can be adjusted.'],
+            ],
+            [
+                ['id' => 'Berapa kali perlu diulang?', 'en' => 'How many sessions are needed?'],
+                ['id' => 'Hasil terbaik biasanya terlihat setelah beberapa sesi berjarak 4-6 minggu. Dokter akan menyusun jadwalnya sesuai kondisi kulitmu saat konsultasi.', 'en' => 'Best results usually show after several sessions spaced 4-6 weeks apart. The doctor sets your schedule during the consultation.'],
+            ],
+            [
+                ['id' => 'Setelah treatment boleh langsung beraktivitas?', 'en' => 'Can I go back to my activities right after?'],
+                ['id' => 'Boleh. Hindari paparan matahari langsung dan gunakan sunscreen selama beberapa hari setelahnya.', 'en' => 'Yes. Avoid direct sun exposure and wear sunscreen for a few days afterwards.'],
+            ],
+        ];
+
+        foreach ($specific as $order => [$question, $answer]) {
+            CompanyFaq::query()->updateOrCreate(
+                ['tenant_id' => $tenantId, 'company_treatment_id' => $treatment->id, 'sort_order' => $order + 1],
+                ['question' => $question, 'answer' => $answer, 'is_active' => true],
+            );
+        }
     }
 }

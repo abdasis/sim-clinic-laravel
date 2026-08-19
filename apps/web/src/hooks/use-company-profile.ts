@@ -49,6 +49,14 @@ export interface CompanySettings {
   is_published: boolean
 }
 
+export interface CompanyFaq {
+  id: number
+  company_treatment_id?: number | null
+  question?: Text | null
+  answer?: Text | null
+  sort_order?: number
+}
+
 export interface CompanyNavItem {
   id: number
   label?: Text | null
@@ -85,6 +93,11 @@ export interface CompanyTreatment {
   badge_label?: string | null
   category_tags: string[]
   detail_url?: string | null
+  /** Hanya terisi di halaman detail, dari layanan katalog yang ditautkan. */
+  price?: string | null
+  duration_minutes?: number | null
+  promo?: { name?: string | null; price: string } | null
+  faqs?: CompanyFaq[]
 }
 
 export interface CompanyPromo {
@@ -135,7 +148,20 @@ export interface CompanyLanding {
   promos: CompanyPromo[]
   brands: CompanyBrand[]
   testimonials: CompanyTestimonial[]
+  faqs: CompanyFaq[]
   content_sections: Record<string, CompanyContentSection>
+}
+
+/** Kop dan kaki halaman untuk halaman publik selain beranda. */
+export interface CompanyChrome {
+  settings: CompanySettings | null
+  navigation: { header: CompanyNavItem[]; footer: CompanyNavItem[] }
+}
+
+export interface CompanyTreatmentDetail {
+  treatment: CompanyTreatment
+  related: CompanyTreatment[]
+  chrome: CompanyChrome | null
 }
 
 /**
@@ -162,10 +188,16 @@ export function useCompanyTreatment(
   return useQuery({
     queryKey: ["company-treatment", tenant, slug],
     queryFn: () =>
-      apiGet<{ data: CompanyTreatment }>(
-        `/${tenant}/profile/treatments/${slug}`,
-        { locale },
-      ),
-    select: (res) => res.data,
+      apiGet<{
+        data: CompanyTreatment
+        meta: { related?: CompanyTreatment[]; chrome?: CompanyChrome | null }
+      }>(`/${tenant}/profile/treatments/${slug}`, { locale }),
+    // Kop, treatment terkait, dan treatmentnya sendiri datang bersama supaya
+    // halaman tidak berkedip merakit dirinya sepotong-sepotong.
+    select: (res): CompanyTreatmentDetail => ({
+      treatment: res.data,
+      related: res.meta?.related ?? [],
+      chrome: res.meta?.chrome ?? null,
+    }),
   })
 }

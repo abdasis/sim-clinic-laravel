@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\CompanyProfile\CompanyProfileChromeResource;
 use App\Http\Resources\CompanyProfile\CompanyProfileLandingResource;
 use App\Http\Resources\CompanyProfile\CompanyTreatmentResource;
 use App\Models\CompanyProfileSetting;
@@ -32,9 +33,22 @@ class CompanyProfileController extends Controller
 
     public function showTreatment(Request $request, string $slug, CompanyProfileService $service): JsonResponse
     {
+        $treatment = $service->treatmentDetail($slug);
+
         return response()->json([
-            'data' => new CompanyTreatmentResource($service->treatmentDetail($slug)),
+            'data' => new CompanyTreatmentResource($treatment),
             'meta' => [
+                // Halaman buntu membuat pengunjung menutup tab; tiga saran
+                // terdekat memberinya langkah berikutnya.
+                'related' => CompanyTreatmentResource::collection(
+                    $service->relatedTreatments($treatment),
+                ),
+                // Kop dan kaki halaman ikut dikirim: halaman detail sering
+                // jadi pintu masuk pertama dari pencarian, dan pengunjung
+                // yang mendarat tanpa menu tidak punya jalan ke mana pun.
+                'chrome' => new CompanyProfileChromeResource(
+                    $service->landingData(app('tenant')),
+                ),
                 'locale' => $this->locale($request, null),
                 'tenant' => $this->tenantSummary(app('tenant')),
             ],

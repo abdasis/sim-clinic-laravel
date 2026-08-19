@@ -14,7 +14,7 @@ interface SectionShellProps {
    * perlu garis.
    */
   tone?: SectionTone
-  /** Aksi kecil di sisi kanan judul, mis. tautan "lihat semua". */
+  /** Aksi kecil di bawah judul, mis. tautan "lihat semua". */
   action?: React.ReactNode
   className?: string
   children: React.ReactNode
@@ -46,32 +46,30 @@ export function SectionShell({
       )}
     >
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-        {title || eyebrow ? (
-          <header className="mb-9 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
-            <div className="max-w-2xl">
-              {eyebrow ? (
-                // Penanda kecil sebelum judul: memberi judul sesuatu untuk
-                // berdiri di atasnya, sehingga tidak melayang sendirian.
-                <p className="mb-2.5 flex items-center gap-2 text-2xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-                  <span
-                    aria-hidden="true"
-                    className="h-px w-6 bg-foreground/25"
-                  />
-                  {eyebrow}
-                </p>
-              ) : null}
-              {title ? (
-                <h2 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
-                  {title}
-                </h2>
-              ) : null}
-              {description ? (
-                <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground text-pretty">
-                  {description}
-                </p>
-              ) : null}
-            </div>
-            {action ? <div className="shrink-0">{action}</div> : null}
+        {title ? (
+          // Judul di tengah, huruf besar berjarak lebar, lalu garis pendek —
+          // pola kepala section yang sudah lazim di situs klinik Indonesia.
+          // Yang membedakannya di sini: jaraknya dijaga tetap sama di semua
+          // section supaya halamannya terbaca sebagai satu dokumen.
+          <header className="mb-10 text-center">
+            {eyebrow ? (
+              <p className="mb-3 text-2xs font-semibold tracking-[0.22em] text-primary/70 uppercase">
+                {eyebrow}
+              </p>
+            ) : null}
+            <h2 className="text-lg font-medium tracking-[0.16em] text-balance uppercase sm:text-2xl">
+              {title}
+            </h2>
+            <span
+              aria-hidden="true"
+              className="mx-auto mt-4 block h-px w-16 bg-foreground/25"
+            />
+            {description ? (
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-pretty text-muted-foreground sm:text-base">
+                {description}
+              </p>
+            ) : null}
+            {action ? <div className="mt-5">{action}</div> : null}
           </header>
         ) : null}
         {children}

@@ -12,6 +12,7 @@ use App\Actions\CompanyProfile\UploadCompanyMediaAction;
 use App\Enums\CompanyNavPosition;
 use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
+use App\Models\CompanyFaq;
 use App\Models\CompanyNavigationItem;
 use App\Models\CompanyProfileSetting;
 use App\Models\CompanyProfileSlide;
@@ -58,6 +59,7 @@ class CompanyProfileService
                 'promos' => new Collection,
                 'brands' => new Collection,
                 'testimonials' => new Collection,
+                'faqs' => new Collection,
                 'content_sections' => [],
             ];
         }
@@ -80,11 +82,44 @@ class CompanyProfileService
             'promos' => CompanyPromo::active()->ordered()->get(),
             'brands' => CompanyBrand::active()->ordered()->get(),
             'testimonials' => CompanyTestimonial::active()->ordered()->get(),
+            // Hanya pertanyaan umum: yang menempel ke satu treatment milik
+            // halaman treatment itu, bukan beranda.
+            'faqs' => CompanyFaq::active()->whereNull('company_treatment_id')->ordered()->get(),
             'content_sections' => CompanyContentSection::active()
                 ->get()
                 ->keyBy(fn (CompanyContentSection $section) => $section->section_key->value)
                 ->all(),
         ];
+    }
+
+    /**
+     * Treatment lain yang layak ditawarkan setelah membaca satu treatment.
+     *
+     * Kedekatannya diukur dari kesamaan tag: pengunjung yang membaca laser
+     * penghilang bulu lebih mungkin tertarik pada laser lain daripada pada
+     * facial yang kebetulan berurutan di daftar. Bila tidak ada tag yang
+     * cocok, yang tampil treatment teratas — halaman buntu lebih buruk
+     * daripada saran yang kurang tepat.
+     *
+     * @return Collection<int, CompanyTreatment>
+     */
+    public function relatedTreatments(CompanyTreatment $treatment, int $limit = 3): Collection
+    {
+        $tags = array_map('mb_strtolower', $treatment->category_tags ?? []);
+
+        $candidates = CompanyTreatment::active()
+            ->where('id', '!=', $treatment->id)
+            ->ordered()
+            ->get();
+
+        $ranked = $candidates
+            ->sortByDesc(fn (CompanyTreatment $other) => count(array_intersect(
+                $tags,
+                array_map('mb_strtolower', $other->category_tags ?? []),
+            )))
+            ->values();
+
+        return $ranked->take($limit);
     }
 
     /**
@@ -177,6 +212,9 @@ class CompanyProfileService
             abort(404);
         }
 
-        return CompanyTreatment::active()->where('slug', $slug)->firstOrFail();
+        return CompanyTreatment::active()
+            ->with(['service', 'faqs' => fn ($query) => $query->active()->ordered()])
+            ->where('slug', $slug)
+            ->firstOrFail();
     }
 }

@@ -479,6 +479,7 @@ export const LANDING_CONTENT: CompanyLanding = {
     default_locale: "id",
     is_published: true,
   },
+  faqs: [],
   navigation: { header: HEADER_NAV, footer: FOOTER_NAV },
   slides: SLIDES,
   value_props: VALUE_PROPS,
