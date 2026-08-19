@@ -9,7 +9,6 @@ return [
     'value_props' => 'Keunggulan',
     'treatments' => 'Treatment',
     'promos' => 'Promosi',
-    'brands' => 'Brand',
     'testimonials' => 'Testimoni',
     'content_sections' => 'Section Konten',
 
@@ -18,7 +17,6 @@ return [
     'landing_value_props' => 'Kenapa memilih kami',
     'landing_treatments' => 'Treatment pilihan',
     'landing_promos' => 'Promo yang sedang berjalan',
-    'landing_brands' => 'Brand yang kami gunakan',
     'landing_testimonials' => 'Kata mereka yang sudah mencoba',
     'footer_explore' => 'Jelajahi',
     'footer_contact' => 'Kontak',

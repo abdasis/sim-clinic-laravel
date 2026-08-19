@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 
 import { BackToTop } from "#/components/company-profile/back-to-top.tsx"
 import { BookingCta } from "#/components/company-profile/booking-cta.tsx"
-import { BrandSection } from "#/components/company-profile/brand-section.tsx"
 import { ChatWidget } from "#/components/company-profile/chat-widget.tsx"
 import { ClinicInfoBar } from "#/components/company-profile/clinic-info-bar.tsx"
 import { CompanyFooter } from "#/components/company-profile/company-footer.tsx"
@@ -113,13 +112,6 @@ function CompanyLandingPage() {
               <BookingCta
                 tenant={tenant}
                 section={data.content_sections.booking_cta}
-              />
-              <BrandSection
-                id="brand"
-                tone="muted"
-                eyebrow={t("company_profile.brands")}
-                heading={t("company_profile.landing_brands")}
-                items={data.brands}
               />
               <FaqSection
                 id="faq"

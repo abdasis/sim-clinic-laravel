@@ -28,7 +28,6 @@ class CompanyProfileLandingResource extends JsonResource
             'value_props' => CompanyValuePropResource::collection($data['value_props']),
             'treatments' => CompanyTreatmentResource::collection($data['treatments']),
             'promos' => CompanyPromoResource::collection($data['promos']),
-            'brands' => CompanyBrandResource::collection($data['brands']),
             'testimonials' => CompanyTestimonialResource::collection($data['testimonials']),
             'faqs' => CompanyFaqResource::collection($data['faqs']),
             // Dipetakan per section_key supaya frontend memilih slot langsung

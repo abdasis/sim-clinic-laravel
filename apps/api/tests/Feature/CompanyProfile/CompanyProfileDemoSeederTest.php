@@ -24,7 +24,6 @@ class CompanyProfileDemoSeederTest extends TestCase
         'company_profile_slides',
         'company_value_props',
         'company_treatments',
-        'company_brands',
         'company_testimonials',
         'company_content_sections',
         'company_navigation_items',

@@ -110,14 +110,6 @@ export interface CompanyPromo {
   cta_type?: string | null
 }
 
-export interface CompanyBrand {
-  id: number
-  name?: Text | null
-  description?: Text | null
-  logo_url?: string | null
-  external_url?: string | null
-}
-
 export interface CompanyTestimonial {
   id: number
   quote?: RichText | null
@@ -146,7 +138,6 @@ export interface CompanyLanding {
   value_props: CompanyValueProp[]
   treatments: CompanyTreatment[]
   promos: CompanyPromo[]
-  brands: CompanyBrand[]
   testimonials: CompanyTestimonial[]
   faqs: CompanyFaq[]
   content_sections: Record<string, CompanyContentSection>

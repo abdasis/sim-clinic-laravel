@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Http\Requests\CompanyProfile\BrandRequest;
 use App\Http\Requests\CompanyProfile\ContentSectionRequest;
 use App\Http\Requests\CompanyProfile\FaqRequest;
 use App\Http\Requests\CompanyProfile\NavigationItemRequest;
@@ -11,7 +10,6 @@ use App\Http\Requests\CompanyProfile\SlideRequest;
 use App\Http\Requests\CompanyProfile\TestimonialRequest;
 use App\Http\Requests\CompanyProfile\TreatmentRequest;
 use App\Http\Requests\CompanyProfile\ValuePropRequest;
-use App\Http\Resources\CompanyProfile\CompanyBrandResource;
 use App\Http\Resources\CompanyProfile\CompanyContentSectionResource;
 use App\Http\Resources\CompanyProfile\CompanyFaqResource;
 use App\Http\Resources\CompanyProfile\CompanyNavigationItemResource;
@@ -20,7 +18,6 @@ use App\Http\Resources\CompanyProfile\CompanyPromoResource;
 use App\Http\Resources\CompanyProfile\CompanyTestimonialResource;
 use App\Http\Resources\CompanyProfile\CompanyTreatmentResource;
 use App\Http\Resources\CompanyProfile\CompanyValuePropResource;
-use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
 use App\Models\CompanyFaq;
 use App\Models\CompanyNavigationItem;
@@ -31,10 +28,10 @@ use App\Models\CompanyTreatment;
 use App\Models\CompanyValueProp;
 
 /**
- * Delapan entitas konten company profile diperlakukan sama persis oleh CMS:
+ * Tujuh entitas konten company profile diperlakukan sama persis oleh CMS:
  * list, buat, ubah, hapus, aktif/nonaktif, urutkan. Daftar ini menjadikan
  * satu controller dan satu set Action cukup untuk semuanya — menyalin kode
- * yang sama delapan kali justru lebih rapuh.
+ * yang sama tujuh kali justru lebih rapuh.
  *
  * Menambah entitas konten cukup di sini.
  */
@@ -69,12 +66,6 @@ class CompanyContentRegistry
             'request' => PromoRequest::class,
             'resource' => CompanyPromoResource::class,
             'searchable' => ['title'],
-        ],
-        'brands' => [
-            'model' => CompanyBrand::class,
-            'request' => BrandRequest::class,
-            'resource' => CompanyBrandResource::class,
-            'searchable' => ['name'],
         ],
         'testimonials' => [
             'model' => CompanyTestimonial::class,

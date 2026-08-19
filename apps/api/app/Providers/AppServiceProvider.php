@@ -10,7 +10,6 @@ use App\Models\Category;
 use App\Models\ChatbotSetting;
 use App\Models\CommissionRule;
 use App\Models\CommissionSetting;
-use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
 use App\Models\CompanyNavigationItem;
 use App\Models\CompanyProfileSetting;
@@ -93,7 +92,6 @@ class AppServiceProvider extends ServiceProvider
         'company_value_prop' => CompanyValueProp::class,
         'company_treatment' => CompanyTreatment::class,
         'company_promo' => CompanyPromo::class,
-        'company_brand' => CompanyBrand::class,
         'company_testimonial' => CompanyTestimonial::class,
         'company_content_section' => CompanyContentSection::class,
     ];

@@ -103,17 +103,6 @@ export const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
       ...ORDERING_FIELDS,
     ],
   },
-  brands: {
-    slug: "brands",
-    titleKey: "company_profile.brands",
-    fields: [
-      { name: "name", labelKey: "company_profile.name", type: "translatable", required: true, column: true },
-      { name: "description", labelKey: "company_profile.description", type: "translatable" },
-      { name: "logo_path", labelKey: "company_profile.logo", type: "image" },
-      { name: "external_url", labelKey: "company_profile.url", type: "url" },
-      ...ORDERING_FIELDS,
-    ],
-  },
   testimonials: {
     slug: "testimonials",
     titleKey: "company_profile.testimonials",

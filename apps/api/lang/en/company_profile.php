@@ -9,7 +9,6 @@ return [
     'value_props' => 'Highlights',
     'treatments' => 'Treatments',
     'promos' => 'Promos',
-    'brands' => 'Brands',
     'testimonials' => 'Testimonials',
     'content_sections' => 'Content Sections',
 
@@ -17,7 +16,6 @@ return [
     'landing_value_props' => 'Why choose us',
     'landing_treatments' => 'Featured treatments',
     'landing_promos' => 'Running promos',
-    'landing_brands' => 'Brands we use',
     'landing_testimonials' => 'What our patients say',
     'footer_explore' => 'Explore',
     'footer_social' => 'Social',

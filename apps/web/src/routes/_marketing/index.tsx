@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 
 import { BookingCta } from "#/components/company-profile/booking-cta.tsx"
-import { BrandSection } from "#/components/company-profile/brand-section.tsx"
 import { ContentBanner } from "#/components/company-profile/content-banner.tsx"
 import { EstoreCta } from "#/components/company-profile/estore-cta.tsx"
 import { HeroCarousel } from "#/components/company-profile/hero-carousel.tsx"
@@ -31,7 +30,6 @@ function LandingPage() {
         valueProps: "Why choose us",
         treatments: "Featured treatments",
         promos: "Running promos",
-        brands: "Our sub-brands",
         testimonials: "What our patients say",
         readMore: "Details",
       }
@@ -39,7 +37,6 @@ function LandingPage() {
         valueProps: "Kenapa memilih kami",
         treatments: "Treatment pilihan",
         promos: "Promo berjalan",
-        brands: "Sub-brand kami",
         testimonials: "Kata pasien kami",
         readMore: "Selengkapnya",
       }
@@ -72,12 +69,6 @@ function LandingPage() {
       />
       <ContentBanner tenant="" section={sections.pharma_banner} />
       <BookingCta tenant="" section={sections.booking_cta} />
-      <BrandSection
-        id="brand"
-        heading={copy.brands}
-        items={data.brands}
-        className="bg-dot-grid"
-      />
       <TestimonialSection
         id="testimoni"
         heading={copy.testimonials}

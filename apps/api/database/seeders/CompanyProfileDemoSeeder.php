@@ -9,7 +9,6 @@ use App\Enums\CompanySectionKey;
 use App\Enums\CompanySectionLayout;
 use App\Enums\CompanyTreatmentBadge;
 use App\Enums\TenantStatus;
-use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
 use App\Models\CompanyFaq;
 use App\Models\CompanyNavigationItem;
@@ -63,7 +62,6 @@ class CompanyProfileDemoSeeder extends Seeder
             $this->seedValueProps($tenant);
             $this->seedTreatments($tenant->id);
             $this->seedPromos($tenant);
-            $this->seedBrands($tenant);
             $this->seedTestimonials($tenant);
             $this->seedFaqs($tenant->id);
             $this->seedContentSections($tenant);
@@ -136,7 +134,6 @@ class CompanyProfileDemoSeeder extends Seeder
             ['#promo', ['id' => 'Promo', 'en' => 'Promos'], CompanyNavPosition::Header, 3, false],
             ['#booking', ['id' => 'Online Booking', 'en' => 'Online Booking'], CompanyNavPosition::Header, 4, true],
             ['#testimoni', ['id' => 'Testimoni', 'en' => 'Testimonials'], CompanyNavPosition::Footer, 1, false],
-            ['#brand', ['id' => 'Brand Kami', 'en' => 'Our Brands'], CompanyNavPosition::Footer, 2, false],
         ];
 
         // Item yang dicabut dari daftar harus ikut hilang. Tanpa ini,
@@ -277,28 +274,6 @@ class CompanyProfileDemoSeeder extends Seeder
                 'is_active' => true,
             ],
         );
-    }
-
-    private function seedBrands(Tenant $tenant): void
-    {
-        $brand = $this->brand($tenant);
-
-        $brands = [
-            [['id' => $brand.' Pharma', 'en' => $brand.' Pharma'], ['id' => "Skincare dan racikan tim medis {$brand}.", 'en' => "Skincare and formulations from the {$brand} medical team."]],
-            [['id' => $brand, 'en' => $brand], ['id' => 'Perawatan kecantikan, laser, dan hair removal.', 'en' => 'Beauty, laser, and hair removal treatments.']],
-        ];
-
-        foreach ($brands as $index => [$name, $description]) {
-            CompanyBrand::query()->updateOrCreate(
-                ['tenant_id' => $tenant->id, 'sort_order' => $index + 1],
-                [
-                    'name' => $name,
-                    'description' => $description,
-                    'logo_path' => 'company-profile/demo/brand-'.($index + 1).'.png',
-                    'is_active' => true,
-                ],
-            );
-        }
     }
 
     private function seedTestimonials(Tenant $tenant): void

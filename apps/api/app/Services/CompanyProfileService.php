@@ -10,7 +10,6 @@ use App\Actions\CompanyProfile\UpdateCompanyContentAction;
 use App\Actions\CompanyProfile\UpdateCompanyProfileSettingsAction;
 use App\Actions\CompanyProfile\UploadCompanyMediaAction;
 use App\Enums\CompanyNavPosition;
-use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
 use App\Models\CompanyFaq;
 use App\Models\CompanyNavigationItem;
@@ -57,7 +56,6 @@ class CompanyProfileService
                 'value_props' => new Collection,
                 'treatments' => new Collection,
                 'promos' => new Collection,
-                'brands' => new Collection,
                 'testimonials' => new Collection,
                 'faqs' => new Collection,
                 'content_sections' => [],
@@ -80,7 +78,6 @@ class CompanyProfileService
             'value_props' => CompanyValueProp::active()->ordered()->get(),
             'treatments' => CompanyTreatment::active()->ordered()->get(),
             'promos' => CompanyPromo::active()->ordered()->get(),
-            'brands' => CompanyBrand::active()->ordered()->get(),
             'testimonials' => CompanyTestimonial::active()->ordered()->get(),
             // Hanya pertanyaan umum: yang menempel ke satu treatment milik
             // halaman treatment itu, bukan beranda.

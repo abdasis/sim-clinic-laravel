@@ -1,5 +1,4 @@
 import type {
-  CompanyBrand,
   CompanyContentSection,
   CompanyLanding,
   CompanyNavItem,
@@ -263,39 +262,6 @@ const PROMOS: CompanyPromo[] = [
   },
 ]
 
-const BRANDS: CompanyBrand[] = [
-  {
-    id: 1,
-    name: { id: "Klinik Utama", en: "Flagship Clinic" },
-    description: {
-      id: "Layanan lengkap perawatan wajah, laser, dan tubuh dengan dokter jaga setiap hari.",
-      en: "Full-service face, laser, and body care with doctors on duty every day.",
-    },
-    logo_url: null,
-    external_url: null,
-  },
-  {
-    id: 2,
-    name: { id: "Express", en: "Express" },
-    description: {
-      id: "Gerai cepat untuk perawatan rutin di pusat perbelanjaan, tanpa perlu janji.",
-      en: "Quick-service outlets in malls for routine care, no appointment needed.",
-    },
-    logo_url: null,
-    external_url: null,
-  },
-  {
-    id: 3,
-    name: { id: "Apotek & E-Store", en: "Pharmacy & E-Store" },
-    description: {
-      id: "Produk perawatan resmi yang diresepkan dokter kami, bisa dikirim ke rumah.",
-      en: "Doctor-prescribed skincare, delivered to your door.",
-    },
-    logo_url: null,
-    external_url: null,
-  },
-]
-
 const TESTIMONIALS: CompanyTestimonial[] = [
   {
     id: 1,
@@ -485,7 +451,6 @@ export const LANDING_CONTENT: CompanyLanding = {
   value_props: VALUE_PROPS,
   treatments: TREATMENTS,
   promos: PROMOS,
-  brands: BRANDS,
   testimonials: TESTIMONIALS,
   content_sections: CONTENT_SECTIONS,
 }

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\CompanyProfile;
 
-use App\Models\CompanyBrand;
 use App\Models\CompanyNavigationItem;
 use App\Models\CompanyProfileSetting;
 use App\Models\CompanyProfileSlide;
@@ -37,7 +36,6 @@ class CompanyProfileLandingTest extends TestCase
         CompanyValueProp::factory()->create(['tenant_id' => $this->tenant->id]);
         CompanyTreatment::factory()->create(['tenant_id' => $this->tenant->id]);
         CompanyPromo::factory()->create(['tenant_id' => $this->tenant->id]);
-        CompanyBrand::factory()->create(['tenant_id' => $this->tenant->id]);
         CompanyTestimonial::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $response = $this->getJson($this->profileUrl());
@@ -48,7 +46,6 @@ class CompanyProfileLandingTest extends TestCase
         $response->assertJsonCount(1, 'data.value_props');
         $response->assertJsonCount(1, 'data.treatments');
         $response->assertJsonCount(1, 'data.promos');
-        $response->assertJsonCount(1, 'data.brands');
         $response->assertJsonCount(1, 'data.testimonials');
     }
 
