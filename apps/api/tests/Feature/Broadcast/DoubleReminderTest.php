@@ -32,7 +32,7 @@ class DoubleReminderTest extends TestCase
     {
         $patient = Patient::factory()->create([
             'tenant_id' => $this->tenant->id,
-            'phone' => '081234567890',
+            'whatsapp' => '081234567890',
             'whatsapp_opt_in' => true,
         ]);
 
