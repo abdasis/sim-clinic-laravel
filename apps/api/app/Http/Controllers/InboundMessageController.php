@@ -113,20 +113,12 @@ class InboundMessageController extends Controller
     }
 
     /**
-     * Pesan yang tidak diproses tetap dijawab 200, tapi alasannya dicatat.
-     *
-     * Tanpa catatan ini seluruh penolakan tidak meninggalkan jejak apa pun:
-     * pasien mengirim pesan, tidak ada balasan, dan log server bersih —
-     * sehingga tidak ada cara menebak apakah sesinya salah, pesannya media,
-     * atau memang tidak pernah sampai. Level info, bukan error: sebagian besar
-     * penolakan ini memang wajar.
+     * Alasannya sudah dicatat per cabang di atas, lengkap dengan konteksnya;
+     * di sini cukup jawaban 200-nya. Gateway mengirim ulang apa pun yang tidak
+     * dibalas 200, jadi "memang tidak perlu diproses" tidak boleh jadi galat.
      */
     private function accepted(string $reason): JsonResponse
     {
-        if ($reason !== 'diterima') {
-            Log::info('Pesan WhatsApp masuk tidak diproses.', ['alasan' => $reason]);
-        }
-
         return response()->json(['data' => ['status' => $reason], 'meta' => []]);
     }
 }
