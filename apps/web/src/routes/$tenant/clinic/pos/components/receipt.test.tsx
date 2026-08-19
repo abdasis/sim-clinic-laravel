@@ -243,6 +243,36 @@ describe("Receipt", () => {
     expect(queryByText("Diskon Promo")).toBeNull()
   })
 
+  it("tidak mengulang total bayar saat metodenya cuma satu", () => {
+    const satu = renderReceipt({
+      ...base,
+      paid_amount: "810000.00",
+      outstanding_amount: "0",
+      payments: [
+        { id: 1, method: "cash", method_label: "Tunai", amount: "810000.00" },
+      ],
+    })
+
+    expect(satu.getByText("Tunai")).toBeTruthy()
+    expect(satu.queryByText("Sudah Dibayar")).toBeNull()
+
+    cleanup()
+
+    // Pembayaran bertahap justru butuh jumlahnya, karena tidak ada satu
+    // baris pun yang mewakili seluruh yang sudah masuk.
+    const bertahap = renderReceipt({
+      ...base,
+      paid_amount: "810000.00",
+      outstanding_amount: "0",
+      payments: [
+        { id: 1, method: "transfer", method_label: "Transfer", amount: "500000.00" },
+        { id: 2, method: "cash", method_label: "Tunai", amount: "310000.00" },
+      ],
+    })
+
+    expect(bertahap.getByText("Sudah Dibayar")).toBeTruthy()
+  })
+
   it("menyembunyikan sisa bayar ketika tagihan sudah lunas", () => {
     const { queryByText } = renderReceipt({
       ...base,

@@ -317,10 +317,14 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
               value={formatAmount(Number(payment.amount))}
             />
           ))}
-          <AmountRow
-            label={t("invoice.paid_amount")}
-            value={formatAmount(paid)}
-          />
+          {/* Dengan satu metode bayar, "Sudah Dibayar" cuma mengulang baris
+              di atasnya. Yang perlu dijumlahkan hanya pembayaran bertahap. */}
+          {data.payments.length > 1 ? (
+            <AmountRow
+              label={t("invoice.paid_amount")}
+              value={formatAmount(paid)}
+            />
+          ) : null}
           {/* Kembalian hanya muncul kalau memang ada uang yang dikembalikan;
               baris "Kembali 0" cuma menambah keraguan di meja kasir. */}
           {change > 0 ? (
