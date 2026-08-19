@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\PaymentMethod;
 use App\Models\Expense;
+use App\Models\Payment;
 use App\Models\Transaction;
 use App\Support\CommissionCalculator;
 use Carbon\Carbon;
@@ -119,18 +120,25 @@ class ReportService
         $start = Carbon::parse($from)->startOfDay();
         $end = Carbon::parse($to)->endOfDay();
 
+        $commission = (new CommissionCalculator($from, $to))->run();
+        $feePerTransaction = $commission['by_transaction'];
+
         $transactions = Transaction::query()
             ->where('tenant_id', $tenantId)
             ->where('payment_status', 'paid')
             ->whereNull('cancelled_at')
             ->whereBetween('issued_at', [$start, $end])
-            ->with(['items', 'patient', 'performers'])
+            ->with(['items', 'patient', 'performers', 'payments'])
             ->orderBy('issued_at')
             ->get();
 
-        $rows = $transactions->map(function (Transaction $transaction) {
+        $rows = $transactions->map(function (Transaction $transaction) use ($feePerTransaction) {
             $services = $transaction->items->whereNotNull('service_id');
             $products = $transaction->items->whereNotNull('product_id');
+            $total = (float) $transaction->subtotal;
+            // Fee baris ini sudah dihitung per nota oleh CommissionCalculator;
+            // laporan klinik menampilkannya bersebelahan dengan totalnya.
+            $fee = (float) ($feePerTransaction[$transaction->id] ?? 0);
 
             return [
                 'issued_at' => $transaction->issued_at?->toDateString(),
@@ -139,11 +147,19 @@ class ReportService
                 'therapist_name' => $transaction->performers->pluck('name')->implode(', ') ?: null,
                 'patient_name' => $transaction->patient?->name,
                 'invoice_number' => $transaction->invoice_number,
+                // Klinik menulis cara bayarnya di sebelah nama pasien; di sini
+                // dipisah jadi kolom sendiri supaya bisa disaring dan dijumlah.
+                'payment_label' => $transaction->payments
+                    ->map(fn (Payment $payment) => $payment->method->label())
+                    ->unique()
+                    ->implode(', ') ?: null,
                 'services' => $services->pluck('name')->implode(', '),
                 'products' => $products->pluck('name')->implode(', '),
                 'treatment_amount' => (float) $services->sum('subtotal'),
                 'product_amount' => (float) $products->sum('subtotal'),
-                'total' => (float) $transaction->subtotal,
+                'total' => $total,
+                'fee_amount' => $fee,
+                'net_amount' => $total - $fee,
             ];
         })->values()->all();
 
@@ -184,8 +200,6 @@ class ReportService
             'total' => (float) $row->total,
         ])->sortByDesc('total')->values()->all();
 
-        $commission = (new CommissionCalculator($from, $to))->run();
-
         $revenueTotal = (float) collect($rows)->sum('total');
         $expenseTotal = (float) $expenseRows->sum('total');
 
@@ -197,6 +211,17 @@ class ReportService
                 'treatment' => (float) collect($rows)->sum('treatment_amount'),
                 'product' => (float) collect($rows)->sum('product_amount'),
                 'revenue' => $revenueTotal,
+                'fee' => (float) collect($rows)->sum('fee_amount'),
+                'net' => (float) collect($rows)->sum('net_amount'),
+            ],
+            // Angka pembuka laporan: berapa kali datang, berapa orang, berapa
+            // yang baru pertama kali. Selama ini hanya bisa dihitung manual
+            // dengan menyisir barisnya satu per satu.
+            'summary' => [
+                'visits' => count($rows),
+                'patients' => collect($rows)->pluck('patient_name')->filter()->unique()->count(),
+                'new_patients' => (int) collect($commission['rows'])->sum('new_patients'),
+                'average_ticket' => count($rows) > 0 ? $revenueTotal / count($rows) : 0.0,
             ],
             'payments' => $payments,
             'expenses' => [
