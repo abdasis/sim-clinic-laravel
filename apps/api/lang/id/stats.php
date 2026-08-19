@@ -29,9 +29,17 @@ return [
         'bookings_new' => 'Booking dibuat per hari',
         'staff_new' => 'Staff bergabung per hari',
         'tenants_new' => 'Klinik baru per minggu',
+        'activity_logs_daily' => 'Aktivitas tercatat per hari',
     ],
 
     // KPI per modul
+    'activity_logs' => [
+        'total' => 'Aktivitas tercatat',
+        'today' => 'Aktivitas hari ini',
+        'actors' => 'Pelaku aktif',
+        'modules' => 'Modul tersentuh',
+    ],
+
     'patients' => [
         'total' => 'Total pasien',
         'new_7d' => 'Pasien baru 7 hari',

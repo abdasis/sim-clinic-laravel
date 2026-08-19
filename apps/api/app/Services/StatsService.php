@@ -53,6 +53,7 @@ class StatsService
                 StatsModule::Transactions => $this->transactions($tenantId, $from, $to),
                 StatsModule::Bookings => $this->bookings($tenantId, $from, $to),
                 StatsModule::Staff => $this->staff($tenantId, $from, $to),
+                StatsModule::ActivityLogs => $this->activityLogs($tenantId, $from, $to),
             };
         } catch (Throwable $e) {
             Log::error('stats aggregation', [
@@ -231,6 +232,31 @@ class StatsService
                 $this->kpi('roles_filled', 'staff.roles_filled', $base()->whereNotNull('clinic_role')->distinct()->count('clinic_role')),
             ],
             trendMetric: 'staff_new',
+            trend: $this->dailyTrend($base(), 'created_at', 'COUNT(*)', $from, $to),
+        );
+    }
+
+    /**
+     * Log aktivitas: seberapa ramai kliniknya dan siapa yang menggerakkan.
+     *
+     * Tenant-nya ada di properties->tenant_id, bukan kolom — penyaringnya
+     * memakai JSON where supaya tetap satu bentuk di SQLite dan PostgreSQL.
+     *
+     * @return array<string, mixed>
+     */
+    private function activityLogs(int $tenantId, Carbon $from, Carbon $to): array
+    {
+        $base = fn () => DB::table('audit_logs')->where('properties->tenant_id', $tenantId);
+        $inRange = fn () => $base()->whereBetween('created_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()]);
+
+        return $this->payload(
+            kpis: [
+                $this->kpi('total', 'activity_logs.total', $inRange()->count()),
+                $this->kpi('today', 'activity_logs.today', $base()->where('created_at', '>=', $to->copy()->startOfDay())->count()),
+                $this->kpi('actors', 'activity_logs.actors', $inRange()->whereNotNull('causer_id')->distinct()->count('causer_id')),
+                $this->kpi('modules', 'activity_logs.modules', $inRange()->whereNotNull('log_name')->distinct()->count('log_name')),
+            ],
+            trendMetric: 'activity_logs_daily',
             trend: $this->dailyTrend($base(), 'created_at', 'COUNT(*)', $from, $to),
         );
     }

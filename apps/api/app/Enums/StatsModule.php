@@ -18,6 +18,7 @@ enum StatsModule: string
     case Transactions = 'transactions';
     case Bookings = 'bookings';
     case Staff = 'staff';
+    case ActivityLogs = 'activity-logs';
 
     /**
      * Permission spatie yang harus dimiliki untuk membaca statistik modul ini.
@@ -34,6 +35,7 @@ enum StatsModule: string
             self::Transactions => 'transaction.view',
             self::Bookings => 'booking.view',
             self::Staff => 'staff.view',
+            self::ActivityLogs => 'activity_log.view',
         };
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Promo;
 
+use App\Actions\LogAuditAction;
 use App\Models\Product;
 use App\Models\Promo;
 use App\Models\Service;
@@ -24,6 +25,8 @@ class SyncPromoTargetsAction
      */
     public function handle(Promo $promo, array $targets): void
     {
+        $before = $this->currentTargets($promo);
+
         $promo->items()->delete();
 
         $seen = [];
@@ -51,5 +54,36 @@ class SyncPromoTargetsAction
                 'promotable_id' => $id,
             ]);
         }
+
+        $after = $this->currentTargets($promo->refresh());
+
+        // Ditulis ulang penuh, jadi log hanya berguna kalau isinya benar-benar
+        // berubah — menyimpan daftar yang sama persis cuma menambah derau.
+        if ($before === $after) {
+            return;
+        }
+
+        app(LogAuditAction::class)->handle(
+            'promo.targets_synced',
+            $promo,
+            auth()->user(),
+            ['old' => ['targets' => $before], 'new' => ['targets' => $after]],
+            'Memperbarui sasaran promo '.$promo->name.' menjadi '.count($after).' item.',
+        );
+    }
+
+    /**
+     * @return array<int, string> daftar "type:id" yang sudah diurutkan
+     */
+    private function currentTargets(Promo $promo): array
+    {
+        $targets = $promo->items()
+            ->get(['promotable_type', 'promotable_id'])
+            ->map(fn ($item) => $item->promotable_type.':'.$item->promotable_id)
+            ->all();
+
+        sort($targets);
+
+        return $targets;
     }
 }

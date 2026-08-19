@@ -138,6 +138,14 @@ export function CategoryActionsCell({
             <Trash2 className="size-4" />
             {t("service.delete")}
           </DropdownMenuItem>
+          {/* Item yang dimatikan tidak bisa memicu tooltip, jadi alasannya
+              ditulis langsung di bawahnya — tanpa ini "Hapus" yang abu-abu
+              terbaca seperti fitur yang rusak. */}
+          {isUsed ? (
+            <p className="px-2 pt-1 pb-1.5 text-xs leading-snug text-muted-foreground">
+              {t("category.used_by").replace(":count", String(usageCount))}
+            </p>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
 

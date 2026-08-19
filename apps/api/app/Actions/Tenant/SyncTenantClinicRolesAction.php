@@ -2,6 +2,7 @@
 
 namespace App\Actions\Tenant;
 
+use App\Actions\LogAuditAction;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -34,6 +35,8 @@ class SyncTenantClinicRolesAction
             'transaction' => 'rw', 'invoice' => 'rw', 'report' => 'rw',
             'content' => 'rw', 'promo' => 'rw', 'expense' => 'rw', 'broadcast' => 'rw',
             'category' => 'rw',
+            // Log hanya dibaca — barisnya ditulis sistem, tidak pernah dari layar.
+            'activity_log' => 'r',
         ],
         'doctor' => [
             'patient' => 'rw', 'booking' => 'rw', 'medical_record' => 'rw', 'service' => 'r',
@@ -71,6 +74,17 @@ class SyncTenantClinicRolesAction
 
         $registrar->setPermissionsTeamId($previous);
         $registrar->forgetCachedPermissions();
+
+        app(LogAuditAction::class)->handle(
+            'role.roles_synced',
+            null,
+            auth()->user(),
+            [
+                'tenant_id' => $tenantId,
+                'new' => ['roles' => array_keys(self::MATRIX)],
+            ],
+            'Menyiapkan peran klinik bawaan ('.implode(', ', array_keys(self::MATRIX)).') beserta izinnya.',
+        );
     }
 
     /**
@@ -93,6 +107,17 @@ class SyncTenantClinicRolesAction
 
         $registrar->setPermissionsTeamId($previous);
         $registrar->forgetCachedPermissions();
+
+        app(LogAuditAction::class)->handle(
+            'role.roles_synced',
+            null,
+            auth()->user(),
+            [
+                'tenant_id' => $tenantId,
+                'new' => ['roles' => array_keys(self::MATRIX)],
+            ],
+            'Menyiapkan peran klinik bawaan ('.implode(', ', array_keys(self::MATRIX)).') beserta izinnya.',
+        );
     }
 
     /**

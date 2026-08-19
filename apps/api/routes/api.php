@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BroadcastAutoReminderController;
@@ -210,6 +211,11 @@ Route::prefix('{tenant}/clinic')
 
         // Dasbor klinik — dibaca semua peran, tanpa permission modul
         Route::get('dashboard/summary', [DashboardController::class, 'summary']);
+
+        // Log aktivitas — baca saja, semua modul dalam satu daftar
+        Route::get('activity-logs/filters', [ActivityLogController::class, 'filters']);
+        Route::get('activity-logs', [ActivityLogController::class, 'index']);
+        Route::get('activity-logs/{activity}', [ActivityLogController::class, 'show'])->whereNumber('activity');
 
         // Statistik kepala halaman index — satu endpoint, modul dari segmen URL
         Route::get('stats/{module}', [StatsController::class, 'show']);

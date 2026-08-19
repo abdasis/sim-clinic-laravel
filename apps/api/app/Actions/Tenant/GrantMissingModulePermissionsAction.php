@@ -2,6 +2,7 @@
 
 namespace App\Actions\Tenant;
 
+use App\Actions\LogAuditAction;
 use App\Models\Tenant;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -53,6 +54,17 @@ class GrantMissingModulePermissionsAction
 
         $registrar->setPermissionsTeamId($previous);
         $registrar->forgetCachedPermissions();
+
+        // Klinik yang izinnya sudah lengkap tidak perlu meninggalkan jejak.
+        if ($added !== []) {
+            app(LogAuditAction::class)->handle(
+                'role.permissions_granted',
+                null,
+                auth()->user(),
+                ['tenant_id' => $tenantId, 'new' => ['added_per_role' => $added]],
+                'Melengkapi izin modul yang tertinggal untuk peran: '.implode(', ', array_keys($added)).'.',
+            );
+        }
 
         return $added;
     }

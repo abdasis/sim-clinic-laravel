@@ -14,6 +14,7 @@ import {
   MoneyBag02Icon,
   Calendar01Icon,
   CashierIcon,
+  ClockIcon,
   DashboardSquare01Icon,
   File02Icon,
   Globe02Icon,
@@ -129,6 +130,7 @@ function ClinicLayout() {
     { key: "broadcasts", label: t("broadcast.title"), permission: "broadcast.view", roles: ["admin"], icon: BubbleChatIcon },
     { key: "company-profile", label: t("company_profile.title"), permission: "content.view", roles: ["admin"], icon: Globe02Icon },
     { key: "reports", label: t("report.title"), permission: "report.view", roles: ["admin"], icon: BarChartIcon },
+    { key: "activity-logs", label: t("activity_log.title"), permission: "activity_log.view", roles: ["admin"], icon: ClockIcon },
   ]
 
   // Menu mengikuti izin sungguhan, bukan peran yang di-hardcode. Sebelumnya

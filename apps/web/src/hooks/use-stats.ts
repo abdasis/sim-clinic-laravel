@@ -12,6 +12,7 @@ export type StatsModule =
   | "transactions"
   | "bookings"
   | "staff"
+  | "activity-logs"
 
 /** Satuan nilai KPI — menentukan cara angkanya diformat di kartu. */
 export type StatUnit = "count" | "currency" | "qty"

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Tenant;
 
+use App\Actions\LogAuditAction;
 use App\Enums\CommissionRuleType;
 use App\Models\CommissionRule;
 
@@ -45,8 +46,20 @@ class SeedDefaultCommissionRulesAction
             return;
         }
 
+        $created = [];
+
         foreach (self::defaults() as $rule) {
-            CommissionRule::withoutGlobalScopes()->create($rule + ['tenant_id' => $tenantId]);
+            $created[] = CommissionRule::withoutGlobalScopes()
+                ->create($rule + ['tenant_id' => $tenantId])
+                ->getAttributes();
         }
+
+        app(LogAuditAction::class)->handle(
+            'commission_rule.defaults_seeded',
+            null,
+            auth()->user(),
+            ['tenant_id' => $tenantId, 'new' => ['rules' => $created]],
+            'Memasang '.count($created).' aturan fee bawaan untuk klinik baru.',
+        );
     }
 }
