@@ -20,6 +20,27 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  */
 trait HasCategory
 {
+    /**
+     * Lepas kategori saat itemnya benar-benar dihapus.
+     *
+     * Pivotnya polimorfik, jadi tidak ada foreign key yang membereskannya
+     * sendiri: baris pivot bertahan setelah produk atau layanannya hilang,
+     * dan kolom "Dipakai" di halaman Kategori terus menghitung barang yang
+     * sudah tidak ada. Model yang memakai soft delete hanya dilepas saat
+     * dihapus permanen — yang masih bisa dipulihkan tidak boleh kehilangan
+     * kategorinya.
+     */
+    public static function bootHasCategory(): void
+    {
+        static::deleting(function (self $model): void {
+            if (method_exists($model, 'isForceDeleting') && ! $model->isForceDeleting()) {
+                return;
+            }
+
+            $model->categories()->detach();
+        });
+    }
+
     public function categories(): MorphToMany
     {
         return $this->morphToMany(Category::class, 'categorizable');
