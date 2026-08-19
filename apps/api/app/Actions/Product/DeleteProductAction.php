@@ -23,6 +23,10 @@ use Throwable;
  * merupakan bukti transaksi milik pasien. Foreign key-nya memakai RESTRICT di
  * PostgreSQL, jadi tanpa dibereskan lebih dulu penghapusannya berakhir sebagai
  * galat 500, bukan penolakan yang bisa dibaca.
+ *
+ * Baris nota dari transaksi yang sudah dihapus ikut dibuang dengan alasan yang
+ * sama: notanya tidak muncul di mana pun lagi, tapi barisnya masih menahan
+ * lewat foreign key yang sama.
  */
 class DeleteProductAction
 {
@@ -37,6 +41,7 @@ class DeleteProductAction
 
         try {
             DB::transaction(function () use ($product): void {
+                CatalogReferences::clearStaleProduct($product->id);
                 $product->stockMovements()->delete();
                 $product->delete();
             });

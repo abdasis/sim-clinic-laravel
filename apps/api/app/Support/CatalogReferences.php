@@ -16,10 +16,15 @@ use Illuminate\Support\Facades\DB;
  * karena "sudah pernah terjual" saja masih menyisakan pertanyaan "terjual di
  * nota yang mana?".
  *
- * Mutasi stok sengaja tidak dihitung: foreign key-nya cascade, jadi riwayat
- * mutasi memang ikut hilang bersama produknya. Kalau ikut dihitung, tidak ada
- * satu pun produk yang pernah bisa dihapus — stok awalnya saja sudah
- * meninggalkan satu mutasi.
+ * Jejak yang induknya sudah dihapus tidak dihitung. Baris nota tidak ikut
+ * hilang saat notanya dihapus, begitu pula catatan tindakan saat rekam
+ * medisnya dihapus — kalau tetap dihitung, entri yang pernah terjual sekali
+ * tidak akan pernah bisa dihapus meski seluruh notanya sudah dibuang.
+ *
+ * Mutasi stok sengaja tidak dihitung: kalau ikut dihitung, tidak ada satu pun
+ * produk yang pernah bisa dihapus — stok awalnya saja sudah meninggalkan satu
+ * mutasi. Foreign key-nya restrict, jadi kartu stoknya dibuang sendiri oleh
+ * DeleteProductAction saat produknya dihapus.
  */
 class CatalogReferences
 {
@@ -42,12 +47,17 @@ class CatalogReferences
      * Nota yang memuat entri ini. Nomor notanya disebut supaya admin tahu
      * persis nota mana yang harus dibereskan lebih dulu bila memang data
      * percobaan.
+     *
+     * Nota yang sudah dihapus tidak dihitung: barisnya tidak muncul di mana
+     * pun lagi, jadi menahan katalog atas namanya berarti menyebut nota yang
+     * tidak bisa dibereskan admin.
      */
     private static function transactionHit(string $column, int $id): ?string
     {
         $invoice = DB::table('transaction_items')
             ->join('transactions', 'transactions.id', '=', 'transaction_items.transaction_id')
             ->where('transaction_items.'.$column, $id)
+            ->whereNull('transactions.deleted_at')
             ->orderBy('transactions.issued_at')
             ->value('transactions.invoice_number');
 
@@ -68,12 +78,15 @@ class CatalogReferences
             : __('catalog.referenced_by_booking', ['ref' => self::asDate($startAt)]);
     }
 
+    /** Rekam medis yang sudah dihapus tidak lagi menahan, alasan yang sama. */
     private static function treatmentHit(int $serviceId): ?string
     {
         $recordedAt = DB::table('treatment_records')
-            ->where('service_id', $serviceId)
-            ->orderBy('created_at')
-            ->value('created_at');
+            ->join('medical_records', 'medical_records.id', '=', 'treatment_records.medical_record_id')
+            ->where('treatment_records.service_id', $serviceId)
+            ->whereNull('medical_records.deleted_at')
+            ->orderBy('treatment_records.created_at')
+            ->value('treatment_records.created_at');
 
         return $recordedAt === null
             ? null
@@ -97,6 +110,42 @@ class CatalogReferences
         return $name === null
             ? null
             : __('catalog.referenced_by_promo', ['ref' => $name]);
+    }
+
+    /**
+     * Buang baris jejak yang induknya sudah dihapus.
+     *
+     * Memeriksanya saja tidak cukup: foreign key-nya restrict, jadi barisnya
+     * harus benar-benar hilang sebelum entri katalognya bisa dihapus. Yang
+     * dibuang hanya milik induk yang memang sudah dibuang, jadi tidak ada
+     * riwayat hidup yang ikut terpotong.
+     *
+     * @return int jumlah baris yang dibuang
+     */
+    public static function clearStaleService(int $serviceId): int
+    {
+        return self::clearStaleItems('service_id', $serviceId)
+            + DB::table('treatment_records')
+                ->where('service_id', $serviceId)
+                ->whereNotExists(fn ($inner) => $inner->from('medical_records')
+                    ->whereColumn('medical_records.id', 'treatment_records.medical_record_id')
+                    ->whereNull('medical_records.deleted_at'))
+                ->delete();
+    }
+
+    public static function clearStaleProduct(int $productId): int
+    {
+        return self::clearStaleItems('product_id', $productId);
+    }
+
+    private static function clearStaleItems(string $column, int $id): int
+    {
+        return DB::table('transaction_items')
+            ->where($column, $id)
+            ->whereNotExists(fn ($inner) => $inner->from('transactions')
+                ->whereColumn('transactions.id', 'transaction_items.transaction_id')
+                ->whereNull('transactions.deleted_at'))
+            ->delete();
     }
 
     private static function asDate(mixed $value): string
