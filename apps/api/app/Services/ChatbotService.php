@@ -9,6 +9,7 @@ use App\Models\ChatMessage;
 use App\Models\Patient;
 use App\Support\ChatTools;
 use App\Support\DeepSeekClient;
+use App\Support\WhatsAppText;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -63,6 +64,11 @@ class ChatbotService
         $answer = $this->converse($setting, $senderPhone, $incoming, $patient);
 
         if ($answer !== null) {
+            // Dirapikan sebelum disimpan, bukan sebelum dikirim saja: yang
+            // tercatat harus persis teks yang dibaca pasien, kalau tidak
+            // penelusuran keluhan berujung pada teks yang tidak pernah ada.
+            $answer = WhatsAppText::normalize($answer);
+
             $this->messages->handle($senderPhone, 'out', $answer, 'assistant');
         }
 
