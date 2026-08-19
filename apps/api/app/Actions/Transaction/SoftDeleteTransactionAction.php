@@ -15,6 +15,8 @@ class SoftDeleteTransactionAction
 {
     public function handle(Transaction $transaction): Transaction
     {
+        $this->guardUncancelled($transaction);
+
         try {
             $transaction->delete();
         } catch (Throwable $e) {
@@ -40,5 +42,35 @@ class SoftDeleteTransactionAction
         );
 
         return $transaction;
+    }
+
+    /**
+     * Transaksi yang belum dibatalkan tidak boleh langsung dihapus bila sudah
+     * meninggalkan jejak.
+     *
+     * Menghapus menyembunyikan barisnya dari seluruh kueri, termasuk laporan.
+     * Untuk transaksi yang sudah dibayar, pemasukannya lenyap dari laporan
+     * tanpa ada yang mencatat ke mana. Untuk transaksi berisi produk, stoknya
+     * tetap terpotong padahal penjualannya sudah tidak ada — dan hanya
+     * pembatalan yang mengembalikannya.
+     *
+     * Membatalkan lebih dulu menyelesaikan keduanya, jadi itu yang diminta.
+     */
+    private function guardUncancelled(Transaction $transaction): void
+    {
+        if ($transaction->cancelled_at !== null) {
+            return;
+        }
+
+        $hasPayment = (float) $transaction->paid_amount > 0
+            || $transaction->payments()->exists();
+
+        $hasStockImpact = $transaction->items()->whereNotNull('product_id')->exists();
+
+        abort_if(
+            $hasPayment || $hasStockImpact,
+            422,
+            __('pos.delete_requires_cancel'),
+        );
     }
 }

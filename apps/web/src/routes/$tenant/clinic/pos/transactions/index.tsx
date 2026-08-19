@@ -1,7 +1,5 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
-import { useMemo, useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
+import { useMemo } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
@@ -14,21 +12,11 @@ import {
   PAYMENT_STATUS_VARIANTS,
   StatusBadge,
 } from "#/components/ui/status-badge.tsx"
+import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "#/components/ui/alert-dialog.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { apiGet, apiPost } from "#/lib/api.ts"
-import type { ApiError } from "#/lib/api.ts"
+import { apiGet } from "#/lib/api.ts"
+import { TransactionActionsCell } from "./components/transaction-actions-cell.tsx"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { formatCurrency } from "#/lib/format.ts"
 
@@ -48,49 +36,7 @@ interface TransactionRow {
   outstanding_amount: number
   payment_status: string
   payment_status_label: string
-}
-
-function CancelAction({ tenant, id }: { tenant: string; id: number }) {
-  const { t } = useTrans()
-  const qc = useQueryClient()
-  const [open, setOpen] = useState(false)
-  const mutation = useMutation({
-    mutationFn: () => apiPost(`/${tenant}/clinic/transactions/${id}/cancel`),
-    onSuccess: () => {
-      toast.success(t("pos.cancelled"))
-      qc.invalidateQueries({ queryKey: ["transactions"] })
-      setOpen(false)
-    },
-    onError: (err: ApiError) => toast.error(err.message),
-  })
-
-  return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="text-destructive">
-          {t("general.cancel")}
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t("general.confirm")}</AlertDialogTitle>
-          <AlertDialogDescription>{t("pos.transactions")}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{t("general.no")}</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            onClick={(e) => {
-              e.preventDefault()
-              mutation.mutate()
-            }}
-          >
-            {t("general.yes")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
+  cancelled_at: string | null
 }
 
 function TransactionsPage() {
@@ -99,7 +45,22 @@ function TransactionsPage() {
 
   const columns = useMemo<ColumnDef<TransactionRow>[]>(
     () => [
-      { accessorKey: "invoice_number", header: t("invoice.invoice_number") },
+      {
+        accessorKey: "invoice_number",
+        header: t("invoice.invoice_number"),
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <span className="tabular-nums">{row.original.invoice_number}</span>
+            {/* Transaksi yang dibatalkan tetap terlihat di daftar; tanpa
+                penanda, barisnya tampak sama dengan yang masih berlaku. */}
+            {row.original.cancelled_at ? (
+              <Badge variant="outline" className="font-normal text-destructive">
+                {t("pos.cancelled_badge")}
+              </Badge>
+            ) : null}
+          </div>
+        ),
+      },
       {
         accessorKey: "patient_name",
         header: t("pos.patient"),
@@ -144,18 +105,10 @@ function TransactionsPage() {
       },
       {
         id: "actions",
-        header: t("general.actions"),
+        header: "",
         cell: ({ row }) => (
-          <div className="flex items-center gap-1">
-            <Button asChild size="sm" variant="ghost">
-              <Link
-                to="/$tenant/clinic/pos/invoices/$id"
-                params={{ tenant, id: String(row.original.id) }}
-              >
-                {t("invoice.title")}
-              </Link>
-            </Button>
-            <CancelAction tenant={tenant} id={row.original.id} />
+          <div className="flex justify-end">
+            <TransactionActionsCell tenant={tenant} transaction={row.original} />
           </div>
         ),
       },
