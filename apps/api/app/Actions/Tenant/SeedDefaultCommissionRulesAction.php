@@ -18,7 +18,7 @@ class SeedDefaultCommissionRulesAction
         ['name' => 'Fee pasien', 'type' => CommissionRuleType::PerPatient, 'amount' => 5000],
         ['name' => 'Bonus pasien baru', 'type' => CommissionRuleType::PerNewPatient, 'amount' => 5000],
         ['name' => 'Target penjualan', 'type' => CommissionRuleType::RevenuePercent, 'percent' => 5, 'min_revenue' => 0],
-        ['name' => 'Omzet 10 juta ke atas', 'type' => CommissionRuleType::RevenuePercent, 'percent' => 6, 'min_revenue' => 10_000_000],
+        ['name' => 'Penjualan 10 juta ke atas', 'type' => CommissionRuleType::RevenuePercent, 'percent' => 6, 'min_revenue' => 10_000_000],
     ];
 
     public function handle(int $tenantId): void
