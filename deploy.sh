@@ -36,6 +36,9 @@ $COMPOSE build web || ERRORS+="build Web gagal; "
 echo "🔨 Building Nginx..."
 $COMPOSE build nginx || ERRORS+="build Nginx gagal; "
 
+echo "🔨 Building Worker (queue)..."
+$COMPOSE build worker || ERRORS+="build Worker gagal; "
+
 echo "🚀 Restarting containers..."
 $COMPOSE up -d || ERRORS+="restart container gagal; "
 
