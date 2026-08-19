@@ -7,6 +7,7 @@ use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\BroadcastReminderSetting;
 use App\Models\Category;
+use App\Models\ChatbotSetting;
 use App\Models\CommissionRule;
 use App\Models\CommissionSetting;
 use App\Models\CompanyBrand;
@@ -39,6 +40,7 @@ use App\Models\TreatmentRecord;
 use App\Models\User;
 use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
+use App\Support\DeepSeekClient;
 use App\Support\WahaClient;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
@@ -82,6 +84,7 @@ class AppServiceProvider extends ServiceProvider
         'medical_record' => MedicalRecord::class,
         'treatment_record' => TreatmentRecord::class,
         'medical_photo' => MedicalPhoto::class,
+        'chatbot_setting' => ChatbotSetting::class,
         'company_profile_setting' => CompanyProfileSetting::class,
         'company_navigation_item' => CompanyNavigationItem::class,
         'company_profile_slide' => CompanyProfileSlide::class,
@@ -115,6 +118,22 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return new WahaClient($server->base_url, $server->api_key, $tenant->session);
+        });
+
+        // Sama seperti WahaClient: belum disetel bukan galat, cuma "belum bisa
+        // dipakai". Yang memanggil memutuskan sendiri apa artinya.
+        $this->app->bind(DeepSeekClient::class, function (): ?DeepSeekClient {
+            $key = config('services.deepseek.api_key');
+
+            if (blank($key)) {
+                return null;
+            }
+
+            return new DeepSeekClient(
+                (string) config('services.deepseek.base_url'),
+                (string) $key,
+                (string) config('services.deepseek.model'),
+            );
         });
     }
 

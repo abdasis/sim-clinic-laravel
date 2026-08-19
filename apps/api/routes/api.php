@@ -9,12 +9,14 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CentralAuthController;
 use App\Http\Controllers\CentralStatsController;
 use App\Http\Controllers\CentralWahaSettingController;
+use App\Http\Controllers\ChatbotSettingController;
 use App\Http\Controllers\ClinicIdentityController;
 use App\Http\Controllers\CommissionRuleController;
 use App\Http\Controllers\CompanyContentController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\InboundMessageController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MedicalRecordController;
@@ -47,6 +49,11 @@ Route::post('/register', [TenantRegistrationController::class, 'store']);
 Route::post('/central/login', [CentralAuthController::class, 'login']);
 Route::get('/invitations/{token}', [InvitationController::class, 'show']);
 Route::post('/invitations/{token}/accept', [InvitationController::class, 'accept']);
+
+// Pesan masuk WhatsApp. Di luar grup {tenant} karena gateway tidak mengenal
+// slug klinik; kliniknya ditentukan dari nama sesi pada payload, dan token
+// ruas URL yang memisahkan panggilan sah dari panggilan sembarangan.
+Route::post('/whatsapp/webhook/{token}', [InboundMessageController::class, 'store']);
 
 Route::get('/user', fn (Request $request) => $request->user())->middleware('auth:sanctum');
 
@@ -224,6 +231,11 @@ Route::prefix('{tenant}/clinic')
 
         // Statistik kepala halaman index — satu endpoint, modul dari segmen URL
         Route::get('stats/{module}', [StatsController::class, 'show']);
+
+        // Chatbot WhatsApp — setelan agen dan layanan yang boleh dibooking
+        Route::get('chatbot/settings', [ChatbotSettingController::class, 'show']);
+        Route::put('chatbot/settings', [ChatbotSettingController::class, 'update']);
+        Route::post('chatbot/settings/avatar', [ChatbotSettingController::class, 'avatar']);
 
         // US8 Reports
         Route::get('reports/monthly', [ReportController::class, 'monthly']);

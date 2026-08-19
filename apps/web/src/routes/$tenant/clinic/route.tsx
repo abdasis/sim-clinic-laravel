@@ -9,6 +9,7 @@ import {
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   BarChartIcon,
+  AiChat01Icon,
   BubbleChatIcon,
   DiscountTag01Icon,
   MoneyBag02Icon,
@@ -144,6 +145,7 @@ function ClinicLayout() {
     { key: "expenses", label: t("expense.title"), permission: "expense.view", roles: ["admin"], icon: MoneyBag02Icon, group: "finance" },
     // Komunikasi & Pengaturan.
     { key: "broadcasts", label: t("broadcast.title"), permission: "broadcast.view", roles: ["admin"], icon: BubbleChatIcon, group: "system" },
+    { key: "chatbot/settings", label: t("chatbot.title"), permission: "content.view", roles: ["admin"], icon: AiChat01Icon, group: "system" },
     { key: "company-profile", label: t("company_profile.title"), permission: "content.view", roles: ["admin"], icon: Globe02Icon, group: "system" },
     // Laporan & Log.
     { key: "reports", label: t("report.title"), permission: "report.view", roles: ["admin"], icon: BarChartIcon, group: "insights" },

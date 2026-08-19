@@ -2,6 +2,7 @@
 
 return [
     'save' => 'Simpan',
+    'upload' => 'Unggah',
     'cancel' => 'Batal',
     'create' => 'Tambah',
     'edit' => 'Ubah',

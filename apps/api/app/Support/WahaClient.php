@@ -13,7 +13,8 @@ use RuntimeException;
  * klinik); nama sesinya milik tiap klinik. Ketiganya diserahkan saat
  * pembuatan, jadi klien ini tidak perlu tahu soal tenant maupun database.
  *
- * Hanya arah keluar: kirim pesan dan urus sesinya. Tidak ada webhook masuk.
+ * Kirim pesan, urus sesinya, dan daftarkan alamat webhook untuk pesan masuk.
+ * Yang menerima pesan masuknya sendiri route webhook, bukan kelas ini.
  */
 class WahaClient
 {
@@ -91,6 +92,28 @@ class WahaClient
                 'logout' => true,
             ])
             ->throw();
+    }
+
+    /**
+     * Daftarkan alamat webhook pesan masuk pada sesi ini.
+     *
+     * WAHA menyimpan webhook sebagai bagian dari config sesi, jadi ini menimpa
+     * seluruh daftarnya — bukan menambah. Itu memang yang dikehendaki: satu
+     * sesi milik satu klinik, dan satu klinik hanya punya satu alamat webhook.
+     */
+    public function setWebhook(string $url): void
+    {
+        $response = $this->request()->put($this->url('/api/sessions/'.$this->session), [
+            'config' => [
+                'webhooks' => [
+                    ['url' => $url, 'events' => ['message']],
+                ],
+            ],
+        ]);
+
+        if (! $response->successful()) {
+            throw new RuntimeException('WAHA menolak pendaftaran webhook: HTTP '.$response->status());
+        }
     }
 
     private function request(): PendingRequest
