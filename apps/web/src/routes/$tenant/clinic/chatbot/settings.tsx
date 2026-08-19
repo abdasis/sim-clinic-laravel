@@ -21,7 +21,9 @@ import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPut, apiUpload } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
+import { useClinicIdentity } from "#/hooks/use-clinic-identity.ts"
 import { BookableServicesField } from "./components/bookable-services-field.tsx"
+import { ClosingMessageField } from "./components/closing-message-field.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/chatbot/settings")({
   component: ChatbotSettingsPage,
@@ -33,6 +35,8 @@ interface ChatbotSettings {
   agent_name: string | null
   agent_avatar_url: string | null
   bookable_service_ids: number[]
+  closing_idle_minutes: number | null
+  closing_message: string | null
 }
 
 function Section({
@@ -64,6 +68,10 @@ function ChatbotSettingsPage() {
   const [allowSelfRegistration, setAllowSelfRegistration] = useState(false)
   const [agentName, setAgentName] = useState("")
   const [bookable, setBookable] = useState<number[]>([])
+  const [closingMinutes, setClosingMinutes] = useState<number | null>(null)
+  const [closingMessage, setClosingMessage] = useState("")
+
+  const identity = useClinicIdentity(tenant)
 
   const { data, isLoading } = useQuery({
     queryKey: ["chatbot", tenant, "settings"],
@@ -81,6 +89,8 @@ function ChatbotSettingsPage() {
     setAllowSelfRegistration(data.data.allow_self_registration)
     setAgentName(data.data.agent_name ?? "")
     setBookable(data.data.bookable_service_ids ?? [])
+    setClosingMinutes(data.data.closing_idle_minutes ?? null)
+    setClosingMessage(data.data.closing_message ?? "")
   }, [data])
 
   const save = useMutation({
@@ -90,6 +100,8 @@ function ChatbotSettingsPage() {
         allow_self_registration: allowSelfRegistration,
         agent_name: agentName.trim() || null,
         bookable_service_ids: bookable,
+        closing_idle_minutes: closingMinutes,
+        closing_message: closingMessage.trim() || null,
       }),
     onSuccess: () => {
       toast.success(t("chatbot.saved"))
@@ -247,6 +259,20 @@ function ChatbotSettingsPage() {
             <p className="text-xs text-muted-foreground">{t("chatbot.agent_name_hint")}</p>
           </div>
         </div>
+      </Section>
+
+      <Section
+        title={t("chatbot.closing_section")}
+        description={t("chatbot.closing_section_desc")}
+      >
+        <ClosingMessageField
+          minutes={closingMinutes}
+          message={closingMessage}
+          clinicName={identity.data?.name ?? tenant}
+          disabled={!isActive}
+          onMinutesChange={setClosingMinutes}
+          onMessageChange={setClosingMessage}
+        />
       </Section>
 
       <Section

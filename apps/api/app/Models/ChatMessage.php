@@ -22,7 +22,15 @@ class ChatMessage extends Model
         'direction',
         'content',
         'role',
+        'is_closing',
         'tool_name',
         'tool_call_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_closing' => 'boolean',
+        ];
+    }
 }

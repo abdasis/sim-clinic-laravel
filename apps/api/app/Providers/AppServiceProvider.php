@@ -8,6 +8,7 @@ use App\Models\BroadcastRecipient;
 use App\Models\BroadcastReminderSetting;
 use App\Models\Category;
 use App\Models\ChatbotSetting;
+use App\Models\ChatMessage;
 use App\Models\CommissionRule;
 use App\Models\CommissionSetting;
 use App\Models\CompanyContentSection;
@@ -86,6 +87,7 @@ class AppServiceProvider extends ServiceProvider
         'treatment_record' => TreatmentRecord::class,
         'medical_photo' => MedicalPhoto::class,
         'chatbot_setting' => ChatbotSetting::class,
+        'chat_message' => ChatMessage::class,
         'company_profile_setting' => CompanyProfileSetting::class,
         'company_navigation_item' => CompanyNavigationItem::class,
         'company_profile_slide' => CompanyProfileSlide::class,

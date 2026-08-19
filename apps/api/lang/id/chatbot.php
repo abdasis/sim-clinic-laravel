@@ -34,6 +34,22 @@ return [
     'tool_failed' => 'Data yang diminta sedang tidak bisa diambil.',
     'closing_offer' => 'Ada lagi yang bisa saya bantu? Tinggal chat saja ya kapan saja.',
 
+    // Penutup percakapan yang menggantung
+    'closing_section' => 'Penutup Percakapan',
+    'closing_section_desc' => 'Kalimat perpisahan yang dikirim kalau pasien berhenti membalas di tengah obrolan.',
+    'closing_toggle' => 'Tutup percakapan yang menggantung',
+    'closing_idle_minutes' => 'Tutup percakapan setelah',
+    'closing_idle_minutes_hint' => 'Dihitung sejak balasan terakhir asisten. Kosongkan untuk mematikan penutup otomatis.',
+    'closing_idle_minutes_unit' => 'menit tanpa balasan',
+    'closing_message' => 'Kalimat penutup',
+    'closing_message_hint' => 'Kosongkan untuk memakai kalimat bawaan. Pakai :name untuk nama pasien dan :clinic untuk nama klinik.',
+    'closing_preview' => 'Pratinjau',
+    'closing_disabled' => 'Percakapan yang menggantung dibiarkan terbuka.',
+    'closing_enabled' => 'Percakapan yang menggantung ditutup dengan pesan perpisahan.',
+    'idle_closing' => 'Halo :name, sepertinya sedang sibuk ya. Percakapan ini saya tutup dulu supaya tidak mengganggu. Kalau nanti ada yang ingin ditanyakan atau mau booking, tinggal chat lagi kapan saja. Terima kasih sudah menghubungi :clinic.',
+    'idle_closing_pending' => 'Halo :name, sepertinya sedang sibuk ya. Percakapan ini saya tutup dulu. Pertanyaan saya tadi belum sempat dijawab, jadi kalau nanti sempat, balas saja di chat ini dan kita lanjutkan dari sana. Terima kasih sudah menghubungi :clinic.',
+    'idle_closing_name_fallback' => 'Kak',
+
     // Penolakan booking — ditulis agar bisa langsung dibacakan ke pasien
     // Pendaftaran mandiri
     'registration_disabled' => 'Pendaftaran lewat chat sedang dinonaktifkan. Silakan hubungi klinik untuk mendaftar ya.',

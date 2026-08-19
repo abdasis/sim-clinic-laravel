@@ -20,6 +20,8 @@ class ChatbotSetting extends Model
         'tenant_id',
         'is_active',
         'allow_self_registration',
+        'closing_idle_minutes',
+        'closing_message',
         'agent_name',
         'agent_avatar_path',
         'bookable_service_ids',
@@ -30,6 +32,7 @@ class ChatbotSetting extends Model
         return [
             'is_active' => 'boolean',
             'allow_self_registration' => 'boolean',
+            'closing_idle_minutes' => 'integer',
             'bookable_service_ids' => 'array',
         ];
     }

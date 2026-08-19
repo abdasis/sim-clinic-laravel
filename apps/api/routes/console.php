@@ -15,6 +15,12 @@ Schedule::command('clinic:send-reminders')->dailyAt('08:00');
 // per-layanan supaya kiriman keduanya tidak menumpuk di menit yang sama.
 Schedule::command('clinic:send-auto-reminders')->dailyAt('08:30');
 
+// Percakapan chatbot yang menggantung ditutup tiap lima menit. Ambangnya
+// milik masing-masing klinik; yang dijadwalkan di sini hanya pemeriksaannya,
+// dan lima menit adalah resolusi terkasar yang masih terasa responsif untuk
+// ambang sependek sepuluh menit.
+Schedule::command('clinic:close-idle-chats')->everyFiveMinutes()->withoutOverlapping();
+
 // Bersihkan arsip lama lebih dulu supaya ruang sudah lega saat dump baru
 // ditulis — bukan sebaliknya, yang bisa gagal justru karena disk penuh.
 Schedule::command('backup:clean')->dailyAt('01:00');
