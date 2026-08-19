@@ -140,6 +140,10 @@ class ProductController extends Controller
      */
     public function import(ImportProductsRequest $request, ImportService $imports): JsonResponse
     {
+        // Satu berkas bisa membuat ratusan produk sekaligus, jadi izinnya
+        // diperiksa di sini juga, bukan hanya di FormRequest.
+        $this->authorize('create', Product::class);
+
         $result = $imports->importProducts($request->file('file'), $request->user());
 
         return response()->json([

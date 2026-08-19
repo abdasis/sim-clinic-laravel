@@ -68,6 +68,8 @@ class CategoryController extends Controller
 
     public function store(CategoryRequest $request, CategoryService $categories): JsonResponse
     {
+        $this->authorize('create', Category::class);
+
         $category = $categories->create($request->validated());
 
         return response()->json([

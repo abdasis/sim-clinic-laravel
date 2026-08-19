@@ -331,7 +331,7 @@ class CommissionCalculatorTest extends TestCase
 
     private function makeDoctor(): User
     {
-        return User::create([
+        return User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => 'dr. Andi',
             'email' => 'andi@klinik.test',
@@ -344,7 +344,7 @@ class CommissionCalculatorTest extends TestCase
 
     private function makeTherapist(string $name = 'Jasmin'): User
     {
-        return User::create([
+        return User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => $name,
             'email' => strtolower($name).'@klinik.test',

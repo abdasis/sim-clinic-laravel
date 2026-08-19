@@ -50,7 +50,10 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Tujuh hari. Token tanpa masa berlaku berarti satu kebocoran berlaku
+    // selamanya; seminggu cukup panjang untuk staf klinik yang membuka aplikasi
+    // tiap hari kerja, dan cukup pendek untuk membatasi kerusakannya.
+    'expiration' => (int) env('SANCTUM_EXPIRATION', 10080),
 
     /*
     |--------------------------------------------------------------------------

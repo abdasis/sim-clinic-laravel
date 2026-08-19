@@ -59,6 +59,8 @@ class UnitController extends Controller
 
     public function store(UnitRequest $request, UnitService $units): JsonResponse
     {
+        $this->authorize('create', Unit::class);
+
         $unit = $units->create($request->validated());
 
         return response()->json([

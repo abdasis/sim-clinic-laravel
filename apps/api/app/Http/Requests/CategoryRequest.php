@@ -13,7 +13,15 @@ class CategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', Category::class) ?? false;
+        // FormRequest ini dipakai store sekaligus update. Memeriksa 'create'
+        // untuk keduanya berarti peran yang hanya boleh membuat ikut lolos
+        // saat mengubah, jadi kategorinya ditentukan dari ada-tidaknya
+        // kategori yang sedang diubah pada route.
+        $category = $this->route('category');
+
+        return $category !== null
+            ? ($this->user()?->can('update', $category) ?? false)
+            : ($this->user()?->can('create', Category::class) ?? false);
     }
 
     public function rules(): array

@@ -50,13 +50,49 @@ function headers(json = true): HeadersInit {
   return h
 }
 
+/**
+ * Pesan galat yang aman ditampilkan ke pengguna.
+ *
+ * Pesan dari server dipakai apa adanya selama ia memang kalimat untuk dibaca
+ * orang — itulah yang membuat galat validasi dan penolakan izin terbaca jelas.
+ * Yang disaring adalah pesan yang jelas bukan untuk pengguna: jejak tumpukan,
+ * nama kelas berikut namespace-nya, kueri SQL, dan path berkas di server.
+ * Ketiganya bocor saat APP_DEBUG menyala di tempat yang salah, dan isinya
+ * menceritakan struktur dalam aplikasi kepada siapa pun yang memancingnya.
+ *
+ * Panjangnya juga dibatasi: kalimat sepanjang layar hampir pasti bukan pesan
+ * yang ditulis untuk dibaca.
+ */
+const INTERNAL_PATTERNS = [
+  /\bStack trace\b/i,
+  /#\d+\s+\/.+\(\d+\)/,
+  /\b[A-Za-z_]+\\[A-Za-z_\\]+::/,
+  /\b(SELECT|INSERT|UPDATE|DELETE)\b.+\bFROM\b|\bSQLSTATE\b/i,
+  /(\/var\/www|\/home\/|[A-Za-z]:\\\\).*\.php/i,
+  /\bin \/.+\.php:\d+/i,
+]
+
+function presentableMessage(message: unknown, status: number): string {
+  const fallback = `Terjadi kesalahan (${status}). Coba lagi sebentar lagi ya.`
+
+  if (typeof message !== "string") return fallback
+
+  const trimmed = message.trim()
+
+  if (trimmed === "" || trimmed.length > 300) return fallback
+
+  return INTERNAL_PATTERNS.some((pattern) => pattern.test(trimmed))
+    ? fallback
+    : trimmed
+}
+
 async function handle<T>(res: Response): Promise<T> {
   if (res.status === 204) return undefined as T
   const body = await res.json().catch(() => ({}))
   if (!res.ok) {
     const err: ApiError = {
       status: res.status,
-      message: body.message ?? `API ${res.status}`,
+      message: presentableMessage(body.message, res.status),
       errors: body.errors,
     }
     throw err

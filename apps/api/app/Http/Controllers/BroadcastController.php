@@ -338,6 +338,12 @@ class BroadcastController extends Controller
 
     public function updateSettings(WhatsappSessionRequest $request): JsonResponse
     {
+        // Pemeriksaan di FormRequest bukan pengganti pemeriksaan di sini:
+        // yang pertama menjaga bentuk permintaan, yang kedua menjaga aksinya.
+        // Keduanya dipasang supaya menghapus salah satunya tidak diam-diam
+        // membuka pintu.
+        $this->authorize('update', Broadcast::class);
+
         $validated = $request->validated();
 
         $setting = WhatsappSetting::query()->firstOrNew([]);

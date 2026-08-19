@@ -15,9 +15,7 @@ class CentralWahaSettingController extends Controller
 {
     public function show(): JsonResponse
     {
-        if (! auth()->user()->isPlatformAdmin()) {
-            abort(403, __('auth.unauthorized'));
-        }
+        $this->ensurePlatformAdmin();
 
         $setting = WahaSetting::query()->first();
 
@@ -33,6 +31,8 @@ class CentralWahaSettingController extends Controller
 
     public function update(WahaSettingRequest $request): JsonResponse
     {
+        $this->ensurePlatformAdmin();
+
         $setting = WahaSetting::query()->firstOrNew([]);
         $setting->base_url = $request->validated('base_url');
 
@@ -49,5 +49,17 @@ class CentralWahaSettingController extends Controller
             ],
             'meta' => ['message' => __('waha.saved')],
         ]);
+    }
+
+    /**
+     * Satu alamat server dipakai seluruh klinik, jadi salah sentuh di sini
+     * memutus pengiriman semua orang sekaligus. Pemeriksaannya berdiri
+     * sendiri di controller, tidak menumpang pada FormRequest.
+     */
+    private function ensurePlatformAdmin(): void
+    {
+        if (! auth()->user()?->isPlatformAdmin()) {
+            abort(403, __('auth.unauthorized'));
+        }
     }
 }

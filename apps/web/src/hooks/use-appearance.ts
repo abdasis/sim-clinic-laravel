@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { apiGet } from "#/lib/api.ts"
 import { getAuthUser, setAuthUser } from "#/lib/auth.ts"
-import type { AuthUser } from "#/lib/auth.ts"
+import type { MeUser } from "#/lib/auth.ts"
 import { DEFAULT_APPEARANCE, normalizeAppearance } from "#/types/appearance.ts"
 import type { Appearance } from "#/types/appearance.ts"
 
@@ -47,7 +47,7 @@ export function persistAppearance(appearance: Appearance) {
 }
 
 interface MeResponse {
-  data: AuthUser
+  data: MeUser
 }
 
 /**
@@ -58,6 +58,10 @@ interface MeResponse {
  * Hati-hati: JANGAN menimpa localStorage dengan default saat server null.
  * Appearance null berarti user belum pernah mengatur — localStorage justru
  * sumber kebenaran lokal yang mungkin sudah diisi oleh halaman preferensi.
+ *
+ * Daftar izin ikut terbawa di nilai kembaliannya, tapi tidak pernah ikut
+ * tersimpan: `setAuthUser` menyaringnya, dan yang membacanya mengambil dari
+ * hasil kueri ini — hidup selama halaman terbuka, hilang saat ditutup.
  */
 export function useMe(tenant: string, enabled = true) {
   return useQuery({

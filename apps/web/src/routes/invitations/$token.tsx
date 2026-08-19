@@ -35,7 +35,10 @@ const schema = z.object({
 type Values = z.infer<typeof schema>
 
 interface InvitationResponse {
-  data: { email: string; role: string }
+  // Surel datang tersamar dari server, dan perannya memang tidak dikirim:
+  // yang perlu diyakinkan penerima undangan adalah "ini untuk saya, dari
+  // klinik ini" — bukan detail hak aksesnya.
+  data: { email: string; tenant_name: string }
 }
 
 interface AcceptResponse {
@@ -99,11 +102,21 @@ function InvitationPage() {
             onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
             className="space-y-4"
           >
-            <div className="space-y-1">
-              <p className="text-sm font-medium">{t("auth.email")}</p>
-              <p className="text-sm text-muted-foreground">
-                {invitation.data?.data.email}
-              </p>
+            <div className="space-y-3 rounded-md border border-border/50 p-3">
+              <div className="space-y-0.5">
+                <p className="text-xs text-muted-foreground">
+                  {t("tenant.invitation_from")}
+                </p>
+                <p className="text-sm font-medium">
+                  {invitation.data?.data.tenant_name}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-xs text-muted-foreground">{t("auth.email")}</p>
+                <p className="text-sm font-medium">
+                  {invitation.data?.data.email}
+                </p>
+              </div>
             </div>
             <FormPassword
               control={form.control}

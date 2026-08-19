@@ -13,7 +13,7 @@ Berlaku untuk semua unggahan lewat `POST /{tenant}/clinic/company-profile/media`
 | Aturan | Nilai |
 | --- | --- |
 | Ukuran berkas maksimum | **2 MB** (`max:2048`) |
-| Format diterima | `jpg`, `jpeg`, `png`, `webp`, `svg` |
+| Format diterima | `jpg`, `jpeg`, `png`, `webp` |
 | Resize di server | **tidak ada** — berkas disimpan dan disajikan apa adanya |
 | Lokasi simpan | `storage/app/public/company-profile/{tenant_id}/{entity}/` |
 | Nama berkas | di-hash Laravel, nama asli tidak dipakai di URL |
@@ -21,8 +21,14 @@ Berlaku untuk semua unggahan lewat `POST /{tenant}/clinic/company-profile/media`
 Karena tidak ada pemrosesan di server, ukuran yang diunggah persis itulah yang
 diunduh pengunjung. Ekspor di ukuran target, jangan unggah hasil kamera mentah.
 
-Format yang disarankan: **WebP kualitas 80** untuk foto, **PNG transparan** bila
-butuh transparansi, **SVG** untuk logo.
+Format yang disarankan: **WebP kualitas 80** untuk foto, **PNG transparan**
+untuk logo dan apa pun yang butuh transparansi.
+
+SVG sengaja tidak diterima. Berkasnya adalah dokumen XML yang boleh memuat
+`<script>`, dan berkas unggahan disajikan dari domain yang sama dengan
+aplikasi — satu logo berisi skrip cukup untuk mencuri sesi siapa pun yang
+membuka halamannya. Logo yang butuh ketajaman vektor dikirim sebagai PNG
+transparan pada ukuran 3x.
 
 ## Ringkasan ukuran
 
@@ -34,9 +40,9 @@ butuh transparansi, **SVG** untuk logo.
 | Promo biasa | 544 x 306 | 453 x 255 | **1600 x 900** | 16:9 | <= 300 KB |
 | Banner split | 552 x 360 | 453 x 224 | **1600 x 1200** | 4:3 | <= 350 KB |
 | Banner selebar layar | 1905 x 296 | 485 x 264 | **2560 x 800** | 3.2:1 | <= 250 KB |
-| Logo sub-brand | 160 x 32 | sama | **SVG** atau PNG 480 x 96 | bebas, <= 5:1 | <= 40 KB |
+| Logo sub-brand | 160 x 32 | sama | **PNG 480 x 96** | bebas, <= 5:1 | <= 40 KB |
 | Avatar testimoni | 56 x 56 | sama | **256 x 256** | 1:1 | <= 80 KB |
-| Logo klinik | 28 px tinggi (header), 36 x 36 (footer) | sama | **SVG** atau PNG 400 x 120 | <= 3:1 | <= 60 KB |
+| Logo klinik | 28 px tinggi (header), 36 x 36 (footer) | sama | **PNG 400 x 120** | <= 3:1 | <= 60 KB |
 
 ## Detail per aset
 
@@ -98,13 +104,13 @@ Kotaknya 6,44:1 di desktop — hanya **50% bagian tengah tinggi** yang terlihat.
 Pilih foto berkontras rendah tanpa titik fokus, dan kompres agresif (kualitas 60
 sudah cukup karena tertutup warna).
 
-### Logo sub-brand — SVG
+### Logo sub-brand — PNG 480 x 96
 
 Komponen: `brand-section.tsx`. Dirender `h-8 w-auto max-w-[10rem]` dengan
 `object-contain`, dan **default-nya grayscale** (warna muncul saat hover).
 
-- SVG paling ideal: tajam di ukuran berapa pun dan ringan.
-- Kalau raster: PNG transparan 480 x 96 (3x dari 160 x 32).
+- PNG transparan 480 x 96, yaitu 3x dari kotak render 160 x 32.
+- SVG tidak diterima sistem karena bisa memuat skrip.
 - Pastikan logonya masih terbaca dalam mono, karena itu tampilan defaultnya.
 - Rasio jangan lebih lebar dari 5:1, nanti tingginya menyusut jauh di bawah 32 px.
 
@@ -114,7 +120,7 @@ Komponen: `testimonial-section.tsx`, `Avatar` `size-14` (56 px) bulat dengan
 `ring-4`. Potong persegi dengan wajah di tengah dan sedikit ruang di atas kepala;
 sudutnya akan terpotong lingkaran.
 
-### Logo klinik — SVG
+### Logo klinik — PNG 400 x 120
 
 Dipakai di dua tempat dari satu kolom `logo_path`:
 

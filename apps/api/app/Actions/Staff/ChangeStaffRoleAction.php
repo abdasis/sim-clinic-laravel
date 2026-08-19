@@ -23,7 +23,8 @@ class ChangeStaffRoleAction
         $this->guardLastAdmin($staff, $newRole);
 
         DB::transaction(function () use ($staff, $newRole): void {
-            $staff->update(['clinic_role' => $newRole]);
+            $staff->clinic_role = $newRole;
+            $staff->save();
             $staff->syncRoles([$newRole->value]);
         });
 

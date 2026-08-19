@@ -11,7 +11,11 @@ class WhatsappSessionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', Broadcast::class) ?? false;
+        // Mengubah sesi yang sudah ada, bukan membuat broadcast baru. Izin
+        // buat lebih longgar daripada izin ubah di sebagian peran klinik, jadi
+        // kategori yang salah di sini berarti pengaturan pengiriman bisa
+        // disentuh oleh peran yang tidak seharusnya.
+        return $this->user()?->can('update', Broadcast::class) ?? false;
     }
 
     public function rules(): array

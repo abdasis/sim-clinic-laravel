@@ -109,7 +109,7 @@ class CentralWahaSettingTest extends TestCase
 
     private function platformAdmin(): User
     {
-        return User::create([
+        return User::factory()->create([
             'name' => 'Admin Platform',
             'email' => 'platform@sim-clinic.test',
             'password' => Hash::make('password123'),

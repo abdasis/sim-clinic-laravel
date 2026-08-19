@@ -129,7 +129,7 @@ class BookingStatusAndOverlapTest extends TestCase
 
     private function makeDoctor(): User
     {
-        return User::create([
+        return User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => 'dr. Lain',
             'email' => 'dokter.lain'.uniqid().'@'.$this->tenant->slug.'.test',

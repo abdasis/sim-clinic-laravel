@@ -272,7 +272,7 @@ class ChatbotConversationTest extends TestCase
 
     private function staff(): User
     {
-        return User::create([
+        return User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Terapis Uji',
             'email' => 'terapis-chat@uji.test',

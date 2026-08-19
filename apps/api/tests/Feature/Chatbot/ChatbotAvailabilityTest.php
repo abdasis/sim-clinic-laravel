@@ -44,7 +44,7 @@ class ChatbotAvailabilityTest extends TestCase
             'duration_minutes' => 60,
         ]);
 
-        $this->therapist = User::create([
+        $this->therapist = User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Terapis Uji',
             'email' => 'terapis-slot@uji.test',

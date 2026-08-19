@@ -33,6 +33,8 @@ class BroadcastAutoReminderController extends Controller
 
     public function update(AutoReminderSettingRequest $request, BroadcastService $broadcasts): JsonResponse
     {
+        $this->authorize('update', Broadcast::class);
+
         $setting = $broadcasts->saveAutoReminderSetting($request->validated());
 
         return response()->json([

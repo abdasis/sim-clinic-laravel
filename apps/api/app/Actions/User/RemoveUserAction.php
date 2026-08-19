@@ -28,7 +28,8 @@ class RemoveUserAction
         $this->guardLastTenantAdmin($user);
 
         DB::transaction(function () use ($user): void {
-            $user->update(['status' => UserStatus::Inactive]);
+            $user->status = UserStatus::Inactive;
+            $user->save();
             $user->delete();
         });
 

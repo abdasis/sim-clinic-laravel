@@ -56,15 +56,16 @@ class TenantRegistrationService
                 'status' => TenantStatus::Active,
             ]);
 
-            $user = User::create([
-                'tenant_id' => $tenant->id,
+            $user = new User([
                 'name' => $data['company_name'],
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
-                'role' => UserRole::TenantAdmin,
-                'status' => UserStatus::Active,
-                'clinic_role' => ClinicRole::Admin,
             ]);
+            $user->tenant_id = $tenant->id;
+            $user->role = UserRole::TenantAdmin;
+            $user->status = UserStatus::Active;
+            $user->clinic_role = ClinicRole::Admin;
+            $user->save();
 
             $this->assignAdminRoles($tenant, $user);
 

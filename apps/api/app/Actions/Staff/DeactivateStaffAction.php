@@ -22,7 +22,8 @@ class DeactivateStaffAction
         $this->guardLastAdmin($staff);
 
         DB::transaction(function () use ($staff): void {
-            $staff->update(['status' => UserStatus::Inactive]);
+            $staff->status = UserStatus::Inactive;
+            $staff->save();
             $staff->delete();
         });
 

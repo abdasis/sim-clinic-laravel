@@ -26,14 +26,19 @@ class User extends Authenticatable
      */
     protected string $guard_name = 'sanctum';
 
+    /**
+     * Sengaja tidak memuat tenant_id, role, status, dan clinic_role.
+     *
+     * Keempatnya menentukan milik siapa akun ini dan sejauh mana ia boleh
+     * bergerak — bukan data profil. Selama ada di sini, satu pemanggilan
+     * fill() yang lupa menyaring masukan cukup untuk menjadikan seseorang
+     * admin klinik lain. Yang menulis keempatnya harus menyebutnya satu per
+     * satu sebagai properti, sehingga niatnya terbaca di kodenya.
+     */
     protected $fillable = [
-        'tenant_id',
         'name',
         'email',
         'password',
-        'role',
-        'status',
-        'clinic_role',
         'appearance',
     ];
 

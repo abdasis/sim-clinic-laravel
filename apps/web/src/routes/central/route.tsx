@@ -1,4 +1,10 @@
-import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router"
 import {
   Building02Icon,
   DatabaseIcon,
@@ -24,10 +30,34 @@ import {
 import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { useAuthUser } from "#/hooks/use-auth-user.ts"
-import { clearAuth } from "#/lib/auth.ts"
+import { clearAuth, hasPlatformRole, isAuthenticated } from "#/lib/auth.ts"
 import { ShellSkeleton } from "#/components/shell-skeleton.tsx"
 
 export const Route = createFileRoute("/central")({
+  /**
+   * Konsol platform menyentuh data seluruh klinik, jadi penjaganya dua
+   * lapis: harus punya sesi, dan sesi itu harus milik pengelola platform.
+   * Admin klinik yang tersasar ke sini dikembalikan ke kliniknya sendiri.
+   *
+   * Halaman masuknya dikecualikan — ia anak dari layout ini, dan menjaganya
+   * dengan syarat yang sama akan memantulkan orang bolak-balik ke halaman
+   * yang sedang ia buka.
+   */
+  beforeLoad: ({ location }) => {
+    if (typeof window === "undefined") return
+    if (location.pathname.startsWith("/central/login")) return
+
+    if (!isAuthenticated()) {
+      throw redirect({ to: "/central/login" })
+    }
+
+    // Bukan pengelola platform: dikembalikan ke halaman masuk konsol, bukan
+    // ke beranda kliniknya — slug kliniknya tidak diketahui dari sesi yang
+    // tersimpan, dan menebaknya akan mendaratkan orang di klinik yang salah.
+    if (!hasPlatformRole()) {
+      throw redirect({ to: "/central/login" })
+    }
+  },
   component: CentralLayout,
 })
 

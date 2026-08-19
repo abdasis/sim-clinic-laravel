@@ -89,10 +89,13 @@ export function MediaField({
         ) : null}
       </div>
 
+      {/* Bukan image/*: SVG ditolak server karena bisa memuat skrip, dan
+          memilihnya lalu ditolak setelah unggah lebih membingungkan daripada
+          tidak bisa memilihnya sejak awal. */}
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0]

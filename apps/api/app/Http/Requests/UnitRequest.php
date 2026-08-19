@@ -12,7 +12,13 @@ class UnitRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', Unit::class) ?? false;
+        // Sama seperti CategoryRequest: satu FormRequest melayani store dan
+        // update, jadi izin yang diperiksa harus mengikuti operasinya.
+        $unit = $this->route('unit');
+
+        return $unit !== null
+            ? ($this->user()?->can('update', $unit) ?? false)
+            : ($this->user()?->can('create', Unit::class) ?? false);
     }
 
     public function rules(): array

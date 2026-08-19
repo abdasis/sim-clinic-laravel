@@ -47,10 +47,25 @@ use Illuminate\Support\Facades\Route;
 // Publik (tanpa tenant prefix) — spec 001
 // =========================================================================
 Route::get('/translations', [TranslationController::class, 'index']);
-Route::post('/register', [TenantRegistrationController::class, 'store']);
-Route::post('/central/login', [CentralAuthController::class, 'login']);
-Route::get('/invitations/{token}', [InvitationController::class, 'show']);
-Route::post('/invitations/{token}/accept', [InvitationController::class, 'accept']);
+
+// Route publik yang menyentuh kredensial atau membuat data harus dibatasi
+// lajunya: tanpa itu, kata sandi bisa ditebak berulang tanpa hambatan dan
+// pendaftaran klinik bisa dibanjiri. Batasnya per IP per menit.
+//
+// Pendaftaran dan penerimaan undangan dipatok lebih ketat daripada login:
+// keduanya membuat data permanen, sementara salah ketik kata sandi adalah
+// kejadian sehari-hari yang tidak boleh langsung mengunci orang.
+Route::middleware('throttle:5,1')->group(function (): void {
+    Route::post('/register', [TenantRegistrationController::class, 'store']);
+    Route::post('/invitations/{token}/accept', [InvitationController::class, 'accept']);
+});
+
+Route::middleware('throttle:10,1')->group(function (): void {
+    Route::post('/central/login', [CentralAuthController::class, 'login']);
+    // Tautan undangan dibuka berkali-kali oleh orang yang sama saat mengisi
+    // formulir, jadi lajunya mengikuti login, bukan pendaftaran.
+    Route::get('/invitations/{token}', [InvitationController::class, 'show']);
+});
 
 // Pesan masuk WhatsApp. Di luar grup {tenant} karena gateway tidak mengenal
 // slug klinik; kliniknya ditentukan dari nama sesi pada payload, dan token
@@ -92,7 +107,7 @@ Route::prefix('{tenant}')
 // Auth tenant-scoped (spec 001) — resolve tenant, tanpa auth untuk login
 // =========================================================================
 Route::prefix('{tenant}')->middleware(['resolve.tenant', 'ensure.tenant.active', 'permission.team'])->group(function (): void {
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 });
 

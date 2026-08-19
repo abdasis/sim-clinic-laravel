@@ -132,6 +132,10 @@ class ServiceController extends Controller
      */
     public function import(ImportServicesRequest $request, ImportService $imports): JsonResponse
     {
+        // Satu berkas bisa membuat ratusan layanan sekaligus, jadi izinnya
+        // diperiksa di sini juga, bukan hanya di FormRequest.
+        $this->authorize('create', Service::class);
+
         $result = $imports->importServices($request->file('file'), $request->user());
 
         return response()->json([

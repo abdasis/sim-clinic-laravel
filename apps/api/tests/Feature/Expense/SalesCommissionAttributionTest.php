@@ -46,7 +46,7 @@ class SalesCommissionAttributionTest extends TestCase
     /** Staf yang cuma perlu ada untuk ditunjuk sebagai penawar/pengerja. */
     private function staff(string $name, ClinicRole $role = ClinicRole::Therapist): User
     {
-        $user = User::create([
+        $user = User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => $name,
             'email' => str($name)->slug().'@klinik.test',

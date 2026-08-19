@@ -2,6 +2,7 @@ import {
   createFileRoute,
   Link,
   Outlet,
+  redirect,
   useNavigate,
   useParams,
   useRouterState,
@@ -52,10 +53,29 @@ import { useClinicIdentity } from "#/hooks/use-clinic-identity.ts"
 import { normalizeAppearance } from "#/types/appearance.ts"
 import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { clearAuth } from "#/lib/auth.ts"
+import { clearAuth, isAuthenticated } from "#/lib/auth.ts"
 import { ShellSkeleton } from "#/components/shell-skeleton.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic")({
+  /**
+   * Penjaga di tingkat route, bukan di dalam komponen.
+   *
+   * Tanpa ini, membuka URL klinik tanpa sesi tetap memasang seluruh kerangka
+   * halaman: sidebar, judul, dan kerangka tabel sempat terlihat sebelum
+   * satu per satu permintaannya ditolak server. Yang bocor bukan datanya,
+   * melainkan bentuk aplikasinya — dan pengalamannya membingungkan.
+   *
+   * Hanya berjalan di peramban: sesi tersimpan di localStorage, yang tidak
+   * ada saat halaman dirakit di server. Melewatkannya di sana bukan celah,
+   * karena data tetap dijaga token di setiap permintaan API.
+   */
+  beforeLoad: ({ params }) => {
+    if (typeof window === "undefined") return
+
+    if (!isAuthenticated()) {
+      throw redirect({ to: "/$tenant/login", params: { tenant: params.tenant } })
+    }
+  },
   component: ClinicLayout,
 })
 
@@ -96,10 +116,14 @@ function ClinicLayout() {
   const mounted = useIsMounted()
   const user = useAuthUser()
   const role = user?.clinic_role ?? ""
-  const permissions = Array.isArray(user?.permissions) ? user.permissions : null
   // Preferensi ikut antar-perangkat: localStorage disegarkan dari server
   // sekali per pemasangan shell, lalu diterapkan ke DOM oleh hook-nya.
-  useMe(tenant, mounted)
+  //
+  // Daftar izin diambil dari hasil kueri ini, bukan dari localStorage: yang
+  // menentukan menu mana yang boleh terlihat tidak boleh berupa nilai yang
+  // bisa disunting dari konsol peramban.
+  const { data: me } = useMe(tenant, mounted)
+  const permissions = Array.isArray(me?.permissions) ? me.permissions : null
   // Identitas dipakai brand sidebar; dibaca semua peran, bukan cuma admin.
   const { data: identity } = useClinicIdentity(tenant, mounted)
   const appearance = normalizeAppearance(user?.appearance)

@@ -191,7 +191,7 @@ class TenantRelationIsolationTest extends TestCase
 
     private function foreignUser(ClinicRole $role = ClinicRole::Therapist): User
     {
-        return User::create([
+        return User::factory()->create([
             'tenant_id' => $this->foreign->id,
             'name' => 'Staf Klinik Lain',
             'email' => 'staf.'.uniqid().'@klinik-lain.test',

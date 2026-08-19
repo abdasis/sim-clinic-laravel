@@ -10,7 +10,9 @@ class AutoReminderSettingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', Broadcast::class) ?? false;
+        // Menyimpan satu setelan yang sudah ada bentuknya, bukan membuat
+        // broadcast baru — izin yang diperiksa harus izin ubah.
+        return $this->user()?->can('update', Broadcast::class) ?? false;
     }
 
     public function rules(): array

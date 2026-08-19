@@ -54,7 +54,7 @@ class TieredSalesCommissionTest extends TestCase
 
     private function seller(string $name): User
     {
-        $user = User::create([
+        $user = User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => $name,
             'email' => str($name)->slug().'@klinik.test',

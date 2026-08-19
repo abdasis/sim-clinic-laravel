@@ -22,6 +22,7 @@ return [
     'invited' => 'Undangan berhasil dikirim.',
     'email_exists' => 'Email sudah terdaftar di tenant ini.',
     'invitation_invalid' => 'Undangan tidak valid atau sudah kedaluwarsa.',
+    'invitation_from' => 'Undangan dari',
     'invitation_pending_exists' => 'Email ini masih punya undangan yang belum dijawab.',
     'invitation_not_pending' => 'Undangan ini sudah tidak bisa dibatalkan.',
     'invitation_cancelled' => 'Undangan berhasil dibatalkan.',

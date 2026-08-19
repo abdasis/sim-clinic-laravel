@@ -39,7 +39,7 @@ class MonthlyReportTest extends TestCase
         // aturannya sendiri supaya angka yang diuji tidak tercampur.
         CommissionRule::query()->delete();
 
-        $this->therapist = User::create([
+        $this->therapist = User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Jasmin',
             'email' => 'jasmin@klinik.test',
@@ -137,7 +137,7 @@ class MonthlyReportTest extends TestCase
 
     public function test_therapist_scoped_rule_only_applies_to_that_therapist(): void
     {
-        $other = User::create([
+        $other = User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Rani',
             'email' => 'rani@klinik.test',

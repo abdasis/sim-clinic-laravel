@@ -152,7 +152,7 @@ class BookingPatientImmutableTest extends TestCase
 
     private function makeDoctor(): User
     {
-        return User::create([
+        return User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => 'dr. Uji',
             'email' => 'dokter.uji@'.$this->tenant->slug.'.test',

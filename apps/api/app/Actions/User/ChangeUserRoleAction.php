@@ -24,7 +24,8 @@ class ChangeUserRoleAction
         $this->guardLastTenantAdmin($user, $newRole);
 
         DB::transaction(function () use ($user, $newRole): void {
-            $user->update(['role' => $newRole]);
+            $user->role = $newRole;
+            $user->save();
 
             app(PermissionRegistrar::class)->setPermissionsTeamId(SetPermissionTeamId::PLATFORM_TEAM_ID);
             $user->syncRoles([$newRole->value]);

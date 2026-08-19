@@ -81,6 +81,32 @@ function ChartContainer({
   )
 }
 
+/**
+ * Nilai warna dan nama kunci di sini berakhir di dalam blok <style> lewat
+ * dangerouslySetInnerHTML, jadi keduanya adalah CSS mentah — bukan teks yang
+ * di-escape React. Config chart bisa berasal dari data server (label dan
+ * warna kategori), dan satu nilai berisi `}` sudah cukup untuk menutup blok
+ * lalu menuliskan aturan CSS sendiri: menyembunyikan elemen, menimpa tampilan
+ * halaman, atau memuat gambar latar ke alamat luar sebagai kanal bocor.
+ *
+ * Karena itu keduanya disaring ke bentuk yang memang dipakai chart: warna
+ * berupa hex, fungsi warna CSS, var(), atau nama warna; kunci berupa
+ * pengenal. Yang tidak cocok dibuang, bukan diperbaiki — warna yang hilang
+ * hanya membuat satu seri memakai warna bawaan.
+ */
+const COLOR_PATTERN =
+  /^(#[0-9a-f]{3,8}|(rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color|color-mix|var)\([^;{}()]*(\([^;{}()]*\)[^;{}()]*)*\)|[a-z]+)$/i
+
+function safeColor(value: string | undefined): string | null {
+  const color = value?.trim()
+
+  return color && COLOR_PATTERN.test(color) ? color : null
+}
+
+function safeKey(key: string): string {
+  return key.replace(/[^a-zA-Z0-9_-]/g, "")
+}
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme ?? config.color
@@ -99,10 +125,11 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
-    const color =
+    const color = safeColor(
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ??
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
+        itemConfig.color,
+    )
+    return color ? `  --color-${safeKey(key)}: ${color};` : null
   })
   .join("\n")}
 }

@@ -10,29 +10,54 @@ export interface AuthUser {
   tenant_id: number
   /** Preferensi tampilan; belum ada untuk akun yang belum mengaturnya. */
   appearance?: Appearance | null
-  /**
-   * Izin efektif milik akun ini di klinik yang sedang dibuka.
-   *
-   * Belum ada untuk sesi yang login sebelum ini dipasang; pembacanya harus
-   * memperlakukan `undefined` sebagai "belum tahu", bukan "tidak punya
-   * apa-apa".
-   */
+}
+
+/**
+ * Bentuk yang dikirim `/{tenant}/me`: profil ditambah daftar izin efektif.
+ *
+ * Izinnya sengaja dipisah dari AuthUser. Yang disimpan di localStorage hanya
+ * AuthUser; daftar izin hidup di memori selama halaman terbuka dan diambil
+ * ulang dari server tiap kali shell klinik dipasang. Menyimpannya berarti
+ * satu skrip asing yang berhasil masuk bisa membaca peta lengkap kemampuan
+ * akun ini — dan yang lebih buruk, mengubahnya untuk membuka menu yang
+ * seharusnya tertutup.
+ */
+export interface MeUser extends AuthUser {
   permissions?: string[]
 }
 
 const USER_KEY = "clinic_user"
 
-export function setAuth(token: string, user: AuthUser) {
+/**
+ * Buang apa pun di luar profil sebelum menyentuh localStorage.
+ *
+ * Disaring di satu pintu, bukan di tiap pemanggil: server boleh saja mulai
+ * mengirim field baru kapan saja, dan yang tidak disebut di sini tidak akan
+ * pernah ikut tersimpan.
+ */
+function profileOnly(user: MeUser | AuthUser): AuthUser {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    clinic_role: user.clinic_role,
+    tenant_id: user.tenant_id,
+    appearance: user.appearance ?? null,
+  }
+}
+
+export function setAuth(token: string, user: MeUser | AuthUser) {
   setToken(token)
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(USER_KEY, JSON.stringify(user))
+    window.localStorage.setItem(USER_KEY, JSON.stringify(profileOnly(user)))
   }
 }
 
 /** Perbarui user tersimpan tanpa menyentuh token — dipakai halaman preferensi. */
-export function setAuthUser(user: AuthUser) {
+export function setAuthUser(user: MeUser | AuthUser) {
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(USER_KEY, JSON.stringify(user))
+    window.localStorage.setItem(USER_KEY, JSON.stringify(profileOnly(user)))
   }
 }
 
@@ -65,17 +90,4 @@ export function hasPlatformRole(): boolean {
 export function hasClinicRole(...roles: string[]): boolean {
   const user = getAuthUser()
   return user?.clinic_role != null && roles.includes(user.clinic_role)
-}
-
-/**
- * Izin efektif akun yang sedang login, atau `null` bila belum diketahui.
- *
- * Dibedakan dari daftar kosong: sesi lama belum menyimpannya, dan
- * memperlakukan itu sebagai "tidak punya izin apa pun" akan mengosongkan
- * seluruh menu sampai /me selesai dimuat.
- */
-export function getPermissions(): string[] | null {
-  const permissions = getAuthUser()?.permissions
-
-  return Array.isArray(permissions) ? permissions : null
 }

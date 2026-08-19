@@ -57,7 +57,7 @@ class CommissionAppliesToAnyStaffTest extends TestCase
 
     private function staff(string $name, ClinicRole $role): User
     {
-        $user = User::create([
+        $user = User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => $name,
             'email' => str($name)->slug().'@klinik.test',

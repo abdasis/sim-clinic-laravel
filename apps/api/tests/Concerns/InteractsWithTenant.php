@@ -48,7 +48,7 @@ trait InteractsWithTenant
     {
         $tenant ??= $this->tenant ??= $this->createTenant();
 
-        $user = User::create([
+        $user = User::factory()->create([
             'tenant_id' => $tenant->id,
             'name' => 'Staf '.$role->value,
             'email' => $role->value.'@'.$tenant->slug.'.test',

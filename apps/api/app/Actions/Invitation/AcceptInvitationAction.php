@@ -23,15 +23,18 @@ class AcceptInvitationAction
     public function handle(Invitation $invitation, string $password): User
     {
         return DB::transaction(function () use ($invitation, $password): User {
-            $user = User::create([
-                'tenant_id' => $invitation->tenant_id,
+            $user = new User([
                 'name' => Str::before($invitation->email, '@'),
                 'email' => $invitation->email,
                 'password' => Hash::make($password),
-                'role' => $invitation->role,
-                'status' => UserStatus::Active,
-                'clinic_role' => $invitation->clinic_role,
             ]);
+            // Peran diambil dari undangan yang sudah tersimpan, bukan dari
+            // permintaan yang masuk — yang dikirim pendaftar hanya kata sandi.
+            $user->tenant_id = $invitation->tenant_id;
+            $user->role = $invitation->role;
+            $user->status = UserStatus::Active;
+            $user->clinic_role = $invitation->clinic_role;
+            $user->save();
 
             $invitation->update(['status' => InvitationStatus::Accepted]);
 

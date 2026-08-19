@@ -25,15 +25,16 @@ class CreateStaffAction
         $clinicRole = ClinicRole::from($data['clinic_role']);
 
         $staff = DB::transaction(function () use ($tenant, $data, $clinicRole): User {
-            $staff = User::create([
-                'tenant_id' => $tenant->id,
+            $staff = new User([
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
-                'role' => UserRole::Member,
-                'status' => UserStatus::Active,
-                'clinic_role' => $clinicRole,
             ]);
+            $staff->tenant_id = $tenant->id;
+            $staff->role = UserRole::Member;
+            $staff->status = UserStatus::Active;
+            $staff->clinic_role = $clinicRole;
+            $staff->save();
 
             $staff->syncRoles([$clinicRole->value]);
 
