@@ -24,7 +24,7 @@ class DeletePatientAction
             abort(422, __('patient.has_history'));
         }
 
-        $attributes = $patient->only(['name', 'phone', 'whatsapp', 'gender', 'address']);
+        $attributes = $patient->only(['name', 'whatsapp', 'gender', 'address']);
 
         try {
             $patient->forceDelete();

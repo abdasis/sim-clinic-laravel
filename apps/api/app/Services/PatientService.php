@@ -10,7 +10,7 @@ use App\Models\Patient;
 use App\Support\PatientReferences;
 
 /**
- * Use case data pasien. Nomor telepon ganda hanya diperingatkan, tidak
+ * Use case data pasien. Nomor WhatsApp ganda hanya diperingatkan, tidak
  * diblokir — satu keluarga kerap memakai satu nomor.
  */
 class PatientService
@@ -23,7 +23,7 @@ class PatientService
     {
         $patient = app(CreatePatientAction::class)->handle($attributes);
 
-        return [$patient, $this->findDuplicateByPhone($patient)];
+        return [$patient, $this->findDuplicateByWhatsapp($patient)];
     }
 
     /**
@@ -34,7 +34,7 @@ class PatientService
     {
         $patient = app(UpdatePatientAction::class)->handle($patient, $attributes);
 
-        return [$patient, $this->findDuplicateByPhone($patient)];
+        return [$patient, $this->findDuplicateByWhatsapp($patient)];
     }
 
     public function deactivate(Patient $patient): Patient
@@ -63,17 +63,17 @@ class PatientService
     }
 
     /**
-     * Pasien lain di tenant yang sama dengan nomor telepon identik.
+     * Pasien lain di tenant yang sama dengan nomor WhatsApp identik.
      * Scope tenant sudah otomatis dari TenantScope.
      */
-    private function findDuplicateByPhone(Patient $patient): ?Patient
+    private function findDuplicateByWhatsapp(Patient $patient): ?Patient
     {
-        if (blank($patient->phone)) {
+        if (blank($patient->whatsapp)) {
             return null;
         }
 
         return Patient::query()
-            ->where('phone', $patient->phone)
+            ->where('whatsapp', $patient->whatsapp)
             ->whereKeyNot($patient->getKey())
             ->first();
     }

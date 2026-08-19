@@ -29,7 +29,7 @@ class PatientController extends Controller
             $search = $params['search'];
             $query->where(function ($q) use ($search): void {
                 $q->where('name', 'like', '%'.$search.'%')
-                    ->orWhere('phone', 'like', '%'.$search.'%');
+                    ->orWhere('whatsapp', 'like', '%'.$search.'%');
             });
         }
         if ($params['sort']) {

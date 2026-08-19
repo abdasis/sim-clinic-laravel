@@ -20,7 +20,7 @@ export const Route = createFileRoute("/$tenant/clinic/patients/")({
 interface PatientRow {
   id: number
   name: string
-  phone: string
+  whatsapp: string
   gender: string
   gender_label: string
   referrer_name?: string | null
@@ -35,7 +35,7 @@ function PatientsPage() {
   const columns = useMemo<ColumnDef<PatientRow>[]>(
     () => [
       { accessorKey: "name", header: t("patient.name") },
-      { accessorKey: "phone", header: t("patient.phone") },
+      { accessorKey: "whatsapp", header: t("patient.whatsapp") },
       {
         accessorKey: "gender",
         header: t("patient.gender"),

@@ -34,7 +34,7 @@ class PatientAuditLogTest extends TestCase
     {
         app(CreatePatientAction::class)->handle([
             'name' => 'Bapak Andi',
-            'phone' => '081200000001',
+            'whatsapp' => '081200000001',
             'gender' => 'male',
         ]);
 

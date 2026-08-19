@@ -16,10 +16,12 @@ class PatientRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
             'birth_date' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'in:male,female,other'],
-            'whatsapp' => ['nullable', 'string', 'max:50'],
+            // Satu-satunya nomor pasien, dan jalur pengingat serta broadcast
+            // berjalan di atasnya — karena itu wajib, sama seperti dulu kolom
+            // telepon wajib.
+            'whatsapp' => ['required', 'string', 'max:50'],
             'address' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'referred_by' => ['nullable', TenantRule::exists('users')],
@@ -31,7 +33,6 @@ class PatientRequest extends FormRequest
     {
         return [
             'name' => __('patient.name'),
-            'phone' => __('patient.phone'),
             'birth_date' => __('patient.birth_date'),
             'gender' => __('patient.gender'),
             'whatsapp' => __('patient.whatsapp'),

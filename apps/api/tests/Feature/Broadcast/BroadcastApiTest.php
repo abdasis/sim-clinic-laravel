@@ -27,13 +27,12 @@ class BroadcastApiTest extends TestCase
 {
     use InteractsWithTenant, RefreshDatabase;
 
-    private function patient(string $name, ?string $phone = '081234567890', ?string $whatsapp = null): Patient
+    private function patient(string $name, ?string $whatsapp = '081234567890'): Patient
     {
         return Patient::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => $name,
-            'phone' => $phone ?? '',
-            'whatsapp' => $whatsapp,
+            'whatsapp' => $whatsapp ?? '',
         ]);
     }
 
@@ -167,7 +166,7 @@ class BroadcastApiTest extends TestCase
             ->assertJsonPath('data.sample.0.name', 'Suka Facial');
     }
 
-    public function test_duplicate_phones_and_missing_phones_are_handled(): void
+    public function test_duplicate_and_missing_numbers_are_handled(): void
     {
         $this->actingAsClinicUser();
 
@@ -179,17 +178,6 @@ class BroadcastApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.count', 1)
             ->assertJsonPath('data.without_phone', 1);
-    }
-
-    public function test_whatsapp_column_beats_phone_column(): void
-    {
-        $this->actingAsClinicUser();
-
-        $this->patient('Dua Nomor', '081111111111', '089999999999');
-
-        $preview = $this->getJson($this->tenantUrl('broadcasts/audience-preview?audience=all'))->assertOk();
-
-        $this->assertSame('6289999999999', $preview->json('data.sample.0.phone'));
     }
 
     public function test_manual_marking_updates_status(): void

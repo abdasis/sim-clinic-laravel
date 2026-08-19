@@ -31,7 +31,7 @@ class BroadcastAudienceBuilder
         $recipients = collect();
 
         foreach ($patients as $patient) {
-            $phone = PhoneNumber::normalize($patient->whatsapp ?: $patient->phone);
+            $phone = PhoneNumber::normalize($patient->whatsapp);
 
             if ($phone === null) {
                 $withoutPhone++;

@@ -123,18 +123,18 @@ class PatientDeleteTest extends TestCase
         $patient = Patient::factory()->create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Nama Lama',
-            'phone' => '081200000009',
+            'whatsapp' => '081200000009',
         ]);
 
         $this->putJson($this->tenantUrl("patients/{$patient->id}"), [
             'name' => 'Nama Baru',
-            'phone' => '081200000010',
+            'whatsapp' => '081200000010',
             'gender' => 'female',
         ])
             ->assertOk()
             ->assertJsonPath('data.name', 'Nama Baru')
             ->assertJsonPath('data.gender_label', 'Perempuan');
 
-        $this->assertSame('081200000010', $patient->fresh()->phone);
+        $this->assertSame('081200000010', $patient->fresh()->whatsapp);
     }
 }

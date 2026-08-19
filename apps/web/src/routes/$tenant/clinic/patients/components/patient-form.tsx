@@ -23,8 +23,8 @@ export const patientSchema = z.object({
   // Backend menerima gender kosong; memaksanya di sini hanya menghalangi
   // pendaftaran cepat saat pasien belum sempat ditanya.
   gender: z.string().optional(),
-  phone: z.string().min(1),
-  whatsapp: z.string().optional(),
+  // Satu-satunya nomor pasien: pengingat dan broadcast berjalan di atasnya.
+  whatsapp: z.string().min(1),
   address: z.string().optional(),
   notes: z.string().optional(),
   // "" berarti tidak ada pembawa; dikonversi ke null saat submit.
@@ -38,7 +38,6 @@ export const patientDefaults: PatientValues = {
   name: "",
   birth_date: "",
   gender: "",
-  phone: "",
   whatsapp: "",
   address: "",
   notes: "",
@@ -107,17 +106,10 @@ export function PatientFormFields({
       >
         <FormInput
           control={control}
-          name="phone"
-          label={t("patient.phone")}
-          type="tel"
-          required
-          description={t("patient.phone_hint")}
-        />
-        <FormInput
-          control={control}
           name="whatsapp"
           label={t("patient.whatsapp")}
           type="tel"
+          required
           description={t("patient.whatsapp_hint")}
         />
         <FormTextarea

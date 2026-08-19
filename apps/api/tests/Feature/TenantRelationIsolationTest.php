@@ -141,7 +141,7 @@ class TenantRelationIsolationTest extends TestCase
 
         $this->postJson($this->tenantUrl('patients'), [
             'name' => 'Pasien Uji',
-            'phone' => '081200000009',
+            'whatsapp' => '081200000009',
             'referred_by' => $this->foreignUser()->id,
         ])
             ->assertStatus(422)

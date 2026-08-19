@@ -59,12 +59,12 @@ class MebaclinicSeeder extends Seeder
         }
 
         $patients = [
-            ['name' => 'Ani Wijaya', 'phone' => '081200000001', 'gender' => 'female'],
-            ['name' => 'Budi Santoso', 'phone' => '081200000002', 'gender' => 'male'],
+            ['name' => 'Ani Wijaya', 'whatsapp' => '081200000001', 'gender' => 'female'],
+            ['name' => 'Budi Santoso', 'whatsapp' => '081200000002', 'gender' => 'male'],
         ];
         foreach ($patients as $p) {
             Patient::query()->firstOrCreate(
-                ['tenant_id' => $tenant->id, 'phone' => $p['phone']],
+                ['tenant_id' => $tenant->id, 'whatsapp' => $p['whatsapp']],
                 ['name' => $p['name'], 'gender' => $p['gender']],
             );
         }

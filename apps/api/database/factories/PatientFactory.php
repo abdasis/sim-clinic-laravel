@@ -18,8 +18,7 @@ class PatientFactory extends Factory
             'name' => fake()->name(),
             'birth_date' => fake()->dateTimeBetween('-60 years', '-18 years')->format('Y-m-d'),
             'gender' => fake()->randomElement(['male', 'female']),
-            'phone' => fake()->numerify('08##########'),
-            'whatsapp' => null,
+            'whatsapp' => fake()->numerify('08##########'),
             'address' => fake()->address(),
             'notes' => null,
         ];

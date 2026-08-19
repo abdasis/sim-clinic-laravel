@@ -18,7 +18,7 @@ class PatientApiTest extends TestCase
 
         $response = $this->postJson($this->tenantUrl('patients'), [
             'name' => 'Ibu Sinta',
-            'phone' => '081200000001',
+            'whatsapp' => '081200000001',
             'gender' => 'female',
         ]);
 
@@ -31,7 +31,7 @@ class PatientApiTest extends TestCase
     {
         $this->actingAsClinicUser();
 
-        $this->postJson($this->tenantUrl('patients'), ['phone' => '0812', 'gender' => 'female'])
+        $this->postJson($this->tenantUrl('patients'), ['whatsapp' => '0812', 'gender' => 'female'])
             ->assertStatus(422)
             ->assertJsonValidationErrors('name');
     }
@@ -55,7 +55,7 @@ class PatientApiTest extends TestCase
 
         $this->postJson($this->tenantUrl('patients'), [
             'name' => 'Pasien Baru',
-            'phone' => '081200000002',
+            'whatsapp' => '081200000002',
             'gender' => 'male',
         ])->assertForbidden();
 
@@ -76,22 +76,22 @@ class PatientApiTest extends TestCase
             ->assertJsonPath('meta.total', 0);
     }
 
-    public function test_update_warns_about_duplicate_phone(): void
+    public function test_update_warns_about_duplicate_whatsapp(): void
     {
         $this->actingAsClinicUser();
 
         Patient::factory()->create([
             'tenant_id' => $this->tenant->id,
-            'phone' => '081200000001',
+            'whatsapp' => '081200000001',
         ]);
         $patient = Patient::factory()->create([
             'tenant_id' => $this->tenant->id,
-            'phone' => '081200000009',
+            'whatsapp' => '081200000009',
         ]);
 
         $this->putJson($this->tenantUrl('patients/'.$patient->id), [
             'name' => $patient->name,
-            'phone' => '081200000001',
+            'whatsapp' => '081200000001',
             'gender' => 'female',
         ])
             ->assertOk()

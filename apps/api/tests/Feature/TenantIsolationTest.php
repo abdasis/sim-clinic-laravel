@@ -52,7 +52,7 @@ class TenantIsolationTest extends TestCase
 
         $this->putJson($this->tenantUrl('patients/'.$foreign->id), [
             'name' => 'Dibajak',
-            'phone' => '081200000001',
+            'whatsapp' => '081200000001',
             'gender' => 'male',
         ])->assertNotFound();
 

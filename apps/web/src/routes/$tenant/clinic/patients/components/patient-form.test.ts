@@ -7,16 +7,16 @@ describe("patientSchema", () => {
     const result = patientSchema.safeParse({
       ...patientDefaults,
       name: "Ibu Sinta",
-      phone: "081200000001",
+      whatsapp: "081200000001",
     })
 
     expect(result.success).toBe(true)
   })
 
-  it("tetap mewajibkan nama dan telepon", () => {
+  it("tetap mewajibkan nama dan WhatsApp", () => {
     expect(patientSchema.safeParse(patientDefaults).success).toBe(false)
     expect(
-      patientSchema.safeParse({ ...patientDefaults, name: "A", phone: "" }).success,
+      patientSchema.safeParse({ ...patientDefaults, name: "A", whatsapp: "" }).success,
     ).toBe(false)
   })
 
@@ -27,7 +27,7 @@ describe("patientSchema", () => {
     const result = patientSchema.safeParse({
       ...patientDefaults,
       name: "Ibu Sinta",
-      phone: "081200000001",
+      whatsapp: "081200000001",
       gender: null,
     })
 

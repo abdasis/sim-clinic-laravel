@@ -68,8 +68,8 @@ class BroadcastPlatformTest extends TestCase
         $this->actingAsClinicUser();
         $this->wahaReady();
 
-        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '081111111111']);
-        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '082222222222']);
+        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
+        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '082222222222']);
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Promo', 'message' => 'Halo {nama}', 'audience' => 'all',
@@ -89,7 +89,7 @@ class BroadcastPlatformTest extends TestCase
         $this->wahaReady();
         Http::fake();
 
-        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '081111111111']);
+        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Promo', 'message' => 'Halo', 'audience' => 'all',
@@ -111,7 +111,7 @@ class BroadcastPlatformTest extends TestCase
         $this->wahaReady();
         Http::fake(['waha.test/*' => Http::response(['id' => 'true_628@c.us'])]);
 
-        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '081111111111']);
+        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Promo', 'message' => 'Halo', 'audience' => 'all',
@@ -132,8 +132,8 @@ class BroadcastPlatformTest extends TestCase
     {
         $this->actingAsClinicUser();
 
-        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '081111111111', 'whatsapp_opt_in' => true]);
-        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '082222222222', 'whatsapp_opt_in' => false]);
+        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111', 'whatsapp_opt_in' => true]);
+        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '082222222222', 'whatsapp_opt_in' => false]);
 
         $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Promo', 'message' => 'Halo {nama}', 'audience' => 'all', 'kind' => 'promo',
@@ -147,7 +147,7 @@ class BroadcastPlatformTest extends TestCase
         $facial = Service::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Facial']);
         // Pasien opt-out promosi — pengingat operasional tetap boleh.
         $patient = Patient::factory()->create([
-            'tenant_id' => $this->tenant->id, 'phone' => '081111111111', 'whatsapp_opt_in' => false,
+            'tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111', 'whatsapp_opt_in' => false,
         ]);
 
         $this->paidVisit($patient, $facial, now()->subDays(35)->toDateString());
@@ -176,7 +176,7 @@ class BroadcastPlatformTest extends TestCase
         $this->actingAsClinicUser();
 
         $facial = Service::factory()->create(['tenant_id' => $this->tenant->id]);
-        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id, 'phone' => '081111111111']);
+        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
 
         $this->paidVisit($patient, $facial, now()->subDays(10)->toDateString());
 
@@ -195,7 +195,7 @@ class BroadcastPlatformTest extends TestCase
 
         $facial = Service::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Facial Glow']);
         $patient = Patient::factory()->create([
-            'tenant_id' => $this->tenant->id, 'name' => 'Desi', 'phone' => '081111111111',
+            'tenant_id' => $this->tenant->id, 'name' => 'Desi', 'whatsapp' => '081111111111',
         ]);
         $this->paidVisit($patient, $facial, now()->subDays(40)->toDateString());
 

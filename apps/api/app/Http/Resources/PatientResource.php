@@ -16,7 +16,6 @@ class PatientResource extends JsonResource
             'birth_date' => $this->birth_date?->format('Y-m-d'),
             'gender' => $this->gender,
             'gender_label' => $this->gender ? __('patient.gender_'.$this->gender) : null,
-            'phone' => $this->phone,
             'whatsapp' => $this->whatsapp,
             'referred_by' => $this->referred_by,
             'referrer_name' => $this->referrer?->name,

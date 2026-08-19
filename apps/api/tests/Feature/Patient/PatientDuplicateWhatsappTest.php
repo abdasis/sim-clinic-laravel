@@ -8,7 +8,7 @@ use App\Services\PatientService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class PatientDuplicatePhoneTest extends TestCase
+class PatientDuplicateWhatsappTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -28,16 +28,16 @@ class PatientDuplicatePhoneTest extends TestCase
         app()->instance('tenant', $this->tenant);
     }
 
-    public function test_duplicate_phone_warns_but_does_not_block(): void
+    public function test_duplicate_whatsapp_warns_but_does_not_block(): void
     {
         $existing = Patient::factory()->create([
             'tenant_id' => $this->tenant->id,
-            'phone' => '081200000001',
+            'whatsapp' => '081200000001',
         ]);
 
         [$patient, $duplicate] = app(PatientService::class)->create([
             'name' => 'Anak Pertama',
-            'phone' => '081200000001',
+            'whatsapp' => '081200000001',
             'gender' => 'female',
         ]);
 
@@ -46,23 +46,23 @@ class PatientDuplicatePhoneTest extends TestCase
         $this->assertSame($existing->id, $duplicate->id);
     }
 
-    public function test_unique_phone_produces_no_warning(): void
+    public function test_unique_whatsapp_produces_no_warning(): void
     {
         Patient::factory()->create([
             'tenant_id' => $this->tenant->id,
-            'phone' => '081200000001',
+            'whatsapp' => '081200000001',
         ]);
 
         [, $duplicate] = app(PatientService::class)->create([
             'name' => 'Pasien Lain',
-            'phone' => '081200000002',
+            'whatsapp' => '081200000002',
             'gender' => 'male',
         ]);
 
         $this->assertNull($duplicate);
     }
 
-    public function test_same_phone_in_other_tenant_is_not_a_duplicate(): void
+    public function test_same_whatsapp_in_other_tenant_is_not_a_duplicate(): void
     {
         $other = Tenant::create([
             'name' => 'Klinik Lain',
@@ -73,12 +73,12 @@ class PatientDuplicatePhoneTest extends TestCase
 
         Patient::factory()->create([
             'tenant_id' => $other->id,
-            'phone' => '081200000001',
+            'whatsapp' => '081200000001',
         ]);
 
         [, $duplicate] = app(PatientService::class)->create([
             'name' => 'Pasien Tenant Ini',
-            'phone' => '081200000001',
+            'whatsapp' => '081200000001',
             'gender' => 'male',
         ]);
 

@@ -242,13 +242,13 @@ class AutoReminderTest extends TestCase
         $this->assertSame(2, Broadcast::query()->count());
     }
 
-    public function test_patient_without_a_valid_phone_is_skipped(): void
+    public function test_patient_without_a_valid_whatsapp_is_skipped(): void
     {
         $this->actingAsClinicUser();
         $this->activateSetting(30);
 
         $patient = $this->patientTreated(now()->subDays(60)->toDateTimeString());
-        $patient->update(['phone' => '', 'whatsapp' => null]);
+        $patient->update(['whatsapp' => '']);
 
         $this->assertSame(0, (new AutoReminderEngine)->run()['created']);
     }
