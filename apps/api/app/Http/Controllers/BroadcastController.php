@@ -18,6 +18,7 @@ use App\Services\BroadcastService;
 use App\Support\BroadcastAudienceBuilder;
 use App\Support\PhoneNumber;
 use App\Support\WahaClient;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -223,20 +224,30 @@ class BroadcastController extends Controller
 
         try {
             $status = $client->sessionStatus();
-            $connected = ($status['status'] ?? null) === 'WORKING';
+        } catch (RequestException $e) {
+            // 404 = sesi belum dibuat di WAHA — buat dulu, lalu ambil status segar.
+            // Retry path tetap dijaga: create/status ulang bisa melempar (mis. 409
+            // saat dua poll bersamaan), jangan sampai jadi 500 mentah.
+            if ($e->response->status() === 404) {
+                try {
+                    $client->createSession();
+                    $status = $client->sessionStatus();
+                } catch (\Throwable $retryError) {
+                    Log::error('WAHA create/retry status gagal', ['exception' => $retryError]);
 
-            return response()->json([
-                'data' => [
-                    'available' => true,
-                    'connected' => $connected,
-                    'number' => $this->accountNumber($status),
-                    'name' => $status['me']['pushName'] ?? null,
-                    // Sesi yang belum tersambung dimulai dulu; tanpa itu WAHA
-                    // tidak pernah menerbitkan QR untuk dipindai.
-                    'qr' => $connected ? null : $this->qrAfterStart($client),
-                ],
-                'meta' => [],
-            ]);
+                    return response()->json([
+                        'data' => ['available' => true, 'connected' => false, 'qr' => null, 'error' => true],
+                        'meta' => [],
+                    ]);
+                }
+            } else {
+                Log::error('WAHA tidak merespons', ['exception' => $e]);
+
+                return response()->json([
+                    'data' => ['available' => true, 'connected' => false, 'qr' => null, 'error' => true],
+                    'meta' => [],
+                ]);
+            }
         } catch (\Throwable $e) {
             Log::error('WAHA tidak merespons', ['exception' => $e]);
 
@@ -245,6 +256,21 @@ class BroadcastController extends Controller
                 'meta' => [],
             ]);
         }
+
+        $connected = ($status['status'] ?? null) === 'WORKING';
+
+        return response()->json([
+            'data' => [
+                'available' => true,
+                'connected' => $connected,
+                'number' => $this->accountNumber($status),
+                'name' => $status['me']['pushName'] ?? null,
+                // Sesi yang belum tersambung dimulai dulu; tanpa itu WAHA
+                // tidak pernah menerbitkan QR untuk dipindai.
+                'qr' => $connected ? null : $this->qrAfterStart($client),
+            ],
+            'meta' => [],
+        ]);
     }
 
     /**

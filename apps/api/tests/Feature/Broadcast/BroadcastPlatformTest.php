@@ -15,6 +15,7 @@ use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use App\Support\ReminderEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\Concerns\InteractsWithTenant;
@@ -269,5 +270,89 @@ class BroadcastPlatformTest extends TestCase
         ])->assertOk();
 
         Http::assertSent(fn ($request) => $request['chatId'] === '6281234567890@c.us');
+    }
+
+    public function test_connection_returns_qr_as_data_uri_when_not_connected(): void
+    {
+        $this->actingAsClinicUser();
+        $this->wahaReady();
+
+        Http::fake([
+            'waha.test/api/sessions/*' => Http::response(['status' => 'SCAN_QR_CODE'], 200),
+            'waha.test/api/sessions/*/start' => Http::response([], 200),
+            'waha.test/api/*/auth/qr' => Http::response('fake-png-bytes', 200, ['Content-Type' => 'image/png']),
+        ]);
+
+        $response = $this->getJson($this->tenantUrl('broadcasts/connection'));
+
+        $response->assertOk()
+            ->assertJsonPath('data.connected', false)
+            ->assertJsonPath('data.available', true);
+
+        $qr = $response->json('data.qr');
+        $this->assertStringStartsWith('data:image/png;base64,', $qr);
+        $this->assertStringContainsString('ZmFrZS1wbmctYnl0ZXM=', $qr);
+    }
+
+    public function test_connection_creates_session_on_404_then_returns_qr(): void
+    {
+        $this->actingAsClinicUser();
+        $this->wahaReady();
+
+        $session = WhatsappSetting::first()->session;
+
+        $sessionStatusCalls = 0;
+
+        Http::fake(function (Request $request) use (&$sessionStatusCalls, $session) {
+            if ($request->url() === 'https://waha.test/api/sessions/'.$session) {
+                $sessionStatusCalls++;
+
+                return $sessionStatusCalls === 1
+                    ? Http::response([], 404)
+                    : Http::response(['status' => 'STARTING'], 200);
+            }
+
+            if ($request->url() === 'https://waha.test/api/sessions' && $request->method() === 'POST') {
+                return Http::response(['name' => $session, 'status' => 'STARTING'], 200);
+            }
+
+            if ($request->method() === 'POST' && str_contains($request->url(), '/api/sessions/'.$session.'/start')) {
+                return Http::response([], 200);
+            }
+
+            if ($request->method() === 'GET' && str_contains($request->url(), '/api/'.$session.'/auth/qr')) {
+                return Http::response('fake-png-bytes', 200, ['Content-Type' => 'image/png']);
+            }
+
+            return Http::response([], 200);
+        });
+
+        $response = $this->getJson($this->tenantUrl('broadcasts/connection'));
+
+        $response->assertOk()
+            ->assertJsonPath('data.connected', false)
+            ->assertJsonPath('data.available', true);
+
+        $qr = $response->json('data.qr');
+        $this->assertStringStartsWith('data:image/png;base64,', $qr);
+
+        Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+            && $r->url() === 'https://waha.test/api/sessions'
+            && $r['name'] === $session);
+    }
+
+    public function test_connection_reports_error_when_waha_down(): void
+    {
+        $this->actingAsClinicUser();
+        $this->wahaReady();
+
+        Http::fake(['waha.test/*' => Http::response(['error' => true], 500)]);
+
+        $this->getJson($this->tenantUrl('broadcasts/connection'))
+            ->assertOk()
+            ->assertJsonPath('data.error', true)
+            ->assertJsonPath('data.qr', null)
+            ->assertJsonPath('data.connected', false)
+            ->assertJsonPath('data.available', true);
     }
 }

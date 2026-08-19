@@ -63,13 +63,24 @@ class WahaClient
             ->throw();
     }
 
+    /** Buat sesi WAHA bila belum ada. Gagal create dilempar ke pemanggil. */
+    public function createSession(): void
+    {
+        $this->request()
+            ->post($this->url('/api/sessions'), ['name' => $this->session])
+            ->throw();
+    }
+
     public function qrCode(): ?string
     {
-        $qr = $this->request()
-            ->get($this->url('/api/'.$this->session.'/auth/qr'))
-            ->json('qr');
+        $response = $this->request()
+            ->get($this->url('/api/'.$this->session.'/auth/qr'));
 
-        return is_string($qr) ? $qr : null;
+        if (! $response->successful() || $response->body() === '') {
+            return null;
+        }
+
+        return 'data:image/png;base64,'.base64_encode($response->body());
     }
 
     public function logout(): void
