@@ -61,6 +61,92 @@ class ChatbotWebhookTest extends TestCase
         );
     }
 
+    /**
+     * Status WhatsApp tiba lewat webhook yang sama dengan chat biasa.
+     *
+     * Pernah lolos di produksi: orang yang memasang status kabar duka menerima
+     * balasan bela sungkawa pribadi dari klinik, padahal ia tidak pernah
+     * mengirim pesan apa pun. Nomornya ikut terbawa lewat kolom alt, jadi
+     * pemeriksaan nomor saja tidak cukup — alamat obrolannya yang harus
+     * diperiksa.
+     */
+    public function test_a_whatsapp_status_is_never_answered(): void
+    {
+        $this->hit([
+            ...$this->message('Innalillahi, turut berduka cita.'),
+            'from' => 'status@broadcast',
+            'participant' => '6281234567890@c.us',
+            '_data' => ['key' => [
+                'remoteJid' => 'status@broadcast',
+                'participant' => '6281234567890@s.whatsapp.net',
+                'remoteJidAlt' => '6281234567890@s.whatsapp.net',
+            ]],
+        ])->assertOk();
+
+        Queue::assertNothingPushed();
+    }
+
+    public function test_a_group_message_is_never_answered(): void
+    {
+        $this->hit([
+            ...$this->message('Halo semua'),
+            'from' => '120363042123456789@g.us',
+            'participant' => '6281234567890@c.us',
+            '_data' => ['key' => [
+                'remoteJid' => '120363042123456789@g.us',
+                'participant' => '6281234567890@s.whatsapp.net',
+                'remoteJidAlt' => '6281234567890@s.whatsapp.net',
+            ]],
+        ])->assertOk();
+
+        Queue::assertNothingPushed();
+    }
+
+    public function test_a_channel_post_is_never_answered(): void
+    {
+        $this->hit([
+            ...$this->message('Promo terbaru!'),
+            'from' => '120363042123456789@newsletter',
+        ])->assertOk();
+
+        Queue::assertNothingPushed();
+    }
+
+    /**
+     * Kolom alt hanya sah sebagai pengganti LID. Dipakai di luar itu, payload
+     * mana pun bisa menyelundupkan nomor orang yang tidak menghubungi klinik.
+     */
+    public function test_the_alt_number_only_stands_in_for_a_lid(): void
+    {
+        $this->hit([
+            ...$this->message(),
+            'from' => '239959873220620@lid',
+            '_data' => ['key' => ['remoteJidAlt' => '6281234567890@s.whatsapp.net']],
+        ])->assertOk();
+
+        Queue::assertPushed(
+            ProcessInboundMessageJob::class,
+            fn (ProcessInboundMessageJob $job) => $job->senderPhone === '6281234567890',
+        );
+    }
+
+    /**
+     * Nomor pada kolom alt tidak boleh menggeser lawan bicara yang sebenarnya.
+     */
+    public function test_a_direct_chat_answers_the_number_that_wrote(): void
+    {
+        $this->hit([
+            ...$this->message(),
+            'from' => '6289999999999@c.us',
+            '_data' => ['key' => ['remoteJidAlt' => '6281234567890@s.whatsapp.net']],
+        ])->assertOk();
+
+        Queue::assertPushed(
+            ProcessInboundMessageJob::class,
+            fn (ProcessInboundMessageJob $job) => $job->senderPhone === '6289999999999',
+        );
+    }
+
     /** Token salah tidak boleh membocorkan bahwa route-nya memang ada. */
     public function test_a_wrong_token_is_not_found(): void
     {

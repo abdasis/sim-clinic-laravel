@@ -62,6 +62,23 @@ class InboundMessageController extends Controller
             return $this->accepted('pesan keluar');
         }
 
+        // Hanya percakapan berdua yang boleh dijawab. Status WhatsApp, grup,
+        // saluran, dan daftar siaran semuanya tiba lewat webhook yang sama;
+        // tanpa saringan ini, orang yang memasang status berisi kabar duka
+        // atau tautan TikTok akan menerima balasan pribadi dari klinik
+        // padahal ia tidak pernah mengirim pesan apa pun ke klinik.
+        $chatJid = (string) ($payload['from'] ?? $payload['_data']['key']['remoteJid'] ?? '');
+
+        if (! $this->isDirectChat($chatJid, $payload)) {
+            Log::channel('chatbot')->warning('Pesan masuk ditolak: bukan percakapan berdua', [
+                'session' => $session,
+                'from' => $chatJid,
+                'payload' => $payload,
+            ]);
+
+            return $this->accepted('bukan percakapan berdua');
+        }
+
         $body = $payload['body'] ?? null;
 
         // Media belum didukung; membalas gambar dengan tebakan teks lebih buruk
@@ -79,21 +96,23 @@ class InboundMessageController extends Controller
         // Nomor pengirim. WhatsApp kini mengirim identitas pengguna sebagai
         // LID (contoh "239959873220620@lid") alih-alih nomor telepon langsung.
         // LID tidak bisa dipakai membalas; nomor aslinya disediakan WAHA di
-        // _data.key.remoteJidAlt (format "628xx@s.whatsapp.net"). Dipakai dulu
-        // kalau ada, dan `from` hanya fallback untuk payload lama.
-        $rawFrom = (string) ($payload['from'] ?? '');
+        // _data.key.remoteJidAlt (format "628xx@s.whatsapp.net").
+        //
+        // Penggantinya hanya dipakai saat `from` memang berupa LID. Kalau
+        // dipakai tanpa syarat, payload yang `from`-nya bukan nomor seseorang
+        // — status, grup, siaran — tetap bisa menyelundupkan nomor lewat
+        // kolom alt dan berbalas ke orang yang tidak pernah menghubungi klinik.
         $remoteJidAlt = (string) ($payload['_data']['key']['remoteJidAlt'] ?? '');
-
-        if ($remoteJidAlt !== '') {
-            $rawFrom = $remoteJidAlt;
-        }
+        $rawFrom = str_ends_with($chatJid, '@lid') && $remoteJidAlt !== ''
+            ? $remoteJidAlt
+            : $chatJid;
 
         $phone = PhoneNumber::normalize($rawFrom);
 
         if ($phone === null) {
             Log::channel('chatbot')->warning('Pesan masuk ditolak: nomor pengirim tidak valid', [
                 'session' => $session,
-                'from' => $payload['from'] ?? null,
+                'from' => $chatJid,
                 'remoteJidAlt' => $remoteJidAlt,
             ]);
 
@@ -110,6 +129,47 @@ class InboundMessageController extends Controller
         ProcessInboundMessageJob::dispatch($setting->tenant_id, $phone, trim($body));
 
         return $this->accepted('diterima');
+    }
+
+    /**
+     * Percakapan berdua, bukan status/grup/saluran/siaran.
+     *
+     * Dua penjaga sekaligus, karena payload tiap engine WAHA berbeda bentuk.
+     * Pertama alamat obrolannya sendiri: hanya JID pengguna yang diterima.
+     * Kedua keberadaan `participant` — kolom itu menyebut "siapa yang menulis
+     * di dalam ruang bersama", jadi kehadirannya sudah cukup menandakan pesan
+     * ini bukan berasal dari obrolan berdua, apa pun bentuk alamatnya.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function isDirectChat(string $chatJid, array $payload): bool
+    {
+        if ($chatJid === '') {
+            return false;
+        }
+
+        $participant = $payload['participant'] ?? $payload['_data']['key']['participant'] ?? null;
+
+        if (filled($participant)) {
+            return false;
+        }
+
+        // Payload lama menyebut nomor tanpa domain sama sekali. Itu tidak
+        // pernah berarti ruang bersama, jadi diloloskan ke pemeriksaan nomor
+        // di bawah alih-alih ditolak di sini.
+        if (! str_contains($chatJid, '@')) {
+            return true;
+        }
+
+        foreach (['@g.us', '@broadcast', '@newsletter'] as $suffix) {
+            if (str_ends_with($chatJid, $suffix)) {
+                return false;
+            }
+        }
+
+        return str_ends_with($chatJid, '@c.us')
+            || str_ends_with($chatJid, '@s.whatsapp.net')
+            || str_ends_with($chatJid, '@lid');
     }
 
     /**
