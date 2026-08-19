@@ -2,6 +2,16 @@
 
 return [
     'clinic' => 'Klinik',
+    // Label grup menu sidebar. Item tanpa grup (mis. Dasbor) tampil tanpa
+    // label, langsung di puncak menu.
+    'menu_group' => [
+        'operations' => 'Operasional',
+        'catalog' => 'Katalog & Stok',
+        'finance' => 'Keuangan',
+        'communication' => 'Komunikasi',
+        'settings' => 'Pengaturan',
+        'insights' => 'Laporan & Log',
+    ],
     'forbidden' => 'Anda tidak memiliki izin untuk mengakses modul ini.',
     'role' => [
         'admin' => 'Admin',

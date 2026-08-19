@@ -21,6 +21,12 @@ export interface SidebarNavItem {
   url: string
   icon: IconSvgElement
   isActive?: boolean
+  /**
+   * Label grup terjemahan yang sudah di-resolve. Item dengan `group` sama
+   * dikelompokkan dalam satu SidebarGroup berlabel; item tanpa `group`
+   * dirender di puncak tanpa label.
+   */
+  group?: string
   items?: { title: string; url: string; isActive?: boolean }[]
 }
 
@@ -34,7 +40,6 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   brandTitle: string
   brandSubtitle: string
   brandTo?: string
-  groupLabel?: string
   navMain: SidebarNavItem[]
   navSecondary?: SidebarNavItem[]
   user: SidebarUser
@@ -48,7 +53,6 @@ export function AppSidebar({
   brandTitle,
   brandSubtitle,
   brandTo = "/",
-  groupLabel,
   navMain,
   navSecondary,
   user,
@@ -80,7 +84,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} groupLabel={groupLabel} />
+        <NavMain items={navMain} />
         {navSecondary?.length ? (
           <NavSecondary items={navSecondary} className="mt-auto" />
         ) : null}

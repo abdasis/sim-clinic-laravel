@@ -49,24 +49,28 @@ function CentralLayout() {
   }
 
   // ponytail: hanya modul Dasbor + Tenants; tambah item saat modul central baru ada
+  const platformGroup = t("general.platform")
   const navMain: SidebarNavItem[] = [
     {
       title: t("central.dashboard"),
       url: "/central",
       icon: DashboardSquare01Icon,
       isActive: pathname === "/central",
+      group: platformGroup,
     },
     {
       title: t("tenant.tenants"),
       url: "/central/tenants",
       icon: Building02Icon,
       isActive: pathname.startsWith("/central/tenants"),
+      group: platformGroup,
     },
     {
       title: t("waha.title"),
       url: "/central/waha",
       icon: WhatsappIcon,
       isActive: pathname.startsWith("/central/waha"),
+      group: platformGroup,
     },
   ]
 
@@ -85,7 +89,6 @@ function CentralLayout() {
           brandTitle={t("general.central")}
           brandSubtitle={t("general.admin_panel")}
           brandTo="/central"
-          groupLabel={t("general.platform")}
           navMain={navMain}
           user={user}
           onLogout={handleLogout}

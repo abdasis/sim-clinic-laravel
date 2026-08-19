@@ -74,6 +74,12 @@ interface NavItem {
    */
   roles: string[]
   icon: IconSvgElement
+  /**
+   * Kunci grup (tanpa prefix `clinic.menu_group.`). Item tanpa `group`
+   * tampil di puncak tanpa label. Urutan item mengikuti urutan kemunculan
+   * grup, jadi susun item berurutan per grup.
+   */
+  group?: string
   children?: NavChild[]
 }
 
@@ -103,16 +109,20 @@ function ClinicLayout() {
   }
 
   const items: NavItem[] = [
+    // Puncak — tanpa grup.
     { key: "", label: t("dashboard.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: DashboardSquare01Icon },
-    { key: "staff", label: t("staff.title"), permission: "staff.view", roles: ["admin"], icon: UserGroupIcon },
-    { key: "roles", label: t("role.title"), permission: "role.view", roles: ["admin"], icon: SecurityLockIcon },
-    { key: "services", label: t("service.title"), permission: "service.view", roles: ["admin", "doctor", "therapist"], icon: StethoscopeIcon },
-    { key: "patients", label: t("patient.title"), permission: "patient.view", roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulseIcon },
-    { key: "bookings", label: t("booking.title"), permission: "booking.view", roles: ["admin", "doctor", "therapist"], icon: Calendar01Icon },
-    { key: "medical-records", label: t("medical_record.title"), permission: "medical_record.view", roles: ["admin", "doctor", "therapist"], icon: File02Icon },
-    { key: "products", label: t("product.title"), permission: "product.view", roles: ["admin"], icon: PackageIcon },
-    { key: "categories", label: t("category.title"), permission: "category.view", roles: ["admin"], icon: TagsIcon },
-    { key: "inventory", label: t("inventory.title"), permission: "inventory.view", roles: ["admin"], icon: Layers01Icon },
+    // Operasional.
+    { key: "staff", label: t("staff.title"), permission: "staff.view", roles: ["admin"], icon: UserGroupIcon, group: "operations" },
+    { key: "roles", label: t("role.title"), permission: "role.view", roles: ["admin"], icon: SecurityLockIcon, group: "operations" },
+    { key: "patients", label: t("patient.title"), permission: "patient.view", roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulseIcon, group: "operations" },
+    { key: "bookings", label: t("booking.title"), permission: "booking.view", roles: ["admin", "doctor", "therapist"], icon: Calendar01Icon, group: "operations" },
+    { key: "medical-records", label: t("medical_record.title"), permission: "medical_record.view", roles: ["admin", "doctor", "therapist"], icon: File02Icon, group: "operations" },
+    // Katalog & Stok.
+    { key: "services", label: t("service.title"), permission: "service.view", roles: ["admin", "doctor", "therapist"], icon: StethoscopeIcon, group: "catalog" },
+    { key: "products", label: t("product.title"), permission: "product.view", roles: ["admin"], icon: PackageIcon, group: "catalog" },
+    { key: "categories", label: t("category.title"), permission: "category.view", roles: ["admin"], icon: TagsIcon, group: "catalog" },
+    { key: "inventory", label: t("inventory.title"), permission: "inventory.view", roles: ["admin"], icon: Layers01Icon, group: "catalog" },
+    // Keuangan.
     {
       key: "pos",
       label: t("pos.title"),
@@ -120,17 +130,21 @@ function ClinicLayout() {
       roles: ["admin", "cashier"],
       // Tidak ada ikon keranjang di set gratis; POS di klinik = meja kasir.
       icon: CashierIcon,
+      group: "finance",
       children: [
         { key: "pos", label: t("pos.add_transaction") },
         { key: "pos/transactions", label: t("pos.transactions") },
       ],
     },
-    { key: "promos", label: t("promo.title"), permission: "promo.view", roles: ["admin", "cashier"], icon: DiscountTag01Icon },
-    { key: "expenses", label: t("expense.title"), permission: "expense.view", roles: ["admin"], icon: MoneyBag02Icon },
-    { key: "broadcasts", label: t("broadcast.title"), permission: "broadcast.view", roles: ["admin"], icon: BubbleChatIcon },
-    { key: "company-profile", label: t("company_profile.title"), permission: "content.view", roles: ["admin"], icon: Globe02Icon },
-    { key: "reports", label: t("report.title"), permission: "report.view", roles: ["admin"], icon: BarChartIcon },
-    { key: "activity-logs", label: t("activity_log.title"), permission: "activity_log.view", roles: ["admin"], icon: ClockIcon },
+    { key: "promos", label: t("promo.title"), permission: "promo.view", roles: ["admin", "cashier"], icon: DiscountTag01Icon, group: "finance" },
+    { key: "expenses", label: t("expense.title"), permission: "expense.view", roles: ["admin"], icon: MoneyBag02Icon, group: "finance" },
+    // Komunikasi.
+    { key: "broadcasts", label: t("broadcast.title"), permission: "broadcast.view", roles: ["admin"], icon: BubbleChatIcon, group: "communication" },
+    // Pengaturan.
+    { key: "company-profile", label: t("company_profile.title"), permission: "content.view", roles: ["admin"], icon: Globe02Icon, group: "settings" },
+    // Laporan & Log.
+    { key: "reports", label: t("report.title"), permission: "report.view", roles: ["admin"], icon: BarChartIcon, group: "insights" },
+    { key: "activity-logs", label: t("activity_log.title"), permission: "activity_log.view", roles: ["admin"], icon: ClockIcon, group: "insights" },
   ]
 
   // Menu mengikuti izin sungguhan, bukan peran yang di-hardcode. Sebelumnya
@@ -154,6 +168,7 @@ function ClinicLayout() {
       url: item.key ? `${base}/${item.key}` : base,
       icon: item.icon,
       isActive: isActiveItem(pathname, base, item),
+      group: item.group ? t(`clinic.menu_group.${item.group}`) : undefined,
       items: item.children?.map((child) => ({
         title: child.label,
         url: `${base}/${child.key}`,
@@ -189,7 +204,6 @@ function ClinicLayout() {
           brandTitle={tenant}
           brandSubtitle={t("clinic.clinic")}
           brandTo={navMain[0]?.url ?? base}
-          groupLabel={t("clinic.clinic")}
           navMain={navMain}
           user={sidebarUser}
           onLogout={handleLogout}
