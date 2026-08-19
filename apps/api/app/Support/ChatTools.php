@@ -9,6 +9,7 @@ use App\Actions\Chatbot\GetActivePromosAction;
 use App\Actions\Chatbot\GetClinicInfoAction;
 use App\Actions\Chatbot\GetProductStockAction;
 use App\Actions\Chatbot\ListPatientBookingsAction;
+use App\Actions\Chatbot\RegisterPatientAction;
 use App\Actions\Chatbot\SearchServicesAction;
 use App\Actions\Chatbot\SearchStaffAction;
 use App\Models\Patient;
@@ -95,6 +96,17 @@ class ChatTools
                 ],
                 ['service_id', 'assignee_id', 'start_at'],
             ),
+            self::tool(
+                'register_patient',
+                'Daftarkan pengirim chat sebagai pasien baru klinik. Panggil HANYA setelah pasien menyebut namanya dan menyatakan setuju mendaftar — rangkum dulu datanya dan minta konfirmasi. Nomor WhatsApp diambil otomatis dari pengirim, jangan pernah menanyakannya.',
+                [
+                    'name' => ['type' => 'string', 'description' => 'Nama lengkap pasien seperti yang ia sebutkan.'],
+                    'birth_date' => ['type' => 'string', 'description' => 'Tanggal lahir format Y-m-d. Kosongkan bila pasien tidak menyebutkannya.'],
+                    'gender' => ['type' => 'string', 'description' => 'Jenis kelamin: male, female, atau other. Kosongkan bila tidak disebut.'],
+                    'address' => ['type' => 'string', 'description' => 'Alamat pasien. Kosongkan bila tidak disebut.'],
+                ],
+                ['name'],
+            ),
         ];
     }
 
@@ -108,8 +120,12 @@ class ChatTools
      * @param  array<string, mixed>  $arguments
      * @return array<string, mixed>|array<int, mixed>
      */
-    public static function execute(string $name, array $arguments, ?Patient $patient): array
-    {
+    public static function execute(
+        string $name,
+        array $arguments,
+        ?Patient $patient,
+        ?string $senderPhone = null,
+    ): array {
         $keyword = is_string($arguments['keyword'] ?? null) ? $arguments['keyword'] : null;
 
         try {
@@ -131,6 +147,7 @@ class ChatTools
                     ? ['error' => __('chatbot.booking_patient_unknown')]
                     : app(CancelMyBookingAction::class)->handle($patient, (int) ($arguments['booking_id'] ?? 0)),
                 'create_booking' => self::book($arguments, $patient),
+                'register_patient' => self::register($arguments, $patient, $senderPhone),
                 default => ['error' => 'Tool tidak dikenal: '.$name],
             };
         } catch (Throwable $e) {
@@ -176,6 +193,37 @@ class ChatTools
             // Bentrok jadwal tidak membatalkan booking — klinik memang kerap
             // menumpuk jadwal singkat — tapi pasien berhak diberi tahu.
             'overlap_warnings' => app(BookingOverlapService::class)->detect($booking),
+        ];
+    }
+
+    /**
+     * Nomor pengirim tidak pernah diambil dari $arguments. Itu bukan
+     * kehati-hatian berlebih: satu-satunya bukti kepemilikan nomor di sini
+     * adalah fakta bahwa pesannya datang dari sana.
+     *
+     * @param  array<string, mixed>  $arguments
+     * @return array<string, mixed>
+     */
+    private static function register(array $arguments, ?Patient $patient, ?string $senderPhone): array
+    {
+        if ($patient !== null) {
+            return ['error' => __('chatbot.already_registered')];
+        }
+
+        if ($senderPhone === null) {
+            return ['error' => __('chatbot.registration_disabled')];
+        }
+
+        $result = app(RegisterPatientAction::class)->handle($senderPhone, $arguments);
+
+        if ($result['patient'] === null) {
+            return ['error' => $result['error']];
+        }
+
+        return [
+            'patient_id' => $result['patient']->id,
+            'name' => $result['patient']->name,
+            'message' => __('chatbot.register_patient_success', ['name' => $result['patient']->name]),
         ];
     }
 

@@ -18,7 +18,7 @@ class SaveChatbotSettingAction
     public function handle(array $attributes): ChatbotSetting
     {
         $setting = ChatbotSetting::query()->first();
-        $before = $setting?->only(['is_active', 'agent_name', 'bookable_service_ids']);
+        $before = $setting?->only(['is_active', 'allow_self_registration', 'agent_name', 'bookable_service_ids']);
 
         if ($setting === null) {
             $setting = ChatbotSetting::create($attributes);
@@ -33,7 +33,7 @@ class SaveChatbotSettingAction
             subject: $setting,
             context: $before === null
                 ? ['attributes' => $setting->getAttributes()]
-                : ['old' => $before, 'new' => $setting->only(['is_active', 'agent_name', 'bookable_service_ids'])],
+                : ['old' => $before, 'new' => $setting->only(['is_active', 'allow_self_registration', 'agent_name', 'bookable_service_ids'])],
             description: $setting->is_active
                 ? 'Menyalakan chatbot WhatsApp dengan nama agen '.($setting->agent_name ?: 'bawaan').'.'
                 : 'Mematikan chatbot WhatsApp.',

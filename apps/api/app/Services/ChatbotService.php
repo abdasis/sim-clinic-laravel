@@ -40,18 +40,6 @@ class ChatbotService
      * Balasan untuk satu pesan masuk, atau null bila chatbot memang tidak
      * seharusnya menjawab (dimatikan admin, atau penyedia AI belum disetel).
      */
-    /**
-     * Apakah chatbot klinik ini menyala.
-     *
-     * Dibuka supaya pemanggil bisa tahu sebelum memulai efek samping yang
-     * terlihat pasien — indikator mengetik tidak boleh muncul untuk bot yang
-     * memang tidak akan pernah menjawab.
-     */
-    public function isActive(): bool
-    {
-        return (bool) ChatbotSetting::query()->value('is_active');
-    }
-
     public function reply(string $senderPhone, string $incoming): ?string
     {
         $setting = ChatbotSetting::query()->first();
@@ -79,6 +67,18 @@ class ChatbotService
         }
 
         return $answer;
+    }
+
+    /**
+     * Apakah chatbot klinik ini menyala.
+     *
+     * Dibuka supaya pemanggil bisa tahu sebelum memulai efek samping yang
+     * terlihat pasien — indikator mengetik tidak boleh muncul untuk bot yang
+     * memang tidak akan pernah menjawab.
+     */
+    public function isActive(): bool
+    {
+        return (bool) ChatbotSetting::query()->value('is_active');
     }
 
     /**
@@ -140,7 +140,7 @@ class ChatbotService
             $arguments = [];
         }
 
-        $output = ChatTools::execute($name, $arguments, $patient);
+        $output = ChatTools::execute($name, $arguments, $patient, $senderPhone);
         $encoded = json_encode($output, JSON_UNESCAPED_UNICODE) ?: '[]';
 
         // Hasil tool ikut tersimpan: kalau nanti ada pasien mengeluh diberi
@@ -209,9 +209,17 @@ class ChatbotService
             'Jangan pernah menyebut kata "tool", "sistem", atau "database" ke pasien. Bicaralah seperti staf klinik yang sedang mengecek.',
         ];
 
-        $lines[] = $patient === null
-            ? 'Nomor ini belum terdaftar sebagai pasien. Kamu tetap boleh menjawab pertanyaan informasi, tapi booking lewat chat belum bisa diproses — arahkan pasien untuk mendaftar dulu ke klinik.'
-            : "Kamu sedang berbicara dengan {$patient->name}, pasien terdaftar. Sapa dengan namanya.";
+        $lines[] = match (true) {
+            $patient !== null => "Kamu sedang berbicara dengan {$patient->name}, pasien terdaftar. Sapa dengan namanya.",
+            // Pendaftaran mandiri menyala: pasien tidak perlu lagi disuruh
+            // datang ke klinik hanya untuk bisa booking.
+            (bool) $setting->allow_self_registration => 'Nomor ini belum terdaftar sebagai pasien, tetapi klinik membuka pendaftaran lewat chat. '
+                .'Tawarkan pasien mendaftar sekarang juga. Yang wajib ditanyakan hanya nama lengkap; tanggal lahir dan jenis kelamin boleh ditanyakan tapi tidak wajib, '
+                .'dan jangan pernah menanyakan nomor WhatsApp — nomornya sudah diketahui dari chat ini. '
+                .'Setelah data terkumpul, rangkum singkat lalu minta konfirmasi eksplisit ("Benar ingin saya daftarkan sebagai ...?"). '
+                .'Panggil register_patient hanya setelah pasien menjawab setuju. Sesudah pendaftaran berhasil, pasien baru bisa dibuatkan booking.',
+            default => 'Nomor ini belum terdaftar sebagai pasien. Kamu tetap boleh menjawab pertanyaan informasi, tapi booking lewat chat belum bisa diproses — arahkan pasien untuk mendaftar dulu ke klinik.',
+        };
 
         return implode("\n\n", $lines);
     }

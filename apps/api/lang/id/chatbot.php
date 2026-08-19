@@ -8,6 +8,8 @@ return [
     'settings' => 'Pengaturan Chatbot',
     'is_active' => 'Aktifkan chatbot',
     'is_active_hint' => 'Saat mati, pesan masuk tidak dibalas sama sekali.',
+    'allow_self_registration' => 'Izinkan pasien mendaftar lewat chat',
+    'allow_self_registration_hint' => 'Pasien baru bisa mendaftarkan dirinya sendiri dari WhatsApp, lalu langsung booking. Nomornya diambil dari chat, jadi tidak bisa dipalsukan.',
     'agent_name' => 'Nama Agen',
     'agent_name_hint' => 'Nama yang dipakai chatbot saat memperkenalkan diri ke pasien.',
     'agent_avatar' => 'Avatar Agen',
@@ -32,6 +34,18 @@ return [
     'tool_failed' => 'Data yang diminta sedang tidak bisa diambil.',
 
     // Penolakan booking — ditulis agar bisa langsung dibacakan ke pasien
+    // Pendaftaran mandiri
+    'registration_disabled' => 'Pendaftaran lewat chat sedang dinonaktifkan. Silakan hubungi klinik untuk mendaftar ya.',
+    'already_registered' => 'Nomor ini sudah terdaftar sebagai pasien, jadi tidak perlu mendaftar lagi.',
+    'register_patient_success' => 'Pendaftaran atas nama :name berhasil. Sekarang sudah bisa langsung membuat booking.',
+    'registration_rate_limited' => 'Percobaan pendaftaran dari nomor ini sudah terlalu sering. Coba lagi satu jam lagi, atau hubungi klinik langsung ya.',
+    'registration_name_required' => 'Nama lengkapnya belum jelas. Tanyakan dulu nama pasien sebelum mendaftarkan.',
+    'registration_birth_date_invalid' => 'Tanggal lahirnya tidak bisa dibaca atau belum lewat. Sebutkan tanggal, bulan, dan tahunnya ya.',
+    'registration_gender_invalid' => 'Jenis kelaminnya tidak dikenali. Isi laki-laki, perempuan, atau kosongkan saja.',
+    'registration_invalid' => 'Data pendaftarannya belum lengkap atau tidak bisa dibaca.',
+    'register_self_hint' => 'Belum terdaftar? Bisa langsung daftar lewat chat ini.',
+    'register_self_confirm' => 'Konfirmasi dulu data pasien sebelum mendaftarkan.',
+
     'booking_patient_unknown' => 'Nomor ini belum terdaftar sebagai pasien, jadi booking lewat chat belum bisa diproses. Silakan daftar dulu di klinik.',
     'booking_service_unknown' => 'Layanan yang dimaksud tidak ditemukan atau sudah tidak tersedia.',
     'booking_service_not_bookable' => 'Layanan :service belum bisa dibooking lewat chat. Silakan hubungi klinik untuk menjadwalkannya.',

@@ -19,6 +19,7 @@ class ChatbotSetting extends Model
     protected $fillable = [
         'tenant_id',
         'is_active',
+        'allow_self_registration',
         'agent_name',
         'agent_avatar_path',
         'bookable_service_ids',
@@ -28,6 +29,7 @@ class ChatbotSetting extends Model
     {
         return [
             'is_active' => 'boolean',
+            'allow_self_registration' => 'boolean',
             'bookable_service_ids' => 'array',
         ];
     }

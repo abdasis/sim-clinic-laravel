@@ -29,6 +29,7 @@ export const Route = createFileRoute("/$tenant/clinic/chatbot/settings")({
 
 interface ChatbotSettings {
   is_active: boolean
+  allow_self_registration: boolean
   agent_name: string | null
   agent_avatar_url: string | null
   bookable_service_ids: number[]
@@ -59,6 +60,8 @@ function ChatbotSettingsPage() {
   const fileInput = useRef<HTMLInputElement>(null)
 
   const [isActive, setIsActive] = useState(false)
+
+  const [allowSelfRegistration, setAllowSelfRegistration] = useState(false)
   const [agentName, setAgentName] = useState("")
   const [bookable, setBookable] = useState<number[]>([])
 
@@ -75,6 +78,7 @@ function ChatbotSettingsPage() {
     if (!data?.data) return
 
     setIsActive(data.data.is_active)
+    setAllowSelfRegistration(data.data.allow_self_registration)
     setAgentName(data.data.agent_name ?? "")
     setBookable(data.data.bookable_service_ids ?? [])
   }, [data])
@@ -83,6 +87,7 @@ function ChatbotSettingsPage() {
     mutationFn: () =>
       apiPut(`/${tenant}/clinic/chatbot/settings`, {
         is_active: isActive,
+        allow_self_registration: allowSelfRegistration,
         agent_name: agentName.trim() || null,
         bookable_service_ids: bookable,
       }),
@@ -158,6 +163,24 @@ function ChatbotSettingsPage() {
             </span>
           </span>
           <Switch checked={isActive} onCheckedChange={setIsActive} />
+        </label>
+
+        {/* Saklar terpisah dari is_active: klinik boleh menjawab pertanyaan
+            tanpa membuka pintu tulis ke tabel pasien. */}
+        <label className="flex items-start justify-between gap-3 rounded-md border border-border/50 p-3">
+          <span className="min-w-0 space-y-1">
+            <span className="block text-sm font-medium">
+              {t("chatbot.allow_self_registration")}
+            </span>
+            <span className="block text-xs text-pretty text-muted-foreground">
+              {t("chatbot.allow_self_registration_hint")}
+            </span>
+          </span>
+          <Switch
+            checked={allowSelfRegistration}
+            onCheckedChange={setAllowSelfRegistration}
+            disabled={!isActive}
+          />
         </label>
       </Section>
 

@@ -19,6 +19,7 @@ class ChatbotSettingResource extends JsonResource
     {
         return [
             'is_active' => (bool) $this->is_active,
+            'allow_self_registration' => (bool) $this->allow_self_registration,
             'agent_name' => $this->agent_name,
             'agent_avatar_path' => $this->agent_avatar_path,
             'agent_avatar_url' => $this->agent_avatar_path

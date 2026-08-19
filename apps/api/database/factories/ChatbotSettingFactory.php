@@ -25,11 +25,19 @@ class ChatbotSettingFactory extends Factory
             'agent_name' => 'Asisten '.fake()->firstName(),
             'agent_avatar_path' => null,
             'bookable_service_ids' => null,
+            // Mati secara bawaan seperti di produksi: yang mengujinya
+            // menyalakannya eksplisit lewat state selfRegistration().
+            'allow_self_registration' => false,
         ];
     }
 
     public function inactive(): static
     {
         return $this->state(fn (): array => ['is_active' => false]);
+    }
+
+    public function selfRegistration(): static
+    {
+        return $this->state(fn (): array => ['allow_self_registration' => true]);
     }
 }
