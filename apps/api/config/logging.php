@@ -105,6 +105,15 @@ return [
             'processors' => [PsrLogMessageProcessor::class],
         ],
 
+        // Log khusus chatbot WhatsApp (pesan masuk, keputusan, dispatch job).
+        // File terpisah supaya pelacakan pesan tidak tenggelam di laravel.log.
+        'chatbot' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/chatbot.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
         'syslog' => [
             'driver' => 'syslog',
             'level' => env('LOG_LEVEL', 'debug'),

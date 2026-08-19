@@ -7,6 +7,7 @@ use App\Models\WhatsappSetting;
 use App\Support\PhoneNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Pintu masuk pesan WhatsApp dari gateway.
@@ -34,18 +35,30 @@ class InboundMessageController extends Controller
         $session = $request->input('session');
         $payload = (array) $request->input('payload', []);
 
+        Log::channel('chatbot')->debug('Pesan masuk dari WAHA', [
+            'session' => $session,
+            'payload_keys' => array_keys($payload),
+            'raw' => $request->all(),
+        ]);
+
         if (! is_string($session) || $session === '') {
+            Log::channel('chatbot')->warning('Pesan masuk ditolak: sesi tidak disebut', ['payload' => $payload]);
+
             return $this->accepted('sesi tidak disebut');
         }
 
         $setting = WhatsappSetting::withoutGlobalScopes()->where('session', $session)->first();
 
         if ($setting === null) {
+            Log::channel('chatbot')->warning('Pesan masuk ditolak: sesi tidak dikenal', ['session' => $session]);
+
             return $this->accepted('sesi tidak dikenal');
         }
 
         // Pesan dari klinik sendiri akan memicu balasan atas balasan sendiri.
         if ($payload['fromMe'] ?? false) {
+            Log::channel('chatbot')->debug('Pesan masuk dilewati: pesan keluar sendiri', ['session' => $session]);
+
             return $this->accepted('pesan keluar');
         }
 
@@ -54,14 +67,32 @@ class InboundMessageController extends Controller
         // Media belum didukung; membalas gambar dengan tebakan teks lebih buruk
         // daripada tidak membalas sama sekali.
         if (($payload['hasMedia'] ?? false) || ! is_string($body) || trim($body) === '') {
+            Log::channel('chatbot')->debug('Pesan masuk dilewati: bukan pesan teks', [
+                'session' => $session,
+                'hasMedia' => $payload['hasMedia'] ?? false,
+                'body' => $body,
+            ]);
+
             return $this->accepted('bukan pesan teks');
         }
 
         $phone = PhoneNumber::normalize((string) ($payload['from'] ?? ''));
 
         if ($phone === null) {
+            Log::channel('chatbot')->warning('Pesan masuk ditolak: nomor pengirim tidak valid', [
+                'session' => $session,
+                'from' => $payload['from'] ?? null,
+            ]);
+
             return $this->accepted('nomor pengirim tidak valid');
         }
+
+        Log::channel('chatbot')->info('Pesan masuk diterima, job di-dispatch', [
+            'tenant_id' => $setting->tenant_id,
+            'session' => $session,
+            'from' => $phone,
+            'body' => trim($body),
+        ]);
 
         ProcessInboundMessageJob::dispatch($setting->tenant_id, $phone, trim($body));
 

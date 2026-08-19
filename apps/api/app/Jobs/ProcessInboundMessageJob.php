@@ -43,9 +43,17 @@ class ProcessInboundMessageJob implements ShouldQueue
 
     public function handle(): void
     {
+        Log::channel('chatbot')->info('Job diproses', [
+            'tenant_id' => $this->tenantId,
+            'from' => $this->senderPhone,
+            'body' => $this->body,
+        ]);
+
         $tenant = Tenant::find($this->tenantId);
 
         if ($tenant === null) {
+            Log::channel('chatbot')->error('Job: tenant tidak ditemukan', ['tenant_id' => $this->tenantId]);
+
             return;
         }
 
@@ -54,6 +62,11 @@ class ProcessInboundMessageJob implements ShouldQueue
         app()->instance('tenant', $tenant);
 
         if (! $this->withinRateLimit()) {
+            Log::channel('chatbot')->warning('Job: melewati batas rate limit', [
+                'tenant_id' => $this->tenantId,
+                'from' => $this->senderPhone,
+            ]);
+
             return;
         }
 
@@ -65,6 +78,11 @@ class ProcessInboundMessageJob implements ShouldQueue
                 'tenant_id' => $this->tenantId,
                 'sender_phone' => $this->senderPhone,
             ]);
+            Log::channel('chatbot')->error('Job: chatbot gagal menyusun balasan', [
+                'exception' => $e->getMessage(),
+                'tenant_id' => $this->tenantId,
+                'from' => $this->senderPhone,
+            ]);
 
             // Diamnya sistem terbaca pasien sebagai diabaikan; satu kalimat
             // jujur lebih baik daripada tidak ada balasan sama sekali.
@@ -72,8 +90,19 @@ class ProcessInboundMessageJob implements ShouldQueue
         }
 
         if ($answer === null) {
+            Log::channel('chatbot')->warning('Job: balasan kosong (null), tidak dikirim', [
+                'tenant_id' => $this->tenantId,
+                'from' => $this->senderPhone,
+            ]);
+
             return;
         }
+
+        Log::channel('chatbot')->info('Job: balasan disiapkan, akan dikirim', [
+            'tenant_id' => $this->tenantId,
+            'from' => $this->senderPhone,
+            'answer' => $answer,
+        ]);
 
         $this->send($answer);
     }
