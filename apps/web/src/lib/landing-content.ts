@@ -470,14 +470,12 @@ export const LANDING_CONTENT: CompanyLanding = {
       },
     ],
     social_links: [
-      { platform: "Instagram", url: "https://instagram.com/", icon: "instagram" },
-      { platform: "TikTok", url: "https://tiktok.com/", icon: "tiktok" },
-      { platform: "YouTube", url: "https://youtube.com/", icon: "youtube" },
+      { platform: "instagram", url: "https://instagram.com/", icon: "instagram" },
+      { platform: "facebook", url: "https://facebook.com/", icon: "facebook" },
+      { platform: "tiktok", url: "https://tiktok.com/", icon: "tiktok" },
     ],
-    marketplace_links: [
-      { name: "Tokopedia", url: "https://tokopedia.com/", icon: "shopping-bag" },
-      { name: "Shopee", url: "https://shopee.co.id/", icon: "shopping-bag" },
-    ],
+    // Klinik menjual lewat kliniknya sendiri, bukan lewat lapak marketplace.
+    marketplace_links: [],
     default_locale: "id",
     is_published: true,
   },

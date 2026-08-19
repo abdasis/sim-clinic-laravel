@@ -36,7 +36,10 @@ export function TestimonialSection({
       tone={tone}
       className={className}
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Kolom yang mengalir, bukan grid kaku: jumlah testimoni tidak pernah
+          pas dibagi tiga, dan sisa satu kartu di baris terakhir meninggalkan
+          lubang selebar dua kartu. */}
+      <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid">
         {items.map((testimonial) => (
           <figure
             key={testimonial.id}

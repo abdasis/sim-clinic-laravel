@@ -21,6 +21,12 @@ return [
     'landing_brands' => 'Brand yang kami gunakan',
     'landing_testimonials' => 'Kata mereka yang sudah mencoba',
     'footer_explore' => 'Jelajahi',
+    'footer_contact' => 'Kontak',
+    'open_today' => 'Buka hari ini',
+    'closed_today' => 'Tutup hari ini',
+    'see_hours' => 'Lihat jam operasional',
+    'footer_hours' => 'Jam Operasional',
+    'closed' => 'Tutup',
     'footer_social' => 'Media Sosial',
     'footer_shop' => 'Belanja',
 

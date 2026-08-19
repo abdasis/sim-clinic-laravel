@@ -3,12 +3,12 @@ import {
   ArrowUp01Icon,
   Clock01Icon,
   GoogleMapsIcon,
+  Facebook01Icon,
   InstagramIcon,
   Link01Icon,
   Location01Icon,
   ShoppingBag01Icon,
   TiktokIcon,
-  YoutubeIcon,
 } from "@hugeicons/core-free-icons"
 
 import { useContentText } from "#/components/company-profile/locale-context.tsx"
@@ -22,8 +22,8 @@ import { GOOGLE_MAPS_URL } from "#/lib/landing-content.ts"
 /** Ikon per platform; yang tidak dikenal memakai ikon tautan biasa. */
 const SOCIAL_ICONS: Record<string, IconSvgElement> = {
   instagram: InstagramIcon,
+  facebook: Facebook01Icon,
   tiktok: TiktokIcon,
-  youtube: YoutubeIcon,
 }
 
 interface LandingFooterProps {

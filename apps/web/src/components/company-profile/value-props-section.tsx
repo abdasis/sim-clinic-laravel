@@ -45,7 +45,10 @@ export function ValuePropsSection({
             key={item.id}
             className="group/prop relative bg-background p-6 transition-colors duration-200 hover:bg-muted/50"
           >
-            <span className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-foreground/[0.04] text-foreground/70 ring-1 ring-foreground/5 transition-colors duration-200 group-hover/prop:bg-foreground/[0.07] group-hover/prop:text-foreground">
+            {/* Lencana ikon memakai warna merek, bukan abu-abu: enam kotak
+                netral berjajar terbaca sebagai daftar, dan tidak ada satu pun
+                yang menahan pandangan. */}
+            <span className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-primary/8 text-primary ring-1 ring-primary/10 transition-all duration-200 group-hover/prop:scale-105 group-hover/prop:bg-primary/12">
               <HugeiconsIcon
                 icon={valuePropIcon(item.icon)}
                 strokeWidth={1.8}

@@ -31,7 +31,10 @@ export function BrandSection({
       tone={tone}
       className={className}
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Brand jarang lebih dari beberapa: grid tiga kolom membuat dua brand
+          tampak seperti baris yang gagal terisi. Kolom otomatis membuatnya
+          rapat dan tetap rapi berapa pun jumlahnya. */}
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))]">
         {items.map((brand) => {
           const name = text(brand.name)
 

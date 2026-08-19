@@ -99,10 +99,25 @@ class CompanyProfileDemoSeeder extends Seeder
                 ]],
                 'social_links' => [
                     ['platform' => 'instagram', 'url' => 'https://instagram.com/'.$handle, 'icon' => 'instagram'],
+                    ['platform' => 'facebook', 'url' => 'https://facebook.com/'.$handle, 'icon' => 'facebook'],
                     ['platform' => 'tiktok', 'url' => 'https://tiktok.com/@'.$handle, 'icon' => 'tiktok'],
                 ],
-                'marketplace_links' => [
-                    ['name' => 'Tokopedia', 'url' => 'https://tokopedia.com/'.$handle, 'icon' => 'shopping-bag'],
+                // Klinik menjual lewat kliniknya sendiri, bukan lewat lapak
+                // marketplace — kolomnya dibiarkan kosong, bukan diisi contoh.
+                'marketplace_links' => [],
+                'tagline' => 'Beauty & Skin Care',
+                'address' => 'Komp. Pusat Bisnis Ringroad, Medan Selayang, Kota Medan.',
+                // Senin-Sabtu buka, Minggu tutup — pola paling lazim klinik
+                // kecantikan, dan dipakai chatbot untuk menolak jadwal di
+                // hari tutup.
+                'operating_hours' => [
+                    'monday' => ['is_open' => true, 'open' => '09:00', 'close' => '20:00'],
+                    'tuesday' => ['is_open' => true, 'open' => '09:00', 'close' => '20:00'],
+                    'wednesday' => ['is_open' => true, 'open' => '09:00', 'close' => '20:00'],
+                    'thursday' => ['is_open' => true, 'open' => '09:00', 'close' => '20:00'],
+                    'friday' => ['is_open' => true, 'open' => '09:00', 'close' => '20:00'],
+                    'saturday' => ['is_open' => true, 'open' => '09:00', 'close' => '18:00'],
+                    'sunday' => ['is_open' => false, 'open' => null, 'close' => null],
                 ],
                 'default_locale' => 'id',
                 'is_published' => true,
@@ -118,8 +133,16 @@ class CompanyProfileDemoSeeder extends Seeder
             ['#promo', ['id' => 'Promo', 'en' => 'Promos'], CompanyNavPosition::Header, 3, false],
             ['#booking', ['id' => 'Online Booking', 'en' => 'Online Booking'], CompanyNavPosition::Header, 4, true],
             ['#testimoni', ['id' => 'Testimoni', 'en' => 'Testimonials'], CompanyNavPosition::Footer, 1, false],
-            ['#estore', ['id' => 'Belanja Produk', 'en' => 'Shop Products'], CompanyNavPosition::Footer, 2, false],
+            ['#brand', ['id' => 'Brand Kami', 'en' => 'Our Brands'], CompanyNavPosition::Footer, 2, false],
         ];
+
+        // Item yang dicabut dari daftar harus ikut hilang. Tanpa ini,
+        // updateOrCreate hanya menambah dan tautan lama tetap hidup di kaki
+        // halaman lama setelah bagiannya dibuang.
+        CompanyNavigationItem::query()
+            ->where('tenant_id', $tenantId)
+            ->whereNotIn('url', array_column($items, 0))
+            ->delete();
 
         foreach ($items as [$url, $label, $position, $order, $isCta]) {
             CompanyNavigationItem::query()->updateOrCreate(
@@ -300,9 +323,9 @@ class CompanyProfileDemoSeeder extends Seeder
             [
                 CompanySectionKey::PharmaBanner,
                 CompanySectionLayout::Split,
-                ['id' => 'SKINCARE MULAI DARI 85.000', 'en' => 'SKINCARE STARTING FROM 85,000'],
-                ['id' => "Optimalkan treatmentmu dengan racikan terbaik dari tim medis {$brand} untuk perawatan intensifmu sehari-hari.", 'en' => "Optimize your treatment with the best formulations from the {$brand} medical team for your daily intensive care."],
-                ['id' => 'Lihat Produk', 'en' => 'See Products'],
+                ['id' => 'RACIKAN TIM MEDIS KAMI', 'en' => 'FORMULATED BY OUR MEDICAL TEAM'],
+                ['id' => "Rangkaian skincare {$brand} diracik dokter kami sebagai kelanjutan treatment di klinik — supaya hasil perawatanmu tetap terjaga di rumah.", 'en' => "The {$brand} skincare line is formulated by our doctors as a continuation of in-clinic treatment, so your results keep holding at home."],
+                ['id' => 'Konsultasi Produk', 'en' => 'Ask About Products'],
                 CompanyCtaType::Whatsapp,
                 $chat,
             ],

@@ -4,10 +4,10 @@ import { BackToTop } from "#/components/company-profile/back-to-top.tsx"
 import { BookingCta } from "#/components/company-profile/booking-cta.tsx"
 import { BrandSection } from "#/components/company-profile/brand-section.tsx"
 import { ChatWidget } from "#/components/company-profile/chat-widget.tsx"
+import { ClinicInfoBar } from "#/components/company-profile/clinic-info-bar.tsx"
 import { CompanyFooter } from "#/components/company-profile/company-footer.tsx"
 import { CompanyHeader } from "#/components/company-profile/company-header.tsx"
 import { ContentBanner } from "#/components/company-profile/content-banner.tsx"
-import { EstoreCta } from "#/components/company-profile/estore-cta.tsx"
 import { HeroCarousel } from "#/components/company-profile/hero-carousel.tsx"
 import { CompanyLocaleProvider } from "#/components/company-profile/locale-context.tsx"
 import { PromoSection } from "#/components/company-profile/promo-section.tsx"
@@ -68,6 +68,17 @@ function CompanyLandingPage() {
           <>
             <main className="flex-1">
               <HeroCarousel tenant={tenant} slides={data.slides} />
+              {/* Tiga hal yang paling dicari pengunjung klinik — buka atau
+                  tidak, di mana, nomor mana — sebelumnya baru ketemu setelah
+                  menggulir sampai kaki halaman. */}
+              <ClinicInfoBar
+                settings={data.settings}
+                labels={{
+                  openNow: t("company_profile.see_hours"),
+                  openToday: t("company_profile.open_today"),
+                  closedToday: t("company_profile.closed_today"),
+                }}
+              />
               {/* Nada latar bergantian sepanjang halaman. Tanpa itu seluruh
                   section berlatar sama dan halaman terbaca sebagai satu
                   tumpukan pita seragam — mata tidak punya penanda pindah
@@ -116,10 +127,6 @@ function CompanyLandingPage() {
                 sinceTemplate={t("company_profile.since_year")}
                 items={data.testimonials}
               />
-              <EstoreCta
-                tenant={tenant}
-                section={data.content_sections.estore_cta}
-              />
             </main>
 
             <CompanyFooter
@@ -129,7 +136,9 @@ function CompanyLandingPage() {
               labels={{
                 explore: t("company_profile.footer_explore"),
                 social: t("company_profile.footer_social"),
-                shop: t("company_profile.footer_shop"),
+                contact: t("company_profile.footer_contact"),
+                hours: t("company_profile.footer_hours"),
+                closed: t("company_profile.closed"),
               }}
             />
 

@@ -27,10 +27,20 @@ export interface MarketplaceLink {
   icon?: string
 }
 
+export interface OperatingHour {
+  is_open?: boolean
+  open?: string | null
+  close?: string | null
+}
+
 export interface CompanySettings {
   site_name?: Text | null
   logo_path?: string | null
   logo_url?: string | null
+  tagline?: string | null
+  address?: string | null
+  phone?: string | null
+  operating_hours?: Record<string, OperatingHour> | null
   copyright_text?: string | null
   chat_channels: ChatChannel[]
   social_links: SocialLink[]
