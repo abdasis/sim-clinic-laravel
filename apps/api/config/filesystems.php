@@ -47,6 +47,19 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Arsip backup dipisahkan dari disk aplikasi supaya isinya tidak
+         * pernah ikut terlayani sebagai file publik, dan supaya pindah ke
+         * S3 nanti cukup mengganti driver di satu tempat ini.
+         */
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            // Disk penuh atau permission salah harus berbunyi saat itu juga;
+            // backup yang diam-diam gagal lebih berbahaya daripada tidak ada.
+            'throw' => true,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

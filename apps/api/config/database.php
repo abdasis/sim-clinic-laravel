@@ -97,6 +97,21 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+
+            /*
+             * Dipakai spatie/laravel-backup saat memanggil pg_dump.
+             *
+             * `use_single_transaction` membuat dump-nya konsisten satu titik
+             * waktu tanpa mengunci tabel lama — penting karena backup siang
+             * jalan saat klinik sedang melayani pasien.
+             */
+            'dump' => [
+                // Kosong berarti ikut PATH; isi PG_DUMP_PATH bila binary-nya
+                // di lokasi non-standar (mis. /usr/lib/postgresql/16/bin).
+                'dump_binary_path' => env('PG_DUMP_PATH', ''),
+                'use_single_transaction' => true,
+                'timeout' => 60 * 5,
+            ],
         ],
 
         'sqlsrv' => [
