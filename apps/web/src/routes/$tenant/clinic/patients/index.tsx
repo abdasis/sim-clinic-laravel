@@ -23,6 +23,7 @@ interface PatientRow {
   phone: string
   gender: string
   gender_label: string
+  referrer_name?: string | null
   can_delete?: boolean
 }
 
@@ -39,6 +40,20 @@ function PatientsPage() {
         accessorKey: "gender",
         header: t("patient.gender"),
         cell: ({ row }) => row.original.gender_label ?? "-",
+      },
+      {
+        // Kolom ini yang menentukan bonus pasien baru jatuh ke siapa.
+        // Sebelumnya tidak tampil di mana pun, jadi pasien yang tersimpan
+        // tanpa pembawa tidak bisa dibedakan dari yang ada pembawanya —
+        // bonusnya diam-diam tidak pernah muncul.
+        accessorKey: "referrer_name",
+        header: t("patient.referred_by"),
+        cell: ({ row }) =>
+          row.original.referrer_name ? (
+            <span>{row.original.referrer_name}</span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
       },
       {
         id: "actions",

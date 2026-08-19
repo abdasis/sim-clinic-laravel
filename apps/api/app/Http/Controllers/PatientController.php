@@ -21,7 +21,9 @@ class PatientController extends Controller
 
         $params = $this->dataTableParams($request);
 
-        $query = Patient::query();
+        // Nama pembawa ikut ditampilkan di daftar; tanpa eager load,
+        // resource menembak satu kueri per baris.
+        $query = Patient::query()->with('referrer:id,name');
 
         if ($params['search']) {
             $search = $params['search'];
