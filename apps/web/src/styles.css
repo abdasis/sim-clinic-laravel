@@ -723,7 +723,28 @@ a {
  * panjang tidak terasa rata, tanpa menambah warna baru — polanya memakai
  * token tema, jadi ikut menyesuaikan mode gelap dengan sendirinya.
  */
-.bg-dot-grid {
+/*
+ * Mask WAJIB hidup di lapisan dekoratif sendiri: kalau dipasang langsung ke
+ * section, mask ikut menggerus teks anaknya sehingga isi halaman terlihat
+ * memudar. Pseudo-element di belakang konten membuat yang meredup hanya pola
+ * latarnya.
+ */
+.bg-dot-grid,
+.bg-line-grid {
+  position: relative;
+  isolation: isolate;
+}
+
+.bg-dot-grid::before,
+.bg-line-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.bg-dot-grid::before {
   background-image: radial-gradient(
     circle at center,
     color-mix(in oklab, var(--lagoon) 42%, transparent) 1px,
@@ -733,7 +754,7 @@ a {
   mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent 78%);
 }
 
-.bg-line-grid {
+.bg-line-grid::before {
   background-image:
     linear-gradient(color-mix(in oklab, var(--lagoon) 26%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in oklab, var(--lagoon) 26%, transparent) 1px, transparent 1px);
