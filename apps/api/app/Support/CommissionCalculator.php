@@ -30,16 +30,25 @@ use Illuminate\Support\Collection;
  */
 class CommissionCalculator
 {
+    /**
+     * Fee yang jatuh ke tiap transaksi, dikumpulkan sambil menghitung.
+     *
+     * @var array<int, float>
+     */
+    private array $byTransaction = [];
+
     public function __construct(
         private readonly string $from,
         private readonly string $to,
     ) {}
 
     /**
-     * @return array{rows: array<int, array<string, mixed>>, total: float, rules_used: array<int, string>}
+     * @return array{rows: array<int, array<string, mixed>>, total: float, rules_used: array<int, string>, by_transaction: array<int, float>}
      */
     public function run(): array
     {
+        $this->byTransaction = [];
+
         // Semua versi yang menyentuh periode ini, bukan hanya yang berlaku
         // sekarang — tarif bulan lalu tetap dibutuhkan untuk menghitungnya.
         $rules = CommissionRule::query()
@@ -100,7 +109,33 @@ class CommissionCalculator
                 ->unique()
                 ->values()
                 ->all(),
+            'by_transaction' => $this->byTransaction,
         ];
+    }
+
+    /**
+     * Catat tiap fee ke nota asalnya.
+     *
+     * Laporan bulanan klinik menaruh fee di kolom tersendiri pada baris
+     * kunjungannya, bukan hanya sebagai total per orang di bawah — tanpa
+     * penempelan ini, kolom "total bersih" per baris tidak punya dasar hitung.
+     *
+     * @param  Collection<int, array<string, mixed>>  $lines
+     */
+    private function attributeToTransactions(Collection $lines): void
+    {
+        foreach ($lines as $line) {
+            $transactionId = $line['transaction_id'] ?? null;
+
+            if ($transactionId === null) {
+                continue;
+            }
+
+            $this->byTransaction[$transactionId] = round(
+                ($this->byTransaction[$transactionId] ?? 0) + (float) $line['amount'],
+                2,
+            );
+        }
     }
 
     /**
@@ -180,7 +215,7 @@ class CommissionCalculator
     /**
      * @param  Collection<int, CommissionRule>  $rules
      * @param  Collection<int, Transaction>  $transactions
-     * @param  Collection<int, CarbonInterface>  $newPatientMoments
+     * @param  Collection<int, array{at: CarbonInterface, transaction_id: int|null}>  $newPatientMoments
      * @return array<string, mixed>
      */
     private function rowFor(
@@ -194,10 +229,14 @@ class CommissionCalculator
         $sold = $this->soldLines($transactions, $userId);
         $revenue = (float) $sold->sum(fn (array $line) => $line['subtotal']);
 
-        $lines = collect()
+        $raw = collect()
             ->merge($this->perPatientLines($rules, $userId, $visits))
             ->merge($this->newPatientLines($rules, $userId, $newPatientMoments))
             ->merge($this->revenueLines($rules, $userId, $sold, $revenue));
+
+        $this->attributeToTransactions($raw);
+
+        $lines = $this->fold($raw->all());
 
         return [
             'therapist_id' => $userId,
@@ -227,33 +266,43 @@ class CommissionCalculator
                     continue;
                 }
 
-                $lines[] = ['rule' => $rule, 'amount' => (float) $rule->amount, 'basis' => 1];
+                $lines[] = [
+                    'rule' => $rule,
+                    'amount' => (float) $rule->amount,
+                    'basis' => 1,
+                    'transaction_id' => $visit->id,
+                ];
             }
         }
 
-        return $this->fold($lines);
+        return collect($lines);
     }
 
     /**
      * @param  Collection<int, CommissionRule>  $rules
-     * @param  Collection<int, CarbonInterface>  $moments
+     * @param  Collection<int, array{at: CarbonInterface, transaction_id: int|null}>  $entries
      * @return Collection<int, array<string, mixed>>
      */
-    private function newPatientLines(Collection $rules, ?int $userId, Collection $moments): Collection
+    private function newPatientLines(Collection $rules, ?int $userId, Collection $entries): Collection
     {
         $lines = [];
 
-        foreach ($moments as $moment) {
-            foreach ($this->rulesFor($rules, $userId, $moment) as $rule) {
+        foreach ($entries as $entry) {
+            foreach ($this->rulesFor($rules, $userId, $entry['at']) as $rule) {
                 if ($rule->type !== CommissionRuleType::PerNewPatient) {
                     continue;
                 }
 
-                $lines[] = ['rule' => $rule, 'amount' => (float) $rule->amount, 'basis' => 1];
+                $lines[] = [
+                    'rule' => $rule,
+                    'amount' => (float) $rule->amount,
+                    'basis' => 1,
+                    'transaction_id' => $entry['transaction_id'],
+                ];
             }
         }
 
-        return $this->fold($lines);
+        return collect($lines);
     }
 
     /**
@@ -261,7 +310,7 @@ class CommissionCalculator
      * pasien membeli atas kemauan sendiri — tidak masuk target siapa pun.
      *
      * @param  Collection<int, Transaction>  $transactions
-     * @return Collection<int, array{subtotal: float, at: CarbonInterface}>
+     * @return Collection<int, array{subtotal: float, at: CarbonInterface, transaction_id: int}>
      */
     private function soldLines(Collection $transactions, int $userId): Collection
     {
@@ -270,6 +319,7 @@ class CommissionCalculator
             ->map(fn ($item) => [
                 'subtotal' => (float) $item->subtotal,
                 'at' => Carbon::parse($t->issued_at),
+                'transaction_id' => $t->id,
             ]));
     }
 
@@ -279,7 +329,7 @@ class CommissionCalculator
      * yang berlaku pada tanggal tiap transaksi.
      *
      * @param  Collection<int, CommissionRule>  $rules
-     * @param  Collection<int, array{subtotal: float, at: CarbonInterface}>  $sold
+     * @param  Collection<int, array{subtotal: float, at: CarbonInterface, transaction_id: int}>  $sold
      * @return Collection<int, array<string, mixed>>
      */
     private function revenueLines(
@@ -310,10 +360,11 @@ class CommissionCalculator
                 'rule' => $winner,
                 'amount' => $subtotal * (float) $winner->percent / 100,
                 'basis' => $subtotal,
+                'transaction_id' => $line['transaction_id'],
             ];
         }
 
-        return $this->fold($lines);
+        return collect($lines);
     }
 
     /**
@@ -361,7 +412,7 @@ class CommissionCalculator
      * itu menebak, dan sejak satu kunjungan boleh ditangani lebih dari satu
      * orang, tebakannya tidak punya dasar sama sekali.
      *
-     * @return array<int, array<int, CarbonInterface>> user_id => saat kunjungan pertama
+     * @return array<int, array<int, array{at: CarbonInterface, transaction_id: int|null}>> user_id => kunjungan pertama
      */
     private function newPatientsByBeneficiary(): array
     {
@@ -382,10 +433,27 @@ class CommissionCalculator
             ->whereNotNull('referred_by')
             ->pluck('referred_by', 'id');
 
+        if ($referrers->isEmpty()) {
+            return [];
+        }
+
+        // Nota kunjungan pertamanya, supaya bonusnya bisa ditempelkan ke baris
+        // laporan yang benar — bukan hanya menumpuk di total bulanan.
+        $firstTransactions = Transaction::query()
+            ->whereNull('cancelled_at')
+            ->whereIn('patient_id', $referrers->keys())
+            ->orderBy('issued_at')
+            ->get(['id', 'patient_id', 'issued_at'])
+            ->groupBy('patient_id')
+            ->map(fn (Collection $group) => $group->first());
+
         $byBeneficiary = [];
 
         foreach ($referrers as $patientId => $beneficiary) {
-            $byBeneficiary[$beneficiary][] = Carbon::parse($firstVisits[$patientId]);
+            $byBeneficiary[$beneficiary][] = [
+                'at' => Carbon::parse($firstVisits[$patientId]),
+                'transaction_id' => $firstTransactions->get($patientId)?->id,
+            ];
         }
 
         return $byBeneficiary;
