@@ -164,7 +164,7 @@ class MebaProductSeeder extends Seeder
         return DB::table('transaction_items')->where('product_id', $product->id)->exists()
             || DB::table('stock_movements')->where('product_id', $product->id)->exists()
             || DB::table('promo_items')
-                ->where('promotable_type', Product::class)
+                ->where('promotable_type', 'product')
                 ->where('promotable_id', $product->id)
                 ->exists();
     }

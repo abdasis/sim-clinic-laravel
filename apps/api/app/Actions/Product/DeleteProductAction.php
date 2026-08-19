@@ -20,7 +20,7 @@ class DeleteProductAction
     public function handle(Product $product): void
     {
         if ($reason = CatalogReferences::blockingProduct($product->id)) {
-            abort(422, __($reason));
+            abort(422, $reason);
         }
 
         $snapshot = $product->getAttributes();

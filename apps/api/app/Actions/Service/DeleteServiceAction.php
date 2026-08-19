@@ -20,7 +20,7 @@ class DeleteServiceAction
     public function handle(Service $service): void
     {
         if ($reason = CatalogReferences::blockingService($service->id)) {
-            abort(422, __($reason));
+            abort(422, $reason);
         }
 
         $snapshot = $service->getAttributes();

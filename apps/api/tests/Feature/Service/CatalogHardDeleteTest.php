@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Models\Product;
 use App\Models\Promo;
 use App\Models\Service;
+use App\Models\Transaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
@@ -40,7 +41,11 @@ class CatalogHardDeleteTest extends TestCase
 
         $this->deleteJson($this->tenantUrl('services/'.$service->id.'/force'))
             ->assertStatus(422)
-            ->assertJsonPath('message', __('catalog.referenced_by_transaction'));
+            // Nomor notanya ikut disebut: tanpa itu admin masih harus menebak
+            // nota mana yang menahan layanan ini.
+            ->assertJsonPath('message', __('catalog.referenced_by_transaction', [
+                'ref' => Transaction::query()->value('invoice_number'),
+            ]));
 
         $this->assertDatabaseHas('services', ['id' => $service->id]);
     }
@@ -118,7 +123,7 @@ class CatalogHardDeleteTest extends TestCase
 
         $this->deleteJson($this->tenantUrl('services/'.$service->id.'/force'))
             ->assertStatus(422)
-            ->assertJsonPath('message', __('catalog.referenced_by_promo'));
+            ->assertJsonPath('message', __('catalog.referenced_by_promo', ['ref' => 'Promo Uji']));
     }
 
     private function makeService(): Service

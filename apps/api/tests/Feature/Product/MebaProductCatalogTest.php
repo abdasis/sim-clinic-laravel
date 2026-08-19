@@ -184,10 +184,12 @@ class MebaProductCatalogTest extends TestCase
         ]);
 
         $promo = Promo::factory()->create(['tenant_id' => $this->tenant->id]);
+        // getMorphClass() memberi alias morph yang sama dengan yang ditulis
+        // aplikasi; nama kelas penuh tidak pernah tersimpan di kolom ini.
         PromoItem::create([
             'tenant_id' => $this->tenant->id,
             'promo_id' => $promo->id,
-            'promotable_type' => Product::class,
+            'promotable_type' => $dummy->getMorphClass(),
             'promotable_id' => $dummy->id,
         ]);
 
@@ -195,7 +197,7 @@ class MebaProductCatalogTest extends TestCase
 
         $this->assertSame('archived', $dummy->fresh()->status->value);
         $this->assertDatabaseHas('promo_items', [
-            'promotable_type' => Product::class,
+            'promotable_type' => $dummy->getMorphClass(),
             'promotable_id' => $dummy->id,
         ]);
     }
