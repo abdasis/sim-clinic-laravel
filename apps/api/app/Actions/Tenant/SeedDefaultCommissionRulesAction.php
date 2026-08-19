@@ -14,6 +14,22 @@ use App\Models\CommissionRule;
  */
 class SeedDefaultCommissionRulesAction
 {
+    /**
+     * Aturan bawaan klinik. Dibuka supaya migrasi pelengkap bisa memakai
+     * daftar yang sama, tanpa menyalinnya dan berisiko menyimpang.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function defaults(): array
+    {
+        return array_map(fn (array $rule) => $rule + [
+            'amount' => $rule['amount'] ?? 0,
+            'percent' => $rule['percent'] ?? 0,
+            'min_revenue' => $rule['min_revenue'] ?? 0,
+            'is_active' => true,
+        ], self::DEFAULTS);
+    }
+
     private const DEFAULTS = [
         ['name' => 'Fee pasien', 'type' => CommissionRuleType::PerPatient, 'amount' => 5000],
         ['name' => 'Bonus pasien baru', 'type' => CommissionRuleType::PerNewPatient, 'amount' => 5000],
@@ -29,14 +45,8 @@ class SeedDefaultCommissionRulesAction
             return;
         }
 
-        foreach (self::DEFAULTS as $rule) {
-            CommissionRule::withoutGlobalScopes()->create($rule + [
-                'tenant_id' => $tenantId,
-                'amount' => $rule['amount'] ?? 0,
-                'percent' => $rule['percent'] ?? 0,
-                'min_revenue' => $rule['min_revenue'] ?? 0,
-                'is_active' => true,
-            ]);
+        foreach (self::defaults() as $rule) {
+            CommissionRule::withoutGlobalScopes()->create($rule + ['tenant_id' => $tenantId]);
         }
     }
 }
