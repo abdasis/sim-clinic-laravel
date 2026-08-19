@@ -125,7 +125,10 @@ class PromoApiTest extends TestCase
         ])
             ->assertCreated()
             ->assertJsonPath('data.subtotal', '150000.00')
-            ->assertJsonPath('data.items.0.unit_price', '75000.00');
+            ->assertJsonPath('data.items.0.unit_price', '75000.00')
+            // Harga normal ikut tersimpan supaya nota bisa menyebut
+            // potongannya, bukan cuma harga akhir yang lebih murah.
+            ->assertJsonPath('data.items.0.list_price', '100000.00');
     }
 
     public function test_expired_promo_does_not_change_price(): void

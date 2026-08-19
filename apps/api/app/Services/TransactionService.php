@@ -54,6 +54,7 @@ class TransactionService
                     // Penawar baris ini; dasar perhitungan target penjualan.
                     'offered_by' => $line['offered_by'],
                     'name' => $line['name'],
+                    'list_price' => $line['list_price'],
                     'unit_price' => $line['unit_price'],
                     'qty' => $line['qty'],
                     'subtotal' => $line['subtotal'],
@@ -131,6 +132,7 @@ class TransactionService
             'product_id' => $product->id,
             'service_id' => null,
             'name' => $product->name,
+            'list_price' => (float) $product->price,
             'unit_price' => $unitPrice,
             'qty' => $qty,
             'subtotal' => $unitPrice * $qty,
@@ -148,6 +150,7 @@ class TransactionService
             'product_id' => null,
             'service_id' => $service->id,
             'name' => $service->name,
+            'list_price' => (float) $service->price,
             'unit_price' => $unitPrice,
             'qty' => $qty,
             'subtotal' => $unitPrice * $qty,

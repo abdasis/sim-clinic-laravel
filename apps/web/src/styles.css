@@ -642,6 +642,9 @@ a {
   /* Caption/kicker di bawah text-xs (12px). */
   --text-2xs: 0.6875rem;
   --text-xxs: 0.625rem;
+  /* Batas bawah nota thermal: di bawah 9px kepala termal 203dpi mulai
+     menggabungkan garis huruf jadi noda. */
+  --text-3xs: 0.5625rem;
   --color-chart-cat-1: var(--chart-cat-1);
   --color-chart-cat-2: var(--chart-cat-2);
   --color-chart-cat-3: var(--chart-cat-3);
@@ -825,6 +828,27 @@ a {
   /* Di atas kertas ukurannya harus kembali 1:1 dengan milimeter aslinya. */
   [data-receipt-frame] {
     zoom: 1;
+  }
+
+  /* Kepala termal hanya bisa hitam atau tidak sama sekali. Logo berwarna
+     yang diserahkan apa adanya keluar sebagai bercak kelabu, jadi kontrasnya
+     ditarik dulu supaya yang tercetak tetap berupa bentuk yang dikenali. */
+  [data-receipt-logo] {
+    filter: grayscale(1) contrast(1.6);
+  }
+
+  /* Satu baris item tidak boleh terbelah sobekan kertas: nama di lembar ini,
+     angkanya di lembar berikutnya, dan pasien memegang separuh bukti. */
+  [data-receipt-line],
+  [data-receipt] section,
+  [data-receipt] footer {
+    break-inside: avoid;
+  }
+
+  /* Hinting layar membuat huruf sekecil ini bergeser setengah titik dan
+     saling menempel saat dicetak; presisi geometris menjaga jaraknya. */
+  [data-receipt] {
+    text-rendering: geometricPrecision;
   }
 
   /* Struk 57mm: sisakan margin tipis supaya teks tidak tergunting rol. */

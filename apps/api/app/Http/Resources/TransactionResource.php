@@ -41,6 +41,9 @@ class TransactionResource extends JsonResource
                 // Nota mengelompokkan baris per jenis, seperti nota cetak
                 // yang memisahkan tindakan dari produk yang dibawa pulang.
                 'kind' => $item->service_id !== null ? 'service' : 'product',
+                // Harga normal sebelum promo; null untuk baris lama yang
+                // dibuat sebelum kolomnya ada.
+                'list_price' => $item->list_price,
                 'unit_price' => $item->unit_price,
                 'qty' => $item->qty,
                 'subtotal' => $item->subtotal,

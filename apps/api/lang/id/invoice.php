@@ -36,6 +36,15 @@ return [
     'print' => 'Cetak',
     'issued_at' => 'Diterbitkan',
     'payments' => 'Rincian Pembayaran',
+    'performers' => 'Terapis',
+    'phone_short' => 'Telp.',
+    'change' => 'Kembali',
+    'discount' => 'Diskon Promo',
+    'item_count' => ':count item',
+    // Penanda status dicetak sebagai pita agar terbaca sekilas dari kertas.
+    'reprint' => 'Cetak Ulang',
+    'cancelled' => 'Transaksi Dibatalkan',
+    'cancelled_note' => 'Nota ini tidak berlaku sebagai bukti pembayaran.',
     'paid_amount' => 'Sudah Dibayar',
     'outstanding' => 'Sisa Bayar',
 ];

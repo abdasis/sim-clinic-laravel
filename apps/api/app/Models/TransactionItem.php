@@ -21,6 +21,7 @@ class TransactionItem extends Model
         'service_id',
         'offered_by',
         'name',
+        'list_price',
         'unit_price',
         'qty',
         'subtotal',
@@ -29,6 +30,7 @@ class TransactionItem extends Model
     protected function casts(): array
     {
         return [
+            'list_price' => 'decimal:2',
             'unit_price' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'qty' => 'integer',
