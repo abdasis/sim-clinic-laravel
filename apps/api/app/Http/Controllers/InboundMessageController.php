@@ -76,12 +76,25 @@ class InboundMessageController extends Controller
             return $this->accepted('bukan pesan teks');
         }
 
-        $phone = PhoneNumber::normalize((string) ($payload['from'] ?? ''));
+        // Nomor pengirim. WhatsApp kini mengirim identitas pengguna sebagai
+        // LID (contoh "239959873220620@lid") alih-alih nomor telepon langsung.
+        // LID tidak bisa dipakai membalas; nomor aslinya disediakan WAHA di
+        // _data.key.remoteJidAlt (format "628xx@s.whatsapp.net"). Dipakai dulu
+        // kalau ada, dan `from` hanya fallback untuk payload lama.
+        $rawFrom = (string) ($payload['from'] ?? '');
+        $remoteJidAlt = (string) ($payload['_data']['key']['remoteJidAlt'] ?? '');
+
+        if ($remoteJidAlt !== '') {
+            $rawFrom = $remoteJidAlt;
+        }
+
+        $phone = PhoneNumber::normalize($rawFrom);
 
         if ($phone === null) {
             Log::channel('chatbot')->warning('Pesan masuk ditolak: nomor pengirim tidak valid', [
                 'session' => $session,
                 'from' => $payload['from'] ?? null,
+                'remoteJidAlt' => $remoteJidAlt,
             ]);
 
             return $this->accepted('nomor pengirim tidak valid');
