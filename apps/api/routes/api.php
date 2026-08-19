@@ -144,6 +144,8 @@ Route::prefix('{tenant}/clinic')
         Route::get('expenses/summary', [ExpenseController::class, 'summary']);
         Route::apiResource('expenses', ExpenseController::class);
         Route::get('commission-rules/calculate', [CommissionRuleController::class, 'calculate']);
+        Route::get('commission-rules/setting', [CommissionRuleController::class, 'setting']);
+        Route::put('commission-rules/setting', [CommissionRuleController::class, 'saveSetting']);
         Route::apiResource('commission-rules', CommissionRuleController::class)
             ->only(['index', 'store', 'update', 'destroy']);
 

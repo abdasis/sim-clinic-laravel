@@ -8,6 +8,7 @@ use App\Models\BroadcastRecipient;
 use App\Models\BroadcastReminderSetting;
 use App\Models\Category;
 use App\Models\CommissionRule;
+use App\Models\CommissionSetting;
 use App\Models\CompanyBrand;
 use App\Models\CompanyContentSection;
 use App\Models\CompanyNavigationItem;
@@ -66,6 +67,7 @@ class AppServiceProvider extends ServiceProvider
         'expense' => Expense::class,
         'category' => Category::class,
         'commission_rule' => CommissionRule::class,
+        'commission_setting' => CommissionSetting::class,
         'broadcast' => Broadcast::class,
         'broadcast_recipient' => BroadcastRecipient::class,
         'message_template' => MessageTemplate::class,

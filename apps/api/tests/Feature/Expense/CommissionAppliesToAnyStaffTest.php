@@ -7,6 +7,7 @@ use App\Enums\CommissionRuleType;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\CommissionRule;
+use App\Models\CommissionSetting;
 use App\Models\Patient;
 use App\Models\Product;
 use App\Models\User;
@@ -17,15 +18,27 @@ use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
 /**
- * Komisi penjualan mengikuti siapa yang tercatat menawarkan, bukan jabatannya.
+ * Komisi penjualan mengikuti siapa yang tercatat menawarkan, sejauh perannya
+ * termasuk yang berhak menurut setelan klinik.
  *
  * Yang menjual produk dan layanan bukan hanya terapis — dokter menawarkan
- * treatment lanjutan, kasir menawarkan skincare di meja bayar. Membatasi
- * komisinya ke peran tertentu membuat penjualan mereka tidak pernah dibayar.
+ * treatment lanjutan, kasir menawarkan skincare di meja bayar. Daftar peran
+ * yang berhak karena itu tidak boleh tertanam di kode; yang diuji di sini
+ * adalah bahwa peran mana pun bisa diikutkan lewat setelan.
  */
 class CommissionAppliesToAnyStaffTest extends TestCase
 {
     use InteractsWithTenant, RefreshDatabase;
+
+    /** Ikutkan seluruh peran, seperti yang bisa disetel klinik lewat menu. */
+    private function allRolesEligible(): void
+    {
+        CommissionSetting::query()->delete();
+        CommissionSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'eligible_roles' => ['admin', 'doctor', 'therapist', 'cashier'],
+        ]);
+    }
 
     private function percentRule(): void
     {
@@ -74,6 +87,7 @@ class CommissionAppliesToAnyStaffTest extends TestCase
     {
         $this->actingAsClinicUser(ClinicRole::Admin);
         $this->percentRule();
+        $this->allRolesEligible();
 
         $sellers = [
             'dokter' => $this->staff('Dokter Sari', ClinicRole::Doctor),
@@ -113,6 +127,7 @@ class CommissionAppliesToAnyStaffTest extends TestCase
     {
         $this->actingAsClinicUser(ClinicRole::Admin);
         $this->percentRule();
+        $this->allRolesEligible();
 
         $kasir = $this->staff('Kasir Dewi', ClinicRole::Cashier);
 

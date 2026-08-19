@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CommissionRuleRequest;
+use App\Http\Requests\CommissionSettingRequest;
 use App\Http\Resources\CommissionRuleResource;
 use App\Models\CommissionRule;
+use App\Models\CommissionSetting;
 use App\Models\Expense;
 use App\Services\CommissionService;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +35,29 @@ class CommissionRuleController extends Controller
                     ->get()
             ),
             'meta' => [],
+        ]);
+    }
+
+    /** Peran mana yang berhak menerima fee dan komisi. */
+    public function setting(): JsonResponse
+    {
+        $this->authorize('viewAny', Expense::class);
+
+        return response()->json([
+            'data' => ['eligible_roles' => CommissionSetting::eligibleRoles()],
+            'meta' => [],
+        ]);
+    }
+
+    public function saveSetting(CommissionSettingRequest $request, CommissionService $commissions): JsonResponse
+    {
+        $this->authorize('update', Expense::class);
+
+        $setting = $commissions->saveSetting($request->validated('eligible_roles'));
+
+        return response()->json([
+            'data' => ['eligible_roles' => $setting->eligible_roles],
+            'meta' => ['message' => __('commission.setting_saved')],
         ]);
     }
 

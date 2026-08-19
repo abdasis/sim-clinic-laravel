@@ -19,6 +19,7 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete, apiGet, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 import { formatCurrency, formatDateTime } from "#/lib/format.ts"
+import { CommissionEligibleRoles } from "./commission-eligible-roles.tsx"
 import { CommissionRuleDialog, type CommissionRule } from "./commission-rule-dialog.tsx"
 
 interface CommissionLine {
@@ -238,6 +239,8 @@ export function CommissionPanel({ tenant, from, to, onPost }: CommissionPanelPro
       )}
 
       <p className="text-xs text-muted-foreground">{t("commission.tier_note")}</p>
+
+      <CommissionEligibleRoles tenant={tenant} />
 
       <div className="space-y-2 border-t border-border/50 pt-4">
         <div className="flex items-baseline justify-between gap-2">

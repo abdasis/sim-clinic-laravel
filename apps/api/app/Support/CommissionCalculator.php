@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\CommissionRuleType;
 use App\Models\CommissionRule;
+use App\Models\CommissionSetting;
 use App\Models\Patient;
 use App\Models\Transaction;
 use App\Models\User;
@@ -65,10 +66,15 @@ class CommissionCalculator
         // dikumpulkan dulu supaya tiap orang tetap satu baris.
         $rows = collect();
 
+        // Peran yang berhak adalah setelan klinik, bukan daftar tetap di kode:
+        // kasir belum ikut sekarang, dan saat nanti diikutkan yang berubah
+        // cukup setelannya.
+        $eligibleRoles = CommissionSetting::eligibleRoles();
+
         foreach ($this->beneficiaryIds($transactions, $newPatients) as $userId) {
             $user = User::find($userId);
 
-            if ($user === null) {
+            if ($user === null || ! in_array($user->clinic_role?->value, $eligibleRoles, true)) {
                 continue;
             }
 

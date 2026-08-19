@@ -76,6 +76,17 @@ export function CommissionRuleDialog({
   const form = useForm(schema, { defaultValues: EMPTY })
   const type = form.watch("type")
 
+  // Pemilih ini mengikuti setelan peran yang berhak, bukan daftar tetap:
+  // menawarkan nama yang perhitungannya memang tidak menyertakannya hanya
+  // melahirkan aturan yang diam-diam tidak pernah dipakai.
+  const setting = useQuery({
+    queryKey: ["commission-setting", tenant],
+    queryFn: () =>
+      apiGet<{ data: { eligible_roles: string[] } }>(
+        `/${tenant}/clinic/commission-rules/setting`,
+      ),
+  })
+
   const staff = useQuery({
     queryKey: ["staff", tenant, "commission-scope"],
     queryFn: () =>
@@ -163,10 +174,12 @@ export function CommissionRuleDialog({
               description={t("commission.scope_note")}
               options={[
                 { label: t("commission.all_therapists"), value: "" },
-                // Seluruh staf, bukan hanya terapis dan dokter: kasir pun bisa
-                // tercatat menawarkan produk, dan komisinya mengikuti siapa
-                // yang tercatat — bukan jabatannya.
                 ...(staff.data?.data ?? [])
+                  .filter((member) =>
+                    (setting.data?.data.eligible_roles ?? []).includes(
+                      member.clinic_role,
+                    ),
+                  )
                   .map((member) => ({
                     label: member.name,
                     value: String(member.id),

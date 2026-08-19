@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Actions\Commission\DeleteCommissionRuleAction;
 use App\Actions\Commission\SaveCommissionRuleAction;
+use App\Actions\Commission\SaveCommissionSettingAction;
 use App\Models\CommissionRule;
+use App\Models\CommissionSetting;
 use App\Support\CommissionCalculator;
 
 /**
@@ -31,5 +33,15 @@ class CommissionService
     public function calculate(string $from, string $to): array
     {
         return (new CommissionCalculator($from, $to))->run();
+    }
+
+    /**
+     * Peran mana yang berhak menerima fee dan komisi.
+     *
+     * @param  array<int, string>  $roles
+     */
+    public function saveSetting(array $roles): CommissionSetting
+    {
+        return app(SaveCommissionSettingAction::class)->handle($roles);
     }
 }
