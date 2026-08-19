@@ -7,6 +7,7 @@ use App\Http\Controllers\BroadcastAutoReminderController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CentralAuthController;
+use App\Http\Controllers\CentralBackupController;
 use App\Http\Controllers\CentralStatsController;
 use App\Http\Controllers\CentralWahaSettingController;
 use App\Http\Controllers\ChatbotSettingController;
@@ -65,6 +66,13 @@ Route::middleware(['auth:sanctum', 'permission.team'])->prefix('central')->group
     Route::get('/stats', [CentralStatsController::class, 'index']);
     Route::get('/tenants', [PlatformTenantController::class, 'index']);
     Route::patch('/tenants/{tenant}/status', [PlatformTenantController::class, 'status']);
+    // Satu dump memuat data seluruh klinik, jadi arsipnya hanya boleh
+    // disentuh pengelola platform — bukan admin klinik mana pun.
+    Route::get('/backups', [CentralBackupController::class, 'index']);
+    Route::post('/backups', [CentralBackupController::class, 'store']);
+    Route::get('/backups/{filename}/download', [CentralBackupController::class, 'download']);
+    Route::delete('/backups/{filename}', [CentralBackupController::class, 'destroy']);
+
     // Server WAHA dipakai bersama seluruh klinik, jadi pengaturannya di sini.
     Route::get('/waha', [CentralWahaSettingController::class, 'show']);
     Route::put('/waha', [CentralWahaSettingController::class, 'update']);

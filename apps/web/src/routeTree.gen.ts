@@ -33,6 +33,7 @@ import { Route as MarketingPromoIndexRouteImport } from './routes/_marketing/pro
 import { Route as MarketingStoreIndexRouteImport } from './routes/_marketing/store/index'
 import { Route as MarketingTreatmentSlugRouteImport } from './routes/_marketing/treatment/$slug'
 import { Route as MarketingTreatmentsIndexRouteImport } from './routes/_marketing/treatments/index'
+import { Route as CentralBackupIndexRouteImport } from './routes/central/backup/index'
 import { Route as CentralTenantsIndexRouteImport } from './routes/central/tenants/index'
 import { Route as CentralWahaIndexRouteImport } from './routes/central/waha/index'
 import { Route as TenantClinicActivityLogsIndexRouteImport } from './routes/$tenant/clinic/activity-logs/index'
@@ -191,6 +192,11 @@ const MarketingTreatmentsIndexRoute =
     path: '/treatments/',
     getParentRoute: () => MarketingRoute,
   } as any)
+const CentralBackupIndexRoute = CentralBackupIndexRouteImport.update({
+  id: '/backup/',
+  path: '/backup/',
+  getParentRoute: () => CentralRouteRoute,
+} as any)
 const CentralTenantsIndexRoute = CentralTenantsIndexRouteImport.update({
   id: '/tenants/',
   path: '/tenants/',
@@ -424,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/promo/': typeof MarketingPromoIndexRoute
   '/store/': typeof MarketingStoreIndexRoute
   '/treatments/': typeof MarketingTreatmentsIndexRoute
+  '/central/backup/': typeof CentralBackupIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/central/waha/': typeof CentralWahaIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
@@ -482,6 +489,7 @@ export interface FileRoutesByTo {
   '/promo': typeof MarketingPromoIndexRoute
   '/store': typeof MarketingStoreIndexRoute
   '/treatments': typeof MarketingTreatmentsIndexRoute
+  '/central/backup': typeof CentralBackupIndexRoute
   '/central/tenants': typeof CentralTenantsIndexRoute
   '/central/waha': typeof CentralWahaIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
@@ -545,6 +553,7 @@ export interface FileRoutesById {
   '/_marketing/promo/': typeof MarketingPromoIndexRoute
   '/_marketing/store/': typeof MarketingStoreIndexRoute
   '/_marketing/treatments/': typeof MarketingTreatmentsIndexRoute
+  '/central/backup/': typeof CentralBackupIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/central/waha/': typeof CentralWahaIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
@@ -608,6 +617,7 @@ export interface FileRouteTypes {
     | '/promo/'
     | '/store/'
     | '/treatments/'
+    | '/central/backup/'
     | '/central/tenants/'
     | '/central/waha/'
     | '/$tenant/clinic/broadcasts/$id'
@@ -666,6 +676,7 @@ export interface FileRouteTypes {
     | '/promo'
     | '/store'
     | '/treatments'
+    | '/central/backup'
     | '/central/tenants'
     | '/central/waha'
     | '/$tenant/clinic/broadcasts/$id'
@@ -728,6 +739,7 @@ export interface FileRouteTypes {
     | '/_marketing/promo/'
     | '/_marketing/store/'
     | '/_marketing/treatments/'
+    | '/central/backup/'
     | '/central/tenants/'
     | '/central/waha/'
     | '/$tenant/clinic/broadcasts/$id'
@@ -949,6 +961,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/treatments/'
       preLoaderRoute: typeof MarketingTreatmentsIndexRouteImport
       parentRoute: typeof MarketingRoute
+    }
+    '/central/backup/': {
+      id: '/central/backup/'
+      path: '/backup'
+      fullPath: '/central/backup/'
+      preLoaderRoute: typeof CentralBackupIndexRouteImport
+      parentRoute: typeof CentralRouteRoute
     }
     '/central/tenants/': {
       id: '/central/tenants/'
@@ -1208,6 +1227,7 @@ declare module '@tanstack/react-router' {
 interface CentralRouteRouteChildren {
   CentralLoginRoute: typeof CentralLoginRoute
   CentralIndexRoute: typeof CentralIndexRoute
+  CentralBackupIndexRoute: typeof CentralBackupIndexRoute
   CentralTenantsIndexRoute: typeof CentralTenantsIndexRoute
   CentralWahaIndexRoute: typeof CentralWahaIndexRoute
 }
@@ -1215,6 +1235,7 @@ interface CentralRouteRouteChildren {
 const CentralRouteRouteChildren: CentralRouteRouteChildren = {
   CentralLoginRoute: CentralLoginRoute,
   CentralIndexRoute: CentralIndexRoute,
+  CentralBackupIndexRoute: CentralBackupIndexRoute,
   CentralTenantsIndexRoute: CentralTenantsIndexRoute,
   CentralWahaIndexRoute: CentralWahaIndexRoute,
 }

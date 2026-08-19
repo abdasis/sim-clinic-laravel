@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
   Building02Icon,
+  DatabaseIcon,
   WhatsappIcon,
   DashboardSquare01Icon,
 } from "@hugeicons/core-free-icons"
@@ -72,6 +73,13 @@ function CentralLayout() {
       isActive: pathname.startsWith("/central/waha"),
       group: platformGroup,
     },
+    {
+      title: t("backup.title"),
+      url: "/central/backup",
+      icon: DatabaseIcon,
+      isActive: pathname.startsWith("/central/backup"),
+      group: platformGroup,
+    },
   ]
 
   const handleLogout = () => {
@@ -80,7 +88,7 @@ function CentralLayout() {
   }
 
   // ponytail: skeleton saat terjemahan belum siap; tidak baca localStorage jadi aman SSR & first paint.
-  if (!ready) return <ShellSkeleton navCount={2} />
+  if (!ready) return <ShellSkeleton navCount={4} />
 
   return (
     <SidebarProvider>
@@ -127,6 +135,8 @@ function CentralCrumbs({ pathname }: { pathname: string }) {
     items.push({ label: t("tenant.tenants") })
   } else if (pathname.startsWith("/central/waha")) {
     items.push({ label: t("waha.title") })
+  } else if (pathname.startsWith("/central/backup")) {
+    items.push({ label: t("backup.title") })
   } else {
     items.push({ label: t("central.dashboard") })
   }

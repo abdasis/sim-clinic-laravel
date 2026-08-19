@@ -27,3 +27,9 @@ Schedule::command('backup:run')->dailyAt('13:30');
 // Arsip yang menua atau menggemuk tanpa disadari sama saja dengan tidak
 // punya backup, jadi kesehatannya diperiksa terjadwal dan dikabarkan.
 Schedule::command('backup:monitor')->dailyAt('10:00');
+
+// Cadangan basis data dini hari, saat klinik tutup dan kueri paling sepi.
+// Prune menyusul lima belas menit kemudian supaya arsip baru sudah selesai
+// ditulis sebelum yang lama dihitung umurnya.
+Schedule::command('clinic:backup')->dailyAt('02:00')->description('Cadangan database harian');
+Schedule::command('clinic:backup --prune=30')->dailyAt('02:15');
