@@ -10,6 +10,7 @@ use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[ScopedBy([TenantScope::class])]
@@ -17,7 +18,9 @@ class Product extends Model
 {
     use BelongsToTenant, HasCategory, HasFactory;
 
-    protected $fillable = ['tenant_id', 'name', 'type', 'unit', 'stock_balance', 'min_threshold', 'price', 'status'];
+    // `unit` string masih ikut terisi selama masa peralihan: kolomnya belum
+    // dibuang supaya migrasi FK bisa dibatalkan tanpa kehilangan nilai lama.
+    protected $fillable = ['tenant_id', 'name', 'type', 'unit', 'unit_id', 'stock_balance', 'min_threshold', 'price', 'status'];
 
     protected $appends = ['is_low_stock'];
 
@@ -38,6 +41,16 @@ class Product extends Model
     public function getIsLowStockAttribute(): bool
     {
         return $this->stock_balance <= $this->min_threshold;
+    }
+
+    /**
+     * Selama kolom string `unit` belum dibuang, `$product->unit` tetap
+     * mengembalikan teks lamanya — atribut menang atas relasi. Untuk
+     * mendapatkan modelnya, pakai `getRelationValue('unit')` atau eager load.
+     */
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class);
     }
 
     public function stockMovements(): HasMany

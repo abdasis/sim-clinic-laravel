@@ -27,7 +27,7 @@ class ProductController extends Controller
         $params = $this->dataTableParams($request);
 
         // Tanpa eager load, resource memanggil relasi kategori per baris.
-        $query = Product::query()->with('categories');
+        $query = Product::query()->with(['categories', 'unit']);
 
         if ($params['search']) {
             $query->where('name', 'like', '%'.$params['search'].'%');

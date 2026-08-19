@@ -21,7 +21,12 @@ class ProductResource extends JsonResource
             // kini nama kategori entitas, bukan nilai enum.
             'category' => $this->assignedCategory()?->name,
             'category_label' => $this->assignedCategory()?->name,
-            'unit' => $this->unit,
+            'unit_id' => $this->unit_id,
+            // `unit` dipertahankan sebagai label supaya kasir dan daftar
+            // produk tidak perlu tahu satuan sudah jadi tabel sendiri.
+            // Cadangannya kolom string lama, untuk produk yang belum terpetakan.
+            'unit' => $this->unitLabel(),
+            'unit_label' => $this->unitLabel(),
             'stock_balance' => $this->stock_balance,
             'min_threshold' => $this->min_threshold,
             'price' => $this->price,
@@ -33,6 +38,21 @@ class ProductResource extends JsonResource
             'is_low_stock' => $this->is_low_stock,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Nama satuan yang tampil di layar. Relasi lebih dulu; kolom string lama
+     * hanya dipakai selama produk itu belum sempat dipetakan.
+     *
+     * Relasinya diambil lewat getRelationValue, bukan `$this->unit`: selama
+     * kolom string bernama sama masih ada, atribut selalu menang atas relasi
+     * dan yang terbaca justru teks lamanya.
+     */
+    private function unitLabel(): ?string
+    {
+        $unit = $this->resource->getRelationValue('unit');
+
+        return $unit?->name ?? $this->resource->getRawOriginal('unit');
     }
 
     /**

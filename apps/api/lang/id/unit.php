@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'title' => 'Satuan',
+    'add' => 'Tambah Satuan',
+    'edit' => 'Ubah Satuan',
+    'name' => 'Nama Satuan',
+    'status' => 'Status',
+    'usage_count' => 'Dipakai',
+    'unused' => 'Belum dipakai',
+    'used_by' => ':count produk memakai satuan ini.',
+    'none' => 'Tanpa Satuan',
+    'created' => 'Satuan berhasil ditambahkan.',
+    'updated' => 'Satuan berhasil diperbarui.',
+    'archived' => 'Satuan diarsipkan. Produk yang memakainya tetap menampilkan satuannya.',
+    'deleted' => 'Satuan dihapus permanen.',
+    'archive_confirm' => 'Satuan diarsipkan dan tidak lagi muncul saat menambah produk baru.',
+    'delete_confirm' => 'Satuan ini dihapus permanen dan tidak bisa dikembalikan.',
+    'in_use' => 'Satuan ini masih dipakai :count produk, jadi tidak bisa dihapus permanen. Arsipkan saja, atau pindahkan produknya dulu.',
+    'empty_title' => 'Belum ada satuan',
+    'empty_desc' => 'Satuan menyeragamkan cara produk dihitung — pcs, botol, tube — supaya stok dan laporannya terbaca.',
+    'status_active' => 'Aktif',
+    'status_archived' => 'Diarsipkan',
+    'defaults_seeded' => 'Satuan bawaan berhasil dipasang.',
+];

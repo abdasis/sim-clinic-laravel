@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Actions\LogAuditAction;
 use App\Actions\Tenant\SeedDefaultCommissionRulesAction;
+use App\Actions\Tenant\SeedDefaultUnitsAction;
 use App\Actions\Tenant\SyncTenantClinicRolesAction;
 use App\Enums\ClinicRole;
 use App\Enums\TenantStatus;
@@ -85,6 +86,10 @@ class TenantRegistrationService
     {
         app(SyncTenantClinicRolesAction::class)->handle($tenant->id);
         app(SeedDefaultCommissionRulesAction::class)->handle($tenant->id);
+
+        // Satuan bawaan supaya produk pertama bisa langsung disimpan tanpa
+        // mampir dulu ke menu Satuan.
+        app(SeedDefaultUnitsAction::class)->handle($tenant->id);
 
         $registrar = app(PermissionRegistrar::class);
 

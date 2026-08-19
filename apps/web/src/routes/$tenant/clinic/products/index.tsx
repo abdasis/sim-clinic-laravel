@@ -34,7 +34,9 @@ interface ProductRow {
   category_id?: number | null
   category?: string | null
   category_label?: string | null
-  unit: string
+  unit_id?: number | null
+  unit?: string | null
+  unit_label?: string | null
   stock_balance: number
   min_threshold: number
   price: string
@@ -77,7 +79,15 @@ function ProductsPage() {
             <span className="text-muted-foreground">-</span>
           ),
       },
-      { accessorKey: "unit", header: t("product.unit") },
+      {
+        accessorKey: "unit_label",
+        header: t("product.unit"),
+        cell: ({ row }) => (
+          <span className={row.original.unit_label ? "" : "text-muted-foreground"}>
+            {row.original.unit_label ?? "-"}
+          </span>
+        ),
+      },
       {
         accessorKey: "stock_balance",
         header: t("product.stock_balance"),

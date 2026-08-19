@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'title' => 'Units',
+    'add' => 'Add Unit',
+    'edit' => 'Edit Unit',
+    'name' => 'Unit Name',
+    'status' => 'Status',
+    'usage_count' => 'In use',
+    'unused' => 'Not used yet',
+    'used_by' => ':count products use this unit.',
+    'none' => 'No Unit',
+    'created' => 'Unit created.',
+    'updated' => 'Unit updated.',
+    'archived' => 'Unit archived. Products already using it keep showing it.',
+    'deleted' => 'Unit permanently deleted.',
+    'archive_confirm' => 'The unit is archived and no longer offered when adding new products.',
+    'delete_confirm' => 'This unit is deleted permanently and cannot be restored.',
+    'in_use' => 'This unit is still used by :count products, so it cannot be deleted. Archive it instead, or move the products first.',
+    'empty_title' => 'No units yet',
+    'empty_desc' => 'Units keep product counting consistent — pcs, bottle, tube — so stock and reports stay readable.',
+    'status_active' => 'Active',
+    'status_archived' => 'Archived',
+    'defaults_seeded' => 'Default units installed.',
+];

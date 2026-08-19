@@ -16,6 +16,7 @@ import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { useCategoryOptions } from "#/hooks/use-category-options.ts"
+import { useUnitOptions } from "#/hooks/use-unit-options.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiPost, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -25,7 +26,7 @@ const schema = z.object({
   name: z.string().min(1),
   type: z.string(),
   category_id: z.string().optional(),
-  unit: z.string().min(1),
+  unit_id: z.string().optional(),
   min_threshold: z.coerce.number().gte(0),
   price: z.coerce.number().gte(0),
 })
@@ -37,7 +38,7 @@ export interface ProductFormValues {
   name: string
   type?: string | null
   category_id?: number | null
-  unit: string
+  unit_id?: number | null
   min_threshold: number
   price: string | number
   status: string
@@ -66,7 +67,7 @@ export function ProductFormModal({
       name: "",
       type: "retail",
       category_id: "",
-      unit: "",
+      unit_id: "",
       min_threshold: 0,
       price: 0,
     },
@@ -81,7 +82,7 @@ export function ProductFormModal({
             name: product.name,
             type: product.type ?? "retail",
             category_id: product.category_id ? String(product.category_id) : "",
-            unit: product.unit,
+            unit_id: product.unit_id ? String(product.unit_id) : "",
             min_threshold: Number(product.min_threshold),
             price: Number(product.price),
           }
@@ -89,7 +90,7 @@ export function ProductFormModal({
             name: "",
             type: "retail",
             category_id: "",
-            unit: "",
+            unit_id: "",
             min_threshold: 0,
             price: 0,
           },
@@ -103,10 +104,20 @@ export function ProductFormModal({
     emptyLabel: t("category.none"),
   })
 
+  const units = useUnitOptions(tenant, {
+    enabled: open,
+    emptyLabel: t("unit.none"),
+  })
+
   const mutation = useMutation({
-    mutationFn: ({ category_id, ...values }: Values) => {
-      // Kategori kini id entitas; string kosong berarti tanpa kategori.
-      const payload = { ...values, category_id: category_id ? Number(category_id) : null }
+    mutationFn: ({ category_id, unit_id, ...values }: Values) => {
+      // Kategori dan satuan kini id entitas; string kosong berarti tidak
+      // dipilih, dan server memang menerima keduanya kosong.
+      const payload = {
+        ...values,
+        category_id: category_id ? Number(category_id) : null,
+        unit_id: unit_id ? Number(unit_id) : null,
+      }
 
       return isEdit
         ? apiPut(`/${tenant}/clinic/products/${product.id}`, payload)
@@ -162,10 +173,11 @@ export function ProductFormModal({
               label={t("product.category")}
               options={categories.options}
             />
-            <FormInput
+            <FormSelect
               control={form.control}
-              name="unit"
+              name="unit_id"
               label={t("product.unit")}
+              options={units.options}
             />
             <FormInput
               control={form.control}

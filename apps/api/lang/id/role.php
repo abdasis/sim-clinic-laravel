@@ -33,6 +33,7 @@ return [
         'expense' => 'Pengeluaran',
         'broadcast' => 'Broadcast WA',
         'category' => 'Kategori',
+        'unit' => 'Satuan',
         'activity_log' => 'Log Aktivitas',
     ],
 ];

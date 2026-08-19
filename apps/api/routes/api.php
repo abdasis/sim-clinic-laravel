@@ -37,6 +37,7 @@ use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\TenantRegistrationController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TranslationController;
+use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -159,6 +160,9 @@ Route::prefix('{tenant}/clinic')
             ->only(['index', 'store', 'update', 'destroy']);
 
         // Kategori terpusat untuk layanan, produk, dan pengeluaran
+        Route::delete('units/{unit}/force', [UnitController::class, 'forceDestroy']);
+        Route::apiResource('units', UnitController::class);
+
         Route::delete('categories/{category}/force', [CategoryController::class, 'forceDestroy']);
         Route::apiResource('categories', CategoryController::class);
 

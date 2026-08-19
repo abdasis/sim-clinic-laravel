@@ -25,7 +25,13 @@ class ProductRequest extends FormRequest
                 'nullable',
                 TenantRule::exists('categories')->where('type', CategorizableType::Product->value),
             ],
-            'unit' => ['required', 'string', 'max:50'],
+            // Satuan kini data master. Nullable karena produk lama boleh
+            // tidak punya pemetaan, dan hanya satuan aktif yang boleh dipilih
+            // supaya yang sudah diarsipkan tidak kembali lewat formulir.
+            'unit_id' => [
+                'nullable',
+                TenantRule::exists('units')->where('status', ServiceStatus::Active->value),
+            ],
             'min_threshold' => ['required', 'integer', 'gte:0'],
             // Bahan pakai tidak dijual; harganya sudah dipaksa nol di
             // prepareForValidation, jadi form tidak perlu mengirimnya.
@@ -57,7 +63,7 @@ class ProductRequest extends FormRequest
             'name' => __('product.name'),
             'type' => __('product.type'),
             'category_id' => __('product.category'),
-            'unit' => __('product.unit'),
+            'unit_id' => __('product.unit'),
             'min_threshold' => __('product.min_threshold'),
             'price' => __('product.price'),
             'status' => __('product.status'),

@@ -7,6 +7,7 @@ use App\Enums\ProductCategory;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Tenant;
+use App\Models\Unit;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -113,6 +114,7 @@ class MebaProductSeeder extends Seeder
             // operator (mis. "tube") tidak ditimpa kembali ke default.
             if (! $product->exists) {
                 $product->unit = self::UNIT;
+                $product->unit_id = Unit::query()->where('name', self::UNIT)->value('id');
             }
 
             $product->save();

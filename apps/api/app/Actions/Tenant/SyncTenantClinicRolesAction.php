@@ -35,6 +35,8 @@ class SyncTenantClinicRolesAction
             'transaction' => 'rw', 'invoice' => 'rw', 'report' => 'rw',
             'content' => 'rw', 'promo' => 'rw', 'expense' => 'rw', 'broadcast' => 'rw',
             'category' => 'rw',
+            // Satuan hanya dipakai formulir produk, dan produk hanya admin.
+            'unit' => 'rw',
             // Log hanya dibaca — barisnya ditulis sistem, tidak pernah dari layar.
             'activity_log' => 'r',
         ],

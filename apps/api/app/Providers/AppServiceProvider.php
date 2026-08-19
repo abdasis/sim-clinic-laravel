@@ -37,6 +37,7 @@ use App\Models\Tenant;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\TreatmentRecord;
+use App\Models\Unit;
 use App\Models\User;
 use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
@@ -68,6 +69,7 @@ class AppServiceProvider extends ServiceProvider
         'promo' => Promo::class,
         'expense' => Expense::class,
         'category' => Category::class,
+        'unit' => Unit::class,
         'commission_rule' => CommissionRule::class,
         'commission_setting' => CommissionSetting::class,
         'broadcast' => Broadcast::class,

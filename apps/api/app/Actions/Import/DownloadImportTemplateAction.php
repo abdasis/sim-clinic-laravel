@@ -4,6 +4,7 @@ namespace App\Actions\Import;
 
 use App\Enums\CategorizableType;
 use App\Models\Category;
+use App\Models\Unit;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -32,6 +33,8 @@ class DownloadImportTemplateAction
     private const HEADER_FILL = '1A1A1A';
 
     private const SHEET_CATEGORY = 'Kategori';
+
+    private const SHEET_UNIT = 'Satuan';
 
     private const SHEET_EXAMPLE = 'Contoh Pengisian';
 
@@ -66,8 +69,16 @@ class DownloadImportTemplateAction
 
         $this->writeTemplate($sheet, $layout);
         $this->writeExamples($spreadsheet, $layout);
-        $this->writeCategories($spreadsheet, $categories);
-        $this->attachCategoryDropdown($sheet, $layout['header'], count($categories));
+        $this->writeList($spreadsheet, self::SHEET_CATEGORY, 'Kategori tersedia', $categories);
+        $this->attachListDropdown($sheet, $layout['header'], 'kategori', self::SHEET_CATEGORY, count($categories));
+
+        // Satuan hanya milik produk; template layanan tidak punya kolomnya.
+        $units = $type === 'product' ? $this->unitNames() : [];
+
+        if ($units !== []) {
+            $this->writeList($spreadsheet, self::SHEET_UNIT, 'Satuan tersedia', $units);
+            $this->attachListDropdown($sheet, $layout['header'], 'satuan', self::SHEET_UNIT, count($units));
+        }
 
         $spreadsheet->setActiveSheetIndex(0);
 
@@ -117,24 +128,33 @@ class DownloadImportTemplateAction
         }
     }
 
-    /** @param  array<int, string>  $categories */
-    private function writeCategories(Spreadsheet $spreadsheet, array $categories): void
+    /**
+     * Lembar daftar acuan (kategori, satuan) yang jadi sumber dropdown.
+     *
+     * @param  array<int, string>  $values
+     */
+    private function writeList(Spreadsheet $spreadsheet, string $title, string $heading, array $values): void
     {
         $sheet = $spreadsheet->createSheet();
-        $sheet->setTitle(self::SHEET_CATEGORY);
-        $sheet->setCellValue('A1', 'Kategori tersedia');
+        $sheet->setTitle($title);
+        $sheet->setCellValue('A1', $heading);
         $sheet->getStyle('A1')->getFont()->setBold(true);
         $sheet->getColumnDimension('A')->setWidth(28);
 
-        foreach ($categories as $index => $name) {
+        foreach ($values as $index => $name) {
             $sheet->setCellValue('A'.($index + 2), $name);
         }
     }
 
     /** @param  array<int, string>  $header */
-    private function attachCategoryDropdown(Worksheet $sheet, array $header, int $count): void
-    {
-        $position = array_search('kategori', $header, true);
+    private function attachListDropdown(
+        Worksheet $sheet,
+        array $header,
+        string $columnName,
+        string $listSheet,
+        int $count,
+    ): void {
+        $position = array_search($columnName, $header, true);
 
         if ($position === false || $count === 0) {
             return;
@@ -148,12 +168,22 @@ class DownloadImportTemplateAction
             ->setAllowBlank(true)
             ->setShowDropDown(true)
             ->setShowErrorMessage(false)
-            ->setFormula1('='.self::SHEET_CATEGORY.'!$A$2:$A$'.($count + 1));
+            ->setFormula1('='.$listSheet.'!$A$2:$A$'.($count + 1));
 
         // Dropdown berlaku sampai baris 501: batas baris impor ditambah header.
         foreach (range(2, ParseImportFileAction::MAX_ROWS + 1) as $row) {
             $sheet->getCell($column.$row)->setDataValidation(clone $validation);
         }
+    }
+
+    /** @return array<int, string> */
+    private function unitNames(): array
+    {
+        return Unit::query()
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->pluck('name')
+            ->all();
     }
 
     /** @return array<int, string> */

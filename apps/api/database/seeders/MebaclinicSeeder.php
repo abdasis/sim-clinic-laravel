@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Tenant\SeedDefaultUnitsAction;
 use App\Actions\Tenant\SyncTenantClinicRolesAction;
 use App\Enums\ClinicRole;
 use App\Enums\UserRole;
@@ -33,6 +34,11 @@ class MebaclinicSeeder extends Seeder
         app()->instance('tenant', $tenant);
 
         app(SyncTenantClinicRolesAction::class)->handle($tenant->id);
+
+        // Klinik demo dibuat langsung di sini, bukan lewat pendaftaran, jadi
+        // paket satuan bawaannya ikut dipasang di sini pula — tanpa itu
+        // formulir produk membuka dropdown satuan yang kosong.
+        app(SeedDefaultUnitsAction::class)->handle($tenant->id);
         app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
 
         $staff = [

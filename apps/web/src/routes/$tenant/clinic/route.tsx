@@ -22,6 +22,7 @@ import {
   HeartPulseIcon,
   Layers01Icon,
   PackageIcon,
+  RulerIcon,
   PaintBoardIcon,
   SecurityLockIcon,
   Settings02Icon,
@@ -126,6 +127,7 @@ function ClinicLayout() {
     { key: "services", label: t("service.title"), permission: "service.view", roles: ["admin", "doctor", "therapist"], icon: StethoscopeIcon, group: "catalog" },
     { key: "products", label: t("product.title"), permission: "product.view", roles: ["admin"], icon: PackageIcon, group: "catalog" },
     { key: "categories", label: t("category.title"), permission: "category.view", roles: ["admin"], icon: TagsIcon, group: "catalog" },
+    { key: "units", label: t("unit.title"), permission: "unit.view", roles: ["admin"], icon: RulerIcon, group: "catalog" },
     { key: "inventory", label: t("inventory.title"), permission: "inventory.view", roles: ["admin"], icon: Layers01Icon, group: "catalog" },
     // Keuangan.
     {
