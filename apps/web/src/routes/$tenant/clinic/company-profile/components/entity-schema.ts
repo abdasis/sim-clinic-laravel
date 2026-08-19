@@ -127,7 +127,6 @@ export const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
         options: [
           { value: "pharma_banner", labelKey: "company_profile.section_keys.pharma_banner" },
           { value: "booking_cta", labelKey: "company_profile.section_keys.booking_cta" },
-          { value: "estore_cta", labelKey: "company_profile.section_keys.estore_cta" },
         ],
       },
       { name: "title", labelKey: "company_profile.name", type: "translatable" },

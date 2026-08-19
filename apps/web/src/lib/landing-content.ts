@@ -327,20 +327,6 @@ const CONTENT_SECTIONS: Record<string, CompanyContentSection> = {
     cta_type: "route_root",
     layout_type: "banner",
   },
-  estore_cta: {
-    id: 3,
-    section_key: "estore_cta",
-    title: { id: "Belanja dari rumah", en: "Shop from home" },
-    body: richText({
-      id: "Produk yang sama dengan yang dipakai di klinik, dikirim ke alamatmu.",
-      en: "The same products we use in the clinic, delivered to your address.",
-    }),
-    image_url: null,
-    cta_label: { id: "Kunjungi Toko", en: "Visit Store" },
-    cta_url: "/store",
-    cta_type: "route_root",
-    layout_type: "banner",
-  },
 }
 
 const HEADER_NAV: CompanyNavItem[] = [

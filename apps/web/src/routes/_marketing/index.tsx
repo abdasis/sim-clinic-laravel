@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router"
 
 import { BookingCta } from "#/components/company-profile/booking-cta.tsx"
 import { ContentBanner } from "#/components/company-profile/content-banner.tsx"
-import { EstoreCta } from "#/components/company-profile/estore-cta.tsx"
 import { HeroCarousel } from "#/components/company-profile/hero-carousel.tsx"
 import { PromoSection } from "#/components/company-profile/promo-section.tsx"
 import { TestimonialSection } from "#/components/company-profile/testimonial-section.tsx"
@@ -77,7 +76,6 @@ function LandingPage() {
         }
         items={data.testimonials}
       />
-      <EstoreCta tenant="" section={sections.estore_cta} />
     </main>
   )
 }
