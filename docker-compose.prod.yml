@@ -23,6 +23,26 @@ services:
     networks:
       - sim-clinic
 
+  # Queue worker — memproses job (pesan WhatsApp chatbot, dll). WAJIB jalan;
+  # tanpa ini pesan masuk tidak pernah dibalas.
+  worker:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: sim-clinic-worker
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=90"]
+    env_file:
+      - apps/api/.env
+    volumes:
+      - api-storage:/var/www/api/storage
+      - api-bootstrap:/var/www/api/bootstrap/cache
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sim-clinic
+
   # TanStack Start Web (Node SSR)
   web:
     build:
