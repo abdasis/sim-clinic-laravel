@@ -2,14 +2,14 @@
 
 return [
     'title' => 'Aturan Fee Terapis',
-    'description' => 'Fee dihitung dari transaksi yang terapisnya tercatat. Aturannya bisa ditambah dan diubah tanpa mengubah aplikasi.',
+    'description' => 'Fee dihitung dari kunjungan yang ia kerjakan dan barang yang ia tawarkan sendiri. Aturannya bisa ditambah dan diubah tanpa mengubah aplikasi.',
     'add' => 'Tambah Aturan',
     'edit' => 'Ubah Aturan',
     'name' => 'Nama Aturan',
     'type_label' => 'Jenis',
     'amount' => 'Nominal per Pasien',
     'percent' => 'Persentase',
-    'min_revenue' => 'Omzet Minimum',
+    'min_revenue' => 'Minimum Penjualan',
     'is_active' => 'Aktif',
     'created' => 'Aturan fee berhasil ditambahkan.',
     'updated' => 'Aturan fee berhasil diperbarui.',
@@ -25,14 +25,17 @@ return [
     'therapist' => 'Terapis',
     'therapist_scope' => 'Berlaku Untuk',
     'all_therapists' => 'Semua terapis',
-    'revenue' => 'Omzet',
+    'revenue' => 'Penjualan',
     'visits' => 'Kunjungan',
     'new_patients' => 'Pasien Baru',
     'total' => 'Total Fee',
+    // Kolom Penjualan kerap dikira omzet klinik. Ditegaskan di sini supaya
+    // tidak ada yang mengira penjualan orang lain ikut terhitung.
+    'revenue_hint' => 'Nilai layanan dan produk yang ia tawarkan sendiri. Penjualan orang lain tidak ikut, jadi tidak ada yang terhitung dua kali.',
     'empty_title' => 'Belum ada aturan fee',
-    'empty_desc' => 'Tambahkan aturan seperti fee per pasien atau persentase dari omzet.',
+    'empty_desc' => 'Tambahkan aturan seperti fee per pasien atau persentase dari penjualan.',
     'no_result' => 'Tidak ada transaksi bertanda terapis pada periode ini.',
-    'tier_note' => 'Untuk persentase omzet, hanya ambang tertinggi yang terlampaui yang dipakai — tidak dijumlahkan.',
+    'tier_note' => 'Untuk persentase penjualan, hanya ambang tertinggi yang terlampaui yang dipakai — tidak dijumlahkan.',
     'scope_note' => 'Aturan yang disetel untuk satu orang menggantikan aturan umum sejenis, bukan ditambahkan padanya.',
     'rate_change_note' => 'Mengubah nominal atau persentase membuat tarif baru yang berlaku mulai sekarang. Periode yang sudah lewat tetap dihitung dengan tarif lamanya.',
     'effective_since' => 'Berlaku sejak :date',
@@ -40,6 +43,6 @@ return [
     'type' => [
         'per_patient' => 'Fee per pasien',
         'per_new_patient' => 'Bonus pasien baru',
-        'revenue_percent' => 'Persentase dari omzet',
+        'revenue_percent' => 'Persentase dari penjualan',
     ],
 ];

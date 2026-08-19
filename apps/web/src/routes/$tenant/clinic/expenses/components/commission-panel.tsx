@@ -267,7 +267,19 @@ export function CommissionPanel({ tenant, from, to, onPost }: CommissionPanelPro
                     </p>
                   </div>
                   <p className="text-xs text-muted-foreground tabular-nums">
-                    {t("commission.revenue")} {formatCurrency(row.revenue)} ·{" "}
+                    {/* "Penjualan" kerap dikira omzet klinik; keterangannya
+                        ditempelkan di angkanya, bukan disembunyikan di bantuan. */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help underline decoration-dotted underline-offset-2">
+                          {t("commission.revenue")}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-64">
+                        {t("commission.revenue_hint")}
+                      </TooltipContent>
+                    </Tooltip>{" "}
+                    {formatCurrency(row.revenue)} ·{" "}
                     {row.visits} {t("commission.visits").toLowerCase()} ·{" "}
                     {row.new_patients} {t("commission.new_patients").toLowerCase()}
                   </p>
