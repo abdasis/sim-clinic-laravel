@@ -77,7 +77,7 @@ export function CommissionRuleDialog({
   const type = form.watch("type")
 
   const staff = useQuery({
-    queryKey: ["staff", tenant, "therapists"],
+    queryKey: ["staff", tenant, "commission-scope"],
     queryFn: () =>
       apiGet<{ data: { id: number; name: string; clinic_role: string }[] }>(
         `/${tenant}/clinic/staff`,
@@ -163,10 +163,10 @@ export function CommissionRuleDialog({
               description={t("commission.scope_note")}
               options={[
                 { label: t("commission.all_therapists"), value: "" },
+                // Seluruh staf, bukan hanya terapis dan dokter: kasir pun bisa
+                // tercatat menawarkan produk, dan komisinya mengikuti siapa
+                // yang tercatat — bukan jabatannya.
                 ...(staff.data?.data ?? [])
-                  .filter((member) =>
-                    ["therapist", "doctor"].includes(member.clinic_role),
-                  )
                   .map((member) => ({
                     label: member.name,
                     value: String(member.id),

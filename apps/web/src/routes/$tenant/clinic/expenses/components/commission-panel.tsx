@@ -173,8 +173,8 @@ export function CommissionPanel({ tenant, from, to, onPost }: CommissionPanelPro
               <Badge variant="outline" className="shrink-0 font-normal">
                 {rule.type_label}
               </Badge>
-              {/* Aturan yang dibatasi ke satu terapis harus terlihat bedanya —
-                  kalau tidak, orang mengira semua terapis kecipratan. */}
+              {/* Aturan yang dibatasi ke satu orang harus terlihat bedanya —
+                  kalau tidak, orang mengira seluruh staf kecipratan. */}
               <Badge
                 variant={rule.therapist_name ? "default" : "secondary"}
                 className="shrink-0 font-normal"
