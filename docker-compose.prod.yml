@@ -9,6 +9,10 @@ services:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
+    # Diberi nama supaya worker dan scheduler memakai image yang sama persis.
+    # deploy.sh hanya membangun api; kalau tiap layanan punya blok build
+    # sendiri, image lamanya dipakai ulang dan worker menjalankan kode lama.
+    image: sim-clinic-api:latest
     container_name: sim-clinic-api
     restart: unless-stopped
     env_file:
@@ -26,12 +30,12 @@ services:
   # Queue worker — memproses job (pesan WhatsApp chatbot, dll). WAJIB jalan;
   # tanpa ini pesan masuk tidak pernah dibalas.
   worker:
-    build:
-      context: .
-      dockerfile: docker/api.Dockerfile
+    image: sim-clinic-api:latest
     container_name: sim-clinic-worker
     restart: unless-stopped
-    command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=90"]
+    # --max-time: proses berumur panjang menyimpan kode lama di memori; daur
+    # ulang tiap jam supaya deploy baru ikut terpakai tanpa restart manual.
+    command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=90", "--max-time=3600"]
     env_file:
       - apps/api/.env
     volumes:
@@ -40,6 +44,31 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      api:
+        condition: service_started
+    networks:
+      - sim-clinic
+
+  # Penjadwal.
+  #
+  # routes/console.php mendaftarkan pengingat harian DAN backup basis data dua
+  # kali sehari. Tanpa proses ini semuanya diam — termasuk backup, yang
+  # ketiadaannya baru terasa justru saat paling dibutuhkan.
+  scheduler:
+    image: sim-clinic-api:latest
+    container_name: sim-clinic-scheduler
+    restart: unless-stopped
+    command: ["php", "artisan", "schedule:work"]
+    env_file:
+      - apps/api/.env
+    volumes:
+      - api-storage:/var/www/api/storage
+      - api-bootstrap:/var/www/api/bootstrap/cache
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
     networks:
       - sim-clinic
 

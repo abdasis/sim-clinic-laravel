@@ -70,6 +70,12 @@ done
 echo "🔑 Melengkapi izin peran klinik..."
 $COMPOSE exec -T api php artisan clinic:sync-permissions || ERRORS+="sinkron izin peran gagal; "
 
+# Worker berumur panjang menyimpan kode lama di memori. Tanpa aba-aba ini,
+# job yang dijalankan sesudah deploy masih memakai kelas versi sebelumnya
+# sampai worker-nya kebetulan didaur ulang sendiri.
+echo "♻️  Menyuruh pekerja antrian memuat ulang kode..."
+$COMPOSE exec -T api php artisan queue:restart || ERRORS+="restart antrian gagal; "
+
 echo "🧹 Cleaning old images..."
 docker image prune -f >/dev/null 2>&1 || true
 
