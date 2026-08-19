@@ -62,6 +62,14 @@ done
 
 [ -z "$MIGRATED" ] && ERRORS+="migrasi database gagal; "
 
+# Izin peran klinik dipasang sekali saat kliniknya dibuat dan tidak pernah
+# ditengok lagi. Modul yang ditambahkan sesudah itu tidak akan pernah sampai
+# ke klinik yang sudah berjalan, karena yang membuat izinnya adalah seeder --
+# dan seeder tidak pernah ikut deploy. Perintah ini hanya menambah, tidak
+# pernah mencabut, jadi aman dijalankan tiap kali.
+echo "🔑 Melengkapi izin peran klinik..."
+$COMPOSE exec -T api php artisan clinic:sync-permissions || ERRORS+="sinkron izin peran gagal; "
+
 echo "🧹 Cleaning old images..."
 docker image prune -f >/dev/null 2>&1 || true
 
