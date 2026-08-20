@@ -165,7 +165,10 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
   const outstanding = Number(data.outstanding_amount ?? 0)
   const change = paid - total
   const issuedAt = data.issued_at ?? data.created_at
-  const clinicName = clinic?.name ?? t("invoice.title")
+  // Cadangan untuk kop nota, bukan judul dokumen: yang dicetak di baris
+  // teratas adalah nama klinik, jadi cadangannya juga harus terbaca sebagai
+  // nama tempat.
+  const clinicName = clinic?.name ?? t("clinic.clinic")
   const performers = data.performers ?? []
   // Hitungan disimpan setelah dicetak, jadi cetakan yang sedang berjalan
   // adalah yang berikutnya — nota tidak boleh mengaku cetakan ke-0.

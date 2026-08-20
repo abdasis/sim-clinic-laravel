@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router"
 import { z } from "zod"
 import type { UseFormReturn } from "react-hook-form"
 
@@ -30,7 +29,6 @@ export interface CreatedTransaction {
 }
 
 interface PosCheckoutPanelProps {
-  tenant: string
   form: UseFormReturn<PatientFormValues>
   patientOptions: { label: string; value: string }[]
   /** Kunjungan selesai milik pasien terpilih; kosong sebelum pasien dipilih. */
@@ -44,7 +42,6 @@ interface PosCheckoutPanelProps {
   bookingsLoading?: boolean
   /** Pasien belum dipilih, jadi daftar kunjungan memang belum bisa diisi. */
   bookingsNeedPatient?: boolean
-  created: CreatedTransaction | null
   items: LineItem[]
   total: number
   onStep: (key: string, delta: number) => void
@@ -77,7 +74,6 @@ interface PosCheckoutPanelProps {
  * sama, hanya wadahnya yang berbeda, jadi cukup satu sumber markup.
  */
 export function PosCheckoutPanel({
-  tenant,
   form,
   patientOptions,
   bookingOptions,
@@ -88,7 +84,6 @@ export function PosCheckoutPanel({
   onOfferedBy,
   bookingsLoading,
   bookingsNeedPatient,
-  created,
   items,
   total,
   onStep,
@@ -107,19 +102,6 @@ export function PosCheckoutPanel({
 
   return (
     <div className="space-y-4">
-      {created ? (
-        <div className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm">
-          <span className="font-medium">{created.invoice_number}</span> —{" "}
-          <Link
-            to="/$tenant/clinic/pos/invoices/$id"
-            params={{ tenant, id: String(created.id) }}
-            className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
-          >
-            {t("invoice.title")}
-          </Link>
-        </div>
-      ) : null}
-
       <Form {...form}>
         <div ref={patientFieldRef}>
           <FormCombobox

@@ -1,4 +1,4 @@
-import { createFileRoute, useParams } from "@tanstack/react-router"
+import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -68,6 +68,7 @@ function PosPage() {
 
   const searchRef = useRef<HTMLInputElement>(null)
   const patientFieldRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
   const [helpOpen, setHelpOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
   // Elemen drawer disimpan sebagai state, bukan ref: daftar pasien perlu
@@ -78,7 +79,6 @@ function PosPage() {
     amount: 0,
     covers: false,
   })
-  const [created, setCreated] = useState<CreatedTransaction | null>(null)
 
   const cart = usePosCart()
 
@@ -174,7 +174,6 @@ function PosPage() {
     },
     onSuccess: (res) => {
       toast.success(t("pos.created"))
-      setCreated(res.data)
       qc.invalidateQueries({ queryKey: ["transactions"] })
       // Katalog ikut disegarkan supaya saldo stoknya tidak basi setelah jualan.
       qc.invalidateQueries({ queryKey: ["products", tenant, "catalog"] })
@@ -183,6 +182,16 @@ function PosPage() {
       // Tanggal sengaja dipertahankan: admin yang mencatat penjualan
       // sebulan lalu biasanya memasukkan beberapa nota untuk hari yang sama.
       patientForm.reset({ patient_id: "", booking_id: "", issued_at: issuedAt })
+
+      // Transaksi tersimpan berarti kasir sedang menunggu kertas keluar.
+      // Sebelumnya yang muncul hanya sebaris tautan di panel kanan yang harus
+      // dilihat lalu diklik — di meja kasir yang ramai, langkah itu terlewat
+      // dan notanya tidak pernah tercetak.
+      navigate({
+        to: "/$tenant/clinic/pos/invoices/$id",
+        params: { tenant, id: String(res.data.id) },
+        search: { autoprint: true },
+      })
     },
     onError: (err: ApiError) => {
       // Pasien wajib diisi di server; tanpa ini tombol simpan terasa mati
@@ -231,7 +240,6 @@ function PosPage() {
   // kanan di layar lebar. Kalau dirender dua-duanya, form pasiennya kembar.
   const checkout = (
     <PosCheckoutPanel
-      tenant={tenant}
       form={patientForm}
       patientOptions={(patients.data?.data ?? []).map((patient) => ({
         label: patient.name,
@@ -242,7 +250,6 @@ function PosPage() {
       performerIds={performerIds}
       onPerformersChange={setPerformerIds}
       onOfferedBy={cart.setOfferedBy}
-      created={created}
       items={cart.items}
       total={cart.total}
       onStep={cart.step}

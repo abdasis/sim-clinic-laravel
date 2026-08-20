@@ -42,7 +42,6 @@ function Harness(
 
   return (
     <PosCheckoutPanel
-      tenant="demo"
       form={form}
       patientOptions={PATIENTS}
       bookingOptions={[]}
@@ -50,7 +49,6 @@ function Harness(
       performerIds={[]}
       onPerformersChange={() => {}}
       onOfferedBy={() => {}}
-      created={null}
       items={[]}
       total={0}
       onStep={() => {}}

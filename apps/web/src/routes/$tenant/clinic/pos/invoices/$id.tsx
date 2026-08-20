@@ -1,12 +1,18 @@
-import { createFileRoute, useParams } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { PrinterIcon } from "@hugeicons/core-free-icons"
+import { PrinterIcon, ShoppingCart01Icon } from "@hugeicons/core-free-icons"
 
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Button } from "#/components/ui/button.tsx"
+import { Kbd } from "#/components/ui/kbd.tsx"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import {
@@ -24,11 +30,23 @@ import {
 } from "../components/receipt.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/pos/invoices/$id")({
+  /**
+   * `autoprint` dipasang kasir POS saat transaksinya baru saja tersimpan.
+   * Sekali pakai: penandanya dibuang begitu dialog cetak terbuka, supaya
+   * memuat ulang halaman atau menekan tombol kembali tidak mencetak lagi
+   * dan tidak menambah nomor cetakan.
+   */
+  validateSearch: (search: Record<string, unknown>): { autoprint?: boolean } =>
+    search.autoprint === true || search.autoprint === "true"
+      ? { autoprint: true }
+      : {},
   component: InvoicePage,
 })
 
 function InvoicePage() {
   const { tenant, id } = useParams({ from: "/$tenant/clinic/pos/invoices/$id" })
+  const { autoprint } = Route.useSearch()
+  const navigate = useNavigate()
   const { t } = useTrans()
   const qc = useQueryClient()
   const queryKey = ["transactions", tenant, id]
@@ -74,6 +92,60 @@ function InvoicePage() {
     },
   })
 
+  // Nota yang baru saja tersimpan langsung membuka dialog cetak. Kasir yang
+  // menutup transaksi memang sedang menunggu kertas keluar, bukan sedang
+  // memilih-milih menu — jadi langkah itu dihilangkan, bukan disediakan.
+  //
+  // Ref-nya, bukan state: perubahan state memicu render, dan render ulang di
+  // tengah effect yang sama akan menembakkan cetakan kedua.
+  const autoPrinted = useRef(false)
+
+  useEffect(() => {
+    if (!autoprint || autoPrinted.current || !invoice || print.isPending) {
+      return
+    }
+
+    autoPrinted.current = true
+
+    // Penandanya dibuang lebih dulu supaya riwayat peramban tidak menyimpan
+    // URL yang mencetak sendiri setiap kali dibuka lagi.
+    navigate({
+      to: "/$tenant/clinic/pos/invoices/$id",
+      params: { tenant, id },
+      search: {},
+      replace: true,
+    })
+    print.mutate()
+  }, [autoprint, id, invoice, navigate, print, tenant])
+
+  // Pintasan huruf tunggal, sepola dengan `s` untuk simpan di halaman lain.
+  // Sengaja bukan Mod+P: kombinasi itu milik peramban, dan cetakan lewat
+  // jalur peramban tidak melewati pencatatan nomor cetakan — kertas dan
+  // catatan jadi berbeda tanpa ada yang tahu.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+
+      const target = event.target as HTMLElement | null
+      if (target?.isContentEditable) return
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
+
+      if (event.key === "p" && invoice && !print.isPending) {
+        event.preventDefault()
+        print.mutate()
+      }
+
+      if (event.key === "b") {
+        event.preventDefault()
+        navigate({ to: "/$tenant/clinic/pos", params: { tenant } })
+      }
+    }
+
+    window.addEventListener("keydown", onKey)
+
+    return () => window.removeEventListener("keydown", onKey)
+  }, [invoice, navigate, print, tenant])
+
   return (
     // Jarak halaman dilepas saat cetak supaya kertasnya tidak dapat margin dobel.
     <div className="h-full overflow-y-auto bg-muted/30 p-4 print:h-auto print:overflow-visible print:bg-white print:p-0">
@@ -95,24 +167,53 @@ function InvoicePage() {
           <h1 className="text-base font-semibold tracking-tight">
             {t("invoice.title")}
           </h1>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                className="gap-2 transition-transform duration-150 ease-out hover:-translate-y-px"
-                disabled={!invoice || print.isPending}
-                onClick={() => print.mutate()}
-              >
-                <HugeiconsIcon
-                  icon={PrinterIcon}
-                  strokeWidth={2}
-                  className="size-4"
-                />
+
+          <div className="flex items-center gap-2">
+            {/* Jalan pulang. Tanpa ini kasir yang dibawa ke sini otomatis
+                harus menekan tombol kembali peramban untuk melayani antrean
+                berikutnya. Sekunder, karena yang dituju halaman ini tetap
+                kertasnya. */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild variant="outline" size="sm" className="gap-2">
+                  <Link to="/$tenant/clinic/pos" params={{ tenant }}>
+                    <HugeiconsIcon
+                      icon={ShoppingCart01Icon}
+                      strokeWidth={2}
+                      className="size-4"
+                    />
+                    {t("pos.new_transaction")}
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="flex items-center gap-2">
+                {t("pos.new_transaction")}
+                <Kbd>b</Kbd>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  className="gap-2 transition-transform duration-150 ease-out hover:-translate-y-px"
+                  disabled={!invoice || print.isPending}
+                  onClick={() => print.mutate()}
+                >
+                  <HugeiconsIcon
+                    icon={PrinterIcon}
+                    strokeWidth={2}
+                    className="size-4"
+                  />
+                  {print.isPending ? t("general.loading") : t("invoice.print")}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="flex items-center gap-2">
                 {t("invoice.print")}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{t("invoice.print")}</TooltipContent>
-          </Tooltip>
+                <Kbd>p</Kbd>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </div>
 

@@ -1,7 +1,11 @@
 <?php
 
 return [
-    'title' => 'Invoice',
+    // Satu nama untuk satu benda. Sebelumnya kertas yang sama disebut
+    // "Invoice" di judul halaman, "Cetak Invoice" di tombol detail, dan
+    // "Cetak" di tombol cetaknya — tiga sebutan yang membuat kasir mengira
+    // ada beberapa jenis cetakan padahal cuma ada satu.
+    'title' => 'Nota',
     'receipt' => 'NOTA / RECEIPT',
     'number_short' => 'No.',
     'customer' => 'Pelanggan',
@@ -20,7 +24,7 @@ return [
     'thank_you_sub' => 'for trusting',
     'print_count' => 'No. cetak',
     'print_not_recorded' => 'Nota tetap dicetak, tapi nomor cetakannya gagal dicatat.',
-    'invoice_number' => 'Nomor Invoice',
+    'invoice_number' => 'Nomor Nota',
     'date' => 'Tanggal',
     'patient' => 'Pasien',
     'cashier' => 'Kasir',
@@ -33,7 +37,7 @@ return [
     'subtotal' => 'Subtotal',
     'total' => 'Total',
     'payment_method' => 'Metode Pembayaran',
-    'print' => 'Cetak',
+    'print' => 'Cetak Nota',
     'issued_at' => 'Diterbitkan',
     'payments' => 'Rincian Pembayaran',
     'performers' => 'Terapis',
