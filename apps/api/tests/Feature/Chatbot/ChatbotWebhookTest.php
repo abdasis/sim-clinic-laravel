@@ -38,11 +38,15 @@ class ChatbotWebhookTest extends TestCase
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function hit(array $payload, string $token = self::TOKEN, string $session = 'klinik-uji')
-    {
+    private function hit(
+        array $payload,
+        string $token = self::TOKEN,
+        string $session = 'klinik-uji',
+        string $envelope = self::ME,
+    ) {
         return $this->postJson('/api/whatsapp/webhook/'.$token, [
             'session' => $session,
-            'me' => ['id' => self::ME],
+            'me' => ['id' => $envelope],
             'payload' => $payload,
         ]);
     }
@@ -155,6 +159,47 @@ class ChatbotWebhookTest extends TestCase
             ProcessInboundMessageJob::class,
             fn (ProcessInboundMessageJob $job) => $job->senderPhone === '6289999999999',
         );
+    }
+
+    /**
+     * Regresi produksi: chatbot berhenti menjawab sama sekali.
+     *
+     * Penyebabnya pemeriksaan penerima yang membandingkan JID mentah. WAHA
+     * menyebut nomor klinik lengkap dengan nomor perangkatnya, sementara
+     * `to` memakai domain lain, jadi dua penyebutan nomor yang sama tidak
+     * pernah dianggap sama dan seluruh pesan masuk ditolak.
+     */
+    public function test_the_clinic_own_number_is_recognised_across_jid_forms(): void
+    {
+        $this->hit(
+            [...$this->message(), 'to' => '628110000000@c.us'],
+            envelope: '628110000000:12@s.whatsapp.net',
+        )->assertOk();
+
+        Queue::assertPushed(ProcessInboundMessageJob::class);
+    }
+
+    /**
+     * Penjagaan yang terlalu ketat di pintu yang dilewati semua orang bukan
+     * penjagaan, melainkan pemadaman: engine yang tidak mengirim identitas
+     * klinik tidak boleh membuat chatbot membisu.
+     */
+    public function test_a_message_still_passes_when_the_envelope_omits_the_clinic_number(): void
+    {
+        $this->postJson('/api/whatsapp/webhook/'.self::TOKEN, [
+            'session' => 'klinik-uji',
+            'payload' => $this->message(),
+        ])->assertOk();
+
+        Queue::assertPushed(ProcessInboundMessageJob::class);
+    }
+
+    /** Pesan yang penerimanya nomor lain tetap ditolak. */
+    public function test_a_message_addressed_to_another_number_is_rejected(): void
+    {
+        $this->hit([...$this->message(), 'to' => '628999999999@c.us'])->assertOk();
+
+        Queue::assertNothingPushed();
     }
 
     /** Token salah tidak boleh membocorkan bahwa route-nya memang ada. */

@@ -140,11 +140,14 @@ class InboundMessageController extends Controller
      * Tiga penjaga sekaligus, karena payload tiap engine WAHA berbeda bentuk
      * dan tidak satu pun dari ketiganya bisa dipercaya sendirian.
      *
-     * Yang paling menentukan justru penerimanya. Status dan siaran sering
-     * terlihat seperti DM — `from`-nya nomor kontak sungguhan — tapi `to`-nya
-     * bukan nomor klinik. Karena itu identitas klinik dari envelope (`me.id`)
-     * yang dijadikan patokan, dan ketiadaannya berarti tolak: tanpa tahu siapa
-     * penerimanya, tidak ada cara memastikan pesan ini memang ditujukan ke sini.
+     * Status dan siaran sering terlihat seperti DM — `from`-nya nomor kontak
+     * sungguhan — tapi `to`-nya bukan nomor klinik. Karena itu identitas
+     * klinik dari envelope ikut dibandingkan bila ada.
+     *
+     * Bila tidak ada, pesannya tetap diproses. Menolak dalam keadaan itu
+     * pernah dicoba dan akibatnya chatbot berhenti menjawab sama sekali pada
+     * engine yang tidak mengirim `me.id`: penjagaan yang terlalu ketat di
+     * pintu yang dilewati semua orang bukan penjagaan, melainkan pemadaman.
      *
      * @param  array<string, mixed>  $payload
      */
@@ -154,17 +157,22 @@ class InboundMessageController extends Controller
             return false;
         }
 
-        // Gagal menutup, bukan gagal membuka. Envelope tanpa identitas klinik
-        // adalah keadaan yang tidak bisa diverifikasi, dan membalas dalam
-        // keadaan itu persis yang membuat orang menerima pesan pribadi tanpa
-        // pernah menghubungi klinik.
-        if (blank($meId)) {
-            return false;
-        }
+        // Penerimanya harus klinik ini sendiri. Pemeriksaannya dilakukan atas
+        // nomor, bukan atas JID mentah: `me.id` kerap membawa nomor perangkat
+        // ("628xx:12@s.whatsapp.net") sementara `to` memakai domain lain
+        // ("628xx@c.us"), sehingga perbandingan apa adanya tidak akan pernah
+        // sama walau keduanya menunjuk nomor yang sama.
+        //
+        // Kalau salah satunya tidak ada atau tidak berbentuk nomor, yang
+        // dilakukan bukan menolak seluruh pesan. Payload tiap engine berbeda,
+        // dan menutup pintu untuk susunan yang belum dikenal berarti chatbot
+        // membisu total tanpa ada yang tahu sebabnya. Penjagaan diserahkan ke
+        // dua pemeriksaan di bawah — keduanya yang benar-benar mengenali
+        // status, grup, saluran, dan siaran.
+        $me = $this->jidPhone($meId);
+        $to = $this->jidPhone(data_get($payload, 'to'));
 
-        $to = data_get($payload, 'to');
-
-        if (! is_string($to) || $to !== $meId) {
+        if ($me !== null && $to !== null && $me !== $to) {
             return false;
         }
 
@@ -193,6 +201,26 @@ class InboundMessageController extends Controller
         return str_ends_with($chatJid, '@c.us')
             || str_ends_with($chatJid, '@s.whatsapp.net')
             || str_ends_with($chatJid, '@lid');
+    }
+
+    /**
+     * Nomor telepon di balik satu JID WhatsApp.
+     *
+     * Dipotong dua kali sebelum dinormalkan: domain di belakang '@', dan
+     * nomor perangkat di belakang ':'. Yang kedua penting — normalisasi
+     * menyapu seluruh karakter bukan angka, jadi "628xx:12@s.whatsapp.net"
+     * tanpa pemotongan berubah menjadi "628xx12", nomor yang tidak pernah ada
+     * dan tidak akan pernah cocok dengan nomor mana pun.
+     */
+    private function jidPhone(mixed $jid): ?string
+    {
+        if (! is_string($jid) || $jid === '') {
+            return null;
+        }
+
+        $user = strtok(strtok($jid, '@') ?: '', ':') ?: '';
+
+        return PhoneNumber::normalize($user);
     }
 
     /**
