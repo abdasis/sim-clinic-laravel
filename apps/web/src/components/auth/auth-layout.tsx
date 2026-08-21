@@ -4,9 +4,10 @@ import { ArrowLeft01Icon } from "@hugeicons/core-free-icons"
 
 import { useTrans } from "#/hooks/use-trans.ts"
 
-/** Tombol kirim halaman masuk: selebar form, terangkat sedikit saat disentuh. */
+/** Tombol kirim halaman masuk: selebar form, terangkat sedikit saat disentuh,
+ *  mengecil halus saat ditekan. */
 export const AUTH_SUBMIT_CLASS =
-  "w-full transition-transform duration-150 ease-out hover:-translate-y-px"
+  "w-full transition-transform duration-150 ease-out hover:-translate-y-px active:scale-[0.96]"
 
 export interface AuthValuePoint {
   icon: IconSvgElement
@@ -28,14 +29,18 @@ interface AuthLayoutProps {
 /** Hanya dua tujuan yang masuk akal dari halaman masuk. */
 type AuthFooterTarget = "/register" | "/central/login"
 
+const FOCUS_RING =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+
 /**
- * Kerangka halaman masuk: panel brand di kiri, form di kanan, selebar layar.
- * Dipakai empat route yang tidak sekerabat, jadi tinggal di components/
+ * Kerangka halaman masuk dua kolom minimalis: panel brand di kiri, form di
+ * kanan. Dipakai tiga route yang tidak sekerabat, jadi tinggal di components/
  * global — bukan dikolokasi ke salah satu subtree.
  *
- * ponytail: form sengaja tidak dibungkus Card — mengambang di atas aurora,
- * mengikuti arah visual bersih tanpa bingkai ganda. Bungkus dengan Card bila
- * kelak form-nya cukup padat sehingga butuh batas yang tegas.
+ * ponytail: bersih ala Linear — tipografi sebagai hierarki, bukan ornamen.
+ * Panel kiri bg solid + border-r tipis sebagai pemisah; form kanan mengambang
+ * di whitespace tanpa wadah. Tidak ada pattern, glow, atau kartu. Bungkus
+ * form dengan Card bila kelak butuh batas tegas karena formnya padat.
  */
 export function AuthLayout({
   kicker,
@@ -61,27 +66,40 @@ export function AuthLayout({
       <div className="flex flex-col items-center justify-center px-4 py-12 lg:px-14">
         {/* Di layar sempit panel brand disembunyikan; kickernya tetap ada
             supaya halaman tidak kehilangan konteks sama sekali. */}
-        <p className="island-kicker mb-6 lg:hidden">{kicker}</p>
+        <p className="island-kicker rise-in mb-6 lg:hidden" style={{ animationDelay: "0ms" }}>
+          {kicker}
+        </p>
 
-        <div
-          className="rise-in w-full max-w-sm"
-          style={{ animationDelay: "60ms" }}
-        >
-          <h2 className="display-title text-2xl font-bold tracking-tight text-pretty text-sea-ink">
+        <div className="w-full max-w-sm">
+          <h2
+            className="display-title rise-in text-2xl font-bold tracking-tight text-balance text-sea-ink"
+            style={{ animationDelay: "60ms" }}
+          >
             {formHeading}
           </h2>
           {formSubheading ? (
-            <p className="mt-1.5 text-sm text-sea-ink-soft">
+            <p
+              className="rise-in mt-1.5 text-sm text-pretty text-sea-ink-soft"
+              style={{ animationDelay: "120ms" }}
+            >
               {formSubheading}
             </p>
           ) : null}
 
-          <div className="mt-6">{children}</div>
+          <div className="rise-in mt-6" style={{ animationDelay: "180ms" }}>
+            {children}
+          </div>
 
           {footerLink ? (
-            <p className="mt-6 text-sm text-sea-ink-soft">
+            <p
+              className="rise-in mt-6 text-sm text-sea-ink-soft"
+              style={{ animationDelay: "240ms" }}
+            >
               {footerLink.text}{" "}
-              <Link to={footerLink.to} className="font-semibold">
+              <Link
+                to={footerLink.to}
+                className={`font-semibold underline-offset-4 transition-colors hover:text-primary focus-visible:underline ${FOCUS_RING}`}
+              >
                 {footerLink.linkLabel}
               </Link>
             </p>
@@ -90,7 +108,8 @@ export function AuthLayout({
           <Link
             to="/"
             search={{ lang: undefined }}
-            className="mt-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground no-underline transition-colors hover:text-primary"
+            className={`rise-in mt-8 inline-flex items-center gap-1.5 rounded-md text-sm text-muted-foreground no-underline transition-colors hover:text-primary ${FOCUS_RING}`}
+            style={{ animationDelay: "300ms" }}
           >
             <HugeiconsIcon
               icon={ArrowLeft01Icon}
@@ -112,17 +131,14 @@ function BrandPanel({
   points,
 }: Pick<AuthLayoutProps, "kicker" | "title" | "subtitle" | "points">) {
   return (
-    <div className="hidden items-center lg:flex lg:p-14">
-      <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] p-10">
-        <div className="auth-glow-a pointer-events-none absolute -top-24 -left-20 h-56 w-56 rounded-full" />
-        <div className="auth-glow-b pointer-events-none absolute -right-20 -bottom-20 h-56 w-56 rounded-full" />
-
+    <aside className="hidden flex-col justify-center border-r border-border/40 bg-muted/30 p-14 lg:flex lg:p-16">
+      <div className="rise-in max-w-md" style={{ animationDelay: "0ms" }}>
         <p className="island-kicker mb-3">{kicker}</p>
         <h1 className="display-title mb-4 text-4xl leading-[1.05] font-bold tracking-tight text-balance text-sea-ink">
           {title}
         </h1>
         {subtitle ? (
-          <p className="mb-8 max-w-md text-base text-sea-ink-soft">
+          <p className="mb-8 text-base text-pretty text-sea-ink-soft">
             {subtitle}
           </p>
         ) : null}
@@ -143,7 +159,7 @@ function BrandPanel({
             </li>
           ))}
         </ul>
-      </section>
-    </div>
+      </div>
+    </aside>
   )
 }

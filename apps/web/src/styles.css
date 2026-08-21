@@ -805,18 +805,6 @@ a {
   --cta-accent: var(--sunset);
 }
 
-/*
- * Aura brand di panel halaman masuk — radial-gradient memakai token brand
- * (--lagoon/--palm), bukan rgba mentah. Dua arah berlawanan sebagai aksen.
- */
-.auth-glow-a {
-  background: radial-gradient(circle, color-mix(in oklab, var(--lagoon) 32%, transparent), transparent 66%);
-}
-
-.auth-glow-b {
-  background: radial-gradient(circle, color-mix(in oklab, var(--palm) 18%, transparent), transparent 66%);
-}
-
 @media (prefers-reduced-motion: reduce) {
   /* Entrance halaman juga gerakan; hanya munculnya yang dipertahankan. */
   .rise-in {
