@@ -1,6 +1,15 @@
 <?php
 
 return [
+    'section_identity' => 'Identitas Layanan',
+    'section_identity_desc' => 'Nama, kategori, dan keterangan singkat yang muncul di katalog.',
+    'section_pricing' => 'Harga & Durasi',
+    'section_pricing_desc' => 'Dipakai kasir saat menagih dan penyusun jadwal saat memesan slot.',
+    'knowledge' => 'Informasi Layanan',
+    'knowledge_placeholder' => 'Contoh: mengangkat sel kulit mati, menyamarkan bekas jerawat, dan mencerahkan. Cocok untuk kulit berminyak.',
+    'knowledge_hint' => 'Manfaat dan kegunaan layanan. Teks ini yang dibacakan chatbot saat pasien bertanya layanan ini untuk apa.',
+    'add_description' => 'Layanan baru langsung bisa dipilih di booking dan kasir setelah disimpan.',
+    'edit_description' => 'Perubahan harga hanya berlaku untuk transaksi berikutnya, bukan yang sudah tercatat.',
     'import' => 'Impor Layanan',
     'import_template' => 'Template Layanan',
     'deleted' => 'Layanan berhasil dihapus permanen.',

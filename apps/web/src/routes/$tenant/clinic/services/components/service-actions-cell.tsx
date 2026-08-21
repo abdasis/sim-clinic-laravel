@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
 import { Archive, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -30,21 +31,18 @@ import {
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
-import {
-  ServiceFormDialog,
-  type ServiceFormValues,
-} from "./service-form-dialog.tsx"
+import type { ServiceRow } from "./service-form.tsx"
 
 export function ServiceActionsCell({
   tenant,
   service,
 }: {
   tenant: string
-  service: ServiceFormValues
+  service: ServiceRow
 }) {
   const { t } = useTrans()
   const qc = useQueryClient()
-  const [editOpen, setEditOpen] = useState(false)
+  const navigate = useNavigate()
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
@@ -103,7 +101,12 @@ export function ServiceActionsCell({
         </TooltipProvider>
 
         <DropdownMenuContent align="end" className="min-w-40">
-          <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+          <DropdownMenuItem onSelect={() =>
+              navigate({
+                to: "/$tenant/clinic/services/$id/edit",
+                params: { tenant, id: String(service.id) },
+              })
+            }>
             <Pencil className="size-4" />
             {t("general.edit")}
             <Kbd className="ml-auto">e</Kbd>
@@ -129,12 +132,6 @@ export function ServiceActionsCell({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ServiceFormDialog
-        tenant={tenant}
-        service={service}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-      />
 
       <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
         <AlertDialogContent>

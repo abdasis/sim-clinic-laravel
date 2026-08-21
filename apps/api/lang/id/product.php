@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'section_identity' => 'Identitas Produk',
+    'section_identity_desc' => 'Nama, jenis, dan kategori yang muncul di katalog dan kasir.',
+    'section_stock' => 'Satuan, Stok & Harga',
+    'section_stock_desc' => 'Satuan hitung, ambang peringatan stok menipis, dan harga jual ke pasien.',
+    'knowledge_placeholder' => 'Contoh: melembapkan dan memperbaiki skin barrier. Dipakai pagi dan malam setelah toner.',
+    'add_description' => 'Produk baru langsung bisa dipilih di kasir setelah stoknya dimasukkan lewat Inventaris.',
+    'edit_description' => 'Saldo stok tidak diubah dari sini — hanya lewat mutasi stok di Inventaris.',
     'knowledge' => 'Informasi Produk',
     'knowledge_hint' => 'Manfaat dan kegunaan produk. Teks ini yang dibacakan chatbot saat pasien bertanya produk ini untuk apa.',
     'import' => 'Impor Produk',

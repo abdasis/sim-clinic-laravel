@@ -26,6 +26,9 @@ class ServiceRequest extends FormRequest
                 TenantRule::exists('categories')->where('type', CategorizableType::Service->value),
             ],
             'description' => ['nullable', 'string'],
+            // Dokumen Tiptap. Bentuk nodenya milik editor, bukan milik
+            // formulir ini, jadi tidak divalidasi lebih jauh dari array.
+            'knowledge' => ['nullable', 'array'],
             'price' => ['required', 'numeric', 'gte:0'],
             'duration_minutes' => ['required', 'integer', 'gte:1', 'max:600'],
             'status' => ['nullable', new Enum(ServiceStatus::class)],
@@ -38,6 +41,7 @@ class ServiceRequest extends FormRequest
             'name' => __('service.name'),
             'category_id' => __('service.category'),
             'description' => __('service.description'),
+            'knowledge' => __('service.knowledge'),
             'price' => __('service.price'),
             'duration_minutes' => __('service.duration_minutes'),
             'status' => __('service.status'),

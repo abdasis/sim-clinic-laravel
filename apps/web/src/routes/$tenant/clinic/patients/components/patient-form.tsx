@@ -2,14 +2,8 @@ import type { Control } from "react-hook-form"
 import { useQuery } from "@tanstack/react-query"
 import { useParams } from "@tanstack/react-router"
 import { z } from "zod"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "#/components/ui/card.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
+import { FormSection } from "#/components/forms/form-section.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormTextarea } from "#/components/forms/form-textarea.tsx"
 import { FormDatePicker } from "#/components/forms/form-date-picker.tsx"
@@ -70,7 +64,7 @@ export function PatientFormFields({
 
   return (
     <div className="space-y-4">
-      <PatientFormSection
+      <FormSection
         title={t("patient.section_identity")}
         description={t("patient.section_identity_desc")}
       >
@@ -98,9 +92,9 @@ export function PatientFormFields({
             { label: t("patient.gender_other"), value: "other" },
           ]}
         />
-      </PatientFormSection>
+      </FormSection>
 
-      <PatientFormSection
+      <FormSection
         title={t("patient.section_contact")}
         description={t("patient.section_contact_desc")}
       >
@@ -118,9 +112,9 @@ export function PatientFormFields({
           label={t("patient.address")}
           className="sm:col-span-2"
         />
-      </PatientFormSection>
+      </FormSection>
 
-      <PatientFormSection
+      <FormSection
         title={t("patient.section_notes")}
         description={t("patient.section_notes_desc")}
       >
@@ -150,32 +144,8 @@ export function PatientFormFields({
           description={t("patient.notes_hint")}
           className="sm:col-span-2"
         />
-      </PatientFormSection>
+      </FormSection>
     </div>
   )
 }
 
-/**
- * ponytail: sengaja lokal di berkas ini. Ekstrak ke `components/forms/
- * form-section.tsx` saat ada dua form lain yang membutuhkannya — sebelum itu,
- * satu pemakai belum cukup untuk membenarkan abstraksi bersama.
- */
-function PatientFormSection({
-  title,
-  description,
-  children,
-}: {
-  title: string
-  description: string
-  children: React.ReactNode
-}) {
-  return (
-    <Card className="border-border/50 shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4 sm:grid-cols-2">{children}</CardContent>
-    </Card>
-  )
-}

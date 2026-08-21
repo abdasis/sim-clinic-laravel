@@ -1,4 +1,4 @@
-import { createFileRoute, useParams } from "@tanstack/react-router"
+import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { PackageIcon } from "@hugeicons/core-free-icons"
 import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
@@ -19,7 +19,6 @@ import { Button } from "#/components/ui/button.tsx"
 import { CatalogImportDialog } from "#/components/import/catalog-import-dialog.tsx"
 import type { RichTextDoc } from "#/lib/tiptap-render.tsx"
 import { ProductActionsCell } from "./components/product-actions-cell.tsx"
-import { ProductFormModal } from "./components/product-form-modal.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/products/")({
   component: ProductsPage,
@@ -50,8 +49,10 @@ interface ProductRow {
 
 function ProductsPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/products/" })
+  const navigate = useNavigate()
+  const goToCreate = () =>
+    navigate({ to: "/$tenant/clinic/products/new", params: { tenant } })
   const { t } = useTrans()
-  const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const stats = useStats({ tenant, module: "products" })
 
@@ -150,7 +151,7 @@ function ProductsPage() {
         title={t("cta.products.title")}
         description={t("cta.products.description")}
         actionLabel={t("cta.products.action")}
-        onAction={() => setCreateOpen(true)}
+        onAction={goToCreate}
       />
 
       <StatsSection
@@ -167,14 +168,9 @@ function ProductsPage() {
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             {t("product.import")}
           </Button>
-          <Button onClick={() => setCreateOpen(true)}>{t("product.add")}</Button>
+          <Button onClick={goToCreate}>{t("product.add")}</Button>
         </div>
       </div>
-      <ProductFormModal
-        tenant={tenant}
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-      />
       <CatalogImportDialog
         tenant={tenant}
         resource="products"

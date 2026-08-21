@@ -16,12 +16,13 @@ class Service extends Model
 {
     use BelongsToTenant, HasCategory, HasFactory;
 
-    protected $fillable = ['tenant_id', 'name', 'description', 'price', 'duration_minutes', 'status'];
+    protected $fillable = ['tenant_id', 'name', 'description', 'knowledge', 'price', 'duration_minutes', 'status'];
 
     protected function casts(): array
     {
         return [
             'price' => 'decimal:2',
+            'knowledge' => 'array',
             'status' => ServiceStatus::class,
         ];
     }

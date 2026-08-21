@@ -1,4 +1,4 @@
-import { createFileRoute, useParams } from "@tanstack/react-router"
+import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { TagsIcon } from "@hugeicons/core-free-icons"
 import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
@@ -16,7 +16,6 @@ import { formatCurrency } from "#/lib/format.ts"
 import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { ServiceActionsCell } from "./components/service-actions-cell.tsx"
-import { ServiceFormDialog } from "./components/service-form-dialog.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { CatalogImportDialog } from "#/components/import/catalog-import-dialog.tsx"
@@ -41,8 +40,10 @@ interface ServiceRow {
 
 function ServicesPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/services/" })
+  const navigate = useNavigate()
+  const goToCreate = () =>
+    navigate({ to: "/$tenant/clinic/services/new", params: { tenant } })
   const { t } = useTrans()
-  const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const stats = useStats({ tenant, module: "services" })
 
@@ -127,7 +128,7 @@ function ServicesPage() {
         title={t("cta.services.title")}
         description={t("cta.services.description")}
         actionLabel={t("cta.services.action")}
-        onAction={() => setCreateOpen(true)}
+        onAction={goToCreate}
       />
 
       <StatsSection
@@ -144,14 +145,9 @@ function ServicesPage() {
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             {t("service.import")}
           </Button>
-          <Button onClick={() => setCreateOpen(true)}>{t("service.add")}</Button>
+          <Button onClick={goToCreate}>{t("service.add")}</Button>
         </div>
       </div>
-      <ServiceFormDialog
-        tenant={tenant}
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-      />
       <CatalogImportDialog
         tenant={tenant}
         resource="services"

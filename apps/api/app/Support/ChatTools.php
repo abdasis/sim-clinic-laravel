@@ -9,6 +9,7 @@ use App\Actions\Chatbot\GetActivePromosAction;
 use App\Actions\Chatbot\GetClinicInfoAction;
 use App\Actions\Chatbot\GetProductInfoAction;
 use App\Actions\Chatbot\GetProductStockAction;
+use App\Actions\Chatbot\GetServiceInfoAction;
 use App\Actions\Chatbot\ListPatientBookingsAction;
 use App\Actions\Chatbot\RegisterPatientAction;
 use App\Actions\Chatbot\SearchServicesAction;
@@ -65,6 +66,11 @@ class ChatTools
                 'get_product_info',
                 'Ambil informasi dan manfaat produk. Pakai ini saat pasien bertanya kegunaan, manfaat, atau detail sebuah produk — BUKAN untuk stok atau harga.',
                 ['keyword' => ['type' => 'string', 'description' => 'Kata kunci nama produk. Kosongkan untuk mengambil seluruh produk.']],
+            ),
+            self::tool(
+                'get_service_info',
+                'Ambil informasi dan manfaat layanan. Pakai ini saat pasien bertanya kegunaan, manfaat, atau detail sebuah layanan — BUKAN untuk harga atau durasi.',
+                ['keyword' => ['type' => 'string', 'description' => 'Kata kunci nama layanan. Kosongkan untuk mengambil seluruh layanan aktif.']],
             ),
             self::tool(
                 'get_active_promos',
@@ -141,6 +147,7 @@ class ChatTools
                 'get_clinic_info' => app(GetClinicInfoAction::class)->handle(),
                 'get_product_stock' => app(GetProductStockAction::class)->handle($keyword),
                 'get_product_info' => app(GetProductInfoAction::class)->handle($keyword),
+                'get_service_info' => app(GetServiceInfoAction::class)->handle($keyword),
                 'get_active_promos' => app(GetActivePromosAction::class)->handle(),
                 'check_availability' => app(CheckAvailabilityAction::class)->handle(
                     (int) ($arguments['service_id'] ?? 0),

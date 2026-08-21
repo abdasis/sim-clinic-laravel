@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
 import { Archive, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -30,21 +31,18 @@ import {
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
-import {
-  ProductFormModal,
-  type ProductFormValues,
-} from "./product-form-modal.tsx"
+import type { ProductRow } from "./product-form.tsx"
 
 export function ProductActionsCell({
   tenant,
   product,
 }: {
   tenant: string
-  product: ProductFormValues
+  product: ProductRow
 }) {
   const { t } = useTrans()
   const qc = useQueryClient()
-  const [editOpen, setEditOpen] = useState(false)
+  const navigate = useNavigate()
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
@@ -101,7 +99,12 @@ export function ProductActionsCell({
         </TooltipProvider>
 
         <DropdownMenuContent align="end" className="min-w-40">
-          <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+          <DropdownMenuItem onSelect={() =>
+              navigate({
+                to: "/$tenant/clinic/products/$id/edit",
+                params: { tenant, id: String(product.id) },
+              })
+            }>
             <Pencil className="size-4" />
             {t("general.edit")}
             <Kbd className="ml-auto">e</Kbd>
@@ -127,12 +130,6 @@ export function ProductActionsCell({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ProductFormModal
-        tenant={tenant}
-        product={product}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-      />
 
       <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
         <AlertDialogContent>

@@ -19,6 +19,7 @@ class ServiceResource extends JsonResource
             'category' => $this->assignedCategory()?->name,
             'category_label' => $this->assignedCategory()?->name,
             'description' => $this->description,
+            'knowledge' => $this->knowledge,
             'price' => $this->price,
             'duration_minutes' => $this->duration_minutes,
             // Harga promo dihitung di server supaya kasir dan struk memakai
