@@ -23,7 +23,6 @@ use App\Models\CompanyTreatment;
 use App\Models\CompanyValueProp;
 use App\Models\Expense;
 use App\Models\Invitation;
-use App\Models\Invoice;
 use App\Models\MedicalPhoto;
 use App\Models\MedicalRecord;
 use App\Models\MessageTemplate;
@@ -86,7 +85,6 @@ class AppServiceProvider extends ServiceProvider
         'transaction' => Transaction::class,
         'transaction_item' => TransactionItem::class,
         'payment' => Payment::class,
-        'invoice' => Invoice::class,
         'medical_record' => MedicalRecord::class,
         'treatment_record' => TreatmentRecord::class,
         'medical_photo' => MedicalPhoto::class,

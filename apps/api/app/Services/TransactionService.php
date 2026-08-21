@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Actions\LogAuditAction;
+use App\Actions\Transaction\CancelTransactionAction;
+use App\Actions\Transaction\SoftDeleteTransactionAction;
 use App\Enums\PaymentStatus;
 use App\Enums\StockMovementType;
 use App\Models\Product;
@@ -85,6 +87,25 @@ class TransactionService
         );
 
         return $transaction;
+    }
+
+    /**
+     * Batalkan transaksi (FR-058). Stok produknya dikembalikan dan nilainya
+     * berhenti dihitung sebagai pemasukan, tapi notanya tetap terlihat —
+     * jejak kas tidak boleh hilang begitu saja.
+     */
+    public function cancel(Transaction $transaction): Transaction
+    {
+        return app(CancelTransactionAction::class)->handle($transaction);
+    }
+
+    /**
+     * Buang transaksi dari daftar aktif tanpa menghapus jejaknya; nomor
+     * notanya tetap terpakai supaya urutan invoice tidak bergeser.
+     */
+    public function softDelete(Transaction $transaction): Transaction
+    {
+        return app(SoftDeleteTransactionAction::class)->handle($transaction);
     }
 
     /**

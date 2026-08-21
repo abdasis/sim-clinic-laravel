@@ -162,18 +162,33 @@ function PosPage() {
         },
       )
 
+      // Transaksinya sudah tersimpan, jadi kegagalan mencatat bayar tidak
+      // boleh membatalkannya — tapi juga tidak boleh dibungkam. Nota yang
+      // lolos diam-diam tanpa pembayaran akan tampil "belum dibayar"
+      // sementara uangnya sudah diterima di meja kasir.
+      let paymentRecorded = true
+
       if (payment.amount > 0) {
-        await apiPost(`/${tenant}/clinic/transactions/${res.data.id}/payments`, {
-          method: payment.method,
-          amount: payment.amount,
-          paid_at: new Date().toISOString(),
-        }).catch(() => undefined)
+        try {
+          await apiPost(`/${tenant}/clinic/transactions/${res.data.id}/payments`, {
+            method: payment.method,
+            amount: payment.amount,
+            paid_at: new Date().toISOString(),
+          })
+        } catch {
+          paymentRecorded = false
+        }
       }
 
-      return res
+      return { res, paymentRecorded }
     },
-    onSuccess: (res) => {
-      toast.success(t("pos.created"))
+    onSuccess: ({ res, paymentRecorded }) => {
+      if (paymentRecorded) {
+        toast.success(t("pos.created"))
+      } else {
+        // Perlu dibaca, bukan sekadar lewat: kasir harus menutup sendiri.
+        toast.warning(t("pos.payment_not_recorded"), { duration: Infinity })
+      }
       qc.invalidateQueries({ queryKey: ["transactions"] })
       // Katalog ikut disegarkan supaya saldo stoknya tidak basi setelah jualan.
       qc.invalidateQueries({ queryKey: ["products", tenant, "catalog"] })

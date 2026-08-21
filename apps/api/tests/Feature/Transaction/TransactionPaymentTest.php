@@ -138,13 +138,80 @@ class TransactionPaymentTest extends TestCase
         $this->assertStringStartsWith('INV-'.now()->format('Ymd'), $numbers->first());
     }
 
-    private function makeTransaction(): Transaction
+    /**
+     * Reproduksi laporan kasir: tagihan 500 ribu dibayar tunai 2 juta lewat
+     * endpoint POS. Notanya harus lunas, bukan tetap menagih penuh.
+     */
+    public function test_cash_payment_endpoint_settles_the_bill(): void
+    {
+        $this->actingAsClinicUser();
+        $transaction = $this->makeTransaction(500000);
+
+        $response = $this->postJson($this->tenantUrl("transactions/{$transaction->id}/payments"), [
+            'method' => 'cash',
+            'amount' => 2000000,
+            'paid_at' => now()->toIso8601String(),
+        ]);
+
+        $response->assertOk();
+        $this->assertSame('paid', $response->json('meta.payment_status'));
+        $this->assertTrue($response->json('meta.overpaid'));
+
+        $transaction->refresh();
+        $this->assertSame(PaymentStatus::Paid, $transaction->payment_status);
+        $this->assertSame(0.0, $transaction->outstandingAmount());
+    }
+
+    /**
+     * Cicilan lewat endpoint: statusnya harus berhenti di "dibayar sebagian",
+     * bukan melompat ke lunas.
+     */
+    public function test_partial_payment_endpoint_keeps_the_bill_open(): void
+    {
+        $this->actingAsClinicUser();
+        $transaction = $this->makeTransaction(500000);
+
+        $response = $this->postJson($this->tenantUrl("transactions/{$transaction->id}/payments"), [
+            'method' => 'transfer',
+            'amount' => 200000,
+            'paid_at' => now()->toIso8601String(),
+        ]);
+
+        $response->assertOk();
+        $this->assertSame('partially_paid', $response->json('meta.payment_status'));
+        $this->assertFalse($response->json('meta.overpaid'));
+        $this->assertEqualsWithDelta(300000, $response->json('meta.outstanding'), 0.001);
+    }
+
+    public function test_cancel_endpoint_marks_the_transaction_cancelled(): void
+    {
+        $this->actingAsClinicUser();
+        $transaction = $this->makeTransaction();
+
+        $this->postJson($this->tenantUrl("transactions/{$transaction->id}/cancel"))
+            ->assertOk();
+
+        $this->assertNotNull($transaction->fresh()->cancelled_at);
+    }
+
+    public function test_delete_endpoint_removes_a_cancelled_transaction_from_the_list(): void
+    {
+        $this->actingAsClinicUser();
+        $transaction = $this->makeTransaction();
+
+        $this->postJson($this->tenantUrl("transactions/{$transaction->id}/cancel"))->assertOk();
+        $this->deleteJson($this->tenantUrl("transactions/{$transaction->id}"))->assertOk();
+
+        $this->assertSoftDeleted('transactions', ['id' => $transaction->id]);
+    }
+
+    private function makeTransaction(float $subtotal = 100000): Transaction
     {
         return Transaction::factory()->create([
             'tenant_id' => $this->tenant->id,
             'patient_id' => Patient::factory()->create(['tenant_id' => $this->tenant->id])->id,
             'cashier_id' => auth()->id(),
-            'subtotal' => 100000,
+            'subtotal' => $subtotal,
         ]);
     }
 }

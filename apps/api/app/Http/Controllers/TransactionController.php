@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Transaction\CancelTransactionAction;
-use App\Actions\Transaction\SoftDeleteTransactionAction;
 use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\TransactionRequest;
 use App\Http\Resources\ClinicIdentityResource;
@@ -87,7 +85,7 @@ class TransactionController extends Controller
     {
         $this->authorize('update', $transaction);
 
-        app(CancelTransactionAction::class)->handle($transaction);
+        app(TransactionService::class)->cancel($transaction);
 
         return response()->json([
             'data' => new TransactionResource($transaction->fresh()->load('items', 'patient')),
@@ -95,11 +93,11 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function destroy(Transaction $transaction, SoftDeleteTransactionAction $action): JsonResponse
+    public function destroy(Transaction $transaction): JsonResponse
     {
         $this->authorize('delete', $transaction);
 
-        $action->handle($transaction);
+        app(TransactionService::class)->softDelete($transaction);
 
         return response()->json([
             'data' => new TransactionResource($transaction),

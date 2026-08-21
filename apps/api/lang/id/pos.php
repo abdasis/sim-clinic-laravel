@@ -40,6 +40,7 @@ return [
     'transactions' => 'Riwayat Transaksi',
     'created' => 'Transaksi berhasil dibuat.',
     'paid' => 'Pembayaran berhasil dicatat.',
+    'payment_not_recorded' => 'Transaksi tersimpan, tapi pembayarannya gagal dicatat. Buka notanya lalu catat pembayarannya lagi supaya tidak terhitung sebagai tagihan.',
     'cancelled' => 'Transaksi berhasil dibatalkan.',
     'overpaid' => 'Jumlah pembayaran melebihi total transaksi.',
     'insufficient_stock' => 'Stok produk tidak mencukupi.',
