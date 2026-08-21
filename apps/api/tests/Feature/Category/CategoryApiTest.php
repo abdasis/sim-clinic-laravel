@@ -43,7 +43,9 @@ class CategoryApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.name', 'Skinbooster')
             ->assertJsonPath('data.type', 'service')
-            ->assertJsonPath('data.type_label', 'Layanan');
+            ->assertJsonPath('data.type_label', 'Layanan')
+            // Sama seperti layanan: status bawaan harus ikut terkirim.
+            ->assertJsonPath('data.status', 'active');
 
         $this->assertSame(1, Category::query()->count());
     }

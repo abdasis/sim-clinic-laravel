@@ -32,6 +32,9 @@ class ServiceApiTest extends TestCase
 
         $response->assertCreated();
         $response->assertJsonPath('data.name', 'Facial Basic');
+        // Status datang dari default kolom; responsnya pernah mengirim null
+        // sehingga baris yang baru dibuat tampil tanpa lencana status.
+        $response->assertJsonPath('data.status', 'active');
         $this->assertDatabaseCount('services', 1);
     }
 

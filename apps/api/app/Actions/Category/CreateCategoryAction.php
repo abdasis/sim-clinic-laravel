@@ -14,6 +14,11 @@ class CreateCategoryAction
     {
         $category = Category::create($data);
 
+        // Status berasal dari default kolom, jadi instance hasil create
+        // belum memuatnya sampai di-refresh — tanpa ini responsnya, dan
+        // catatan auditnya, mengirim status kosong.
+        $category->refresh();
+
         app(LogAuditAction::class)->handle(
             'category.created',
             $category,

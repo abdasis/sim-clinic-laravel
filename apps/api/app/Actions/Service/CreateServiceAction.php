@@ -17,6 +17,11 @@ class CreateServiceAction
     {
         $service = Service::create($data);
 
+        // Status berasal dari default kolom, jadi instance hasil create
+        // belum memuatnya sampai di-refresh — tanpa ini responsnya, dan
+        // catatan auditnya, mengirim status kosong.
+        $service->refresh();
+
         // `category_id` bukan kolom di tabel ini melainkan baris pivot, jadi
         // tidak ikut terbawa mass assignment dan dipasang terpisah.
         if (array_key_exists('category_id', $data)) {
