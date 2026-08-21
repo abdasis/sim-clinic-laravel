@@ -95,7 +95,12 @@ class MedicalRecordController extends Controller
             ->select('medical_records.*')
             ->orderBy(DB::raw('COALESCE(bookings.start_at, medical_records.created_at)'))
             ->orderBy('medical_records.id')
-            ->with(['treatmentRecords', 'medicalPhotos', 'author', 'patient', 'booking'])
+            // Transaksinya ikut dimuat karena kolom OBT/HCP dan harga di
+            // tabel riwayat berasal dari nota, bukan dari catatan medis.
+            ->with([
+                'treatmentRecords', 'medicalPhotos', 'author', 'patient',
+                'booking.transaction.items', 'booking.transaction.performers',
+            ])
             ->paginate($perPage, ['*'], 'page', max((int) $request->integer('page', 1), 1));
 
         return response()->json([

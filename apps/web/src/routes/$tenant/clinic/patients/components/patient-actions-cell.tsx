@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { Archive, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { Archive, FileText, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -106,6 +106,18 @@ export function PatientActionsCell({
             <Pencil className="size-4" />
             {t("general.edit")}
             <Kbd className="ml-auto">e</Kbd>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() =>
+              navigate({
+                to: "/$tenant/clinic/patients/$id/medical-records",
+                params: { tenant, id: String(patient.id) },
+              })
+            }
+          >
+            <FileText className="size-4" />
+            {t("medical_record.history")}
+            <Kbd className="ml-auto">r</Kbd>
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"

@@ -22,8 +22,17 @@ import type { ApiError } from "#/lib/api.ts"
 export const Route = createFileRoute("/$tenant/clinic/medical-records/new")({
   component: NewMedicalRecordPage,
   // Dari daftar booking selesai, kunjungannya sudah dipilih lebih dulu.
-  validateSearch: (search: Record<string, unknown>) => ({
+  // Tipe baliknya ditulis dengan kunci opsional supaya pemanggil boleh
+  // menyebut salah satunya saja; tanpa itu setiap Link wajib menuliskan
+  // kedua kunci, termasuk yang tidak dipakainya.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { booking?: string; patient?: string } => ({
     booking: search.booking ? String(search.booking) : undefined,
+    // Dari riwayat satu pasien: daftar kunjungannya ikut dipersempit ke
+    // pasien itu, supaya dokter tidak perlu mencari di antara ratusan
+    // kunjungan milik orang lain.
+    patient: search.patient ? String(search.patient) : undefined,
   }),
 })
 
@@ -54,7 +63,7 @@ interface ServiceRow {
 
 function NewMedicalRecordPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/medical-records/new" })
-  const { booking: bookingFromUrl } = Route.useSearch()
+  const { booking: bookingFromUrl, patient: patientFromUrl } = Route.useSearch()
   const { t } = useTrans()
   const navigate = useNavigate()
   const [photos, setPhotos] = useState<SelectedPhoto[]>([])
@@ -77,11 +86,11 @@ function NewMedicalRecordPage() {
   // tidak berisi yang berstatus selesai, dan daftarnya kosong tanpa sebab
   // yang kelihatan.
   const bookings = useQuery({
-    queryKey: ["bookings", tenant, "done"],
+    queryKey: ["bookings", tenant, "done", patientFromUrl ?? "all"],
     queryFn: () =>
       apiGet<{ data: BookingRow[] }>(`/${tenant}/clinic/bookings`, {
         per_page: 100,
-        filter: { status: "done" },
+        filter: { status: "done", patient_id: patientFromUrl },
         sort: "start_at",
         direction: "desc",
       }),

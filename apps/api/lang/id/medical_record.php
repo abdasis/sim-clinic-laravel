@@ -3,6 +3,13 @@
 return [
     'load_older' => 'Muat riwayat berikutnya',
     'history' => 'Riwayat Rekam Medis',
+    'date' => 'Tanggal',
+    'complaint' => 'Keluhan',
+    'action' => 'Tindakan',
+    'obt_hcp' => 'OBT / HCP',
+    'doctor' => 'Dokter / Terapis',
+    'add_visit' => 'Tambah Kunjungan',
+    'age' => 'Usia',
     'deleted' => 'Rekam medis berhasil dihapus.',
     'updated' => 'Rekam medis berhasil diperbarui.',
     'title' => 'Rekam Medis',

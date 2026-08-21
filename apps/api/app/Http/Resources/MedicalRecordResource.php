@@ -21,6 +21,11 @@ class MedicalRecordResource extends JsonResource
                 'status' => $this->booking->status,
                 'start_at' => $this->booking->start_at?->toIso8601String(),
             ]),
+            // Nota kunjungan, dipakai tabel riwayat untuk kolom tindakan
+            // berbayar dan OBT/HCP. Hanya ikut saat memang dimuat: halaman
+            // lain yang memakai resource ini tidak membutuhkannya, dan
+            // memuatnya diam-diam berarti satu query per baris.
+            'transaction' => $this->transactionPayload(),
             'anamnesis' => $this->anamnesis,
             'skincare_history' => $this->skincare_history,
             'allergy_history' => $this->allergy_history,
@@ -45,6 +50,46 @@ class MedicalRecordResource extends JsonResource
                 ])
                 : [],
             'created_at' => $this->created_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Nota kunjungan bila ada, null bila catatan ini tidak lahir dari booking
+     * berbayar atau relasinya memang tidak dimuat.
+     *
+     * `name` diambil dari baris nota, bukan dari relasi produk/layanan:
+     * namanya sudah disalin saat transaksi dibuat, jadi riwayat lama tetap
+     * menunjukkan nama yang berlaku waktu itu meski produknya kemudian
+     * diganti nama atau dihapus.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function transactionPayload(): ?array
+    {
+        if (! $this->relationLoaded('booking') || $this->booking === null) {
+            return null;
+        }
+
+        if (! $this->booking->relationLoaded('transaction') || $this->booking->transaction === null) {
+            return null;
+        }
+
+        $transaction = $this->booking->transaction;
+
+        return [
+            'id' => $transaction->id,
+            'performers' => $transaction->relationLoaded('performers')
+                ? $transaction->performers->map(fn ($performer) => ['name' => $performer->name])->values()
+                : [],
+            'items' => $transaction->relationLoaded('items')
+                ? $transaction->items->map(fn ($item) => [
+                    'name' => $item->name,
+                    'kind' => $item->product_id !== null ? 'product' : 'service',
+                    'unit_price' => (float) $item->unit_price,
+                    'qty' => (int) $item->qty,
+                    'subtotal' => (float) $item->subtotal,
+                ])->values()
+                : [],
         ];
     }
 }
