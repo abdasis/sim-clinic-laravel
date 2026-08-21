@@ -7,7 +7,7 @@ import { useContentLocale, useContentText } from "./locale-context.tsx"
 import { SectionShell, type SectionTone } from "./section-shell.tsx"
 
 const CARD_CLASS =
-  "group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/25 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+  "group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:border-primary/25 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 
 interface TreatmentGridProps {
   id?: string
@@ -104,7 +104,7 @@ function TreatmentCard({
             src={treatment.image_url}
             alt={title ?? ""}
             loading="lazy"
-            className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            className="size-full object-cover ring-1 ring-black/10 transition-transform duration-500 group-hover:scale-[1.03] dark:ring-white/10"
           />
         ) : null}
         {treatment.badge_label ? (

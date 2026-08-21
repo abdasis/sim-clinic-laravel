@@ -72,7 +72,7 @@ function PromoCard({
   return (
     <article
       className={cn(
-        "group/promo grid overflow-hidden rounded-xl border border-border/60 bg-background transition-all duration-200 hover:border-border hover:shadow-sm",
+        "group/promo grid overflow-hidden rounded-xl border border-border/60 bg-background transition-[border-color,box-shadow] duration-200 hover:border-border hover:shadow-sm",
         featured ? "md:grid-cols-[1.1fr_1fr]" : "grid-cols-1",
       )}
     >
@@ -87,7 +87,7 @@ function PromoCard({
             src={promo.image_url}
             alt={title ?? ""}
             loading="lazy"
-            className="size-full object-cover transition-transform duration-500 group-hover/promo:scale-[1.03]"
+            className="size-full object-cover ring-1 ring-black/10 transition-transform duration-500 group-hover/promo:scale-[1.03] dark:ring-white/10"
           />
         </div>
       ) : null}

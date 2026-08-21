@@ -54,7 +54,7 @@ export function ContentBanner({
                   src={section.image_url}
                   alt={title ?? ""}
                   loading="lazy"
-                  className="absolute inset-0 size-full object-cover"
+                  className="absolute inset-0 size-full object-cover ring-1 ring-black/10 dark:ring-white/10"
                 />
               </div>
             ) : null}
@@ -74,7 +74,7 @@ export function ContentBanner({
                 type={section.cta_type}
                 url={section.cta_url}
                 variant={emphasis ? "default" : "outline"}
-                className="mt-1 self-start"
+                className="mt-1 self-start active:scale-[0.96]"
               />
             </div>
           </div>
@@ -136,7 +136,7 @@ export function ContentBanner({
               url={section.cta_url}
               size="lg"
               variant="secondary"
-              className="mt-1 rounded-full bg-background px-8 text-foreground shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:bg-background"
+              className="mt-1 rounded-full bg-background px-8 text-foreground shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:bg-background active:scale-[0.96]"
             />
           </div>
         </div>

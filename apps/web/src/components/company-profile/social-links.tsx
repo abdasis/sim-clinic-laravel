@@ -54,7 +54,7 @@ export function SocialLinks({
               title={social.platform}
               className={cn(
                 "flex size-9 items-center justify-center rounded-full border border-border/60 bg-background text-muted-foreground",
-                "transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-sm",
+                "transition-[transform,box-shadow,border-color,color] duration-150 ease-out hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.96]",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
                 HOVER[key] ?? "hover:border-foreground/30 hover:text-foreground",
               )}

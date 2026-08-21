@@ -108,7 +108,7 @@ export function HeroCarousel({ tenant, slides }: HeroCarouselProps) {
                         type={slide.cta_type}
                         url={slide.cta_url}
                         size="lg"
-                        className="mt-7 shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
+                        className="mt-7 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 active:scale-[0.96]"
                       />
                     </div>
                   </div>
@@ -120,8 +120,8 @@ export function HeroCarousel({ tenant, slides }: HeroCarouselProps) {
 
         {slides.length > 1 ? (
           <>
-            <CarouselPrevious className="left-4 border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white" />
-            <CarouselNext className="right-4 border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white" />
+            <CarouselPrevious className="left-4 border-white/25 bg-white/10 text-white backdrop-blur-sm transition-transform duration-150 hover:bg-white/20 hover:text-white active:scale-[0.96]" />
+            <CarouselNext className="right-4 border-white/25 bg-white/10 text-white backdrop-blur-sm transition-transform duration-150 hover:bg-white/20 hover:text-white active:scale-[0.96]" />
           </>
         ) : null}
       </Carousel>
@@ -138,13 +138,22 @@ export function HeroCarousel({ tenant, slides }: HeroCarouselProps) {
                 aria-label={`Slide ${index + 1}`}
                 aria-current={index === current}
                 onClick={() => goTo(index)}
+                // Ponytail: dot visual kecil (h-1), tapi hit area diperluas
+                // pseudo-element ke 40px supaya targetnya nyaman disentuh.
                 className={cn(
-                  "pointer-events-auto h-1 rounded-full transition-all duration-300 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none",
-                  index === current
-                    ? "w-8 bg-white"
-                    : "w-3 bg-white/40 hover:bg-white/70",
+                  "pointer-events-auto relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none",
+                  "after:absolute after:inset-0 after:rounded-full",
                 )}
-              />
+              >
+                <span
+                  className={cn(
+                    "block h-1 rounded-full transition-[width,background-color] duration-300",
+                    index === current
+                      ? "w-8 bg-white"
+                      : "w-3 bg-white/40 hover:bg-white/70",
+                  )}
+                />
+              </button>
             ))}
           </div>
         </div>
