@@ -1,6 +1,27 @@
 <?php
 
 return [
+    // Pengingat jadwal
+    'remind_booking' => 'Ingatkan pasien',
+    'remind_booking_hint' => 'Pengingat WhatsApp dikirim otomatis',
+    'remind_booking_inactive' => 'Pengingat booking sedang dimatikan untuk klinik ini, jadi tidak ada pesan yang dikirim.',
+    'reminder_settings' => 'Pengaturan Pengingat',
+    'reminder_settings_desc' => 'Berapa lama sebelum jadwal pengingat dikirim. Berlaku untuk semua booking yang penandanya menyala.',
+    'reminder_active' => 'Aktifkan pengingat booking',
+    'reminder_active_hint' => 'Saat mati, tidak ada pengingat yang dikirim walau penanda per booking menyala.',
+    'reminder_offset' => 'Dikirim sebelum jadwal',
+    'reminder_offset_hint' => 'Dihitung dalam menit.',
+    'reminder_template' => 'Template Pesan',
+    'reminder_template_default' => 'Teks bawaan',
+    'reminder_template_hint' => 'Kosongkan untuk memakai teks bawaan.',
+    'reminder_preview' => 'Pengingat akan dikirim',
+    'reminder_saved' => 'Pengaturan pengingat berhasil disimpan.',
+    'reminder_status' => [
+        'pending' => 'Menunggu',
+        'sent' => 'Terkirim',
+        'failed' => 'Gagal',
+        'cancelled' => 'Dibatalkan',
+    ],
     'conflict' => 'Bentrokan',
     'patient_locked_note' => 'Pasien terkunci karena rekam medis sudah ada.',
     'patient_immutable' => 'Pasien tidak dapat diubah karena rekam medis sudah ada.',

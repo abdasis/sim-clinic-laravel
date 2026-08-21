@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingReminderSettingController;
 use App\Http\Controllers\BroadcastAutoReminderController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\CategoryController;
@@ -162,6 +163,10 @@ Route::prefix('{tenant}/clinic')
 
         // US4 Booking
         Route::get('bookings/schedule', [BookingController::class, 'schedule']);
+        // Di atas apiResource supaya "reminder-settings" tidak tertangkap
+        // sebagai {booking}.
+        Route::get('bookings/reminder-settings', [BookingReminderSettingController::class, 'show']);
+        Route::put('bookings/reminder-settings', [BookingReminderSettingController::class, 'update']);
         Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus']);
         Route::apiResource('bookings', BookingController::class);
 

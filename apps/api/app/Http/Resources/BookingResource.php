@@ -26,6 +26,7 @@ class BookingResource extends JsonResource
                 : false,
             'status' => $this->status,
             'status_label' => $this->status?->label(),
+            'remind_booking' => (bool) $this->remind_booking,
             'notes' => $this->notes,
             'created_at' => $this->created_at?->toIso8601String(),
         ];

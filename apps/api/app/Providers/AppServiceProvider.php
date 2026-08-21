@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Booking;
+use App\Models\BookingReminder;
+use App\Models\BookingReminderSetting;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\BroadcastReminderSetting;
@@ -65,6 +67,8 @@ class AppServiceProvider extends ServiceProvider
         'service' => Service::class,
         'patient' => Patient::class,
         'booking' => Booking::class,
+        'booking_reminder' => BookingReminder::class,
+        'booking_reminder_setting' => BookingReminderSetting::class,
         'product' => Product::class,
         'promo' => Promo::class,
         'expense' => Expense::class,

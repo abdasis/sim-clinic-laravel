@@ -7,7 +7,8 @@ import {
   startOfWeek,
   endOfWeek,
 } from "date-fns"
-import { CalendarCheckIcon } from "@hugeicons/core-free-icons"
+import { AlarmClockIcon, CalendarCheckIcon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
@@ -15,14 +16,22 @@ import { useStats } from "#/hooks/use-stats.ts"
 import { Button } from "#/components/ui/button.tsx"
 import { Card } from "#/components/ui/card.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
+import { Kbd } from "#/components/ui/kbd.tsx"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "#/components/ui/tooltip.tsx"
 import { Input } from "#/components/ui/input.tsx"
 import { Spinner } from "#/components/ui/spinner.tsx"
 import { ScheduleGrid } from "#/components/schedule/schedule-grid.tsx"
 import type { ScheduleBooking } from "#/components/schedule/schedule-grid.tsx"
+import { useGoToShortcut } from "#/hooks/use-go-to-shortcut.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import { BookingFormDialog } from "./components/booking-form-dialog.tsx"
 import { BookingStatusAction } from "./components/booking-status-action.tsx"
+import { ReminderSettingsDialog } from "./components/reminder-settings-dialog.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/bookings/")({
   component: BookingsPage,
@@ -49,6 +58,9 @@ function BookingsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const stats = useStats({ tenant, module: "bookings" })
   const [editingId, setEditingId] = useState<number | undefined>(undefined)
+  const [reminderOpen, setReminderOpen] = useState(false)
+
+  useGoToShortcut("r", () => setReminderOpen(true))
 
   const { from, to } = computeRange(date, view)
 
@@ -116,6 +128,25 @@ function BookingsPage() {
               {t("booking.view_week")}
             </Button>
           </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={t("booking.reminder_settings")}
+                onClick={() => setReminderOpen(true)}
+              >
+                <HugeiconsIcon icon={AlarmClockIcon} className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="flex items-center gap-2">
+              {t("booking.reminder_settings")}
+              <span className="flex items-center gap-0.5">
+                <Kbd>g</Kbd>
+                <Kbd>r</Kbd>
+              </span>
+            </TooltipContent>
+          </Tooltip>
           <Button
             onClick={() => {
               setEditingId(undefined)
@@ -132,6 +163,12 @@ function BookingsPage() {
         bookingId={editingId}
         open={formOpen}
         onOpenChange={setFormOpen}
+      />
+
+      <ReminderSettingsDialog
+        tenant={tenant}
+        open={reminderOpen}
+        onOpenChange={setReminderOpen}
       />
 
       {isLoading ? (

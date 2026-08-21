@@ -24,6 +24,7 @@ class Booking extends Model
         'start_at',
         'end_at',
         'status',
+        'remind_booking',
         'notes',
         'status_changed_at',
     ];
@@ -32,6 +33,7 @@ class Booking extends Model
     {
         return [
             'status' => BookingStatus::class,
+            'remind_booking' => 'boolean',
             'start_at' => 'datetime',
             'end_at' => 'datetime',
             'status_changed_at' => 'datetime',
@@ -51,6 +53,11 @@ class Booking extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignee_id');
+    }
+
+    public function reminder(): HasOne
+    {
+        return $this->hasOne(BookingReminder::class);
     }
 
     public function medicalRecord(): HasOne

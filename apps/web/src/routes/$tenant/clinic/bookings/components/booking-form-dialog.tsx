@@ -14,6 +14,11 @@ import { FormSelect } from "#/components/forms/form-select.tsx"
 import type { SelectOption } from "#/components/forms/form-select.tsx"
 import { FormDatePicker } from "#/components/forms/form-date-picker.tsx"
 import { FormTextarea } from "#/components/forms/form-textarea.tsx"
+import { FormSwitch } from "#/components/forms/form-switch.tsx"
+import {
+  offsetLabel,
+  useReminderSetting,
+} from "#/routes/$tenant/clinic/bookings/components/use-reminder-setting.ts"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
@@ -45,6 +50,7 @@ const schema = z.object({
   start_at: z.string().min(1),
   end_at: z.string().min(1),
   notes: z.string().optional(),
+  remind_booking: z.boolean(),
 })
 
 type Values = z.infer<typeof schema>
@@ -63,6 +69,7 @@ export interface BookingFormValues {
   start_at: string
   end_at: string
   notes?: string | null
+  remind_booking?: boolean
   has_medical_record?: boolean
 }
 
@@ -81,6 +88,7 @@ const emptyValues: Values = {
   start_at: "",
   end_at: "",
   notes: "",
+  remind_booking: false,
 }
 
 export function BookingFormDialog({
@@ -110,8 +118,15 @@ export function BookingFormDialog({
   const patientLocked = booking?.has_medical_record === true
   const form = useForm(schema, { defaultValues: emptyValues })
 
+  const reminder = useReminderSetting(tenant, open)
+  const reminderActive = reminder.data?.data.is_active === true
+  const reminderOffset = offsetLabel(reminder.data?.data.offset_minutes ?? 60)
+
+  // Nilai awal ditahan sampai setelan pengingat diketahui. Kalau tidak,
+  // saklarnya sempat tampil menyala di klinik yang justru mematikan fitur ini
+  // — persis kebalikan dari keterangan di bawahnya.
   useEffect(() => {
-    if (!open) return
+    if (!open || !reminder.isSuccess) return
 
     form.reset(
       booking
@@ -122,10 +137,11 @@ export function BookingFormDialog({
             start_at: booking.start_at,
             end_at: booking.end_at,
             notes: booking.notes ?? "",
+            remind_booking: booking.remind_booking ?? false,
           }
-        : emptyValues,
+        : { ...emptyValues, remind_booking: reminderActive },
     )
-  }, [open, booking, form])
+  }, [open, booking, reminder.isSuccess, reminderActive, form])
 
   const patients = useQuery({
     queryKey: ["patients", tenant, "options"],
@@ -165,6 +181,7 @@ export function BookingFormDialog({
         start_at: values.start_at,
         end_at: values.end_at,
         notes: values.notes || undefined,
+        remind_booking: values.remind_booking,
       }
 
       return isEdit
@@ -242,6 +259,17 @@ export function BookingFormDialog({
               control={form.control}
               name="notes"
               label={t("booking.notes")}
+            />
+            <FormSwitch
+              control={form.control}
+              name="remind_booking"
+              label={t("booking.remind_booking")}
+              description={
+                reminderActive
+                  ? `${t("booking.remind_booking_hint")} ${reminderOffset}.`
+                  : t("booking.remind_booking_inactive")
+              }
+              disabled={!reminderActive}
             />
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>

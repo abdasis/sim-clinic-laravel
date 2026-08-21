@@ -24,6 +24,7 @@ class BookingRequest extends FormRequest
             'assignee_id' => ['required', TenantRule::exists('users')],
             'start_at' => ['required', 'date', 'after:now'],
             'end_at' => ['required', 'date', 'after:start_at'],
+            'remind_booking' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string'],
         ];
     }
@@ -78,6 +79,7 @@ class BookingRequest extends FormRequest
             'assignee_id' => __('booking.assignee'),
             'start_at' => __('booking.start_at'),
             'end_at' => __('booking.end_at'),
+            'remind_booking' => __('booking.remind_booking'),
             'notes' => __('booking.notes'),
         ];
     }
