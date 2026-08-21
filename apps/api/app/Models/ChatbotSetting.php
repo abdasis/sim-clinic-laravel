@@ -25,6 +25,7 @@ class ChatbotSetting extends Model
         'agent_name',
         'agent_avatar_path',
         'bookable_service_ids',
+        'allows_stock_info',
     ];
 
     protected function casts(): array
@@ -34,6 +35,7 @@ class ChatbotSetting extends Model
             'allow_self_registration' => 'boolean',
             'closing_idle_minutes' => 'integer',
             'bookable_service_ids' => 'array',
+            'allows_stock_info' => 'boolean',
         ];
     }
 

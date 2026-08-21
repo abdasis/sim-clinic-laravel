@@ -25,6 +25,7 @@ class ChatbotSettingFactory extends Factory
             'agent_name' => 'Asisten '.fake()->firstName(),
             'agent_avatar_path' => null,
             'bookable_service_ids' => null,
+            'allows_stock_info' => true,
             // Mati secara bawaan seperti di produksi: yang mengujinya
             // menyalakannya eksplisit lewat state selfRegistration().
             'allow_self_registration' => false,

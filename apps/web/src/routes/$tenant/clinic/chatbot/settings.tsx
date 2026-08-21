@@ -35,6 +35,7 @@ interface ChatbotSettings {
   agent_name: string | null
   agent_avatar_url: string | null
   bookable_service_ids: number[]
+  allows_stock_info: boolean
   closing_idle_minutes: number | null
   closing_message: string | null
 }
@@ -68,6 +69,7 @@ function ChatbotSettingsPage() {
   const [allowSelfRegistration, setAllowSelfRegistration] = useState(false)
   const [agentName, setAgentName] = useState("")
   const [bookable, setBookable] = useState<number[]>([])
+  const [allowsStockInfo, setAllowsStockInfo] = useState(true)
   const [closingMinutes, setClosingMinutes] = useState<number | null>(null)
   const [closingMessage, setClosingMessage] = useState("")
 
@@ -89,6 +91,7 @@ function ChatbotSettingsPage() {
     setAllowSelfRegistration(data.data.allow_self_registration)
     setAgentName(data.data.agent_name ?? "")
     setBookable(data.data.bookable_service_ids ?? [])
+    setAllowsStockInfo(data.data.allows_stock_info ?? true)
     setClosingMinutes(data.data.closing_idle_minutes ?? null)
     setClosingMessage(data.data.closing_message ?? "")
   }, [data])
@@ -100,6 +103,7 @@ function ChatbotSettingsPage() {
         allow_self_registration: allowSelfRegistration,
         agent_name: agentName.trim() || null,
         bookable_service_ids: bookable,
+        allows_stock_info: allowsStockInfo,
         closing_idle_minutes: closingMinutes,
         closing_message: closingMessage.trim() || null,
       }),
@@ -280,6 +284,45 @@ function ChatbotSettingsPage() {
         description={t("chatbot.booking_section_desc")}
       >
         <BookableServicesField tenant={tenant} value={bookable} onChange={setBookable} />
+      </Section>
+
+      <Section
+        title={t("chatbot.stock_section")}
+        description={t("chatbot.stock_section_desc")}
+      >
+        {/* Saklarnya tidak ikut mati saat chatbot dimatikan: ini keputusan
+            kebijakan klinik soal apa yang boleh dibuka ke luar, bukan bagian
+            dari cara chatbot bekerja — dan admin perlu bisa menetapkannya
+            sebelum chatbotnya dinyalakan. */}
+        <label className="flex items-start justify-between gap-3 rounded-md border border-border/50 p-3 transition-colors hover:bg-muted/40">
+          <span className="min-w-0 space-y-1">
+            <span className="block text-sm font-medium">
+              {t("chatbot.allows_stock_info")}
+            </span>
+            <span className="block text-xs text-pretty text-muted-foreground">
+              {allowsStockInfo
+                ? t("chatbot.stock_state_on")
+                : t("chatbot.stock_state_off")}
+            </span>
+          </span>
+          <Tooltip>
+            {/* Dibungkus span, bukan asChild langsung ke Switch: TooltipTrigger
+                menimpa data-state milik Switch sehingga saklarnya tampak
+                kosong padahal menyala. */}
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <Switch
+                  checked={allowsStockInfo}
+                  onCheckedChange={setAllowsStockInfo}
+                  aria-label={t("chatbot.allows_stock_info")}
+                />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-64 text-pretty">
+              {t("chatbot.allows_stock_info_hint")}
+            </TooltipContent>
+          </Tooltip>
+        </label>
       </Section>
 
       <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t border-border/50 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">

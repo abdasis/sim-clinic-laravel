@@ -252,6 +252,16 @@ class ChatbotService
             'Jangan pernah menyebut kata "tool", "sistem", atau "database" ke pasien. Bicaralah seperti staf klinik yang sedang mengecek.',
         ];
 
+        // Penyaringan sebenarnya terjadi di GetProductStockAction — angkanya
+        // memang tidak sampai ke sini. Baris ini menutup celah satu-satunya
+        // yang tersisa: model mengarang angka sendiri karena merasa perlu
+        // menjawab dengan angka.
+        if (! $setting->allows_stock_info) {
+            $lines[] = 'Klinik ini tidak mengumumkan jumlah stok produknya. Dilarang menyebut angka atau perkiraan jumlah stok, '
+                .'termasuk kata seperti "tinggal sedikit" atau "banyak". Bila pasien bertanya stok, jawab hanya "tersedia" atau '
+                .'"sedang kosong" mengikuti penanda is_available dari hasil tool, lalu tawarkan menghubungi klinik bila ia butuh jumlah pastinya.';
+        }
+
         $lines[] = match (true) {
             $patient !== null => "Kamu sedang berbicara dengan {$patient->name}, pasien terdaftar. Sapa dengan namanya.",
             // Pendaftaran mandiri menyala: pasien tidak perlu lagi disuruh

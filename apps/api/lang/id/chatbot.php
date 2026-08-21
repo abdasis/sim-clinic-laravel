@@ -1,6 +1,13 @@
 <?php
 
 return [
+    // Informasi stok produk
+    'stock_section' => 'Informasi Stok Produk',
+    'stock_section_desc' => 'Atur apakah chatbot boleh menyebutkan angka stok produk ke pasien.',
+    'allows_stock_info' => 'Tampilkan angka stok',
+    'allows_stock_info_hint' => 'Saat mati, chatbot tetap bisa menyebut nama dan harga produk, tapi tidak menyebutkan jumlah stok.',
+    'stock_state_on' => 'Chatbot boleh menyebut jumlah stok produk.',
+    'stock_state_off' => 'Chatbot hanya menyebut nama dan harga produk, tanpa angka stok.',
     'title' => 'Chatbot WhatsApp',
     'subtitle' => 'Asisten AI yang menjawab pertanyaan pasien dan membuat booking dari chat.',
 

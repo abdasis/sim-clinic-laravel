@@ -28,6 +28,7 @@ class ChatbotSettingController extends Controller
                     'agent_avatar_path' => null,
                     'agent_avatar_url' => null,
                     'bookable_service_ids' => [],
+                    'allows_stock_info' => true,
                 ],
             'meta' => [],
         ]);

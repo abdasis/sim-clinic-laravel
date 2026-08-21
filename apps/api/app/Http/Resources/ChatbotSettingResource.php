@@ -28,6 +28,7 @@ class ChatbotSettingResource extends JsonResource
                 ? Storage::disk('public')->url($this->agent_avatar_path)
                 : null,
             'bookable_service_ids' => array_map('intval', $this->bookable_service_ids ?? []),
+            'allows_stock_info' => (bool) $this->allows_stock_info,
         ];
     }
 }

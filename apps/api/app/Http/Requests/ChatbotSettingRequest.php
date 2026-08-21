@@ -32,6 +32,12 @@ class ChatbotSettingRequest extends FormRequest
             // Kosong berarti seluruh layanan boleh dibooking; bukan larangan.
             'bookable_service_ids' => ['nullable', 'array'],
             'bookable_service_ids.*' => [TenantRule::exists('services')],
+            // Menyala berarti angka stok boleh disebut; ini bukan saklar yang
+            // mematikan toolnya, hanya menyaring apa yang keluar. Nullable,
+            // bukan required: dihilangkan dari permintaan berarti "jangan
+            // diubah", bukan "matikan" — kolomnya sendiri sudah berbawaan
+            // menyala di basis data.
+            'allows_stock_info' => ['nullable', 'boolean'],
         ];
     }
 
@@ -47,6 +53,7 @@ class ChatbotSettingRequest extends FormRequest
             'closing_idle_minutes' => __('chatbot.closing_idle_minutes'),
             'closing_message' => __('chatbot.closing_message'),
             'bookable_service_ids' => __('chatbot.bookable_services'),
+            'allows_stock_info' => __('chatbot.allows_stock_info'),
         ];
     }
 }
