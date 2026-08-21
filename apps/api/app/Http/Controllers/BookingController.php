@@ -12,6 +12,7 @@ use App\Models\Booking;
 use App\Services\BookingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class BookingController extends Controller
 {
@@ -117,10 +118,14 @@ class BookingController extends Controller
 
         $validated = $request->validated();
 
+        // `to` datang sebagai tanggal (yyyy-MM-dd) → parse jadi tengah malam,
+        // jadi booking sore/malam di hari terakhir rentang lolos filter.
+        $to = Carbon::parse($validated['to'])->endOfDay();
+
         $bookings = Booking::query()
             ->with(['patient', 'service', 'assignee'])
             ->where('status', '!=', BookingStatus::Cancelled)
-            ->whereBetween('start_at', [$validated['from'], $validated['to']])
+            ->whereBetween('start_at', [$validated['from'], $to])
             ->orderBy('start_at')
             ->orderBy('assignee_id')
             ->get();
