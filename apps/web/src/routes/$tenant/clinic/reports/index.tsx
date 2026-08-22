@@ -1,6 +1,9 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+// parseISO, bukan new Date: tanggal polos "2026-08-01" dibaca new Date
+// sebagai tengah malam UTC dan bisa mundur sehari di zona negatif.
+import { parseISO } from "date-fns"
 
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useStats } from "#/hooks/use-stats.ts"
@@ -90,7 +93,7 @@ function ReportsPage() {
   useDigitShortcut("3", () => setTab("products"))
   useDigitShortcut("4", () => setTab("monthly"))
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["reports", tenant, tab, applied?.from, applied?.to],
     queryFn: () =>
       apiGet<ReportResponse>(`/${tenant}/clinic/reports/${tab}`, {
@@ -107,7 +110,10 @@ function ReportsPage() {
   }
 
   const isEmpty = data?.meta?.empty === true
-  const busy = isLoading || isFetching
+  // Sengaja isLoading saja, bukan isFetching: kunci kueri sudah memuat tab dan
+  // rentangnya, jadi tiap perpindahan tetap memunculkan kerangka — sementara
+  // pengambilan ulang di latar tidak mengosongkan angka yang sudah tampil.
+  const busy = isLoading
 
   return (
     <div>
@@ -119,8 +125,8 @@ function ReportsPage() {
           <p className="text-xs text-muted-foreground">
             {t("report.showing")}{" "}
             <span className="font-medium text-foreground tabular-nums">
-              {rangeLabel.format(new Date(applied.from))} –{" "}
-              {rangeLabel.format(new Date(applied.to))}
+              {rangeLabel.format(parseISO(applied.from))} –{" "}
+              {rangeLabel.format(parseISO(applied.to))}
             </span>
           </p>
         ) : null}
