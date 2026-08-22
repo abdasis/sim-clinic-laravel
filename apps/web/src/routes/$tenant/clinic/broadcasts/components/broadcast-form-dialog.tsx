@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
 import { toast } from "sonner"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Delete02Icon, ImageUpload01Icon } from "@hugeicons/core-free-icons"
 
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
@@ -26,7 +28,7 @@ import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { FormTextarea } from "#/components/forms/form-textarea.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { apiGet, apiPost } from "#/lib/api.ts"
+import { apiGet, apiPost, apiUpload } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 
 const schema = z.object({
@@ -78,6 +80,22 @@ export function BroadcastFormDialog({
 
   const [previewParams, setPreviewParams] = useState<Record<string, unknown> | null>(null)
 
+  // Berkas tidak masuk react-hook-form: yang dikirim ke server bukan nilai
+  // teks melainkan FormData, dan schema zod-nya tidak punya kepentingan di
+  // sana selain memvalidasi ulang apa yang sudah dijaga input file.
+  const [image, setImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  const clearImage = () => {
+    setImage(null)
+    setImagePreview((url) => {
+      if (url) URL.revokeObjectURL(url)
+      return null
+    })
+    if (fileInput.current) fileInput.current.value = ""
+  }
+
   // Hitung penerima hanya saat pilihannya lengkap; select layanan yang masih
   // kosong tidak perlu menembak server.
   useEffect(() => {
@@ -123,23 +141,53 @@ export function BroadcastFormDialog({
   })
 
   useEffect(() => {
-    if (open) form.reset(EMPTY)
+    if (open) {
+      form.reset(EMPTY)
+      clearImage()
+    }
+    // clearImage sengaja tidak jadi dependensi: ia dibuat ulang tiap render
+    // dan hanya menyentuh state lokal, jadi menambahkannya justru membuat
+    // efek ini berjalan terus-menerus.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, form])
 
+  // Object URL menahan berkasnya di memori sampai dilepas.
+  useEffect(() => () => {
+    if (imagePreview) URL.revokeObjectURL(imagePreview)
+  }, [imagePreview])
+
   const mutation = useMutation({
-    mutationFn: (values: Values) =>
-      apiPost<{ data: { id: number } }>(`/${tenant}/clinic/broadcasts`, {
-        title: values.title,
-        message: values.message,
-        audience: values.audience,
-        audience_params: {
-          days: values.audience === "inactive" ? values.days : undefined,
-          service_id:
-            values.audience === "service" && values.service_id
-              ? Number(values.service_id)
-              : undefined,
-        },
-      }),
+    mutationFn: (values: Values) => {
+      const days = values.audience === "inactive" ? values.days : undefined
+      const serviceId =
+        values.audience === "service" && values.service_id
+          ? Number(values.service_id)
+          : undefined
+
+      if (!image) {
+        return apiPost<{ data: { id: number } }>(`/${tenant}/clinic/broadcasts`, {
+          title: values.title,
+          message: values.message,
+          audience: values.audience,
+          audience_params: { days, service_id: serviceId },
+        })
+      }
+
+      // Berkas tidak muat di JSON, jadi seluruh muatannya pindah ke
+      // FormData. Kunci bersarang ditulis manual karena FormData tidak
+      // mengenal objek — bentuknya harus sama dengan yang dibaca server.
+      const fd = new FormData()
+      fd.append("title", values.title)
+      fd.append("message", values.message)
+      fd.append("audience", values.audience)
+      fd.append("image", image)
+      if (days !== undefined) fd.append("audience_params[days]", String(days))
+      if (serviceId !== undefined) {
+        fd.append("audience_params[service_id]", String(serviceId))
+      }
+
+      return apiUpload<{ data: { id: number } }>(`/${tenant}/clinic/broadcasts`, fd)
+    },
     onSuccess: (res) => {
       toast.success(t("broadcast.created"))
       qc.invalidateQueries({ queryKey: ["broadcasts"] })
@@ -287,6 +335,85 @@ export function BroadcastFormDialog({
                     name="message"
                     label={t("broadcast.message")}
                   />
+
+                  {/* Poster promo. Ditaruh setelah pesan karena ia yang
+                      jadi keterangan gambarnya — urutan di layar mengikuti
+                      urutan yang diterima pasien. */}
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="broadcast-image"
+                      className="text-sm font-medium"
+                    >
+                      {t("broadcast.image")}
+                    </label>
+
+                    {imagePreview ? (
+                      <div className="flex items-center gap-3 rounded-md border border-border/60 bg-muted/30 p-2">
+                        <img
+                          src={imagePreview}
+                          alt={image?.name ?? ""}
+                          className="size-14 shrink-0 rounded object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{image?.name}</p>
+                          <p className="text-xs text-muted-foreground tabular-nums">
+                            {Math.round((image?.size ?? 0) / 1024)} KB
+                          </p>
+                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="shrink-0 text-muted-foreground hover:text-destructive"
+                              aria-label={t("broadcast.image_remove")}
+                              onClick={clearImage}
+                            >
+                              <HugeiconsIcon
+                                icon={Delete02Icon}
+                                strokeWidth={2}
+                                className="size-4"
+                              />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{t("broadcast.image_remove")}</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => fileInput.current?.click()}
+                        className="flex w-full items-center gap-2 rounded-md border border-dashed border-border/70 bg-muted/20 px-3 py-3 text-sm text-muted-foreground transition-colors hover:border-border hover:bg-muted/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      >
+                        <HugeiconsIcon
+                          icon={ImageUpload01Icon}
+                          strokeWidth={2}
+                          className="size-4 shrink-0"
+                        />
+                        {t("broadcast.image")}
+                      </button>
+                    )}
+
+                    <input
+                      id="broadcast-image"
+                      ref={fileInput}
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      className="sr-only"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null
+                        clearImage()
+                        if (!file) return
+                        setImage(file)
+                        setImagePreview(URL.createObjectURL(file))
+                      }}
+                    />
+
+                    <p className="text-xs text-muted-foreground">
+                      {t("broadcast.image_hint")}
+                    </p>
+                  </div>
 
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-xs text-muted-foreground">

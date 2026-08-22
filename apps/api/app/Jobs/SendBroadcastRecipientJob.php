@@ -14,6 +14,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Kirim satu penerima broadcast dari antrian. Satu pesan satu job:
@@ -75,7 +76,7 @@ class SendBroadcastRecipientJob implements ShouldQueue
         $recipient->increment('attempts');
 
         try {
-            $client->send($recipient->phone, $recipient->message);
+            $this->deliver($client, $broadcast, $recipient);
         } catch (\Throwable $e) {
             Log::error('Gagal mengirim pesan broadcast dari antrian', [
                 'exception' => $e,
@@ -104,6 +105,48 @@ class SendBroadcastRecipientJob implements ShouldQueue
         ]);
 
         $this->finishIfDrained($broadcast);
+    }
+
+    /**
+     * Kirim pesannya, berikut gambar bila broadcast ini membawanya.
+     *
+     * Pesan jadi caption, bukan kiriman terpisah: dua kiriman berurutan
+     * sampai sebagai dua notifikasi, dan yang kedua kerap terbaca lebih dulu
+     * tanpa konteks gambarnya.
+     */
+    private function deliver(WahaClient $client, Broadcast $broadcast, BroadcastRecipient $recipient): void
+    {
+        $image = $broadcast->image_path;
+
+        if ($image === null) {
+            $client->send($recipient->phone, $recipient->message);
+
+            return;
+        }
+
+        $disk = Storage::disk('public');
+
+        // Berkasnya bisa hilang belakangan (dibersihkan, disk diganti).
+        // Pesannya tetap berangkat sebagai teks — kehilangan poster lebih
+        // ringan daripada pasien tidak menerima kabar sama sekali.
+        if (! $disk->exists($image)) {
+            Log::warning('Gambar broadcast tidak ditemukan; pesan dikirim sebagai teks.', [
+                'broadcast_id' => $broadcast->id,
+                'image_path' => $image,
+            ]);
+
+            $client->send($recipient->phone, $recipient->message);
+
+            return;
+        }
+
+        $client->sendImage(
+            $recipient->phone,
+            $disk->get($image),
+            $disk->mimeType($image) ?: 'image/jpeg',
+            basename($image),
+            $recipient->message,
+        );
     }
 
     /**

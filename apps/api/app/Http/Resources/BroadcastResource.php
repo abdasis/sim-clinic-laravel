@@ -17,6 +17,7 @@ class BroadcastResource extends JsonResource
             'status' => $this->status,
             'status_label' => $this->status?->label(),
             'message' => $this->message,
+            'image_url' => $this->image_url,
             'audience' => $this->audience,
             'audience_label' => $this->audience?->label(),
             'audience_params' => $this->audience_params,

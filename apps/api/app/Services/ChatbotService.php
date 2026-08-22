@@ -248,6 +248,12 @@ class ChatbotService
             'Sebelum membuat booking, pastikan layanan, staf, dan waktunya sudah pasti. Bila ada yang belum jelas, tanyakan dulu ke pasien — jangan memanggil create_booking dengan tebakan.',
             'WAJIB panggil check_availability sebelum create_booking, untuk memastikan kliniknya buka dan slotnya benar-benar kosong. Jangan pernah menawarkan jam yang hasilnya tutup atau bentrok.',
             'Saat pasien bertanya jam buka atau tutup klinik, panggil get_clinic_info. Saat pasien bertanya promo atau diskon, panggil get_active_promos.',
+            // Harga dari tool sudah memperhitungkan promo yang berjalan.
+            // Tanpa baris ini model menyebut angkanya begitu saja, dan pasien
+            // tidak pernah tahu ia sedang menerima harga promo — sekaligus
+            // tidak tahu bahwa tawarannya ada batas waktunya.
+            'Bila hasil tool memuat `promo`, harga yang tertulis di `price` SUDAH termasuk potongan. Sebutkan nama promonya, sebutkan `normal_price` sebagai harga biasa, dan sebutkan `ends_at` sebagai batas berlakunya. Jangan pernah menjumlahkan atau memotong harga sendiri — pakai angka dari tool apa adanya.',
+            'Bila pasien menanyakan sebuah layanan atau produk yang ternyata sedang promo, tawarkan promonya walaupun ia tidak bertanya soal diskon. Bila tidak ada `promo` di hasil tool, jangan menyinggung diskon sama sekali.',
             // Dua pasangan tool yang paling sering tertukar: yang satu
             // menjawab angka, yang satu menjawab paragraf. Tanpa
             // dipisahkan setegas ini, model memakai tool harga untuk

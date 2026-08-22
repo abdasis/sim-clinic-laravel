@@ -62,6 +62,45 @@ class WahaClient
     }
 
     /**
+     * Kirim satu gambar berikut keterangannya. Melempar bila gagal, sama
+     * seperti send().
+     *
+     * Berkasnya dikirim sebagai base64, bukan url. WAHA yang menjemput url
+     * mengharuskan servernya bisa menjangkau alamat publik aplikasi — asumsi
+     * yang diam-diam runtuh di jaringan internal, dan runtuhnya terbaca
+     * sebagai "gambar tidak sampai" tanpa petunjuk apa pun.
+     *
+     * ponytail: satu gambar disandikan ulang untuk tiap penerima, jadi blast
+     * ratusan pesan mengirim berkas yang sama berkali-kali ke gateway. Cukup
+     * untuk ukuran poster klinik (dibatasi 2 MB di FormRequest); bila daftar
+     * penerima tumbuh jauh lebih besar, unggah sekali ke WAHA lalu kirim
+     * ulang lewat id medianya.
+     */
+    public function sendImage(string $phone, string $binary, string $mimeType, string $filename, string $caption = ''): void
+    {
+        $chatId = $this->chatId($phone);
+
+        if ($chatId === null) {
+            throw new RuntimeException('Nomor tujuan tidak valid: '.$phone);
+        }
+
+        $response = $this->request()->post($this->url('/api/sendImage'), [
+            'session' => $this->session,
+            'chatId' => $chatId,
+            'file' => [
+                'mimetype' => $mimeType,
+                'filename' => $filename,
+                'data' => base64_encode($binary),
+            ],
+            'caption' => $caption,
+        ]);
+
+        if (! $response->successful()) {
+            throw new RuntimeException('WAHA menolak pengiriman gambar: HTTP '.$response->status());
+        }
+    }
+
+    /**
      * Nyalakan indikator "sedang mengetik" di layar pasien.
      *
      * Sengaja tidak pernah melempar. Indikator ini penyempurnaan rasa, bukan

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 #[ScopedBy([TenantScope::class])]
 class Broadcast extends Model
@@ -24,6 +25,7 @@ class Broadcast extends Model
         'kind',
         'status',
         'message',
+        'image_path',
         'audience',
         'audience_params',
         'created_by',
@@ -37,6 +39,17 @@ class Broadcast extends Model
             'status' => BroadcastStatus::class,
             'audience_params' => 'array',
         ];
+    }
+
+    /**
+     * Alamat publik gambar broadcast, atau null bila tidak ada. Dipakai
+     * layar campaign untuk menampilkan posternya kembali.
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->image_path === null
+            ? null
+            : Storage::disk('public')->url($this->image_path);
     }
 
     public function recipients(): HasMany

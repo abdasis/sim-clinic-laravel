@@ -7,6 +7,7 @@ use App\Enums\BroadcastAudience;
 use App\Enums\BroadcastKind;
 use App\Models\Broadcast;
 use App\Support\BroadcastAudienceBuilder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -35,6 +36,7 @@ class CreateBroadcastAction
             'title' => $data['title'],
             'kind' => $kind,
             'message' => $data['message'],
+            'image_path' => $this->storeImage($data['image'] ?? null),
             'audience' => $audience,
             'audience_params' => $params,
             'created_by' => Auth::id(),
@@ -73,6 +75,21 @@ class CreateBroadcastAction
         );
 
         return $broadcast;
+    }
+
+    /**
+     * Simpan poster broadcast di folder milik kliniknya sendiri.
+     *
+     * Disk `public` sama dengan foto rekam medis: layar campaign perlu
+     * menampilkannya kembali, dan berkasnya memang tidak rahasia.
+     */
+    private function storeImage(?UploadedFile $file): ?string
+    {
+        if ($file === null) {
+            return null;
+        }
+
+        return $file->store('broadcast-images/'.app('tenant')->id, 'public');
     }
 
     /**

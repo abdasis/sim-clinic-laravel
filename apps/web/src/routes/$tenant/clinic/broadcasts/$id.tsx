@@ -63,6 +63,7 @@ interface BroadcastDetail {
   recipients_sent: number
   recipients_pending: number
   recipients_failed: number
+  image_url?: string | null
   recipients: Recipient[]
 }
 
@@ -253,6 +254,24 @@ function BroadcastDetailPage() {
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-pretty text-amber-700 dark:text-amber-400">
           {t("broadcast.waha_not_ready")}
         </p>
+      ) : null}
+
+      {/* Poster yang ikut terkirim. Ditampilkan supaya admin bisa memastikan
+          gambar yang benar yang berangkat sebelum menekan kirim ke ratusan
+          nomor — sesudah itu tidak ada jalan menariknya kembali. */}
+      {broadcast.image_url ? (
+        <a
+          href={broadcast.image_url}
+          target="_blank"
+          rel="noreferrer"
+          className="block w-fit rounded-md border border-border/60 p-1 transition-colors hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          <img
+            src={broadcast.image_url}
+            alt={t("broadcast.image")}
+            className="max-h-48 rounded object-contain"
+          />
+        </a>
       ) : null}
 
       <Progress value={progress} className="h-2" />

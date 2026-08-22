@@ -4,6 +4,8 @@ namespace App\Actions\Chatbot;
 
 use App\Models\ChatbotSetting;
 use App\Models\Product;
+use App\Support\PromoPricing;
+use App\Support\PromoQuote;
 
 /**
  * Ketersediaan produk yang ditanyakan pasien.
@@ -31,19 +33,26 @@ class GetProductStockAction
         // agar tidak ada dua kueri setelan dalam satu putaran percakapan.
         $showsStock = ChatbotSetting::query()->first()?->allows_stock_info ?? true;
 
-        return Product::query()
+        $products = Product::query()
             ->when(filled($keyword), fn ($query) => $query->where('name', 'like', '%'.$keyword.'%'))
             ->orderBy('name')
             ->limit(self::LIMIT)
-            ->get()
-            ->map(function (Product $product) use ($showsStock): array {
-                $row = [
+            ->get();
+
+        // Harga promo dari sumber yang sama dengan kasir; dimuat sekali untuk
+        // seluruh daftar supaya satu pertanyaan tidak jadi dua puluh kueri.
+        $pricing = new PromoPricing;
+        $pricing->preload($products);
+
+        return $products
+            ->map(function (Product $product) use ($showsStock, $pricing): array {
+                $row = PromoQuote::describe($product, $pricing, [
                     'name' => $product->name,
                     'unit' => $product->unit,
-                    'price' => (float) $product->price,
-                    'stock_balance' => $product->stock_balance,
-                    'is_low_stock' => $product->is_low_stock,
-                ];
+                ]);
+
+                $row['stock_balance'] = $product->stock_balance;
+                $row['is_low_stock'] = $product->is_low_stock;
 
                 if (! $showsStock) {
                     unset($row['stock_balance'], $row['is_low_stock']);
