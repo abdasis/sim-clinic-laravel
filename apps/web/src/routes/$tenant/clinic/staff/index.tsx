@@ -124,7 +124,7 @@ function StaffPage() {
       />
 
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t("staff.title")}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("staff.title")}</h1>
         <StaffFormModal
           tenant={tenant}
           open={createOpen}

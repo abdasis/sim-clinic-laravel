@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'no_performers' => 'Belum ada staf klinik yang bisa dicatat sebagai pelaksana.',
     'payment_status' => 'Status Bayar',
     'outstanding' => 'Sisa Bayar',
     'paid_amount' => 'Sudah Dibayar',

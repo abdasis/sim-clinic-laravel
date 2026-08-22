@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
+import { NotFoundState } from "#/components/ui/not-found-state.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import { ContentForm } from "../components/content-form.tsx"
@@ -32,7 +33,10 @@ function EditContentPage() {
   })
 
   if (!schema) {
-    return <p className="text-sm text-muted-foreground">{t("general.no_data")}</p>
+    return <NotFoundState
+        illustration="company-profile"
+        description={t("company_profile.unknown_entity")}
+      />
   }
 
   useBreadcrumbTail(`${t("general.edit")} — ${t(schema.titleKey)}`)

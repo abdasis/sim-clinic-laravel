@@ -5,6 +5,11 @@ import { toast } from "sonner"
 
 import { Button } from "#/components/ui/button.tsx"
 import { Input } from "#/components/ui/input.tsx"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiUpload } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -62,30 +67,40 @@ export function MediaField({
           disabled={disabled || upload.isPending}
           className="font-mono text-xs"
         />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label={t("general.add")}
-          disabled={disabled || upload.isPending}
-          onClick={() => inputRef.current?.click()}
-        >
-          <Upload className="size-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={t("general.add")}
+              disabled={disabled || upload.isPending}
+              onClick={() => inputRef.current?.click()}
+            >
+              <Upload className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t("company_profile.media_upload_hint")}</TooltipContent>
+        </Tooltip>
         {value ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={t("general.remove")}
-            disabled={disabled}
-            onClick={() => {
-              onChange("")
-              setPreview(null)
-            }}
-          >
-            <X className="size-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t("general.remove")}
+                disabled={disabled}
+                onClick={() => {
+                  onChange("")
+                  setPreview(null)
+                }}
+              >
+                <X className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t("company_profile.media_remove_hint")}</TooltipContent>
+          </Tooltip>
         ) : null}
       </div>
 

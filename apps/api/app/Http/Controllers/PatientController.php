@@ -32,9 +32,7 @@ class PatientController extends Controller
                     ->orWhere('whatsapp', 'like', '%'.$search.'%');
             });
         }
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['name', 'whatsapp', 'gender', 'birth_date', 'created_at'])) {
             $query->latest();
         }
 

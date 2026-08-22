@@ -86,7 +86,7 @@ function BroadcastsPage() {
     <div className="space-y-4">
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{t("broadcast.title")}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("broadcast.title")}</h1>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => setConnectionOpen(true)} className="gap-1.5">
             <HugeiconsIcon icon={Link01Icon} strokeWidth={2} className="size-3.5" />

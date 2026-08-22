@@ -140,7 +140,7 @@ function ServicesPage() {
       />
 
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t("service.title")}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("service.title")}</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             {t("service.import")}

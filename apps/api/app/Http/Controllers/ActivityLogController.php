@@ -56,9 +56,7 @@ class ActivityLogController extends Controller
         }
 
         // Log dibaca dari yang terbaru; urutan lain hanya kalau diminta.
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['created_at', 'event', 'log_name', 'description'])) {
             $query->orderByDesc('created_at')->orderByDesc('id');
         }
 

@@ -181,7 +181,7 @@ export function TemplatesDialog({ tenant, open, onOpenChange }: ToolDialogProps)
             <Skeleton className="h-16 w-full" />
           ) : (templates.data?.data.length ?? 0) === 0 ? (
             <p className="py-4 text-center text-xs text-muted-foreground">
-              {t("general.no_data")}
+              {t("broadcast.no_templates")}
             </p>
           ) : (
             <ul className="divide-y divide-border/50">
@@ -353,7 +353,7 @@ export function RemindersDialog({ tenant, open, onOpenChange }: ToolDialogProps)
           <Skeleton className="h-16 w-full" />
         ) : (rules.data?.data.length ?? 0) === 0 ? (
           <p className="py-2 text-center text-xs text-muted-foreground">
-            {t("general.no_data")}
+            {t("broadcast.no_rules")}
           </p>
         ) : (
           <ul className="divide-y divide-border/50">

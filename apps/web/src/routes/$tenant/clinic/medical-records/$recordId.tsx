@@ -1,6 +1,7 @@
 import { useState } from "react"
 import {
   createFileRoute,
+  Link,
   useNavigate,
   useParams,
 } from "@tanstack/react-router"
@@ -35,6 +36,7 @@ import {
 } from "#/components/ui/tooltip.tsx"
 import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { useCan } from "#/hooks/use-permission.ts"
+import { NotFoundState } from "#/components/ui/not-found-state.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete, apiGet } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -141,7 +143,17 @@ function MedicalRecordDetailPage() {
           <Skeleton className="h-64 w-full" />
         </div>
       ) : !record ? (
-        <p className="text-sm text-muted-foreground">{t("general.no_data")}</p>
+        <NotFoundState
+          illustration="medical-records"
+          description={t("medical_record.not_found_desc")}
+          action={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/$tenant/clinic/medical-records" params={{ tenant }}>
+                {t("medical_record.back_to_list")}
+              </Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">

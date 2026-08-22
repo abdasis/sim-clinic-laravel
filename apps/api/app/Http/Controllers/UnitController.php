@@ -38,9 +38,7 @@ class UnitController extends Controller
             $query->where('status', $status);
         }
 
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['name', 'status', 'created_at'])) {
             $query->orderBy('name');
         }
 

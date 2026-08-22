@@ -172,7 +172,7 @@ function BroadcastDetailPage() {
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold">{broadcast.title}</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{broadcast.title}</h1>
           <p className="text-sm text-muted-foreground">
             {broadcast.kind_label ? `${broadcast.kind_label} · ` : ""}
             {broadcast.status_label ? `${broadcast.status_label} · ` : ""}

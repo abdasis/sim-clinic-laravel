@@ -59,10 +59,28 @@ function TreatmentDetailPage() {
             <Skeleton className="h-32 w-full" />
           </main>
         ) : isError || !treatment ? (
-          <main className="flex flex-1 items-center justify-center px-4 py-24">
-            <p className="text-sm text-muted-foreground">
-              {t("general.no_data")}
-            </p>
+          /*
+            Halaman yang dilihat calon pasien, bukan staf: tautan lama dari
+            chat atau media sosial tetap diklik lama setelah treatmentnya
+            diganti. Satu baris "tidak ada data" di tengah layar kosong
+            terbaca seperti situsnya rusak, dan menutup satu-satunya jalan
+            yang tersisa — melihat treatment lain yang masih ada.
+          */
+          <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-5 px-4 py-24 text-center">
+            <div className="space-y-2">
+              <h1 className="text-xl font-semibold tracking-tight">
+                {t("company_profile.treatment_not_found")}
+              </h1>
+              <p className="text-sm text-pretty text-muted-foreground">
+                {t("company_profile.treatment_not_found_desc")}
+              </p>
+            </div>
+            <Button asChild size="sm">
+              <Link to="/$tenant" params={{ tenant }} search={{ lang: locale }}>
+                <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
+                {t("company_profile.see_other_treatments")}
+              </Link>
+            </Button>
           </main>
         ) : (
           <main className="flex-1">

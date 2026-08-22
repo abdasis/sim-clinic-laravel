@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "#/components/ui/table.tsx"
 import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
+import { NotFoundState } from "#/components/ui/not-found-state.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiDelete, apiGet, apiPost } from "#/lib/api.ts"
@@ -87,7 +88,10 @@ function ContentListPage() {
   })
 
   if (!schema) {
-    return <p className="text-sm text-muted-foreground">{t("general.no_data")}</p>
+    return <NotFoundState
+        illustration="company-profile"
+        description={t("company_profile.unknown_entity")}
+      />
   }
 
   const rows = data ?? []

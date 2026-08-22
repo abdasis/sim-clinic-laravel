@@ -175,7 +175,7 @@ export function PromoTargetPicker({
           </div>
         ) : rows.length === 0 ? (
           <p className="p-4 text-center text-xs text-muted-foreground">
-            {t("general.no_data")}
+            {t("promo.no_target_match")}
           </p>
         ) : (
           <ul className="p-1">

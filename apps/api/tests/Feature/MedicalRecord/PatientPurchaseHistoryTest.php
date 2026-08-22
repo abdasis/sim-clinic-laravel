@@ -43,6 +43,48 @@ class PatientPurchaseHistoryTest extends TestCase
         ]);
     }
 
+    private function makeRecordAt(string $at): MedicalRecord
+    {
+        $record = MedicalRecord::create([
+            'tenant_id' => $this->tenant->id,
+            'patient_id' => $this->patient->id,
+            'author_id' => auth()->id(),
+            'anamnesis' => 'Kulit kering',
+        ]);
+
+        $record->forceFill(['created_at' => $at])->save();
+
+        return $record->fresh();
+    }
+
+    private function sellProductAt(string $at, string $name): Transaction
+    {
+        $transaction = Transaction::create([
+            'tenant_id' => $this->tenant->id,
+            'patient_id' => $this->patient->id,
+            'cashier_id' => auth()->id(),
+            'invoice_number' => 'INV-'.uniqid(),
+            'subtotal' => 250000,
+            'paid_amount' => 250000,
+            'payment_status' => PaymentStatus::Paid,
+            'issued_at' => $at,
+        ]);
+
+        $transaction->items()->create([
+            'tenant_id' => $this->tenant->id,
+            'product_id' => Product::factory()->create([
+                'tenant_id' => $this->tenant->id,
+                'name' => $name,
+            ])->id,
+            'name' => $name,
+            'unit_price' => 250000,
+            'qty' => 1,
+            'subtotal' => 250000,
+        ]);
+
+        return $transaction;
+    }
+
     private function makeRecord(string $date, ?Booking $booking = null): MedicalRecord
     {
         $record = MedicalRecord::create([
@@ -296,5 +338,81 @@ class PatientPurchaseHistoryTest extends TestCase
 
         $this->assertSame(3, $item['qty']);
         $this->assertEqualsWithDelta(750000.0, $item['subtotal'], 0.01);
+    }
+
+    /**
+     * Inti pelebarannya: klinik tutup malam, catatannya dirampungkan pagi
+     * berikutnya. Belanja pukul 23.30 dan kunjungan pukul 08.00 esok hari
+     * adalah peristiwa yang sama, dan batas tanggal memisahkan keduanya
+     * persis di tempat yang salah.
+     */
+    public function test_a_late_night_purchase_reaches_the_next_mornings_record(): void
+    {
+        $this->makeRecordAt('2026-08-21 08:00:00');
+        $this->sellProductAt('2026-08-20 23:30:00', 'Serum Tengah Malam');
+
+        $this->assertSame(
+            ['Serum Tengah Malam'],
+            $this->productNames($this->records()[0]),
+        );
+    }
+
+    /** Arah sebaliknya juga: catatan malam, belanja pagi berikutnya. */
+    public function test_an_early_morning_purchase_reaches_last_nights_record(): void
+    {
+        $this->makeRecordAt('2026-08-20 21:00:00');
+        $this->sellProductAt('2026-08-21 07:00:00', 'Serum Pagi');
+
+        $this->assertSame(['Serum Pagi'], $this->productNames($this->records()[0]));
+    }
+
+    /**
+     * Jangkauannya tetap punya ujung. Belanja dua hari sesudahnya jelas
+     * peristiwa lain, dan menempelkannya berarti dokter membaca pemakaian
+     * yang belum terjadi saat kunjungan itu.
+     */
+    public function test_a_purchase_well_outside_the_window_stays_detached(): void
+    {
+        $this->makeRecordAt('2026-08-20 08:00:00');
+        $this->sellProductAt('2026-08-22 08:00:00', 'Beli Lusa');
+
+        $this->assertSame([], $this->productNames($this->records()[0]));
+    }
+
+    /** Selisih lebih dari dua belas jam di hari lain sudah di luar jangkauan. */
+    public function test_the_window_stops_at_twelve_hours(): void
+    {
+        $this->makeRecordAt('2026-08-21 20:00:00');
+        // Selisih 20,5 jam: beda hari dan jauh di luar rentang.
+        $this->sellProductAt('2026-08-20 23:30:00', 'Terlalu Jauh');
+
+        $this->assertSame([], $this->productNames($this->records()[0]));
+    }
+
+    /** Hari yang sama tetap terjangkau berapa pun selisih jamnya. */
+    public function test_the_same_day_is_always_within_reach(): void
+    {
+        $this->makeRecordAt('2026-08-20 07:00:00');
+        // Selisih 15 jam, tapi masih tanggal yang sama.
+        $this->sellProductAt('2026-08-20 22:00:00', 'Sehari Penuh');
+
+        $this->assertSame(['Sehari Penuh'], $this->productNames($this->records()[0]));
+    }
+
+    /**
+     * Dua kunjungan sama-sama terjangkau: yang paling dekat waktunya yang
+     * menerima, bukan yang kebetulan lebih dulu dibuat.
+     */
+    public function test_the_nearest_visit_wins_when_two_are_in_reach(): void
+    {
+        $far = $this->makeRecordAt('2026-08-20 20:00:00');
+        $near = $this->makeRecordAt('2026-08-21 09:00:00');
+
+        $this->sellProductAt('2026-08-21 08:00:00', 'Serum Pagi');
+
+        $records = collect($this->records())->keyBy('id');
+
+        $this->assertSame(['Serum Pagi'], $this->productNames($records[$near->id]));
+        $this->assertSame([], $this->productNames($records[$far->id]));
     }
 }

@@ -40,7 +40,7 @@ function UploaderColumn({
   return (
     <div className="min-w-0 space-y-2">
       <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-1.5">
-        <span className="truncate text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+        <span className="truncate text-2xs font-medium tracking-wide text-muted-foreground uppercase">
           {label}
           <span className="ml-1.5 text-muted-foreground/60 tabular-nums">
             {photos.length}

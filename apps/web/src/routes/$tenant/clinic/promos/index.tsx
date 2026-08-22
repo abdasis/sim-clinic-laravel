@@ -138,7 +138,7 @@ function PromosPage() {
     <div>
 
       <div className="mt-4 mb-4 flex items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{t("promo.title")}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("promo.title")}</h1>
         <Button onClick={() => setCreateOpen(true)}>{t("promo.add")}</Button>
       </div>
 

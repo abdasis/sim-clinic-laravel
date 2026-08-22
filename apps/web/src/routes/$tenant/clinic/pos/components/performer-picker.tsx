@@ -2,6 +2,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Tick02Icon } from "@hugeicons/core-free-icons"
 
 import { Label } from "#/components/ui/label.tsx"
+import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { cn } from "#/lib/utils.ts"
 
@@ -45,9 +46,16 @@ export function PerformerPicker({
       <Label>{t("pos.performers")}</Label>
 
       {loading ? (
-        <p className="text-xs text-muted-foreground">{t("general.loading")}</p>
+        // Kerangka sebentuk kepingnya, bukan satu baris teks: kasir sedang
+        // menunggu sesuatu yang bentuknya sudah bisa ditebak, dan pergantian
+        // dari teks ke deretan keping membuat panelnya melompat.
+        <div className="flex flex-wrap gap-1.5">
+          <Skeleton className="h-[26px] w-24 rounded-full" />
+          <Skeleton className="h-[26px] w-20 rounded-full" />
+          <Skeleton className="h-[26px] w-28 rounded-full" />
+        </div>
       ) : staff.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{t("general.no_data")}</p>
+        <p className="text-xs text-muted-foreground">{t("pos.no_performers")}</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {staff.map((member) => {

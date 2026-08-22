@@ -39,7 +39,14 @@ class CompanyContentController extends Controller
             $this->applySearch($query, $config['searchable'], $params['search']);
         }
 
-        $query->orderBy($params['sort'] ?? 'sort_order', $params['direction'])->orderBy('id');
+        // Kolom urutan dibatasi kolom yang pasti ada di tiap entitas konten;
+        // nama kolom asing dari query string kalau tidak disaring sampai ke
+        // pengguna sebagai 500, bukan penolakan yang bisa dibaca.
+        if (! $this->applyAllowedSort($query, $params, ['sort_order', 'created_at', 'updated_at'])) {
+            $query->orderBy('sort_order', $params['direction']);
+        }
+
+        $query->orderBy('id');
 
         $page = $query->paginate($params['per_page'], ['*'], 'page', $params['page']);
 

@@ -37,7 +37,7 @@ function ComparePane({
 }) {
   return (
     <figure className="flex min-w-0 flex-col gap-2">
-      <figcaption className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+      <figcaption className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </figcaption>
       {src ? (

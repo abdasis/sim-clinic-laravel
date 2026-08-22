@@ -41,9 +41,7 @@ class BookingController extends Controller
         if (($params['filters']['patient_id'] ?? null)) {
             $query->where('patient_id', $params['filters']['patient_id']);
         }
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['start_at', 'end_at', 'status', 'created_at'])) {
             $query->orderBy('start_at', 'desc');
         }
 

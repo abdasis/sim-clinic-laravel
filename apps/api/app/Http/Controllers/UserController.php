@@ -39,9 +39,7 @@ class UserController extends Controller
                 $query->where($filter, $params['filters'][$filter]);
             }
         }
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['name', 'email', 'role', 'status', 'created_at'])) {
             $query->latest();
         }
 

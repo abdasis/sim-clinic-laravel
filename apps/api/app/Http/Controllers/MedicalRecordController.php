@@ -204,9 +204,7 @@ class MedicalRecordController extends Controller
             $query->whereHas('patient', fn ($q) => $q->where('name', 'like', '%'.$search.'%'));
         }
 
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['created_at', 'updated_at'])) {
             $query->latest();
         }
 

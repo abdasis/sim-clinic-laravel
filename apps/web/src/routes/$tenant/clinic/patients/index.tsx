@@ -108,7 +108,7 @@ function PatientsPage() {
       />
 
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t("patient.title")}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("patient.title")}</h1>
         <Button asChild>
           <Link to="/$tenant/clinic/patients/new" params={{ tenant }}>
             {t("patient.add")}

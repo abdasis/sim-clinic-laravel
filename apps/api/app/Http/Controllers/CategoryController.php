@@ -47,9 +47,7 @@ class CategoryController extends Controller
             $query->where('status', $status);
         }
 
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['name', 'description', 'status', 'created_at'])) {
             $query->orderBy('name');
         }
 

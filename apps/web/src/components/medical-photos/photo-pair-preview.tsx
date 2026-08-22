@@ -47,7 +47,7 @@ export function PhotoPairPreview({
         ),
       )}
       {rest > 0 ? (
-        <span className="text-[11px] text-muted-foreground/70 tabular-nums">
+        <span className="text-2xs text-muted-foreground/70 tabular-nums">
           +{rest}
         </span>
       ) : null}

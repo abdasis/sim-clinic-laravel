@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'no_rules' => 'Belum ada aturan pengingat yang dibuat.',
+    'no_templates' => 'Belum ada template pesan. Buat satu dulu di menu Template Pesan.',
     'title' => 'Broadcast WA',
     'title_field' => 'Judul Broadcast',
     'add' => 'Buat Broadcast',

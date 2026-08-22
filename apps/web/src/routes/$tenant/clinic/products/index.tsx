@@ -163,7 +163,7 @@ function ProductsPage() {
       />
 
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t("product.title")}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("product.title")}</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             {t("product.import")}

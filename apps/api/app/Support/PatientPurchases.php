@@ -22,14 +22,30 @@ use Illuminate\Support\Collection;
  * tidaknya peeling, atau saat menelusuri iritasi — tidak boleh bergantung
  * pada ingatan kasir menekan satu kolom opsional.
  *
- * Satu nota ditautkan ke tepat satu kunjungan, tidak pernah dua: kalau
- * seorang pasien punya lebih dari satu catatan di tanggal yang sama,
- * belanjanya menempel di catatan paling awal hari itu. Nota yang tanggalnya
- * tidak berpapasan dengan kunjungan mana pun tidak hilang — ia tetap terbaca
- * di riwayat pembelian pasien, hanya tidak menempel ke baris kunjungan.
+ * Pencocokannya tidak berhenti di tanggal kalender. Klinik yang tutup malam
+ * kerap merampungkan catatannya lewat tengah malam, jadi belanja pukul 23.30
+ * dan kunjungan yang tercatat keesokan paginya adalah peristiwa yang sama —
+ * dan batas tanggal memisahkan keduanya persis di tempat yang salah. Selain
+ * hari yang sama, nota juga menempel ke kunjungan terdekat dalam rentang
+ * WINDOW_HOURS.
+ *
+ * Satu nota ditautkan ke tepat satu kunjungan, tidak pernah dua: bila ada
+ * beberapa yang memenuhi syarat, yang paling dekat waktunya menang, dan
+ * seri diputus oleh catatan yang lebih dulu dibuat. Nota yang tidak
+ * berpapasan dengan kunjungan mana pun tidak hilang — ia tetap terbaca di
+ * riwayat pembelian pasien, hanya tidak menempel ke baris kunjungan.
  */
 class PatientPurchases
 {
+    /**
+     * Selisih waktu terjauh yang masih dianggap satu peristiwa.
+     *
+     * Dua belas jam menutup kasus yang benar-benar terjadi — klinik tutup
+     * malam, catatan dirampungkan pagi berikutnya — tanpa menjangkau
+     * kunjungan lusa yang jelas peristiwa lain.
+     */
+    private const WINDOW_HOURS = 12;
+
     /** @var array<int, list<Transaction>> nota per id rekam medis */
     private array $byRecord = [];
 
@@ -40,24 +56,19 @@ class PatientPurchases
      */
     public function preload(int $patientId, Collection $records): void
     {
-        $dates = $records->map(fn (MedicalRecord $record) => self::recordDate($record))
-            ->filter()
-            ->unique()
-            ->values();
-
-        if ($dates->isEmpty()) {
+        if ($records->isEmpty()) {
             return;
         }
 
-        // Pemenang per tanggal dihitung dari seluruh catatan pasien, bukan dari
-        // halaman ini saja: satu tanggal bisa terbelah dua halaman, dan kalau
+        // Calon penerima dihitung dari seluruh catatan pasien, bukan dari
+        // halaman ini saja: satu hari bisa terbelah dua halaman, dan kalau
         // pemenangnya dipilih per halaman, nota yang sama menempel dua kali.
-        $winners = self::winnersByDate($patientId, $dates->all());
+        $candidates = self::candidates($patientId);
 
-        foreach ($this->transactions($patientId, $dates->all()) as $transaction) {
-            $recordId = $this->owner($transaction, $records, $winners);
+        foreach ($this->transactions($patientId, $records) as $transaction) {
+            $recordId = self::owner($transaction, $candidates);
 
-            if ($recordId !== null) {
+            if ($recordId !== null && $records->contains('id', $recordId)) {
                 $this->byRecord[$recordId][] = $transaction;
             }
         }
@@ -73,89 +84,122 @@ class PatientPurchases
         return $this->byRecord[$record->id] ?? [];
     }
 
-    /** Tanggal kunjungan, bukan tanggal catatannya ditulis bila keduanya beda. */
-    public static function recordDate(MedicalRecord $record): ?string
+    /** Waktu kunjungan, bukan waktu catatannya ditulis bila keduanya beda. */
+    public static function recordTime(MedicalRecord $record): ?Carbon
     {
-        return ($record->booking?->start_at ?? $record->created_at)?->toDateString();
+        $at = $record->booking?->start_at ?? $record->created_at;
+
+        return $at === null ? null : Carbon::parse($at);
     }
 
-    /** Tanggal nota mengikuti tanggal terbitnya, yang boleh diisi mundur. */
-    public static function transactionDate(Transaction $transaction): ?string
+    /** Waktu nota mengikuti waktu terbitnya, yang boleh diisi mundur. */
+    public static function transactionTime(Transaction $transaction): ?Carbon
     {
-        return ($transaction->issued_at ?? $transaction->created_at)?->toDateString();
+        $at = $transaction->issued_at ?? $transaction->created_at;
+
+        return $at === null ? null : Carbon::parse($at);
     }
 
     /**
-     * Nota yang menyebut booking suatu catatan menempel ke catatan itu —
-     * tautan yang paling pasti, jadi ia mendahului pencocokan tanggal.
+     * Kunjungan mana yang menerima nota ini.
      *
-     * @param  Collection<int, MedicalRecord>  $records
-     * @param  array<string, int>  $winners
+     * Nota yang menyebut booking suatu catatan menempel ke catatan itu —
+     * tautan yang paling pasti, jadi ia mendahului pencocokan waktu. Sisanya
+     * jatuh ke kunjungan terdekat yang masih dalam jangkauan.
+     *
+     * @param  array<int, array{id: int, booking_id: ?int, at: Carbon}>  $candidates
      */
-    private function owner(Transaction $transaction, Collection $records, array $winners): ?int
+    private static function owner(Transaction $transaction, array $candidates): ?int
     {
         if ($transaction->booking_id !== null) {
-            $exact = $records->firstWhere('booking_id', $transaction->booking_id);
-
-            if ($exact !== null) {
-                return $exact->id;
+            foreach ($candidates as $candidate) {
+                if ($candidate['booking_id'] === $transaction->booking_id) {
+                    return $candidate['id'];
+                }
             }
         }
 
-        $date = self::transactionDate($transaction);
+        $at = self::transactionTime($transaction);
 
-        return $date === null ? null : ($winners[$date] ?? null);
+        if ($at === null) {
+            return null;
+        }
+
+        $winner = null;
+        $closest = null;
+
+        foreach ($candidates as $candidate) {
+            if (! self::withinReach($at, $candidate['at'])) {
+                continue;
+            }
+
+            $gap = $at->diffInSeconds($candidate['at'], absolute: true);
+
+            // Seri diputus catatan yang lebih dulu dibuat: candidates sudah
+            // urut id, jadi perbandingan tegas menahan pemenang pertama.
+            if ($closest === null || $gap < $closest) {
+                $winner = $candidate['id'];
+                $closest = $gap;
+            }
+        }
+
+        return $winner;
     }
 
     /**
-     * Catatan paling awal pada tiap tanggal, dari seluruh riwayat pasien.
-     *
-     * @param  array<int, string>  $dates
-     * @return array<string, int>
+     * Satu hari yang sama selalu terjangkau — itu perilaku yang sudah ada dan
+     * tidak boleh menyempit; di luar itu, selisihnya yang menentukan.
      */
-    private static function winnersByDate(int $patientId, array $dates): array
+    private static function withinReach(Carbon $at, Carbon $visit): bool
     {
-        $winners = [];
+        return $at->isSameDay($visit)
+            || $at->diffInHours($visit, absolute: true) <= self::WINDOW_HOURS;
+    }
 
-        MedicalRecord::query()
+    /**
+     * Seluruh kunjungan pasien beserta waktunya, urut dari yang paling dulu
+     * dibuat.
+     *
+     * @return array<int, array{id: int, booking_id: ?int, at: Carbon}>
+     */
+    private static function candidates(int $patientId): array
+    {
+        return MedicalRecord::query()
             ->where('patient_id', $patientId)
             ->with('booking:id,start_at')
             ->orderBy('id')
             ->get(['id', 'booking_id', 'created_at'])
-            ->each(function (MedicalRecord $record) use (&$winners, $dates): void {
-                $date = self::recordDate($record);
-
-                if ($date === null || ! in_array($date, $dates, true)) {
-                    return;
-                }
-
-                $winners[$date] ??= $record->id;
-            });
-
-        return $winners;
+            ->map(fn (MedicalRecord $record): ?array => ($at = self::recordTime($record)) === null
+                ? null
+                : ['id' => $record->id, 'booking_id' => $record->booking_id, 'at' => $at])
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**
-     * Nota pasien pada tanggal-tanggal yang sedang ditampilkan.
+     * Nota pasien yang mungkin berpapasan dengan kunjungan di halaman ini.
      *
      * Nota batal dilewati: barang yang notanya dibatalkan tidak pernah sampai
      * ke tangan pasien, dan mencantumkannya di rekam medis berarti dokter
      * membaca pemakaian yang tidak pernah terjadi.
      *
-     * @param  array<int, string>  $dates
+     * @param  Collection<int, MedicalRecord>  $records
      * @return Collection<int, Transaction>
      */
-    private function transactions(int $patientId, array $dates): Collection
+    private function transactions(int $patientId, Collection $records): Collection
     {
-        // Dibatasi rentang tanggal halaman ini lebih dulu supaya pasien lama
-        // tidak menyeret seluruh notanya berikut isinya ke memori; pencocokan
-        // tanggal persisnya baru dilakukan setelahnya, di PHP, karena fungsi
-        // tanggal SQL berbeda antara SQLite dan PostgreSQL.
-        $sorted = $dates;
-        sort($sorted);
+        $times = $records->map(fn (MedicalRecord $record) => self::recordTime($record))->filter();
 
-        $from = Carbon::parse($sorted[0])->startOfDay();
-        $to = Carbon::parse(end($sorted))->endOfDay();
+        if ($times->isEmpty()) {
+            return collect();
+        }
+
+        // Rentangnya dilebihkan sehari di kedua ujung: jangkauan dihitung dari
+        // selisih jam, dan memotongnya persis di batas tanggal akan membuang
+        // justru nota lewat tengah malam yang hendak dijangkau.
+        $from = $times->min()->copy()->subDay()->startOfDay();
+        $to = $times->max()->copy()->addDay()->endOfDay();
 
         return Transaction::query()
             ->with('items', 'performers:id,name')
@@ -166,12 +210,6 @@ class PatientPurchases
                 ->orWhere(fn (Builder $fallback) => $fallback
                     ->whereNull('issued_at')
                     ->whereBetween('created_at', [$from, $to])))
-            ->get()
-            ->filter(fn (Transaction $transaction) => in_array(
-                self::transactionDate($transaction),
-                $dates,
-                true,
-            ))
-            ->values();
+            ->get();
     }
 }

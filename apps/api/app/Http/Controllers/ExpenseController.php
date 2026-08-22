@@ -37,9 +37,7 @@ class ExpenseController extends Controller
             $query->whereHas('categories', fn ($q) => $q->where('categories.id', $category));
         }
 
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['spent_at', 'description', 'amount', 'created_at'])) {
             $query->orderByDesc('spent_at')->orderByDesc('id');
         }
 

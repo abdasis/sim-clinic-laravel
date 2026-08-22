@@ -76,7 +76,7 @@ function TenantsPage() {
       />
 
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t("tenant.tenants")}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("tenant.tenants")}</h1>
       </div>
       <DataTable
         table={table}

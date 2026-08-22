@@ -36,9 +36,7 @@ class PromoController extends Controller
             $query->where('status', $status);
         }
 
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['name', 'discount_value', 'status', 'starts_at', 'ends_at'])) {
             $query->orderByDesc('starts_at');
         }
 

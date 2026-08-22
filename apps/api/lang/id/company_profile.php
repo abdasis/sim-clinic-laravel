@@ -154,4 +154,10 @@ return [
         'saturday' => 'Sabtu',
         'sunday' => 'Minggu',
     ],
+    'treatment_not_found' => 'Treatment ini sudah tidak tersedia',
+    'treatment_not_found_desc' => 'Mungkin namanya berubah atau layanannya sudah tidak kami tawarkan. Silakan lihat treatment lain yang tersedia.',
+    'see_other_treatments' => 'Lihat treatment lainnya',
+    'unknown_entity' => 'Bagian profil ini tidak dikenal. Periksa lagi tautannya, atau pilih bagian lain dari menu.',
+    'media_upload_hint' => 'Unggah berkas dari perangkat ini',
+    'media_remove_hint' => 'Lepas berkas dari kolom ini',
 ];

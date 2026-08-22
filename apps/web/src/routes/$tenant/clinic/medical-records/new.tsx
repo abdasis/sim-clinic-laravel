@@ -15,6 +15,11 @@ import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { PhotoUploader, type SelectedPhoto } from "#/components/medical-photos/photo-uploader.tsx"
 import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost, apiUpload } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -328,20 +333,27 @@ function NewMedicalRecordPage() {
                       rows={2}
                     />
                   </div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="mt-6"
-                    aria-label={t("general.delete")}
-                    onClick={() => treatments.remove(index)}
-                  >
-                    <Trash2Icon />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="mt-6"
+                        aria-label={t("general.delete")}
+                        onClick={() => treatments.remove(index)}
+                      >
+                        <Trash2Icon />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t("medical_record.remove_treatment")}</TooltipContent>
+                  </Tooltip>
                 </div>
               ))}
               {treatments.fields.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("general.no_data")}</p>
+                <p className="rounded-md border border-dashed border-border/60 px-3 py-4 text-center text-sm text-muted-foreground">
+                  {t("medical_record.no_treatment_yet")}
+                </p>
               ) : null}
             </CardContent>
           </Card>

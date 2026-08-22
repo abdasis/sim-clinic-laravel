@@ -34,9 +34,7 @@ class StaffController extends Controller
             });
         }
 
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['name', 'email', 'clinic_role', 'status', 'created_at'])) {
             $query->latest();
         }
 

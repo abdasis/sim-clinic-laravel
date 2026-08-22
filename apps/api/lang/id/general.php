@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'not_found' => 'Tidak ditemukan',
     'save' => 'Simpan',
     'upload' => 'Unggah',
     'cancel' => 'Batal',

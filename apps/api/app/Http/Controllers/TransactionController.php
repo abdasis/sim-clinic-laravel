@@ -32,9 +32,7 @@ class TransactionController extends Controller
         if (($params['filters']['payment_status'] ?? null)) {
             $query->where('payment_status', $params['filters']['payment_status']);
         }
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['invoice_number', 'subtotal', 'paid_amount', 'payment_status', 'issued_at', 'created_at'])) {
             $query->latest();
         }
 

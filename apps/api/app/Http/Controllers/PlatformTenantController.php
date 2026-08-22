@@ -33,9 +33,7 @@ class PlatformTenantController extends Controller
         if (! empty($params['filters']['status'])) {
             $query->where('status', $params['filters']['status']);
         }
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
+        if (! $this->applyAllowedSort($query, $params, ['name', 'slug', 'phone', 'status', 'created_at'])) {
             $query->latest();
         }
 

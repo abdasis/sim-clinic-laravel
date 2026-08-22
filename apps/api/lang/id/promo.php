@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'no_target_match' => 'Tidak ada layanan atau produk yang cocok dengan pencarian ini.',
     'title' => 'Promosi',
     'add' => 'Tambah Promosi',
     'edit' => 'Ubah Promosi',
