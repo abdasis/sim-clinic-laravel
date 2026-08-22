@@ -159,6 +159,7 @@ Route::prefix('{tenant}/clinic')
         // US3 Patient
         Route::get('patients/{patient}/history', [PatientController::class, 'history']);
         Route::get('patients/{patient}/medical-records', [MedicalRecordController::class, 'patientRecords']);
+        Route::get('patients/{patient}/purchases', [MedicalRecordController::class, 'patientPurchases']);
         Route::apiResource('patients', PatientController::class);
 
         // US4 Booking

@@ -2,6 +2,23 @@
 
 return [
     'load_older' => 'Muat riwayat berikutnya',
+    'load_older_purchases' => 'Muat pembelian sebelumnya',
+    // Ringkasan klinis di atas riwayat
+    'allergy_alert' => 'Riwayat alergi pasien',
+    'total_visits' => 'Kunjungan',
+    'last_visit' => 'Terakhir',
+    'total_treatments' => 'Tindakan',
+    'total_treatments_hint' => 'Seluruh tindakan yang tercatat',
+    'products_used' => 'Produk Dipakai',
+    'products_used_hint' => 'Jumlah item yang pernah ditebus',
+    'product_spend' => 'Belanja Produk',
+    'product_spend_hint' => 'Nilai seluruh pembelian produk',
+    // Dua sisi riwayat: kunjungan dan pembelian
+    'tab_visits' => 'Kunjungan',
+    'tab_purchases' => 'Pembelian Produk',
+    'purchase_standalone' => 'Tanpa kunjungan',
+    'purchases_empty' => 'Belum ada pembelian produk',
+    'purchases_empty_desc' => 'Produk yang ditebus pasien ini akan terkumpul di sini, termasuk yang dibeli tanpa treatment.',
     'history' => 'Riwayat Rekam Medis',
     'date' => 'Tanggal',
     'complaint' => 'Keluhan',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\PatientPurchases;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,7 +29,7 @@ class MedicalRecordResource extends JsonResource
             // berbayar dan OBT/HCP. Hanya ikut saat memang dimuat: halaman
             // lain yang memakai resource ini tidak membutuhkannya, dan
             // memuatnya diam-diam berarti satu query per baris.
-            'transaction' => $this->transactionPayload(),
+            'transaction' => $this->transactionPayload($request),
             'anamnesis' => $this->anamnesis,
             'skincare_history' => $this->skincare_history,
             'allergy_history' => $this->allergy_history,
@@ -57,8 +58,12 @@ class MedicalRecordResource extends JsonResource
     }
 
     /**
-     * Nota kunjungan bila ada, null bila catatan ini tidak lahir dari booking
-     * berbayar atau relasinya memang tidak dimuat.
+     * Nota yang menempel pada kunjungan ini.
+     *
+     * Sumbernya PatientPurchases — pasien dan tanggal, bukan booking. Dulu
+     * dibaca dari `booking->transaction`, sehingga produk hanya muncul kalau
+     * kasir kebetulan memilih booking saat menjual; catatan walk-in yang
+     * memang tidak punya booking tidak pernah bisa menampilkan apa pun.
      *
      * `name` diambil dari baris nota, bukan dari relasi produk/layanan:
      * namanya sudah disalin saat transaksi dibuat, jadi riwayat lama tetap
@@ -67,32 +72,43 @@ class MedicalRecordResource extends JsonResource
      *
      * @return array<string, mixed>|null
      */
-    private function transactionPayload(): ?array
+    private function transactionPayload(Request $request): ?array
     {
-        if (! $this->relationLoaded('booking') || $this->booking === null) {
+        $purchases = $request->attributes->get('patient_purchases');
+
+        if (! $purchases instanceof PatientPurchases) {
             return null;
         }
 
-        if (! $this->booking->relationLoaded('transaction') || $this->booking->transaction === null) {
+        $transactions = $purchases->forRecord($this->resource);
+
+        if ($transactions === []) {
             return null;
         }
 
-        $transaction = $this->booking->transaction;
+        $items = [];
+        $performers = [];
 
-        return [
-            'id' => $transaction->id,
-            'performers' => $transaction->relationLoaded('performers')
-                ? $transaction->performers->map(fn ($performer) => ['name' => $performer->name])->values()
-                : [],
-            'items' => $transaction->relationLoaded('items')
-                ? $transaction->items->map(fn ($item) => [
+        foreach ($transactions as $transaction) {
+            foreach ($transaction->items as $item) {
+                $items[] = [
                     'name' => $item->name,
                     'kind' => $item->product_id !== null ? 'product' : 'service',
                     'unit_price' => (float) $item->unit_price,
                     'qty' => (int) $item->qty,
                     'subtotal' => (float) $item->subtotal,
-                ])->values()
-                : [],
+                ];
+            }
+
+            foreach ($transaction->performers as $performer) {
+                $performers[$performer->id] = ['name' => $performer->name];
+            }
+        }
+
+        return [
+            'id' => $transactions[0]->id,
+            'performers' => array_values($performers),
+            'items' => $items,
         ];
     }
 }

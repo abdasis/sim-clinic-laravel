@@ -10,7 +10,9 @@ use App\Http\Requests\TreatmentRecordRequest;
 use App\Http\Resources\MedicalRecordResource;
 use App\Models\MedicalRecord;
 use App\Models\Patient;
+use App\Models\Transaction;
 use App\Services\MedicalRecordService;
+use App\Support\PatientPurchases;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -95,16 +97,73 @@ class MedicalRecordController extends Controller
             ->select('medical_records.*')
             ->orderBy(DB::raw('COALESCE(bookings.start_at, medical_records.created_at)'))
             ->orderBy('medical_records.id')
-            // Transaksinya ikut dimuat karena kolom OBT/HCP dan harga di
-            // tabel riwayat berasal dari nota, bukan dari catatan medis.
-            ->with([
-                'treatmentRecords', 'medicalPhotos', 'author', 'patient',
-                'booking.transaction.items', 'booking.transaction.performers',
-            ])
+            ->with(['treatmentRecords', 'medicalPhotos', 'author', 'patient', 'booking'])
             ->paginate($perPage, ['*'], 'page', max((int) $request->integer('page', 1), 1));
+
+        // Belanja pasien ditautkan sekali untuk seluruh baris halaman ini.
+        // Sumbernya pasien dan tanggal, bukan booking: kasir hanya wajib
+        // memilih pasien, jadi produk yang dibeli tanpa memilih booking dulu
+        // tidak pernah sampai ke rekam medisnya.
+        $purchases = new PatientPurchases;
+        $purchases->preload($patient->id, collect($page->items()));
+        $request->attributes->set('patient_purchases', $purchases);
 
         return response()->json([
             'data' => MedicalRecordResource::collection($page->items()),
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+                'last_page' => $page->lastPage(),
+            ],
+        ]);
+    }
+
+    /**
+     * Seluruh produk yang pernah dibeli pasien, urut dari yang terbaru.
+     *
+     * Berdiri sendiri di samping riwayat kunjungan karena tidak semua
+     * pembelian berpapasan dengan kunjungan: pasien boleh menebus skincare
+     * tanpa treatment apa pun hari itu, dan pembelian seperti itu tidak
+     * menempel di baris rekam medis mana pun. Yang perlu dibaca dokter tetap
+     * sama — apa yang sedang dipakai pasien di rumah.
+     */
+    public function patientPurchases(Patient $patient, Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', MedicalRecord::class);
+
+        $perPage = min(max((int) $request->integer('per_page', 30), 1), 100);
+
+        $page = Transaction::query()
+            ->with('items')
+            ->where('patient_id', $patient->id)
+            ->whereNull('cancelled_at')
+            // Hanya nota yang benar-benar memuat produk; kunjungan yang isinya
+            // tindakan saja sudah terbaca di tabel riwayat.
+            ->whereHas('items', fn ($query) => $query->whereNotNull('product_id'))
+            ->orderByDesc(DB::raw('COALESCE(issued_at, created_at)'))
+            ->orderByDesc('id')
+            ->paginate($perPage, ['*'], 'page', max((int) $request->integer('page', 1), 1));
+
+        $data = collect($page->items())->map(fn (Transaction $transaction): array => [
+            'transaction_id' => $transaction->id,
+            'invoice_number' => $transaction->invoice_number,
+            'purchased_at' => ($transaction->issued_at ?? $transaction->created_at)?->toIso8601String(),
+            // Ditandai supaya layar bisa menjelaskan pembelian yang berdiri
+            // sendiri, bukan diam-diam menampilkannya seolah bagian kunjungan.
+            'linked_to_visit' => $transaction->booking_id !== null,
+            'items' => $transaction->items
+                ->filter(fn ($item) => $item->product_id !== null)
+                ->map(fn ($item) => [
+                    'name' => $item->name,
+                    'qty' => (int) $item->qty,
+                    'unit_price' => (float) $item->unit_price,
+                    'subtotal' => (float) $item->subtotal,
+                ])->values(),
+        ])->all();
+
+        return response()->json([
+            'data' => $data,
             'meta' => [
                 'current_page' => $page->currentPage(),
                 'per_page' => $page->perPage(),
