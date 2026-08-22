@@ -23,6 +23,7 @@ import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { useForm, applyServerErrors } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost, apiPut } from "#/lib/api.ts"
+import { overlapWhen } from "./overlap-warning.ts"
 import type { ApiError } from "#/lib/api.ts"
 
 interface OptionRow {
@@ -193,8 +194,10 @@ export function BookingFormDialog({
       const warnings = res.meta?.overlap_warnings ?? []
       if (warnings.length > 0) {
         toast.warning(t("clinic.overlap_warning"), {
+          // Cap waktunya datang sebagai ISO8601; tanpa diformat, peringatan
+          // bentrok terbaca sebagai deretan angka dan zona waktu.
           description: warnings
-            .map((w) => `${w.patient_name} (${w.start_at} – ${w.end_at})`)
+            .map((w) => `${w.patient_name} (${overlapWhen(w)})`)
             .join(", "),
         })
       }
