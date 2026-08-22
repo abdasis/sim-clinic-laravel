@@ -23,6 +23,7 @@ class CompanyProfileSetting extends Model
         'logo_path',
         'site_name',
         'address',
+        'maps_url',
         'tagline',
         'operating_hours',
         'receipt_note',

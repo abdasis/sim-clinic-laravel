@@ -17,6 +17,7 @@ class CompanyProfileSettingResource extends JsonResource
             'logo_path' => $this->logo_path,
             'logo_url' => $this->mediaUrl($this->logo_path),
             'address' => $this->address,
+            'maps_url' => $this->maps_url,
             // Nomor klinik tinggal di tabel tenant, bukan di setelan profil.
             // Kaki halaman publik memerlukannya bersama alamat, jadi ikut
             // dikirim di sini alih-alih memaksa satu request lagi.

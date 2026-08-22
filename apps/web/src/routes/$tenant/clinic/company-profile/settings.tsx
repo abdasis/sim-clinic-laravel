@@ -23,6 +23,8 @@ interface Settings {
   site_name?: Record<string, string> | null
   logo_path?: string | null
   copyright_text?: string | null
+  address?: string | null
+  maps_url?: string | null
   chat_channels: unknown[]
   social_links: unknown[]
   marketplace_links: unknown[]
@@ -62,6 +64,8 @@ function CompanyProfileSettingsPage() {
       site_name: data.site_name ?? {},
       logo_path: data.logo_path ?? "",
       copyright_text: data.copyright_text ?? "",
+      address: data.address ?? "",
+      maps_url: data.maps_url ?? "",
       default_locale: data.default_locale ?? "id",
     })
     setRawJson({
@@ -171,6 +175,51 @@ function CompanyProfileSettingsPage() {
                     }))
                   }
                 />
+              </div>
+
+              {/* Alamat dan titik petanya berpasangan: chatbot menyebut
+                  keduanya sekaligus saat pasien bertanya lokasi, dan alamat
+                  tanpa peta menyisakan pekerjaan mengetik ulang di sisi
+                  pasien. */}
+              <div className="space-y-1.5">
+                <Label htmlFor="address" className="text-sm">
+                  {t("company_profile.address")}
+                </Label>
+                <Textarea
+                  id="address"
+                  rows={2}
+                  disabled={save.isPending}
+                  value={(values.address as string) ?? ""}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      address: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="maps_url" className="text-sm">
+                  {t("company_profile.maps_url")}
+                </Label>
+                <Input
+                  id="maps_url"
+                  type="url"
+                  inputMode="url"
+                  placeholder="https://maps.app.goo.gl/..."
+                  disabled={save.isPending}
+                  value={(values.maps_url as string) ?? ""}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      maps_url: event.target.value,
+                    }))
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("company_profile.maps_url_hint")}
+                </p>
               </div>
             </CardContent>
           </Card>

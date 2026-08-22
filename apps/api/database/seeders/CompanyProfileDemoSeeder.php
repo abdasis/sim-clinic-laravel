@@ -108,6 +108,9 @@ class CompanyProfileDemoSeeder extends Seeder
                 'marketplace_links' => [],
                 'tagline' => 'Beauty & Skin Care',
                 'address' => 'Komp. Pusat Bisnis Ringroad, Medan Selayang, Kota Medan.',
+                // Titik peta resmi klinik; dibagikan chatbot bersama alamatnya
+                // supaya pasien tidak perlu mengetik ulang nama komplek.
+                'maps_url' => 'https://maps.app.goo.gl/vfu1wvd72ojx1PHE9',
                 // Senin-Sabtu buka, Minggu tutup — pola paling lazim klinik
                 // kecantikan, dan dipakai chatbot untuk menolak jadwal di
                 // hari tutup.

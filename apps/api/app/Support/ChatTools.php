@@ -54,7 +54,7 @@ class ChatTools
             ),
             self::tool(
                 'get_clinic_info',
-                'Ambil nama, nomor telepon, alamat, dan jam operasional klinik. Pakai ini sebelum menyebut lokasi atau kontak klinik.',
+                'Ambil nama, nomor telepon, alamat, tautan Google Maps, dan jam operasional klinik. Pakai ini sebelum menyebut lokasi atau kontak klinik.',
                 [],
             ),
             self::tool(

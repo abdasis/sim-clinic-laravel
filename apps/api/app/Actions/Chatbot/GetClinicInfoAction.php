@@ -38,6 +38,10 @@ class GetClinicInfoAction
             'name' => ClinicIdentity::displayName($tenant),
             'phone' => $tenant->phone,
             'address' => $profile?->address,
+            // Alamat tertulis saja menyisakan pekerjaan di sisi pasien: ia
+            // harus mengetik ulang ke aplikasi peta, dan nama komplek yang
+            // mirip membuatnya berakhir di jalan yang salah.
+            'maps_url' => $profile?->maps_url,
             'operating_hours' => $this->formatHours($profile?->operating_hours),
         ];
     }

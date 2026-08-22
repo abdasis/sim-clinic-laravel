@@ -13,6 +13,9 @@ class SettingsRequest extends CompanyContentRequest
             ...$this->translatableRules('site_name', required: false),
             'logo_path' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:500'],
+            // Tautan pendek dari tombol bagikan Google Maps sudah cukup;
+            // yang penting bisa dibuka, bukan bentuk persisnya.
+            'maps_url' => ['nullable', 'url', 'max:255'],
             'tagline' => ['nullable', 'string', 'max:120'],
             'receipt_note' => ['nullable', 'string', 'max:160'],
             'copyright_text' => ['nullable', 'string', 'max:255'],

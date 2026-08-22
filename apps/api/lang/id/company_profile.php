@@ -53,6 +53,8 @@ return [
     'whatsapp' => 'WhatsApp',
     'email' => 'Email',
     'address' => 'Alamat',
+    'maps_url' => 'Tautan Google Maps',
+    'maps_url_hint' => 'Buka lokasi klinik di Google Maps, tekan Bagikan, lalu tempel tautannya di sini. Chatbot mengirimkannya bersama alamat saat pasien bertanya lokasi.',
     'map_embed_url' => 'URL Peta',
     'social_links' => 'Tautan Sosial',
     'meta_title' => 'Judul Meta',
