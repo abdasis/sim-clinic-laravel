@@ -34,6 +34,7 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
 import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
+import { useCan } from "#/hooks/use-permission.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete, apiGet } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -99,6 +100,9 @@ function MedicalRecordDetailPage() {
   const [editing, setEditing] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const photos = useRecordPhotos(tenant, recordId)
+  // Peran yang cuma boleh membaca tetap melihat fotonya, tanpa jalur untuk
+  // menambah atau membuangnya.
+  const canManagePhotos = useCan(tenant, "medical_record.manage")
 
   const { data, isLoading } = useQuery({
     queryKey: ["medical-record", tenant, recordId],
@@ -239,8 +243,10 @@ function MedicalRecordDetailPage() {
           <MedicalRecordAttachments
             treatments={record.treatments}
             photos={record.photos}
-            onPickPhotos={photos.pick}
-            onDeletePhoto={photos.setPendingDelete}
+            onPickPhotos={canManagePhotos ? photos.pick : undefined}
+            onDeletePhoto={
+              canManagePhotos ? photos.setPendingDelete : undefined
+            }
             uploading={photos.uploading}
             deletingPhotoId={
               photos.deleting ? (photos.pendingDelete?.id ?? null) : null

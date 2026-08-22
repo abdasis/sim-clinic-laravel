@@ -52,10 +52,41 @@ describe("BeforeAfterGallery", () => {
     expect(addSlots.length).toBeGreaterThan(0)
   })
 
-  it("tanpa onPick, petak kosongnya tidak bisa diklik", () => {
+  /**
+   * Peran yang cuma boleh membaca tidak dikirimi onPick/onDelete sama sekali,
+   * jadi tidak ada satu pun jalur ubah yang tersisa di markup — bukan sekadar
+   * tombol yang disembunyikan dengan CSS.
+   */
+  it("tanpa izin ubah, tidak ada jalur unggah maupun hapus", () => {
     const { container } = renderGallery(<BeforeAfterGallery photos={photos} />)
 
     expect(container.querySelector('input[type="file"]')).toBeNull()
+
+    const actions = Array.from(container.querySelectorAll("button")).filter(
+      (button) => {
+        const label = button.getAttribute("aria-label") ?? ""
+
+        return (
+          label === "medical_record.photo_delete" ||
+          label.startsWith("medical_record.photo_add")
+        )
+      },
+    )
+    expect(actions).toHaveLength(0)
+
+    // Fotonya tetap terbaca, dan tetap bisa dibuka besar.
+    expect(container.querySelectorAll("img")).toHaveLength(3)
+  })
+
+  it("tanpa izin ubah, keadaan kosongnya tidak menawarkan unggah", () => {
+    const { container } = renderGallery(<BeforeAfterGallery photos={[]} />)
+
+    expect(container.querySelector('input[type="file"]')).toBeNull()
+    expect(
+      Array.from(container.querySelectorAll("button")).some((button) =>
+        button.textContent?.includes("photo_add"),
+      ),
+    ).toBe(false)
   })
 
   it("meneruskan foto yang dipilih ke onDelete", () => {
