@@ -155,6 +155,16 @@ class ChatbotService
 
             foreach ($calls as $call) {
                 $messages[] = $this->runToolCall($call, $senderPhone, $patient);
+
+                // Pendaftaran yang baru saja berhasil harus langsung berlaku
+                // di panggilan berikutnya. Sebelumnya $patient diresolusi
+                // sekali sebelum putaran dimulai dan tidak pernah dibaca
+                // ulang, jadi pasien yang mendaftar lalu minta booking di
+                // giliran yang sama tetap dijawab "belum terdaftar, silakan
+                // datang ke klinik" — padahal datanya sudah tersimpan.
+                if ($patient === null && $this->isRegistration($call)) {
+                    $patient = app(FindPatientByPhoneAction::class)->handle($senderPhone);
+                }
             }
         }
 
@@ -164,6 +174,14 @@ class ChatbotService
         ]);
 
         return __('chatbot.fallback');
+    }
+
+    /**
+     * @param  array<string, mixed>  $call
+     */
+    private function isRegistration(array $call): bool
+    {
+        return ($call['function']['name'] ?? '') === 'register_patient';
     }
 
     /**
