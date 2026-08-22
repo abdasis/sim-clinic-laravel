@@ -9,6 +9,7 @@ use App\Actions\Booking\DeleteBookingAction;
 use App\Actions\Booking\ScheduleBookingReminderAction;
 use App\Actions\Booking\UpdateBookingAction;
 use App\Enums\BookingStatus;
+use App\Jobs\SendBookingConfirmationJob;
 use App\Models\Booking;
 
 /**
@@ -61,6 +62,14 @@ class BookingService
         // Kunjungan yang sudah selesai atau dibatalkan tidak perlu diingatkan.
         if (in_array($target, [BookingStatus::Done, BookingStatus::Cancelled], true)) {
             app(CancelBookingReminderAction::class)->handle($booking, 'booking '.$target->label());
+        }
+
+        // Pasien menunggu kepastian; justru di detik inilah jadwalnya benar-
+        // benar pasti. Lewat antrian supaya staf yang menekan konfirmasi
+        // tidak menunggu gateway, dan gateway yang mati tidak membatalkan
+        // konfirmasinya — statusnya sudah tersimpan di baris di atas.
+        if ($target === BookingStatus::Confirmed) {
+            SendBookingConfirmationJob::dispatch($booking->tenant_id, $booking->id);
         }
 
         return $booking;
