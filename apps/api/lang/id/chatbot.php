@@ -71,6 +71,7 @@ return [
     'register_self_confirm' => 'Konfirmasi dulu data pasien sebelum mendaftarkan.',
 
     'booking_patient_unknown' => 'Nomor ini belum terdaftar sebagai pasien, jadi booking lewat chat belum bisa diproses. Silakan daftar dulu di klinik.',
+    'booking_patient_unregistered' => 'Nomor ini belum terdaftar sebagai pasien. Daftarkan dulu lewat register_patient, baru bookingnya bisa dibuat — jangan menyuruh pasien datang ke klinik hanya untuk mendaftar.',
     'booking_service_unknown' => 'Layanan yang dimaksud tidak ditemukan atau sudah tidak tersedia.',
     'booking_service_not_bookable' => 'Layanan :service belum bisa dibooking lewat chat. Silakan hubungi klinik untuk menjadwalkannya.',
     'booking_staff_unknown' => 'Dokter atau terapis yang dimaksud tidak ditemukan.',

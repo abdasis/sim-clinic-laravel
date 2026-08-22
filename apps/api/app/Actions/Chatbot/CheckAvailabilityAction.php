@@ -54,7 +54,7 @@ class CheckAvailabilityAction
         $profile = CompanyProfileSetting::query()->first();
 
         if ($profile !== null && ! $profile->isOpenAt($start)) {
-            return $this->unavailable(__('chatbot.availability_clinic_closed'), $start, $end);
+            return $this->unavailable(__('chatbot.availability_clinic_closed'), $start);
         }
 
         return $assigneeId === null
@@ -68,15 +68,19 @@ class CheckAvailabilityAction
         $assignee = $this->staffQuery()->find($assigneeId);
 
         if ($assignee === null) {
-            return $this->unavailable(__('chatbot.booking_staff_unknown'), $start, $end);
+            return $this->unavailable(__('chatbot.booking_staff_unknown'), $start);
         }
 
         $conflicts = $this->conflicts([$assigneeId], $start, $end);
 
         return [
             'available' => $conflicts->isEmpty(),
+            // Nama orang yang diperiksa ikut pulang supaya identitasnya tidak
+            // hilang di tengah percakapan: pasien menyebut satu nama, dan
+            // jawaban tanpa nama membuat AI mudah menggantinya diam-diam.
+            'staff_id' => $assignee->id,
+            'staff_name' => $assignee->name,
             'start_at' => $start->format('Y-m-d H:i'),
-            'end_at' => $end->format('Y-m-d H:i'),
             'reason' => $conflicts->isEmpty() ? null : __('chatbot.availability_staff_busy'),
             'conflicts' => $conflicts->values()->all(),
         ];
@@ -97,7 +101,6 @@ class CheckAvailabilityAction
         return [
             'available' => $free->isNotEmpty(),
             'start_at' => $start->format('Y-m-d H:i'),
-            'end_at' => $end->format('Y-m-d H:i'),
             'reason' => $free->isNotEmpty() ? null : __('chatbot.availability_no_staff'),
             'available_staff' => $free->all(),
             'conflicts' => [],
@@ -148,12 +151,11 @@ class CheckAvailabilityAction
     /**
      * @return array<string, mixed>
      */
-    private function unavailable(string $reason, ?Carbon $start = null, ?Carbon $end = null): array
+    private function unavailable(string $reason, ?Carbon $start = null): array
     {
         return [
             'available' => false,
             'start_at' => $start?->format('Y-m-d H:i'),
-            'end_at' => $end?->format('Y-m-d H:i'),
             'reason' => $reason,
             'conflicts' => [],
         ];

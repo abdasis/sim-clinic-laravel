@@ -14,6 +14,7 @@ use App\Actions\Chatbot\ListPatientBookingsAction;
 use App\Actions\Chatbot\RegisterPatientAction;
 use App\Actions\Chatbot\SearchServicesAction;
 use App\Actions\Chatbot\SearchStaffAction;
+use App\Models\ChatbotSetting;
 use App\Models\Patient;
 use App\Services\BookingOverlapService;
 use Illuminate\Support\Facades\Log;
@@ -155,10 +156,10 @@ class ChatTools
                     (string) ($arguments['start_at'] ?? ''),
                 ),
                 'list_my_bookings' => $patient === null
-                    ? ['error' => __('chatbot.booking_patient_unknown')]
+                    ? ['error' => self::unregistered()]
                     : app(ListPatientBookingsAction::class)->handle($patient),
                 'cancel_my_booking' => $patient === null
-                    ? ['error' => __('chatbot.booking_patient_unknown')]
+                    ? ['error' => self::unregistered()]
                     : app(CancelMyBookingAction::class)->handle($patient, (int) ($arguments['booking_id'] ?? 0)),
                 'create_booking' => self::book($arguments, $patient),
                 'register_patient' => self::register($arguments, $patient, $senderPhone),
@@ -176,13 +177,29 @@ class ChatTools
     }
 
     /**
+     * Alasan yang diberikan saat nomornya belum terdaftar.
+     *
+     * Klinik yang membuka pendaftaran lewat chat tidak boleh menyuruh
+     * pasiennya datang hanya untuk mendaftar — itu justru langkah yang
+     * dihapus oleh fitur pendaftaran mandiri. Sebelumnya pesannya satu untuk
+     * semua keadaan, jadi AI meneruskan "silakan daftar dulu di klinik"
+     * bahkan di klinik yang sudah menyalakannya.
+     */
+    private static function unregistered(): string
+    {
+        return ChatbotSetting::query()->first()?->allow_self_registration
+            ? __('chatbot.booking_patient_unregistered')
+            : __('chatbot.booking_patient_unknown');
+    }
+
+    /**
      * @param  array<string, mixed>  $arguments
      * @return array<string, mixed>
      */
     private static function book(array $arguments, ?Patient $patient): array
     {
         if ($patient === null) {
-            return ['error' => __('chatbot.booking_patient_unknown')];
+            return ['error' => self::unregistered()];
         }
 
         $result = app(CreateChatBookingAction::class)->handle(
