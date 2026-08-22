@@ -45,13 +45,7 @@ class MedicalRecordResource extends JsonResource
                 ])
                 : [],
             'photos' => $this->relationLoaded('medicalPhotos')
-                ? $this->medicalPhotos->map(fn ($photo) => [
-                    'id' => $photo->id,
-                    'type' => $photo->type,
-                    'type_label' => $photo->type?->label(),
-                    'path' => $photo->path,
-                    'url' => $photo->url,
-                ])
+                ? MedicalPhotoResource::collection($this->medicalPhotos)
                 : [],
             'created_at' => $this->created_at?->toIso8601String(),
         ];

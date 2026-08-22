@@ -1,3 +1,4 @@
+import type { PhotoRow } from "#/components/medical-photos/photo-types.ts"
 import type { TreatmentRow } from "../../../medical-records/components/medical-record-attachments.tsx"
 
 export interface TransactionItemRow {
@@ -18,6 +19,7 @@ export interface RecordRow {
   skincare_history?: string | null
   allergy_history?: string | null
   treatments?: TreatmentRow[]
+  photos?: PhotoRow[]
   transaction?: {
     id: number
     performers: { name: string }[]
