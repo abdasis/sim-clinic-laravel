@@ -231,6 +231,8 @@ Route::prefix('{tenant}/clinic')
         Route::delete('medical-records/{medicalRecord}', [MedicalRecordController::class, 'destroy']);
         Route::post('medical-records/{medicalRecord}/treatments', [MedicalRecordController::class, 'addTreatment']);
         Route::post('medical-records/{medicalRecord}/photos', [MedicalRecordController::class, 'addPhoto']);
+        Route::delete('medical-records/{medicalRecord}/photos/{medicalPhoto}', [MedicalRecordController::class, 'deletePhoto'])
+            ->scopeBindings();
 
         // Identitas klinik untuk brand sidebar — dibaca semua peran, jadi
         // diletakkan di luar prefix company-profile yang dijaga content.view.

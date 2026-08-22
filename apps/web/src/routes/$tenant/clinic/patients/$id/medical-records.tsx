@@ -18,6 +18,8 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { apiGet } from "#/lib/api.ts"
 import { formatCurrency, formatDate } from "#/lib/format.ts"
+import { PhotoPairPreview } from "#/components/medical-photos/photo-pair-preview.tsx"
+import type { PhotoRow } from "#/components/medical-photos/photo-types.ts"
 import type { TreatmentRow } from "../../medical-records/components/medical-record-attachments.tsx"
 
 export const Route = createFileRoute(
@@ -42,6 +44,7 @@ interface RecordRow {
   author_name?: string | null
   anamnesis?: string | null
   treatments?: TreatmentRow[]
+  photos?: PhotoRow[]
   transaction?: {
     id: number
     performers: { name: string }[]
@@ -311,6 +314,9 @@ function PatientMedicalRecordsPage() {
                   <TableHead className="w-[26%] text-[11px] font-medium tracking-wide uppercase">
                     {t("medical_record.obt_hcp")}
                   </TableHead>
+                  <TableHead className="w-24 text-[11px] font-medium tracking-wide uppercase">
+                    {t("medical_record.photos")}
+                  </TableHead>
                   <TableHead className="w-44 text-[11px] font-medium tracking-wide uppercase">
                     {t("medical_record.doctor")}
                   </TableHead>
@@ -357,6 +363,19 @@ function PatientMedicalRecordsPage() {
                       </TableCell>
                       <TableCell className="py-3 text-sm">
                         <StackedCell lines={productLines(record)} />
+                      </TableCell>
+                      {/* Sebelum/sesudah ikut terbaca dari riwayat: itu yang
+                          dicari pertama kali di klinik kecantikan, dan
+                          fotonya memang sudah ikut termuat bersama barisnya. */}
+                      <TableCell className="py-3 text-sm">
+                        <PhotoPairPreview
+                          photos={record.photos}
+                          labels={{
+                            before: t("clinic.medical_photo_type.before"),
+                            after: t("clinic.medical_photo_type.after"),
+                            none: DASH,
+                          }}
+                        />
                       </TableCell>
                       <TableCell className="py-3 text-sm">
                         {record.author_name || performers || (

@@ -1,10 +1,15 @@
-import { Badge } from "#/components/ui/badge.tsx"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "#/components/ui/card.tsx"
+import { BeforeAfterGallery } from "#/components/medical-photos/before-after-gallery.tsx"
+import type {
+  MedicalPhotoType,
+  PhotoRow,
+} from "#/components/medical-photos/photo-types.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 
 export interface TreatmentRow {
@@ -13,17 +18,16 @@ export interface TreatmentRow {
   notes?: string | null
 }
 
-export interface PhotoRow {
-  id: number
-  type: string
-  type_label?: string | null
-  url?: string | null
-  path?: string | null
-}
+export type { PhotoRow }
 
 interface MedicalRecordAttachmentsProps {
   treatments?: TreatmentRow[]
   photos?: PhotoRow[]
+  /** Diisi hanya bila pembacanya juga boleh mengubah rekam medis ini. */
+  onPickPhotos?: (files: FileList, type: MedicalPhotoType) => void
+  onDeletePhoto?: (photo: PhotoRow) => void
+  uploading?: boolean
+  deletingPhotoId?: number | null
 }
 
 /**
@@ -33,6 +37,10 @@ interface MedicalRecordAttachmentsProps {
 export function MedicalRecordAttachments({
   treatments,
   photos,
+  onPickPhotos,
+  onDeletePhoto,
+  uploading = false,
+  deletingPhotoId = null,
 }: MedicalRecordAttachmentsProps) {
   const { t } = useTrans()
 
@@ -72,33 +80,18 @@ export function MedicalRecordAttachments({
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {t("medical_record.photos")}
+            {t("medical_record.photos_before_after")}
           </CardTitle>
+          <CardDescription>{t("medical_record.photo_rules")}</CardDescription>
         </CardHeader>
         <CardContent>
-          {photos?.length ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {photos.map((photo) => (
-                <figure key={photo.id} className="space-y-1.5">
-                  <img
-                    src={photo.url ?? photo.path ?? ""}
-                    alt={photo.type_label ?? photo.type}
-                    loading="lazy"
-                    className="h-28 w-full rounded-md border border-border/50 object-cover transition-opacity hover:opacity-90"
-                  />
-                  <figcaption>
-                    <Badge variant="secondary">
-                      {photo.type_label ?? photo.type}
-                    </Badge>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {t("medical_record.no_photos")}
-            </p>
-          )}
+          <BeforeAfterGallery
+            photos={photos}
+            onPick={onPickPhotos}
+            onDelete={onDeletePhoto}
+            uploading={uploading}
+            deletingId={deletingPhotoId}
+          />
         </CardContent>
       </Card>
     </>

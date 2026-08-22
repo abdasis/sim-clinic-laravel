@@ -348,7 +348,9 @@ function NewMedicalRecordPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">{t("medical_record.photos")}</CardTitle>
+              <CardTitle className="text-base">
+                {t("medical_record.photos_before_after")}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <PhotoUploader onChange={handlePhotos} />

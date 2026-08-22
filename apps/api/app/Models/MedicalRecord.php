@@ -54,8 +54,15 @@ class MedicalRecord extends Model
         return $this->hasMany(TreatmentRecord::class);
     }
 
+    /**
+     * Foto klinis, diurut dari yang paling dulu diunggah.
+     *
+     * Urutannya dipatok di sini, bukan diserahkan ke database: tampilan
+     * sebelum/sesudah memasangkan foto ke-n sisi kiri dengan ke-n sisi
+     * kanan, jadi urutan yang berubah-ubah akan memasangkan foto yang salah.
+     */
     public function medicalPhotos(): HasMany
     {
-        return $this->hasMany(MedicalPhoto::class);
+        return $this->hasMany(MedicalPhoto::class)->orderBy('id');
     }
 }

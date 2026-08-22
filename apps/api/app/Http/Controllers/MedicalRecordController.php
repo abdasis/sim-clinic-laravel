@@ -7,7 +7,9 @@ use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\MedicalPhotoRequest;
 use App\Http\Requests\MedicalRecordRequest;
 use App\Http\Requests\TreatmentRecordRequest;
+use App\Http\Resources\MedicalPhotoResource;
 use App\Http\Resources\MedicalRecordResource;
+use App\Models\MedicalPhoto;
 use App\Models\MedicalRecord;
 use App\Models\Patient;
 use App\Services\MedicalRecordService;
@@ -54,14 +56,30 @@ class MedicalRecordController extends Controller
         );
 
         return response()->json([
-            'data' => [
-                'id' => $photo->id,
-                'type' => $photo->type,
-                'path' => $photo->path,
-                'url' => $photo->url,
-            ],
+            'data' => new MedicalPhotoResource($photo),
             'meta' => ['message' => __('medical_record.photo_added')],
         ], 201);
+    }
+
+    /**
+     * Buang satu foto klinis dari rekam medis.
+     *
+     * Fotonya diikat ke rekam medis lewat scoped binding di rute, jadi id
+     * milik catatan lain berhenti sebagai 404 sebelum sampai ke sini.
+     */
+    public function deletePhoto(
+        MedicalRecord $medicalRecord,
+        MedicalPhoto $medicalPhoto,
+        MedicalRecordService $service,
+    ): JsonResponse {
+        $this->authorize('update', $medicalRecord);
+
+        $service->deletePhoto($medicalPhoto);
+
+        return response()->json([
+            'data' => new MedicalPhotoResource($medicalPhoto),
+            'meta' => ['message' => __('medical_record.photo_deleted')],
+        ]);
     }
 
     /**

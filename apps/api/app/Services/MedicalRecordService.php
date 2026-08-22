@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Actions\MedicalRecord\AddTreatmentRecordAction;
 use App\Actions\MedicalRecord\CreateMedicalRecordAction;
+use App\Actions\MedicalRecord\DeleteMedicalPhotoAction;
 use App\Actions\MedicalRecord\SoftDeleteMedicalRecordAction;
 use App\Actions\MedicalRecord\UpdateMedicalRecordAction;
 use App\Actions\MedicalRecord\UploadMedicalPhotoAction;
@@ -98,5 +99,10 @@ class MedicalRecordService
     public function addPhoto(MedicalRecord $record, UploadedFile $file, MedicalPhotoType $type): MedicalPhoto
     {
         return app(UploadMedicalPhotoAction::class)->handle($record, $file, $type);
+    }
+
+    public function deletePhoto(MedicalPhoto $photo): MedicalPhoto
+    {
+        return app(DeleteMedicalPhotoAction::class)->handle($photo);
     }
 }

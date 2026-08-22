@@ -38,11 +38,13 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete, apiGet } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 import { formatDateTime } from "#/lib/format.ts"
+import { PhotoDeleteDialog } from "#/components/medical-photos/photo-delete-dialog.tsx"
+import type { PhotoRow } from "#/components/medical-photos/photo-types.ts"
 import {
   MedicalRecordAttachments,
-  type PhotoRow,
   type TreatmentRow,
 } from "./components/medical-record-attachments.tsx"
+import { useRecordPhotos } from "./components/use-record-photos.ts"
 import { MedicalRecordForm } from "./components/medical-record-form.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/medical-records/$recordId")({
@@ -96,6 +98,7 @@ function MedicalRecordDetailPage() {
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const photos = useRecordPhotos(tenant, recordId)
 
   const { data, isLoading } = useQuery({
     queryKey: ["medical-record", tenant, recordId],
@@ -236,9 +239,22 @@ function MedicalRecordDetailPage() {
           <MedicalRecordAttachments
             treatments={record.treatments}
             photos={record.photos}
+            onPickPhotos={photos.pick}
+            onDeletePhoto={photos.setPendingDelete}
+            uploading={photos.uploading}
+            deletingPhotoId={
+              photos.deleting ? (photos.pendingDelete?.id ?? null) : null
+            }
           />
         </div>
       )}
+
+      <PhotoDeleteDialog
+        photo={photos.pendingDelete}
+        pending={photos.deleting}
+        onCancel={() => photos.setPendingDelete(null)}
+        onConfirm={photos.confirmDelete}
+      />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

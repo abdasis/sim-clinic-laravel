@@ -1,175 +1,207 @@
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import { XIcon } from "lucide-react"
-import { Input } from "#/components/ui/input.tsx"
-import { Label } from "#/components/ui/label.tsx"
+import { ImagePlus, XIcon } from "lucide-react"
+
 import { Button } from "#/components/ui/button.tsx"
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "#/components/ui/native-select.tsx"
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { apiUpload } from "#/lib/api.ts"
-
-const MAX_BYTES = 2 * 1024 * 1024
-const ACCEPTED = ["image/jpeg", "image/png"]
+import { PhotoFileInput } from "./photo-slot.tsx"
+import { photoRejection, type MedicalPhotoType } from "./photo-types.ts"
 
 export interface SelectedPhoto {
   id: string
   file: File
-  type: "before" | "after"
+  type: MedicalPhotoType
   url: string
 }
 
-interface PhotoUploaderProps {
-  /** Dipanggil setiap daftar foto berubah (mode tunda-unggah). */
-  onChange?: (photos: SelectedPhoto[]) => void
-  /** Bila diisi bersama recordId, tombol unggah langsung ditampilkan. */
-  tenant?: string
-  recordId?: number
-  onUploaded?: () => void
+interface UploaderColumnProps {
+  label: string
+  addLabel: string
+  removeLabel: string
+  photos: SelectedPhoto[]
+  onAdd: () => void
+  onRemove: (id: string) => void
 }
 
-let seq = 0
+function UploaderColumn({
+  label,
+  addLabel,
+  removeLabel,
+  photos,
+  onAdd,
+  onRemove,
+}: UploaderColumnProps) {
+  return (
+    <div className="min-w-0 space-y-2">
+      <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-1.5">
+        <span className="truncate text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+          {label}
+          <span className="ml-1.5 text-muted-foreground/60 tabular-nums">
+            {photos.length}
+          </span>
+        </span>
+      </div>
 
+      <div className="space-y-2">
+        {photos.map((photo) => (
+          <figure key={photo.id} className="group relative">
+            <img
+              src={photo.url}
+              alt={photo.file.name}
+              className="aspect-4/3 w-full rounded-md border border-border/60 object-cover"
+            />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon-xs"
+                  variant="destructive"
+                  aria-label={removeLabel}
+                  className="absolute top-1.5 right-1.5 opacity-0 shadow-sm transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
+                  onClick={() => onRemove(photo.id)}
+                >
+                  <XIcon />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{removeLabel}</TooltipContent>
+            </Tooltip>
+            <figcaption className="mt-1 truncate text-xs text-muted-foreground/70">
+              {photo.file.name}
+            </figcaption>
+          </figure>
+        ))}
+
+        <button
+          type="button"
+          onClick={onAdd}
+          className="flex aspect-4/3 w-full flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border/70 bg-muted/20 text-muted-foreground/70 transition-colors outline-none hover:border-border hover:bg-muted/40 hover:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          <ImagePlus className="size-4" />
+          <span className="px-2 text-center text-xs">{addLabel}</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Pemilih foto sebelum/sesudah untuk rekam medis yang belum tersimpan.
+ *
+ * Berkasnya ditahan di sisi web sampai rekam medisnya punya id — foto tidak
+ * bisa dititipkan ke catatan yang belum ada. Jenis fotonya ditentukan kolom
+ * tempat berkasnya dimasukkan, bukan pilihan terpisah sesudahnya: bentuk
+ * lama memberi semua berkas jenis "sebelum" lebih dulu, dan satu kolom yang
+ * lupa diubah menghasilkan riwayat yang salah baca tanpa gejala apa pun.
+ */
 export function PhotoUploader({
   onChange,
-  tenant,
-  recordId,
-  onUploaded,
-}: PhotoUploaderProps) {
+}: {
+  onChange?: (photos: SelectedPhoto[]) => void
+}) {
   const { t } = useTrans()
   const [photos, setPhotos] = useState<SelectedPhoto[]>([])
-  const [uploading, setUploading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const pendingType = useRef<MedicalPhotoType>("before")
+  const seq = useRef(0)
 
   useEffect(() => {
     onChange?.(photos)
   }, [photos, onChange])
 
-  const addFiles = useCallback(
-    (files: FileList | null) => {
-      if (!files) return
-      const next: SelectedPhoto[] = []
-      for (const file of Array.from(files)) {
-        if (!ACCEPTED.includes(file.type)) {
-          toast.error(t("general.error"))
-          continue
-        }
-        if (file.size > MAX_BYTES) {
-          toast.error(t("general.error"))
-          continue
-        }
-        seq += 1
-        next.push({
-          id: `photo-${seq}`,
-          file,
-          type: "before",
-          url: URL.createObjectURL(file),
-        })
-      }
-      if (next.length) setPhotos((prev) => [...prev, ...next])
+  // Object URL yang tidak dibebaskan menahan berkasnya di memori selama tab
+  // masih hidup; halaman ini kerap ditinggalkan tanpa disimpan.
+  const live = useRef<SelectedPhoto[]>([])
+  live.current = photos
+  useEffect(
+    () => () => {
+      live.current.forEach((photo) => URL.revokeObjectURL(photo.url))
     },
-    [t],
+    [],
   )
 
-  function setType(id: string, type: "before" | "after") {
-    setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, type } : p)))
+  function addFiles(files: FileList, type: MedicalPhotoType) {
+    const next: SelectedPhoto[] = []
+
+    for (const file of Array.from(files)) {
+      const rejection = photoRejection(file)
+
+      if (rejection === "type") {
+        toast.error(t("medical_record.photo_invalid_type"))
+        continue
+      }
+      if (rejection === "size") {
+        toast.error(
+          t("medical_record.photo_too_large").replace(":name", file.name),
+        )
+        continue
+      }
+
+      seq.current += 1
+      next.push({
+        id: `photo-${seq.current}`,
+        file,
+        type,
+        url: URL.createObjectURL(file),
+      })
+    }
+
+    if (next.length) setPhotos((prev) => [...prev, ...next])
   }
 
   function remove(id: string) {
     setPhotos((prev) => {
-      const found = prev.find((p) => p.id === id)
+      const found = prev.find((photo) => photo.id === id)
       if (found) URL.revokeObjectURL(found.url)
-      return prev.filter((p) => p.id !== id)
+
+      return prev.filter((photo) => photo.id !== id)
     })
   }
 
-  async function uploadNow() {
-    if (!tenant || !recordId) return
-    setUploading(true)
-    try {
-      for (const photo of photos) {
-        const form = new FormData()
-        form.append("file", photo.file)
-        form.append("type", photo.type)
-        await apiUpload(`/${tenant}/clinic/medical-records/${recordId}/photos`, form)
-      }
-      toast.success(t("medical_record.photo_added"))
-      setPhotos([])
-      onUploaded?.()
-    } catch {
-      toast.error(t("general.error"))
-    } finally {
-      setUploading(false)
-    }
+  const labels: Record<MedicalPhotoType, string> = {
+    before: t("clinic.medical_photo_type.before"),
+    after: t("clinic.medical_photo_type.after"),
+  }
+
+  const addLabels: Record<MedicalPhotoType, string> = {
+    before: t("medical_record.photo_add_before"),
+    after: t("medical_record.photo_add_after"),
   }
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-1.5">
-        <Label>{t("medical_record.photos")}</Label>
-        <Input
-          type="file"
-          accept="image/jpeg,image/png"
-          multiple
-          onChange={(e) => {
-            addFiles(e.target.files)
-            e.target.value = ""
-          }}
-        />
-        <p className="text-xs text-muted-foreground">JPG / PNG, max 2MB</p>
-      </div>
-
-      {photos.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {photos.map((photo) => (
-            <div key={photo.id} className="space-y-2 rounded-md border p-2">
-              <div className="relative">
-                <img
-                  src={photo.url}
-                  alt={photo.file.name}
-                  className="h-28 w-full rounded object-cover"
-                />
-                <Button
-                  type="button"
-                  size="icon-xs"
-                  variant="destructive"
-                  className="absolute top-1 right-1"
-                  aria-label={t("general.delete")}
-                  onClick={() => remove(photo.id)}
-                >
-                  <XIcon />
-                </Button>
-              </div>
-              <NativeSelect
-                size="sm"
-                className="w-full"
-                value={photo.type}
-                aria-label={t("medical_record.photo_type")}
-                onChange={(e) => setType(photo.id, e.target.value as "before" | "after")}
-              >
-                <NativeSelectOption value="before">
-                  {t("clinic.medical_photo_type.before")}
-                </NativeSelectOption>
-                <NativeSelectOption value="after">
-                  {t("clinic.medical_photo_type.after")}
-                </NativeSelectOption>
-              </NativeSelect>
-            </div>
+    <TooltipProvider>
+      <div className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+          {(["before", "after"] as const).map((type) => (
+            <UploaderColumn
+              key={type}
+              label={labels[type]}
+              addLabel={addLabels[type]}
+              removeLabel={t("general.remove")}
+              photos={photos.filter((photo) => photo.type === type)}
+              onAdd={() => {
+                pendingType.current = type
+                inputRef.current?.click()
+              }}
+              onRemove={remove}
+            />
           ))}
         </div>
-      ) : null}
 
-      {tenant && recordId ? (
-        <Button
-          type="button"
-          variant="outline"
-          disabled={uploading || photos.length === 0}
-          onClick={uploadNow}
-        >
-          {t("general.save")}
-        </Button>
-      ) : null}
-    </div>
+        <p className="text-xs text-muted-foreground/70">
+          {t("medical_record.photo_rules")} {t("medical_record.photos_hint")}
+        </p>
+      </div>
+
+      <PhotoFileInput
+        inputRef={inputRef}
+        onFiles={(files) => addFiles(files, pendingType.current)}
+      />
+    </TooltipProvider>
   )
 }
