@@ -48,11 +48,10 @@ class ProductController extends Controller
             $query->where('type', $type);
         }
 
-        if ($params['sort']) {
-            $query->orderBy($params['sort'], $params['direction']);
-        } else {
-            $query->latest();
-        }
+        // Abjad sebagai bawaan, bukan yang terbaru: katalog dibaca untuk
+        // mencari satu nama tertentu - di kasir maupun di layar master - dan
+        // urutan waktu pembuatan tidak menolong pencarian itu sama sekali.
+        $this->applyCatalogSort($query, $params);
 
         $page = $query->paginate($params['per_page'], ['*'], 'page', $params['page']);
 

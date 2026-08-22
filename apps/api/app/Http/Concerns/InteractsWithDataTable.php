@@ -2,6 +2,7 @@
 
 namespace App\Http\Concerns;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 /**
@@ -44,5 +45,33 @@ trait InteractsWithDataTable
             'search' => $request->filled('search') ? (string) $request->string('search') : null,
             'filters' => $filters,
         ];
+    }
+
+    /**
+     * Terapkan urutan katalog: kolom pilihan pengguna, atau nama bila belum
+     * memilih.
+     *
+     * Nama selalu diurut dari huruf kecilnya. Urutan biner bawaan basis data
+     * membelah daftar jadi dua kelompok menurut besar-kecil huruf — "peeling"
+     * jatuh setelah "Totok Wajah" — sehingga katalog yang seharusnya rapi
+     * justru terbaca acak, baik pada urutan bawaan maupun saat penggunanya
+     * menekan kepala kolom Nama.
+     *
+     * Arahnya sudah dinormalkan dataTableParams() jadi persis 'asc' atau
+     * 'desc', jadi aman disisipkan ke ekspresi mentahnya.
+     *
+     * @param  array{sort: ?string, direction: 'asc'|'desc', ...}  $params
+     */
+    protected function applyCatalogSort(Builder $query, array $params): void
+    {
+        $sort = $params['sort'] ?? 'name';
+
+        if ($sort === 'name') {
+            $query->orderByRaw('LOWER(name) '.$params['direction']);
+
+            return;
+        }
+
+        $query->orderBy($sort, $params['direction']);
     }
 }
