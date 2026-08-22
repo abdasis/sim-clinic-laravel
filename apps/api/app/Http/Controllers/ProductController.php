@@ -30,7 +30,12 @@ class ProductController extends Controller
         $query = Product::query()->with(['categories', 'unit']);
 
         if ($params['search']) {
-            $query->where('name', 'like', '%'.$params['search'].'%');
+            // whereLike, bukan where(..., 'like', ...): PostgreSQL — yang
+            // dipakai produksi — memperlakukan LIKE sebagai peka besar-kecil
+            // huruf, jadi "facial" tidak pernah menemukan "Facial Glow".
+            // Bentuk ini menurunkan ILIKE di PostgreSQL dan tetap LIKE di
+            // SQLite/MySQL yang memang sudah abai besar-kecil huruf.
+            $query->whereLike('name', '%'.$params['search'].'%');
         }
         // Master produk default hanya menampilkan yang aktif; arsip diminta eksplisit.
         $status = $params['filters']['status'] ?? ServiceStatus::Active->value;
