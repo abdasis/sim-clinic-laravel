@@ -5,7 +5,9 @@ namespace App\Jobs;
 use App\Actions\LogAuditAction;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Models\BookingReminderSetting;
 use App\Models\Tenant;
+use App\Support\BookingMessage;
 use App\Support\ClinicIdentity;
 use App\Support\PhoneNumber;
 use App\Support\WahaClient;
@@ -38,7 +40,7 @@ class SendBookingConfirmationJob implements ShouldQueue
     /** @var array<int, int> detik tunggu antar percobaan */
     public array $backoff = [60, 300];
 
-    private const TEMPLATE = "Halo :pasien, jadwal Anda di *:klinik* sudah kami *konfirmasi*. 🎉\n\n"
+    private const DEFAULT_TEMPLATE = "Halo :pasien, jadwal Anda di *:klinik* sudah kami *konfirmasi*. 🎉\n\n"
         ."*:layanan*\n:tanggal pukul :jam\nBersama :staf\n\n"
         .'Sampai jumpa ya. Kalau ada perubahan, balas chat ini saja.';
 
@@ -115,18 +117,14 @@ class SendBookingConfirmationJob implements ShouldQueue
     }
 
     /**
-     * Jam selesai sengaja tidak disebut: yang ditunggu pasien adalah jam
-     * kedatangannya, dan durasi treatment urusan sistem klinik.
+     * Teks racikan klinik menang atas teks bawaan; yang belum memilih tetap
+     * dapat kalimat yang layak, bukan pesan kosong.
      */
     private function compose(Booking $booking, string $clinicName): string
     {
-        return strtr(self::TEMPLATE, [
-            ':pasien' => $booking->patient?->name ?? 'Bapak/Ibu',
-            ':klinik' => $clinicName,
-            ':layanan' => $booking->service?->name ?? 'perawatan',
-            ':staf' => $booking->assignee?->name ?? 'tim kami',
-            ':tanggal' => $booking->start_at?->translatedFormat('l, d F Y') ?? '-',
-            ':jam' => $booking->start_at?->format('H:i') ?? '-',
-        ]);
+        $template = BookingReminderSetting::query()->first()?->confirmationTemplate?->body
+            ?? self::DEFAULT_TEMPLATE;
+
+        return BookingMessage::render($template, $booking, $clinicName);
     }
 }

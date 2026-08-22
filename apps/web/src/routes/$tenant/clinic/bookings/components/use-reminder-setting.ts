@@ -6,6 +6,7 @@ export interface ReminderSetting {
   is_active: boolean
   offset_minutes: number
   message_template_id: number | null
+  confirmation_template_id: number | null
 }
 
 export const reminderSettingKey = (tenant: string) =>

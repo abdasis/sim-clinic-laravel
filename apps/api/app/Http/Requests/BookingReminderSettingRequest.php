@@ -23,6 +23,7 @@ class BookingReminderSettingRequest extends FormRequest
             // terlupakan lagi sebelum harinya tiba.
             'offset_minutes' => ['required', 'integer', 'min:1', 'max:10080'],
             'message_template_id' => ['nullable', TenantRule::exists('message_templates')],
+            'confirmation_template_id' => ['nullable', TenantRule::exists('message_templates')],
         ];
     }
 
@@ -35,6 +36,7 @@ class BookingReminderSettingRequest extends FormRequest
             'is_active' => __('booking.reminder_active'),
             'offset_minutes' => __('booking.reminder_offset'),
             'message_template_id' => __('booking.reminder_template'),
+            'confirmation_template_id' => __('booking.confirmation_template'),
         ];
     }
 }

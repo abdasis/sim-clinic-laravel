@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\BookingReminder;
 use App\Models\BookingReminderSetting;
 use App\Models\Tenant;
+use App\Support\BookingMessage;
 use App\Support\ClinicIdentity;
 use App\Support\PhoneNumber;
 use App\Support\WahaClient;
@@ -123,14 +124,7 @@ class SendBookingReminderJob implements ShouldQueue
         $template = BookingReminderSetting::query()->first()?->template?->body
             ?? self::DEFAULT_TEMPLATE;
 
-        return strtr($template, [
-            ':pasien' => $booking->patient?->name ?? 'Bapak/Ibu',
-            ':klinik' => $clinicName,
-            ':layanan' => $booking->service?->name ?? 'perawatan',
-            ':staf' => $booking->assignee?->name ?? 'tim kami',
-            ':tanggal' => $booking->start_at?->translatedFormat('l, d F Y') ?? '-',
-            ':jam' => $booking->start_at?->format('H:i') ?? '-',
-        ]);
+        return BookingMessage::render($template, $booking, $clinicName);
     }
 
     private function send(BookingReminder $reminder, string $phone, string $message): void

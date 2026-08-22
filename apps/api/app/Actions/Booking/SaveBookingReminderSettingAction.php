@@ -18,7 +18,8 @@ class SaveBookingReminderSettingAction
     public function handle(array $attributes): BookingReminderSetting
     {
         $setting = BookingReminderSetting::query()->first();
-        $before = $setting?->only(['is_active', 'offset_minutes', 'message_template_id']);
+        $tracked = ['is_active', 'offset_minutes', 'message_template_id', 'confirmation_template_id'];
+        $before = $setting?->only($tracked);
 
         if ($setting === null) {
             $setting = BookingReminderSetting::create($attributes);
@@ -33,7 +34,7 @@ class SaveBookingReminderSettingAction
             subject: $setting,
             context: $before === null
                 ? ['attributes' => $setting->getAttributes()]
-                : ['old' => $before, 'new' => $setting->only(['is_active', 'offset_minutes', 'message_template_id'])],
+                : ['old' => $before, 'new' => $setting->only($tracked)],
             description: $setting->is_active
                 ? 'Menyalakan pengingat booking, dikirim '.$setting->offset_minutes.' menit sebelum jadwal.'
                 : 'Mematikan pengingat booking.',

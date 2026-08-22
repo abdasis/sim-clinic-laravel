@@ -21,6 +21,8 @@ class BookingReminderSettingResource extends JsonResource
             'offset_minutes' => (int) $this->offset_minutes,
             'message_template_id' => $this->message_template_id,
             'template_name' => $this->template?->name,
+            'confirmation_template_id' => $this->confirmation_template_id,
+            'confirmation_template_name' => $this->confirmationTemplate?->name,
         ];
     }
 }

@@ -16,6 +16,7 @@ import { FormInput } from "#/components/forms/form-input.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSwitch } from "#/components/forms/form-switch.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
+import { Separator } from "#/components/ui/separator.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPut } from "#/lib/api.ts"
@@ -33,6 +34,7 @@ const schema = z.object({
   is_active: z.boolean(),
   offset_minutes: z.coerce.number().int().min(1).max(10080),
   message_template_id: z.string(),
+  confirmation_template_id: z.string(),
 })
 
 type Values = z.infer<typeof schema>
@@ -67,7 +69,12 @@ export function ReminderSettingsDialog({
   })
 
   const form = useForm(schema, {
-    defaultValues: { is_active: false, offset_minutes: 60, message_template_id: "" },
+    defaultValues: {
+      is_active: false,
+      offset_minutes: 60,
+      message_template_id: "",
+      confirmation_template_id: "",
+    },
   })
 
   const current = setting.data?.data
@@ -82,11 +89,20 @@ export function ReminderSettingsDialog({
         current.message_template_id !== null
           ? String(current.message_template_id)
           : "",
+      confirmation_template_id:
+        current.confirmation_template_id !== null
+          ? String(current.confirmation_template_id)
+          : "",
     })
   }, [open, current, form])
 
   const isActive = form.watch("is_active")
   const offset = Number(form.watch("offset_minutes"))
+
+  const templateOptions = (templates.data?.data ?? []).map((row) => ({
+    label: row.name,
+    value: String(row.id),
+  }))
 
   const mutation = useMutation({
     mutationFn: (values: Values) =>
@@ -95,6 +111,9 @@ export function ReminderSettingsDialog({
         offset_minutes: values.offset_minutes,
         message_template_id: values.message_template_id
           ? Number(values.message_template_id)
+          : null,
+        confirmation_template_id: values.confirmation_template_id
+          ? Number(values.confirmation_template_id)
           : null,
       }),
     onSuccess: () => {
@@ -112,9 +131,9 @@ export function ReminderSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("booking.reminder_settings")}</DialogTitle>
+          <DialogTitle>{t("booking.message_settings")}</DialogTitle>
           <DialogDescription>
-            {t("booking.reminder_settings_desc")}
+            {t("booking.message_settings_desc")}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -122,6 +141,10 @@ export function ReminderSettingsDialog({
             onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
             className="space-y-4"
           >
+            <p className="text-sm font-medium">
+              {t("booking.reminder_section")}
+            </p>
+
             <FormSwitch
               control={form.control}
               name="is_active"
@@ -183,11 +206,29 @@ export function ReminderSettingsDialog({
               placeholder={t("booking.reminder_template_default")}
               description={t("booking.reminder_template_hint")}
               disabled={!isActive}
-              options={(templates.data?.data ?? []).map((row) => ({
-                label: row.name,
-                value: String(row.id),
-              }))}
+              options={templateOptions}
             />
+
+            <Separator />
+
+            {/*
+              Sengaja di luar saklar pengingat: konfirmasi berangkat begitu
+              staf menekan tombolnya, dan tidak ikut mati saat pengingat
+              dimatikan.
+            */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">
+                {t("booking.confirmation_section")}
+              </p>
+              <FormSelect
+                control={form.control}
+                name="confirmation_template_id"
+                label={t("booking.confirmation_template")}
+                placeholder={t("booking.reminder_template_default")}
+                description={t("booking.confirmation_template_hint")}
+                options={templateOptions}
+              />
+            </div>
 
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>

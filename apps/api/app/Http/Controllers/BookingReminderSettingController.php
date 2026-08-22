@@ -18,7 +18,7 @@ class BookingReminderSettingController extends Controller
     {
         $this->authorize('viewAny', Booking::class);
 
-        $setting = BookingReminderSetting::query()->with('template:id,name')->first();
+        $setting = BookingReminderSetting::query()->with('template:id,name', 'confirmationTemplate:id,name')->first();
 
         return response()->json([
             // Belum diatur bukan keadaan galat: formulirnya butuh bentuk yang
@@ -30,6 +30,8 @@ class BookingReminderSettingController extends Controller
                     'offset_minutes' => 60,
                     'message_template_id' => null,
                     'template_name' => null,
+                    'confirmation_template_id' => null,
+                    'confirmation_template_name' => null,
                 ],
             'meta' => [],
         ]);
