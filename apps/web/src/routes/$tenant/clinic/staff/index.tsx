@@ -4,7 +4,9 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { UserGroupIcon } from "@hugeicons/core-free-icons"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
+import { AccessDenied } from "#/components/ui/access-denied.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
+import { StatusBadge } from "#/components/ui/status-badge.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useStats } from "#/hooks/use-stats.ts"
@@ -14,6 +16,13 @@ import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { StaffFormModal } from "./components/staff-form-modal.tsx"
 import { StaffActionsCell } from "./components/staff-actions-cell.tsx"
+
+/** Staf nonaktif tidak boleh terbaca seperti staf aktif dalam satu tabel. */
+const STAFF_STATUS_VARIANTS = {
+  active: "default",
+  inactive: "secondary",
+  suspended: "destructive",
+} as const
 
 export const Route = createFileRoute("/$tenant/clinic/staff/")({
   component: StaffPage,
@@ -51,7 +60,19 @@ function StaffPage() {
         header: t("staff.clinic_role"),
         cell: ({ row }) => <Badge>{row.original.clinic_role_label}</Badge>,
       },
-      { accessorKey: "status", header: t("staff.status") },
+      {
+        accessorKey: "status",
+        header: t("staff.status"),
+        // Kolomnya dulu mencetak nilai mentah dari API, jadi tabel berbahasa
+        // Indonesia menampilkan "active" di antara label yang sudah terjemah.
+        cell: ({ row }) => (
+          <StatusBadge
+            status={row.original.status}
+            label={row.original.status_label}
+            variantMap={STAFF_STATUS_VARIANTS}
+          />
+        ),
+      },
       {
         id: "actions",
         header: "",
@@ -79,9 +100,7 @@ function StaffPage() {
 
   // ponytail: guard role setelah mount — useAuthUser null saat SSR & first client render, update setelah mount (mencegah hydration mismatch dari localStorage).
   if (authUser?.clinic_role !== "admin") {
-    return (
-      <div className="text-sm text-muted-foreground">{t("clinic.forbidden")}</div>
-    )
+    return <AccessDenied illustration="staff" description={t("staff.forbidden_desc")} />
   }
 
   return (

@@ -17,6 +17,9 @@ class StaffResource extends JsonResource
             'clinic_role' => $this->clinic_role,
             'clinic_role_label' => $this->clinic_role?->label(),
             'status' => $this->status,
+            // Tanpa label ini tabel berbahasa Indonesia mencetak nilai
+            // mentah enum-nya, mis. "active" di antara kolom terjemah.
+            'status_label' => $this->status?->label(),
             // Staf yang sudah mencatat data tidak boleh dihapus permanen;
             // penilaiannya di server supaya tombolnya tidak menjanjikan
             // sesuatu yang nanti ditolak.

@@ -1,5 +1,3 @@
-import { HugeiconsIcon } from "@hugeicons/react"
-import type { IconSvgElement } from "@hugeicons/react"
 import {
   ChartUpIcon,
   Coins01Icon,
@@ -11,86 +9,7 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { formatCurrency } from "#/lib/format.ts"
 import { cn } from "#/lib/utils.ts"
 import type { MonthlyData } from "./monthly-types.ts"
-
-/**
- * Satu kartu angka pembuka.
- *
- * Warnanya duduk di batang tepi kiri dan di lencana ikon, bukan di teksnya —
- * angka tetap memakai warna teks biasa supaya terbaca di terang maupun gelap.
- */
-function StatCard({
-  icon,
-  label,
-  value,
-  hint,
-  accent,
-  emphasis = false,
-}: {
-  icon: IconSvgElement
-  label: string
-  value: string
-  hint: string
-  accent: string
-  emphasis?: boolean
-}) {
-  return (
-    <div
-      className={cn(
-        "group relative overflow-hidden rounded-lg border p-4 transition-colors duration-150",
-        emphasis
-          ? "border-primary/60 bg-primary text-primary-foreground"
-          : "border-border/60 bg-card hover:border-border",
-      )}
-    >
-      <span
-        aria-hidden
-        className={cn(
-          "absolute inset-y-0 left-0 w-[3px]",
-          emphasis ? "bg-primary-foreground/50" : accent,
-        )}
-      />
-
-      <div className="flex items-center gap-2 pl-1.5">
-        <span
-          aria-hidden
-          className={cn(
-            "flex size-6 shrink-0 items-center justify-center rounded-md",
-            emphasis ? "bg-primary-foreground/15" : "bg-muted",
-          )}
-        >
-          <HugeiconsIcon
-            icon={icon}
-            strokeWidth={2}
-            className={cn(
-              "size-3.5",
-              emphasis ? "text-primary-foreground" : "text-muted-foreground",
-            )}
-          />
-        </span>
-        <p
-          className={cn(
-            "text-2xs font-semibold tracking-wider uppercase",
-            emphasis ? "text-primary-foreground/80" : "text-muted-foreground",
-          )}
-        >
-          {label}
-        </p>
-      </div>
-
-      <p className="mt-2 pl-1.5 text-2xl leading-tight font-semibold tabular-nums">
-        {value}
-      </p>
-      <p
-        className={cn(
-          "mt-0.5 pl-1.5 text-xs",
-          emphasis ? "text-primary-foreground/70" : "text-muted-foreground",
-        )}
-      >
-        {hint}
-      </p>
-    </div>
-  )
-}
+import { ReportStatCard } from "./report-stat-card.tsx"
 
 /**
  * Komposisi pendapatan: satu batang bertumpuk treatment vs produk.
@@ -158,21 +77,21 @@ export function MonthlySummary({ report }: { report: MonthlyData }) {
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
+        <ReportStatCard
           icon={Coins01Icon}
           accent="bg-primary"
           label={t("report.income")}
           value={formatCurrency(totals.revenue)}
           hint={`${t("report.treatment_short")} ${formatCurrency(totals.treatment)} · ${t("report.product_short")} ${formatCurrency(totals.product)}`}
         />
-        <StatCard
+        <ReportStatCard
           icon={Wallet01Icon}
           accent="bg-chart-cat-2"
           label={t("report.expense")}
           value={formatCurrency(report.expenses.total)}
           hint={`${report.expenses.by_category.length} ${t("report.expense_categories")}`}
         />
-        <StatCard
+        <ReportStatCard
           emphasis
           icon={ChartUpIcon}
           accent="bg-primary"
@@ -180,7 +99,7 @@ export function MonthlySummary({ report }: { report: MonthlyData }) {
           value={formatCurrency(report.net_profit)}
           hint={t("report.net_profit_formula")}
         />
-        <StatCard
+        <ReportStatCard
           icon={UserGroupIcon}
           accent="bg-chart-cat-1"
           label={t("report.visits")}

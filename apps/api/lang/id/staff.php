@@ -18,6 +18,7 @@ return [
     'created' => 'Staf berhasil ditambahkan.',
     'role_changed' => 'Peran staf berhasil diubah.',
     'deactivated' => 'Staf berhasil dinonaktifkan.',
+    'forbidden_desc' => 'Daftar staf hanya bisa dibuka oleh admin klinik. Hubungi admin bila Anda perlu melihatnya.',
     'empty_title' => 'Belum ada staff',
     'empty_desc' => 'Undang rekan kerja dan tentukan peran kliniknya supaya masing-masing melihat yang perlu dia lihat.',
     'change_role' => 'Ubah peran',
