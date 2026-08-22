@@ -95,7 +95,7 @@ class ReminderEngine
         $byPatient = $built['recipients']->keyBy('patient_id');
 
         $template = $rule->template?->body ?? self::DEFAULT_TEMPLATE;
-        $clinicName = app('tenant')->name;
+        $clinicName = ClinicIdentity::displayName();
         $clinicPhone = app('tenant')->phone ?? '';
         $now = now();
 

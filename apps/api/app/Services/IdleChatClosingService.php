@@ -8,6 +8,7 @@ use App\Actions\Chatbot\FindPatientByPhoneAction;
 use App\Models\ChatbotSetting;
 use App\Models\ChatMessage;
 use App\Models\CompanyProfileSetting;
+use App\Support\ClinicIdentity;
 use App\Support\WahaClient;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -92,7 +93,7 @@ class IdleChatClosingService
     {
         $replacements = [
             'name' => $this->greetingName($last->sender_phone),
-            'clinic' => app('tenant')->name,
+            'clinic' => ClinicIdentity::displayName(),
         ];
 
         if (filled($setting->closing_message)) {

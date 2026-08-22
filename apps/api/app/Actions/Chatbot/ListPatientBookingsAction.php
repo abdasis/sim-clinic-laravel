@@ -33,8 +33,10 @@ class ListPatientBookingsAction
                 'booking_id' => $booking->id,
                 'service_name' => $booking->service?->name,
                 'staff_name' => $booking->assignee?->name,
+                // Jam selesai tidak disebut: yang ditunggu pasien adalah jam
+                // kedatangannya, dan menyebut jam selesai membuatnya terbaca
+                // sebagai janji durasi yang belum tentu tepat.
                 'start_at' => $booking->start_at?->format('Y-m-d H:i'),
-                'end_at' => $booking->end_at?->format('Y-m-d H:i'),
                 'status' => $booking->status->label(),
             ])
             ->all();

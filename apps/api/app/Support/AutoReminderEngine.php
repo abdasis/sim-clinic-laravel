@@ -135,7 +135,7 @@ class AutoReminderEngine
                     'hari_sejak_kunjungan' => (string) Carbon::parse($record->last_at)
                         ->startOfDay()
                         ->diffInDays($today->copy()->startOfDay()),
-                    'klinik' => $tenant->name,
+                    'klinik' => ClinicIdentity::displayName($tenant),
                     'klinik_telepon' => $tenant->phone ?? '',
                 ])),
                 'status' => BroadcastRecipientStatus::Pending->value,

@@ -8,6 +8,7 @@ use App\Models\ChatbotSetting;
 use App\Models\ChatMessage;
 use App\Models\Patient;
 use App\Support\ChatTools;
+use App\Support\ClinicIdentity;
 use App\Support\DeepSeekClient;
 use App\Support\WhatsAppText;
 use Illuminate\Support\Facades\Log;
@@ -232,7 +233,7 @@ class ChatbotService
      */
     private function systemPrompt(ChatbotSetting $setting, ?Patient $patient): string
     {
-        $clinic = app('tenant')->name;
+        $clinic = ClinicIdentity::displayName();
         $agent = $setting->agent_name ?: __('chatbot.default_agent_name');
         $now = now();
 
@@ -260,6 +261,7 @@ class ChatbotService
             // menjawab "ini buat apa" lalu mengarang manfaatnya sendiri.
             'Saat pasien bertanya kegunaan, manfaat, atau detail sebuah produk, panggil get_product_info — bukan get_product_stock, yang hanya untuk stok dan harga.',
             'Saat pasien bertanya kegunaan, manfaat, atau detail sebuah layanan, panggil get_service_info — bukan search_services, yang hanya untuk harga dan durasi. Bila knowledge-nya kosong, katakan informasinya belum tersedia dan tawarkan menghubungi klinik; jangan mengarang manfaat treatment.',
+            'Saat memberi tahu jadwal atau mengonfirmasi booking, sebutkan tanggal dan jam mulainya saja. Jangan menyebut durasi treatment, berapa menit layanannya, maupun jam selesainya — meski angkanya ada di hasil tool.',
             'Saat pasien menanyakan jadwalnya atau ingin membatalkan, panggil list_my_bookings dulu untuk mendapatkan booking_id, baru cancel_my_booking bila ia memang minta dibatalkan. Jangan pernah menebak booking_id.',
             'Jangan pernah menyebut kata "tool", "sistem", atau "database" ke pasien. Bicaralah seperti staf klinik yang sedang mengecek.',
         ];

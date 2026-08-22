@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use App\Http\Resources\CompanyProfile\Concerns\ExposesMedia;
 use App\Models\Tenant;
-use App\Support\LocaleText;
+use App\Support\ClinicIdentity;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -27,7 +27,7 @@ class ClinicIdentityResource extends JsonResource
             // Slug permanen — sidebar memakainya untuk menautkan brand ke
             // beranda kliniknya sendiri, bukan menebak dari URL yang aktif.
             'slug' => $this->slug,
-            'name' => LocaleText::pick($profile?->site_name, app()->getLocale()) ?: $this->name,
+            'name' => ClinicIdentity::displayName($this->resource),
             'tagline' => $profile?->tagline,
             'address' => $profile?->address,
             'phone' => $this->phone,

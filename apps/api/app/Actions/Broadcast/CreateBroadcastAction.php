@@ -7,6 +7,7 @@ use App\Enums\BroadcastAudience;
 use App\Enums\BroadcastKind;
 use App\Models\Broadcast;
 use App\Support\BroadcastAudienceBuilder;
+use App\Support\ClinicIdentity;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 
@@ -42,7 +43,7 @@ class CreateBroadcastAction
             'created_by' => Auth::id(),
         ]);
 
-        $clinicName = app('tenant')->name;
+        $clinicName = ClinicIdentity::displayName();
         $clinicPhone = app('tenant')->phone ?? '';
         $now = now();
 

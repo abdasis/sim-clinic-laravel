@@ -3,6 +3,7 @@
 namespace App\Actions\Chatbot;
 
 use App\Models\CompanyProfileSetting;
+use App\Support\ClinicIdentity;
 
 /**
  * Identitas, kontak, dan jam buka klinik yang boleh disebut ke pasien.
@@ -34,7 +35,7 @@ class GetClinicInfoAction
         $profile = CompanyProfileSetting::query()->first();
 
         return [
-            'name' => $tenant->name,
+            'name' => ClinicIdentity::displayName($tenant),
             'phone' => $tenant->phone,
             'address' => $profile?->address,
             'operating_hours' => $this->formatHours($profile?->operating_hours),

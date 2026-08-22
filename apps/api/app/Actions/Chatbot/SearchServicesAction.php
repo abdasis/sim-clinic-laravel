@@ -39,10 +39,13 @@ class SearchServicesAction
         $pricing->preload($services);
 
         return $services
+            // Durasi sengaja tidak ikut: pasien hanya perlu tahu jam
+            // bookingnya, bukan berapa menit treatment-nya berlangsung.
+            // Panjang slot dihitung server saat check_availability, jadi AI
+            // tidak pernah membutuhkannya untuk menjadwalkan.
             ->map(fn (Service $service): array => PromoQuote::describe($service, $pricing, [
                 'id' => $service->id,
                 'name' => $service->name,
-                'duration_minutes' => $service->duration_minutes,
             ]))
             ->all();
     }

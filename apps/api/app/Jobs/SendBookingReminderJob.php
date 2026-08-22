@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\BookingReminder;
 use App\Models\BookingReminderSetting;
 use App\Models\Tenant;
+use App\Support\ClinicIdentity;
 use App\Support\PhoneNumber;
 use App\Support\WahaClient;
 use Illuminate\Bus\Queueable;
@@ -76,7 +77,7 @@ class SendBookingReminderJob implements ShouldQueue
             return;
         }
 
-        $this->send($reminder, $phone, $this->compose($booking, $tenant->name));
+        $this->send($reminder, $phone, $this->compose($booking, ClinicIdentity::displayName($tenant)));
     }
 
     /**
