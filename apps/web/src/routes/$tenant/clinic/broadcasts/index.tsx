@@ -47,6 +47,7 @@ interface BroadcastRow {
   recipients_total: number
   recipients_sent: number
   recipients_pending: number
+  recipients_failed: number
 }
 
 function BroadcastsPage() {
@@ -227,9 +228,16 @@ function BroadcastsPage() {
                         </p>
                       </div>
                     </div>
+                    {/* Antrean yang habis bukan berarti berhasil: campaign
+                        yang pesannya hangus dulu memakai lencana yang sama
+                        dengan yang seluruhnya terkirim. */}
                     <Badge
                       variant={
-                        row.recipients_pending === 0 ? "default" : "secondary"
+                        row.recipients_failed > 0
+                          ? "destructive"
+                          : row.recipients_pending === 0
+                            ? "default"
+                            : "secondary"
                       }
                       className="shrink-0 font-normal tabular-nums"
                     >

@@ -62,6 +62,7 @@ interface BroadcastDetail {
   recipients_total: number
   recipients_sent: number
   recipients_pending: number
+  recipients_failed: number
   recipients: Recipient[]
 }
 
@@ -179,6 +180,16 @@ function BroadcastDetailPage() {
               .replace(":sent", String(broadcast.recipients_sent))
               .replace(":total", String(broadcast.recipients_total))}
           </p>
+          {/* Angka gagal dulu tidak pernah sampai ke layar, jadi campaign
+              yang separuh hangus terbaca sama dengan yang mulus. */}
+          {broadcast.recipients_failed > 0 ? (
+            <p className="mt-1 text-sm font-medium text-destructive">
+              {t("broadcast.failed_summary").replace(
+                ":failed",
+                String(broadcast.recipients_failed),
+              )}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           {broadcast.status === "sending" ? (
@@ -201,7 +212,9 @@ function BroadcastDetailPage() {
               </Button>
             </>
           ) : null}
-          {wahaReady && broadcast.status !== "sending" && broadcast.status !== "paused" && broadcast.status !== "cancelled" && broadcast.recipients_pending > 0 ? (
+          {/* Yang gagal ikut bisa dikirim ulang; tanpa itu campaign yang
+              seluruhnya gagal tidak punya jalan keluar sama sekali. */}
+          {wahaReady && broadcast.status !== "sending" && broadcast.status !== "paused" && broadcast.status !== "cancelled" && (broadcast.recipients_pending > 0 || broadcast.recipients_failed > 0) ? (
             <Button
               onClick={() => setConfirmSendAll(true)}
               disabled={sendAll.isPending}

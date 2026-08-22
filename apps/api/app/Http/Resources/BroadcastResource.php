@@ -27,6 +27,7 @@ class BroadcastResource extends JsonResource
             'recipients_total' => $this->whenCounted('recipients'),
             'recipients_sent' => $this->whenCounted('sentRecipients'),
             'recipients_pending' => $this->whenCounted('pendingRecipients'),
+            'recipients_failed' => $this->whenCounted('failedRecipients'),
             'recipients' => BroadcastRecipientResource::collection($this->whenLoaded('recipients')),
         ];
     }

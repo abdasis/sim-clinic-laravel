@@ -9,6 +9,12 @@ enum BroadcastStatus: string
     case Paused = 'paused';
     case Cancelled = 'cancelled';
     case Done = 'done';
+    /**
+     * Antrean habis tanpa satu pun pesan sampai. Dibedakan dari `Done`
+     * supaya campaign yang seluruhnya gagal tidak terbaca "Selesai" —
+     * admin menyangka pesannya terkirim padahal tidak satu pun berangkat.
+     */
+    case Failed = 'failed';
 
     public function label(): string
     {

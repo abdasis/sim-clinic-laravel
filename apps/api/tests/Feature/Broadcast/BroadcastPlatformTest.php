@@ -39,6 +39,21 @@ class BroadcastPlatformTest extends TestCase
         WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'secret']);
     }
 
+    /**
+     * Sesi WAHA yang benar-benar tersambung. Pengiriman massal sekarang
+     * memeriksanya lebih dulu, jadi test yang menekan kirim harus menyatakan
+     * keadaan itu — sama seperti klinik sungguhan yang QR-nya sudah dipindai.
+     */
+    private function wahaConnected(): void
+    {
+        $this->wahaReady();
+
+        Http::fake([
+            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
+            'waha.test/*' => Http::response(['id' => 'true_628@c.us'], 201),
+        ]);
+    }
+
     private function paidVisit(Patient $patient, Service $service, string $date): Transaction
     {
         $transaction = Transaction::create([
@@ -67,7 +82,7 @@ class BroadcastPlatformTest extends TestCase
     {
         Queue::fake();
         $this->actingAsClinicUser();
-        $this->wahaReady();
+        $this->wahaConnected();
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '082222222222']);

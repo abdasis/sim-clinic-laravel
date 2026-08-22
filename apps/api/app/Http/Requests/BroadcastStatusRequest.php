@@ -19,8 +19,8 @@ class BroadcastStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Ready dan done tidak disebut: keduanya keadaan yang dicapai
-            // sistem, bukan yang boleh dipilih admin.
+            // Ready, done, dan failed tidak disebut: ketiganya keadaan yang
+            // dicapai sistem, bukan yang boleh dipilih admin.
             'status' => ['required', Rule::in(['sending', 'paused', 'cancelled'])],
         ];
     }

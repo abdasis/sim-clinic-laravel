@@ -106,15 +106,30 @@ class SendBroadcastRecipientJob implements ShouldQueue
         $this->finishIfDrained($broadcast);
     }
 
-    /** Tutup campaign begitu tidak ada lagi penerima menunggu. */
+    /**
+     * Tutup campaign begitu tidak ada lagi penerima menunggu.
+     *
+     * Antrean yang habis belum tentu berarti pesannya sampai: kalau tidak
+     * satu pun berangkat, campaign ditutup sebagai gagal. Sebelumnya semua
+     * keadaan berakhir "Selesai", sehingga blast yang seluruhnya ditolak
+     * gateway terbaca persis sama dengan blast yang berhasil.
+     */
     private function finishIfDrained(Broadcast $broadcast): void
     {
         $stillPending = $broadcast->recipients()
             ->where('status', BroadcastRecipientStatus::Pending)
             ->exists();
 
-        if (! $stillPending && $broadcast->status === BroadcastStatus::Sending) {
-            $broadcast->update(['status' => BroadcastStatus::Done]);
+        if ($stillPending || $broadcast->status !== BroadcastStatus::Sending) {
+            return;
         }
+
+        $anySent = $broadcast->recipients()
+            ->where('status', BroadcastRecipientStatus::Sent)
+            ->exists();
+
+        $broadcast->update([
+            'status' => $anySent ? BroadcastStatus::Done : BroadcastStatus::Failed,
+        ]);
     }
 }

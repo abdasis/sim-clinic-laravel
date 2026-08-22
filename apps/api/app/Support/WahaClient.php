@@ -141,6 +141,19 @@ class WahaClient
         return (array) $response->throw()->json();
     }
 
+    /**
+     * Sesi benar-benar siap mengirim?
+     *
+     * WAHA menerima permintaan kirim selama sesinya ada, tapi pesan hanya
+     * benar-benar berangkat kalau statusnya WORKING. Dipakai sebagai
+     * penjagaan sebelum ratusan pesan diantrekan — sesi yang terputus
+     * menghanguskan seluruh campaign satu per satu.
+     */
+    public function isConnected(): bool
+    {
+        return ($this->sessionStatus()['status'] ?? null) === 'WORKING';
+    }
+
     /** Idempoten di sisi WAHA: sesi yang sudah jalan tidak dimulai dua kali. */
     public function startSession(): void
     {

@@ -14,6 +14,7 @@ use App\Models\Tenant;
 use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
@@ -85,6 +86,8 @@ class SendAutoRemindersCommandTest extends TestCase
 
         WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
         WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
+        // Antre hanya kalau sesinya benar-benar tersambung.
+        Http::fake(['waha.test/*' => Http::response(['status' => 'WORKING'], 200)]);
 
         $this->artisan('clinic:send-auto-reminders')->assertSuccessful();
 

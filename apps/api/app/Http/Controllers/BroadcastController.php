@@ -34,7 +34,7 @@ class BroadcastController extends Controller
 
         $page = Broadcast::query()
             ->with('creator')
-            ->withCount(['recipients', 'sentRecipients', 'pendingRecipients'])
+            ->withCount(['recipients', 'sentRecipients', 'pendingRecipients', 'failedRecipients'])
             ->latest()
             ->paginate(min(50, (int) $request->query('per_page', 15)));
 
@@ -82,7 +82,7 @@ class BroadcastController extends Controller
 
         return response()->json([
             'data' => new BroadcastResource(
-                $broadcast->loadCount(['recipients', 'sentRecipients', 'pendingRecipients']),
+                $broadcast->loadCount(['recipients', 'sentRecipients', 'pendingRecipients', 'failedRecipients']),
             ),
             'meta' => ['message' => __('broadcast.created')],
         ], 201);
@@ -93,7 +93,7 @@ class BroadcastController extends Controller
         $this->authorize('view', $broadcast);
 
         $broadcast->load(['creator', 'recipients' => fn ($q) => $q->orderBy('name')])
-            ->loadCount(['recipients', 'sentRecipients', 'pendingRecipients']);
+            ->loadCount(['recipients', 'sentRecipients', 'pendingRecipients', 'failedRecipients']);
 
         return response()->json([
             'data' => new BroadcastResource($broadcast),
@@ -166,7 +166,7 @@ class BroadcastController extends Controller
 
         return response()->json([
             'data' => new BroadcastResource(
-                $broadcast->loadCount(['recipients', 'sentRecipients', 'pendingRecipients']),
+                $broadcast->loadCount(['recipients', 'sentRecipients', 'pendingRecipients', 'failedRecipients']),
             ),
             'meta' => [],
         ]);

@@ -50,6 +50,17 @@ class Broadcast extends Model
             ->where('status', BroadcastRecipientStatus::Sent);
     }
 
+    /**
+     * Penerima yang pengirimannya ditolak gateway. Ikut dihitung supaya
+     * layar campaign bisa menyebut angka gagalnya — tanpa itu blast yang
+     * separuh gagal terbaca sama dengan yang mulus.
+     */
+    public function failedRecipients(): HasMany
+    {
+        return $this->hasMany(BroadcastRecipient::class)
+            ->where('status', BroadcastRecipientStatus::Failed);
+    }
+
     public function pendingRecipients(): HasMany
     {
         return $this->hasMany(BroadcastRecipient::class)

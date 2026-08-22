@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Actions\Broadcast\CreateBroadcastAction;
 use App\Actions\Broadcast\DeleteBroadcastAction;
+use App\Actions\Broadcast\RequeueFailedRecipientsAction;
 use App\Actions\Broadcast\SaveAutoReminderSettingAction;
 use App\Actions\Broadcast\UpdateRecipientStatusAction;
 use App\Actions\LogAuditAction;
@@ -16,6 +17,8 @@ use App\Models\BroadcastReminderSetting;
 use App\Support\WahaClient;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Orkestrasi broadcast WhatsApp: snapshot penerima, penandaan manual, dan
@@ -60,14 +63,24 @@ class BroadcastService
      */
     public function queueSend(Broadcast $broadcast): array
     {
-        if (app(WahaClient::class) === null) {
+        $client = app(WahaClient::class);
+
+        if ($client === null) {
             abort(422, __('broadcast.waha_not_ready'));
         }
 
+        $this->guardConnected($client);
+
+        // Yang gagal ikut diantrekan lagi: menekan kirim setelah sesi pulih
+        // memang bermaksud mengulang yang tidak sampai, dan tanpa ini
+        // campaign yang seluruhnya gagal jadi jalan buntu — satu-satunya
+        // jalan keluar menandai ulang penerimanya satu per satu.
         $pendingIds = $broadcast->recipients()
-            ->where('status', BroadcastRecipientStatus::Pending)
+            ->whereIn('status', [BroadcastRecipientStatus::Pending, BroadcastRecipientStatus::Failed])
             ->orderBy('id')
             ->pluck('id');
+
+        app(RequeueFailedRecipientsAction::class)->handle($broadcast);
 
         $broadcast->update(['status' => BroadcastStatus::Sending]);
 
@@ -85,6 +98,27 @@ class BroadcastService
         );
 
         return ['queued' => $pendingIds->count()];
+    }
+
+    /**
+     * Tolak pengiriman saat WhatsApp klinik tidak tersambung.
+     *
+     * Pengaturan yang terisi hanya berarti aplikasi tahu ke mana harus
+     * menembak — bukan bahwa nomornya masih tertaut. Sesi yang terputus
+     * membuat gateway menolak tiap pesan satu per satu sampai seluruh
+     * campaign hangus, dan admin baru tahu setelah semuanya habis.
+     */
+    private function guardConnected(WahaClient $client): void
+    {
+        try {
+            $connected = $client->isConnected();
+        } catch (Throwable $e) {
+            Log::error('Gagal memeriksa koneksi WhatsApp sebelum broadcast.', ['exception' => $e]);
+
+            abort(422, __('broadcast.waha_check_failed'));
+        }
+
+        abort_unless($connected, 422, __('broadcast.waha_not_connected'));
     }
 
     public function changeStatus(Broadcast $broadcast, BroadcastStatus $status): Broadcast
