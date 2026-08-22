@@ -17,7 +17,8 @@ class BookingScheduleRequest extends FormRequest
         return [
             'from' => ['required', 'date'],
             'to' => ['required', 'date', 'after_or_equal:from'],
-            'view' => ['nullable', Rule::in(['day', 'week'])],
+            // Penanda tampilan saja; rentangnya sudah ditentukan from-to.
+            'view' => ['nullable', Rule::in(['day', 'week', 'month'])],
         ];
     }
 }

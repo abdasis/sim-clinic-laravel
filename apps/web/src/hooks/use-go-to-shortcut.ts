@@ -51,3 +51,30 @@ export function useGoToShortcut(key: string, run: () => void): void {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [key])
 }
+
+/**
+ * Pintasan satu ketukan untuk angka 1-9.
+ *
+ * Angka aman dipakai polos: tidak direbut browser, dan tidak ada teks yang
+ * diketik di luar kolom input. Dipakai untuk berpindah tampilan — perpindahan
+ * yang cukup sering sehingga rangkaian dua ketukan terasa lambat.
+ */
+export function useDigitShortcut(digit: string, run: () => void): void {
+  const handler = useRef(run)
+  handler.current = run
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (isTyping(event.target)) return
+      if (event.key !== digit) return
+
+      event.preventDefault()
+      handler.current()
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [digit])
+}

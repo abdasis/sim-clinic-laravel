@@ -1,66 +1,65 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import {
-  format,
-  parseISO,
-  startOfWeek,
-  endOfWeek,
-} from "date-fns"
+import { format, parseISO } from "date-fns"
 import { AlarmClockIcon, CalendarCheckIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
 import { useStats } from "#/hooks/use-stats.ts"
 import { Button } from "#/components/ui/button.tsx"
 import { Card } from "#/components/ui/card.tsx"
-import { Badge } from "#/components/ui/badge.tsx"
 import { Kbd } from "#/components/ui/kbd.tsx"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
-import { Input } from "#/components/ui/input.tsx"
 import { Spinner } from "#/components/ui/spinner.tsx"
 import { ScheduleGrid } from "#/components/schedule/schedule-grid.tsx"
 import type { ScheduleBooking } from "#/components/schedule/schedule-grid.tsx"
-import { useGoToShortcut } from "#/hooks/use-go-to-shortcut.ts"
+import { ScheduleMonth } from "#/components/schedule/schedule-month.tsx"
+import { ScheduleToolbar } from "#/components/schedule/schedule-toolbar.tsx"
+import {
+  computeRange,
+  periodLabel,
+  shiftPeriod,
+} from "#/components/schedule/schedule-range.ts"
+import type { ScheduleView } from "#/components/schedule/schedule-range.ts"
+import { useDigitShortcut, useGoToShortcut } from "#/hooks/use-go-to-shortcut.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import { BookingFormDialog } from "./components/booking-form-dialog.tsx"
-import { BookingStatusAction } from "./components/booking-status-action.tsx"
+import { BookingList } from "./components/booking-list.tsx"
 import { ReminderSettingsDialog } from "./components/reminder-settings-dialog.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/bookings/")({
   component: BookingsPage,
 })
 
-type View = "day" | "week"
-
-function computeRange(date: string, view: View): { from: string; to: string } {
-  const base = parseISO(date)
-  if (view === "week") {
-    return {
-      from: format(startOfWeek(base, { weekStartsOn: 1 }), "yyyy-MM-dd"),
-      to: format(endOfWeek(base, { weekStartsOn: 1 }), "yyyy-MM-dd"),
-    }
-  }
-  return { from: date, to: date }
-}
+const today = () => format(new Date(), "yyyy-MM-dd")
 
 function BookingsPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/bookings/" })
   const { t } = useTrans()
-  const [view, setView] = useState<View>("day")
-  const [date, setDate] = useState(() => format(new Date(), "yyyy-MM-dd"))
+  // Bulanan sebagai bawaan: yang pertama ditanyakan admin saat membuka
+  // jadwal adalah seberapa padat bulan ini, bukan siapa jam berapa hari ini.
+  const [view, setView] = useState<ScheduleView>("month")
+  const [date, setDate] = useState(today)
   const [formOpen, setFormOpen] = useState(false)
   const stats = useStats({ tenant, module: "bookings" })
   const [editingId, setEditingId] = useState<number | undefined>(undefined)
   const [reminderOpen, setReminderOpen] = useState(false)
 
+  const step = (delta: number) => setDate((d) => shiftPeriod(d, view, delta))
+
   useGoToShortcut("r", () => setReminderOpen(true))
+  useGoToShortcut("t", () => setDate(today()))
+  useGoToShortcut("j", () => step(-1))
+  useGoToShortcut("k", () => step(1))
+  useDigitShortcut("1", () => setView("day"))
+  useDigitShortcut("2", () => setView("week"))
+  useDigitShortcut("3", () => setView("month"))
 
   const { from, to } = computeRange(date, view)
 
@@ -78,6 +77,11 @@ function BookingsPage() {
   // Bentrokan: penanggung jawab sama dan rentang waktunya saling menimpa.
   const conflictingIds = findConflictingIds(bookings)
 
+  const openForm = (id?: number) => {
+    setEditingId(id)
+    setFormOpen(true)
+  }
+
   return (
     <div>
       <IndexCta
@@ -87,10 +91,7 @@ function BookingsPage() {
         title={t("cta.bookings.title")}
         description={t("cta.bookings.description")}
         actionLabel={t("cta.bookings.action")}
-        onAction={() => {
-          setEditingId(undefined)
-          setFormOpen(true)
-        }}
+        onAction={() => openForm()}
       />
 
       <StatsSection
@@ -101,62 +102,39 @@ function BookingsPage() {
         onRefresh={() => void stats.refetch()}
       />
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{t("booking.schedule")}</h1>
-        <div className="flex items-center gap-2">
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-auto"
-          />
-          <div className="flex overflow-hidden rounded-md border">
+      <ScheduleToolbar
+        date={date}
+        view={view}
+        label={periodLabel(date, view)}
+        onDateChange={setDate}
+        onViewChange={setView}
+        onStep={step}
+        onToday={() => setDate(today())}
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button
-              variant={view === "day" ? "default" : "ghost"}
-              size="sm"
-              className="rounded-none"
-              onClick={() => setView("day")}
+              variant="outline"
+              size="icon"
+              className="size-8"
+              aria-label={t("booking.message_settings")}
+              onClick={() => setReminderOpen(true)}
             >
-              {t("booking.view_day")}
+              <HugeiconsIcon icon={AlarmClockIcon} className="size-4" />
             </Button>
-            <Button
-              variant={view === "week" ? "default" : "ghost"}
-              size="sm"
-              className="rounded-none"
-              onClick={() => setView("week")}
-            >
-              {t("booking.view_week")}
-            </Button>
-          </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label={t("booking.reminder_settings")}
-                onClick={() => setReminderOpen(true)}
-              >
-                <HugeiconsIcon icon={AlarmClockIcon} className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="flex items-center gap-2">
-              {t("booking.reminder_settings")}
-              <span className="flex items-center gap-0.5">
-                <Kbd>g</Kbd>
-                <Kbd>r</Kbd>
-              </span>
-            </TooltipContent>
-          </Tooltip>
-          <Button
-            onClick={() => {
-              setEditingId(undefined)
-              setFormOpen(true)
-            }}
-          >
-            {t("booking.add")}
-          </Button>
-        </div>
-      </div>
+          </TooltipTrigger>
+          <TooltipContent className="flex items-center gap-2">
+            {t("booking.message_settings")}
+            <span className="flex items-center gap-0.5">
+              <Kbd>g</Kbd>
+              <Kbd>r</Kbd>
+            </span>
+          </TooltipContent>
+        </Tooltip>
+        <Button size="sm" onClick={() => openForm()}>
+          {t("booking.add")}
+        </Button>
+      </ScheduleToolbar>
 
       <BookingFormDialog
         tenant={tenant}
@@ -175,62 +153,31 @@ function BookingsPage() {
         <Card className="items-center justify-center py-10">
           <Spinner />
         </Card>
+      ) : view === "month" ? (
+        <ScheduleMonth
+          data={bookings}
+          date={date}
+          // Menekan satu tanggal turun ke jadwal jamnya: kalender menjawab
+          // "kapan longgar", tampilan harian menjawab "siapa jam berapa".
+          onSelectDay={(day) => {
+            setDate(day)
+            setView("day")
+          }}
+        />
       ) : (
         <ScheduleGrid data={bookings} view={view} />
       )}
 
-      <h2 className="mt-6 mb-2 text-sm font-semibold text-muted-foreground">
+      <h2 className="mt-6 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
         {t("booking.title")}
       </h2>
-      <Card className="divide-y py-0">
-        {bookings.length === 0 ? (
-          <EmptyState
-            className="py-10"
-            illustration="bookings"
-            title={t("booking.empty_title")}
-            description={t("booking.empty_desc")}
-          />
-        ) : (
-          bookings.map((booking) => (
-            <div
-              key={booking.id}
-              className="flex flex-wrap items-center justify-between gap-2 p-3"
-            >
-              <div className="min-w-0">
-                <div className="text-sm font-medium">
-                  {booking.patient_name}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {booking.service_name} · {booking.assignee_name}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {format(parseISO(booking.start_at), "dd/MM HH:mm")} –{" "}
-                  {format(parseISO(booking.end_at), "HH:mm")}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {conflictingIds.has(booking.id) ? (
-                  <Badge variant="destructive">{t("booking.conflict")}</Badge>
-                ) : null}
-                <Badge variant="outline">
-                  {t(`clinic.booking_status.${booking.status}`)}
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditingId(booking.id)
-                    setFormOpen(true)
-                  }}
-                >
-                  {t("general.edit")}
-                </Button>
-                <BookingStatusAction tenant={tenant} booking={booking} />
-              </div>
-            </div>
-          ))
-        )}
-      </Card>
+
+      <BookingList
+        tenant={tenant}
+        data={bookings}
+        conflictingIds={conflictingIds}
+        onEdit={openForm}
+      />
     </div>
   )
 }
