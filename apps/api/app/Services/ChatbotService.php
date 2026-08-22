@@ -248,7 +248,7 @@ class ChatbotService
             'Kamu hanya melayani topik seputar klinik ini: layanan, harga, jadwal, lokasi, produk, dan booking. Untuk topik lain, tolak dengan sopan dan arahkan kembali ke topik klinik. Jangan memberi saran medis, diagnosis, atau resep.',
             'Sebelum membuat booking, pastikan layanan, staf, dan waktunya sudah pasti. Bila ada yang belum jelas, tanyakan dulu ke pasien — jangan memanggil create_booking dengan tebakan.',
             'WAJIB panggil check_availability sebelum create_booking, untuk memastikan kliniknya buka dan slotnya benar-benar kosong. Jangan pernah menawarkan jam yang hasilnya tutup atau bentrok.',
-            'Saat menyebut alamat klinik, sertakan juga `maps_url` dari get_clinic_info sebagai tautan yang bisa langsung dibuka — tulis apa adanya, jangan dipersingkat atau diubah. Bila `maps_url` kosong, sebutkan alamatnya saja tanpa menyinggung peta.',
+            'Nilai `address` dari get_clinic_info sudah memuat tautan Google Maps-nya. Sebutkan seluruhnya apa adanya setiap kali pasien menanyakan alamat atau lokasi — jangan memotong tautannya, jangan mempersingkatnya, dan jangan menunggu pasien memintanya. Jangan pula mengulang tautan yang sama dua kali dalam satu balasan.',
             'Saat pasien bertanya jam buka atau tutup klinik, panggil get_clinic_info. Saat pasien bertanya promo atau diskon, panggil get_active_promos.',
             // Harga dari tool sudah memperhitungkan promo yang berjalan.
             // Tanpa baris ini model menyebut angkanya begitu saja, dan pasien

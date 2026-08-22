@@ -37,13 +37,34 @@ class GetClinicInfoAction
         return [
             'name' => ClinicIdentity::displayName($tenant),
             'phone' => $tenant->phone,
-            'address' => $profile?->address,
-            // Alamat tertulis saja menyisakan pekerjaan di sisi pasien: ia
-            // harus mengetik ulang ke aplikasi peta, dan nama komplek yang
-            // mirip membuatnya berakhir di jalan yang salah.
-            'maps_url' => $profile?->maps_url,
+            'address' => $this->address($profile?->address, $profile?->maps_url),
             'operating_hours' => $this->formatHours($profile?->operating_hours),
         ];
+    }
+
+    /**
+     * Alamat berikut tautan petanya, sebagai satu nilai.
+     *
+     * Tautannya menyatu dengan alamatnya, bukan berdiri sebagai kolom
+     * sendiri, supaya keduanya tidak bisa dipisahkan: model yang mengutip
+     * alamat pasti ikut membawa petanya. Sebelumnya ini cuma imbauan di
+     * prompt — dan imbauan masih bisa dilanggar, sehingga pasien tetap
+     * menerima alamat tanpa peta dan harus memintanya lagi.
+     *
+     * Alamat tertulis saja menyisakan pekerjaan di sisi pasien: ia harus
+     * mengetik ulang ke aplikasi peta, dan nama komplek yang mirip membuatnya
+     * berakhir di jalan yang salah.
+     */
+    private function address(?string $address, ?string $mapsUrl): ?string
+    {
+        if (blank($address)) {
+            // Peta tanpa alamat tetap berguna: pasien cukup menekannya.
+            return blank($mapsUrl) ? null : 'Google Maps: '.$mapsUrl;
+        }
+
+        return blank($mapsUrl)
+            ? $address
+            : $address.' — Google Maps: '.$mapsUrl;
     }
 
     /**
