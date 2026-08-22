@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateTenantStatusRequest;
 use App\Http\Resources\TenantResource;
 use App\Models\Tenant;
 use App\Services\PlatformTenantService;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,14 +23,8 @@ class PlatformTenantController extends Controller
 
         $query = Tenant::query();
 
-        if ($params['search']) {
-            $search = $params['search'];
-            $query->where(function ($q) use ($search): void {
-                $q->where('name', 'like', '%'.$search.'%')
-                    ->orWhere('slug', 'like', '%'.$search.'%')
-                    ->orWhere('phone', 'like', '%'.$search.'%');
-            });
-        }
+        Search::apply($query, ['name', 'slug', 'phone'], $params['search']);
+
         if (! empty($params['filters']['status'])) {
             $query->where('status', $params['filters']['status']);
         }

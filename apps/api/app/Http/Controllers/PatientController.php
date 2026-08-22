@@ -8,6 +8,7 @@ use App\Http\Resources\PatientResource;
 use App\Models\Patient;
 use App\Services\PatientService;
 use App\Support\PatientReferences;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -25,13 +26,8 @@ class PatientController extends Controller
         // resource menembak satu kueri per baris.
         $query = Patient::query()->with('referrer:id,name');
 
-        if ($params['search']) {
-            $search = $params['search'];
-            $query->where(function ($q) use ($search): void {
-                $q->where('name', 'like', '%'.$search.'%')
-                    ->orWhere('whatsapp', 'like', '%'.$search.'%');
-            });
-        }
+        Search::apply($query, ['name', 'whatsapp'], $params['search']);
+
         if (! $this->applyAllowedSort($query, $params, ['name', 'whatsapp', 'gender', 'birth_date', 'created_at'])) {
             $query->latest();
         }

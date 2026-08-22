@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Services\ImportService;
 use App\Services\ServiceCatalogService;
 use App\Support\PromoPricing;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -29,14 +30,8 @@ class ServiceController extends Controller
         // Tanpa eager load, resource memanggil relasi kategori per baris.
         $query = Service::query()->with('categories');
 
-        if ($params['search']) {
-            // whereLike, bukan where(..., 'like', ...): PostgreSQL — yang
-            // dipakai produksi — memperlakukan LIKE sebagai peka besar-kecil
-            // huruf, jadi "facial" tidak pernah menemukan "Facial Glow".
-            // Bentuk ini menurunkan ILIKE di PostgreSQL dan tetap LIKE di
-            // SQLite/MySQL yang memang sudah abai besar-kecil huruf.
-            $query->whereLike('name', '%'.$params['search'].'%');
-        }
+        Search::apply($query, 'name', $params['search']);
+
         // Katalog default hanya menampilkan layanan aktif; arsip diminta eksplisit.
         $status = $params['filters']['status'] ?? ServiceStatus::Active->value;
 

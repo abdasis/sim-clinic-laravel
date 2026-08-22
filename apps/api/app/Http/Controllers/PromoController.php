@@ -7,6 +7,7 @@ use App\Http\Requests\PromoRequest;
 use App\Http\Resources\PromoResource;
 use App\Models\Promo;
 use App\Services\PromoService;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,9 +23,7 @@ class PromoController extends Controller
 
         $query = Promo::query()->with('items.promotable');
 
-        if ($params['search']) {
-            $query->where('name', 'like', '%'.$params['search'].'%');
-        }
+        Search::apply($query, 'name', $params['search']);
 
         $status = $params['filters']['status'] ?? 'all';
 

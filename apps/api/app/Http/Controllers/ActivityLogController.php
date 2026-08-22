@@ -8,6 +8,7 @@ use App\Models\Activity;
 use App\Models\User;
 use App\Scopes\TenantScope;
 use App\Support\ActivityLabel;
+use App\Support\Search;
 use App\Support\TenantCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -47,12 +48,10 @@ class ActivityLogController extends Controller
         }
 
         if ($params['search']) {
-            $term = '%'.$params['search'].'%';
+            $search = $params['search'];
 
-            $query->where(fn (Builder $inner) => $inner
-                ->where('description', 'like', $term)
-                ->orWhere('event', 'like', $term)
-                ->orWhereHas('causer', fn (Builder $user) => $user->where('name', 'like', $term)));
+            $query->where(fn (Builder $inner) => Search::apply($inner, ['description', 'event'], $search)
+                ->orWhereHas('causer', fn (Builder $user) => Search::apply($user, 'name', $search)));
         }
 
         // Log dibaca dari yang terbaru; urutan lain hanya kalau diminta.

@@ -12,6 +12,7 @@ use App\Models\Invitation;
 use App\Models\User;
 use App\Services\InvitationService;
 use App\Services\UserService;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -27,13 +28,8 @@ class UserController extends Controller
 
         $query = User::where('tenant_id', app('tenant')->id);
 
-        if ($params['search']) {
-            $search = $params['search'];
-            $query->where(function ($q) use ($search): void {
-                $q->where('name', 'like', '%'.$search.'%')
-                    ->orWhere('email', 'like', '%'.$search.'%');
-            });
-        }
+        Search::apply($query, ['name', 'email'], $params['search']);
+
         foreach (['status', 'role'] as $filter) {
             if (! empty($params['filters'][$filter])) {
                 $query->where($filter, $params['filters'][$filter]);

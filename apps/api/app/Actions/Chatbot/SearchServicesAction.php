@@ -7,6 +7,8 @@ use App\Models\ChatbotSetting;
 use App\Models\Service;
 use App\Support\PromoPricing;
 use App\Support\PromoQuote;
+use App\Support\Search;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Cari layanan aktif klinik untuk dijawabkan ke pasien.
@@ -29,7 +31,7 @@ class SearchServicesAction
     {
         $services = Service::query()
             ->where('status', ServiceStatus::Active)
-            ->when(filled($keyword), fn ($query) => $query->where('name', 'like', '%'.$keyword.'%'))
+            ->tap(fn (Builder $query) => Search::apply($query, 'name', $keyword))
             ->orderBy('name')
             ->limit(self::LIMIT)
             ->get(['id', 'name', 'price', 'duration_minutes']);

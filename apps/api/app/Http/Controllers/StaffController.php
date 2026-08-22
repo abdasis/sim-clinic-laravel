@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateStaffRoleRequest;
 use App\Http\Resources\StaffResource;
 use App\Models\User;
 use App\Services\StaffService;
+use App\Support\Search;
 use App\Support\StaffReferences;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,13 +27,7 @@ class StaffController extends Controller
         $query = User::where('tenant_id', app('tenant')->id)
             ->whereNotNull('clinic_role');
 
-        if ($params['search']) {
-            $search = $params['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%'.$search.'%')
-                    ->orWhere('email', 'like', '%'.$search.'%');
-            });
-        }
+        Search::apply($query, ['name', 'email'], $params['search']);
 
         if (! $this->applyAllowedSort($query, $params, ['name', 'email', 'clinic_role', 'status', 'created_at'])) {
             $query->latest();

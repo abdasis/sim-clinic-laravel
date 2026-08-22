@@ -7,6 +7,7 @@ use App\Http\Requests\UnitRequest;
 use App\Http\Resources\UnitResource;
 use App\Models\Unit;
 use App\Services\UnitService;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -26,9 +27,7 @@ class UnitController extends Controller
 
         $query = Unit::query()->withCount('products');
 
-        if ($params['search']) {
-            $query->where('name', 'like', '%'.$params['search'].'%');
-        }
+        Search::apply($query, 'name', $params['search']);
 
         // Formulir produk hanya boleh menawarkan satuan aktif; halaman kelola
         // meminta arsipnya secara eksplisit.

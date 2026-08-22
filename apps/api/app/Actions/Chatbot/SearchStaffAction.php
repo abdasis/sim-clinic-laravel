@@ -5,6 +5,8 @@ namespace App\Actions\Chatbot;
 use App\Enums\ClinicRole;
 use App\Enums\UserStatus;
 use App\Models\User;
+use App\Support\Search;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Staf yang boleh disebut ke pasien dan boleh dipasang di booking: dokter dan
@@ -21,7 +23,7 @@ class SearchStaffAction
         return User::query()
             ->whereIn('clinic_role', [ClinicRole::Doctor, ClinicRole::Therapist])
             ->where('status', UserStatus::Active)
-            ->when(filled($keyword), fn ($query) => $query->where('name', 'like', '%'.$keyword.'%'))
+            ->tap(fn (Builder $query) => Search::apply($query, 'name', $keyword))
             ->orderBy('name')
             ->get(['id', 'name', 'clinic_role'])
             ->map(fn (User $user): array => [

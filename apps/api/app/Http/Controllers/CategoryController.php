@@ -8,6 +8,7 @@ use App\Http\Requests\CategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use App\Services\CategoryService;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -35,9 +36,7 @@ class CategoryController extends Controller
             $query->where('type', $type);
         }
 
-        if ($params['search']) {
-            $query->where('name', 'like', '%'.$params['search'].'%');
-        }
+        Search::apply($query, 'name', $params['search']);
 
         // Formulir hanya boleh menawarkan kategori aktif; halaman kelola
         // meminta arsipnya secara eksplisit.
