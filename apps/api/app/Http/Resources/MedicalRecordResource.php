@@ -16,7 +16,10 @@ class MedicalRecordResource extends JsonResource
             'author_id' => $this->author_id,
             'author_name' => $this->author?->name,
             'patient_name' => $this->patient?->name,
-            'booking' => $this->whenLoaded('booking', fn () => [
+            // Catatan walk-in tidak punya kunjungan, jadi relasinya bisa
+            // dimuat namun bernilai null — whenLoaded tetap memanggil
+            // closure-nya, jadi penjagaannya harus di dalam sini.
+            'booking' => $this->whenLoaded('booking', fn () => $this->booking === null ? null : [
                 'id' => $this->booking->id,
                 'status' => $this->booking->status,
                 'start_at' => $this->booking->start_at?->toIso8601String(),

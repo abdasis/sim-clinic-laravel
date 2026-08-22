@@ -18,8 +18,11 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 
 /**
- * Use case rekam medis. Rekam medis hanya boleh ditulis untuk kunjungan
- * yang benar-benar sudah selesai, dan satu kunjungan satu rekam medis.
+ * Use case rekam medis.
+ *
+ * Catatan boleh lahir dari dua jalur: dari kunjungan yang sudah selesai
+ * (satu kunjungan tetap satu rekam medis), atau langsung dari pasien untuk
+ * kunjungan walk-in yang tidak pernah dijadwalkan.
  */
 class MedicalRecordService
 {
@@ -28,6 +31,30 @@ class MedicalRecordService
      */
     public function create(User $author, array $data): MedicalRecord
     {
+        return app(CreateMedicalRecordAction::class)->handle(
+            $this->resolveBooking($data),
+            $author,
+            $data,
+        );
+    }
+
+    /**
+     * Kunjungan yang ditagihkan catatan ini, atau null untuk walk-in.
+     *
+     * Penjagaan lama hanya berlaku pada jalur berbooking: kunjungan harus
+     * benar-benar selesai, dan satu kunjungan tetap satu rekam medis.
+     * Jalur tanpa booking sengaja tidak dibatasi — pasien yang datang
+     * berulang tanpa janji adalah hal wajar, dan menolak catatan keduanya
+     * justru menghilangkan riwayat (issue #319).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveBooking(array $data): ?Booking
+    {
+        if (blank($data['booking_id'] ?? null)) {
+            return null;
+        }
+
         $booking = Booking::findOrFail($data['booking_id']);
 
         if ($booking->status !== BookingStatus::Done) {
@@ -38,7 +65,7 @@ class MedicalRecordService
             abort(422, __('medical_record.already_exists'));
         }
 
-        return app(CreateMedicalRecordAction::class)->handle($booking, $author, $data);
+        return $booking;
     }
 
     /**

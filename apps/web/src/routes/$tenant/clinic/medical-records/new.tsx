@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useFieldArray } from "react-hook-form"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -37,7 +37,10 @@ export const Route = createFileRoute("/$tenant/clinic/medical-records/new")({
 })
 
 const schema = z.object({
-  booking_id: z.string().min(1),
+  // Kunjungan opsional sejak rekam medis boleh ditulis untuk pasien yang
+  // datang tanpa janji; pasiennya yang kini wajib (issue #319).
+  patient_id: z.string().min(1),
+  booking_id: z.string().optional(),
   anamnesis: z.string().optional(),
   skincare_history: z.string().optional(),
   allergy_history: z.string().optional(),
@@ -50,11 +53,17 @@ type Values = z.infer<typeof schema>
 
 interface BookingRow {
   id: number
+  patient_id: number
   patient_name?: string
   service_name?: string
   start_at?: string | null
   has_medical_record?: boolean
   status: string
+}
+interface PatientRow {
+  id: number
+  name: string
+  whatsapp?: string | null
 }
 interface ServiceRow {
   id: number
@@ -71,6 +80,7 @@ function NewMedicalRecordPage() {
 
   const form = useForm(schema, {
     defaultValues: {
+      patient_id: patientFromUrl ?? "",
       booking_id: bookingFromUrl ?? "",
       anamnesis: "",
       skincare_history: "",
@@ -80,17 +90,30 @@ function NewMedicalRecordPage() {
   })
   const treatments = useFieldArray({ control: form.control, name: "treatments" })
 
+  const selectedPatientId = form.watch("patient_id")
+
+  const patients = useQuery({
+    queryKey: ["patients", tenant, "picker"],
+    queryFn: () =>
+      apiGet<{ data: PatientRow[] }>(`/${tenant}/clinic/patients`, { per_page: 100 }),
+  })
+
   // Status disaring di server, bukan setelah data sampai. Dulu halaman ini
   // mengambil 100 kunjungan terbaru lalu membuang yang belum selesai di sisi
   // klien — di klinik yang ramai, seratus kunjungan terbaru bisa sama sekali
   // tidak berisi yang berstatus selesai, dan daftarnya kosong tanpa sebab
   // yang kelihatan.
+  //
+  // Daftarnya juga mengikuti pasien yang sedang dipilih. Server menolak
+  // kunjungan milik orang lain, jadi menawarkannya di sini hanya menyiapkan
+  // penolakan setelah dokter selesai mengetik.
+  const bookingPatientId = selectedPatientId || patientFromUrl
   const bookings = useQuery({
-    queryKey: ["bookings", tenant, "done", patientFromUrl ?? "all"],
+    queryKey: ["bookings", tenant, "done", bookingPatientId ?? "all"],
     queryFn: () =>
       apiGet<{ data: BookingRow[] }>(`/${tenant}/clinic/bookings`, {
         per_page: 100,
-        filter: { status: "done", patient_id: patientFromUrl },
+        filter: { status: "done", patient_id: bookingPatientId },
         sort: "start_at",
         direction: "desc",
       }),
@@ -114,9 +137,42 @@ function NewMedicalRecordPage() {
     label: `${b.patient_name ?? "-"} · ${b.service_name ?? "-"} · #${b.id}`,
   }))
   const selectedBookingId = form.watch("booking_id")
-  const selectedPatientName = doneBookings.find(
-    (b) => String(b.id) === selectedBookingId,
-  )?.patient_name
+
+  // Masuk dari kunjungan selesai berarti pasiennya sudah tertentu. Dokter
+  // tidak perlu menyebutkannya lagi — dan menyebut yang berbeda justru
+  // ditolak server, karena catatan akan mendarat di berkas orang lain.
+  useEffect(() => {
+    if (selectedPatientId || !selectedBookingId) return
+
+    const owner = (bookings.data?.data ?? []).find(
+      (b) => String(b.id) === selectedBookingId,
+    )?.patient_id
+
+    if (owner) form.setValue("patient_id", String(owner))
+  }, [selectedPatientId, selectedBookingId, bookings.data, form])
+
+  // Kunjungan yang tidak ada lagi di daftar ikut gugur — entah karena
+  // pasiennya diganti, entah karena catatannya keburu ditulis orang lain.
+  // Diperiksa dari daftar yang sudah selesai dimuat, bukan dari selisih id:
+  // saat pasien berganti, kunjungan lama sama sekali tidak ikut terambil,
+  // jadi membandingkan pemiliknya tidak akan pernah menemukan apa pun.
+  useEffect(() => {
+    if (!selectedBookingId || bookings.isFetching || !bookings.data) return
+
+    const stillOffered = bookings.data.data.some(
+      (b) => String(b.id) === selectedBookingId && !b.has_medical_record,
+    )
+
+    if (!stillOffered) form.setValue("booking_id", "")
+  }, [selectedBookingId, bookings.data, bookings.isFetching, form])
+
+  const patientOptions = (patients.data?.data ?? []).map((p) => ({
+    value: String(p.id),
+    label: p.whatsapp ? `${p.name} · ${p.whatsapp}` : p.name,
+  }))
+  const selectedPatientName = (patients.data?.data ?? []).find(
+    (p) => String(p.id) === selectedPatientId,
+  )?.name
 
   const serviceOptions = (services.data?.data ?? []).map((s) => ({
     value: String(s.id),
@@ -128,7 +184,10 @@ function NewMedicalRecordPage() {
       const res = await apiPost<{ data: { id: number } }>(
         `/${tenant}/clinic/medical-records`,
         {
-          booking_id: Number(values.booking_id),
+          patient_id: Number(values.patient_id),
+          // Dihilangkan sama sekali saat kosong: mengirim null membuat
+          // aturan required_without di server tidak pernah kena.
+          ...(values.booking_id ? { booking_id: Number(values.booking_id) } : {}),
           anamnesis: values.anamnesis,
           skincare_history: values.skincare_history,
           allergy_history: values.allergy_history,
@@ -174,25 +233,42 @@ function NewMedicalRecordPage() {
         >
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">{t("medical_record.booking")}</CardTitle>
+              <CardTitle className="text-base">{t("medical_record.visit")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Pasien lebih dulu, dan wajib: catatan klinis selalu milik
+                  seseorang, sementara kunjungan terjadwal belum tentu ada. */}
+              <FormCombobox
+                control={form.control}
+                name="patient_id"
+                label={t("medical_record.patient")}
+                placeholder={t("general.search")}
+                options={patientOptions}
+                required
+                loading={patients.isLoading}
+                error={patients.isError}
+                emptyLabel={t("general.no_data")}
+                description={t("medical_record.patient_hint")}
+              />
               {/* Combobox, bukan select: daftarnya bisa ratusan kunjungan dan
                   yang dicari dokter adalah satu nama pasien di antaranya. */}
               <FormCombobox
                 control={form.control}
                 name="booking_id"
-                label={t("medical_record.booking")}
+                label={t("medical_record.booking_optional")}
                 placeholder={t("general.search")}
                 options={bookingOptions}
-                required
                 loading={bookings.isLoading}
                 error={bookings.isError}
-                emptyLabel={t("medical_record.no_open_booking")}
+                emptyLabel={
+                  selectedPatientId
+                    ? t("medical_record.no_open_booking")
+                    : t("medical_record.booking_pick_patient")
+                }
                 description={t("medical_record.booking_hint")}
               />
-              {/* Nama pasien tidak diketik ulang: ia melekat pada kunjungan
-                  yang dipilih, jadi salah ketik di sini mustahil terjadi. */}
+              {/* Penegasan siapa yang sedang dicatat; salah pilih pasien di
+                  rekam medis jauh lebih mahal daripada salah ketik. */}
               {selectedPatientName ? (
                 <div className="flex items-baseline gap-2 rounded-md border border-border/60 bg-muted/40 px-3 py-2">
                   <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
