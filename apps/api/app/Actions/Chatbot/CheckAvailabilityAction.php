@@ -7,6 +7,7 @@ use App\Enums\ClinicRole;
 use App\Enums\ServiceStatus;
 use App\Enums\UserStatus;
 use App\Models\Booking;
+use App\Models\ChatbotSetting;
 use App\Models\CompanyProfileSetting;
 use App\Models\Service;
 use App\Models\User;
@@ -47,6 +48,19 @@ class CheckAvailabilityAction
 
         if ($service === null) {
             return $this->unavailable(__('chatbot.booking_service_unknown'));
+        }
+
+        // Penolakan ini dulu hanya ada di create_booking, jadi chatbot
+        // menawarkan jam, pasien menyetujuinya, lalu baru ditolak di langkah
+        // terakhir. Menolak di sini membuat jadwal yang tidak bisa dipenuhi
+        // tidak pernah sempat ditawarkan.
+        $setting = ChatbotSetting::query()->first();
+
+        if ($setting !== null && ! $setting->allowsBooking($service->id)) {
+            return $this->unavailable(
+                __('chatbot.booking_service_not_bookable', ['service' => $service->name]),
+                $start,
+            );
         }
 
         $end = $start->copy()->addMinutes((int) ($service->duration_minutes ?: 60));

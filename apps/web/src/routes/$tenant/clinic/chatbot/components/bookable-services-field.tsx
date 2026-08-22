@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 
 import { Checkbox } from "#/components/ui/checkbox.tsx"
+import { Switch } from "#/components/ui/switch.tsx"
 import { Input } from "#/components/ui/input.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { Label } from "#/components/ui/label.tsx"
@@ -23,8 +24,13 @@ interface ServiceOption {
  * ditampilkan karena itu yang membedakan treatment ringan dari tindakan yang
  * sebaiknya dijadwalkan lewat orang.
  *
- * Tidak ada yang dicentang berarti seluruh layanan boleh — sengaja disebut
- * terang-terangan di layar supaya tidak terbaca sebagai "belum diatur".
+ * Pembatasannya dinyalakan lewat saklar, bukan lewat centang pertama. Dulu
+ * "tidak ada yang dicentang" berarti semua boleh, sehingga satu centang
+ * iseng diam-diam mengunci seluruh layanan lain — dan kliniknya baru tahu
+ * berminggu-minggu kemudian, saat seorang pasien ditolak di tengah chat.
+ *
+ * Saklarnya tidak butuh kolom sendiri: menyala berarti daftarnya terisi.
+ * Mematikannya mengosongkan daftar, yang artinya seluruh layanan boleh lagi.
  */
 export function BookableServicesField({
   tenant,
@@ -37,6 +43,9 @@ export function BookableServicesField({
 }) {
   const { t } = useTrans()
   const [keyword, setKeyword] = useState("")
+  // Saklar bisa menyala sebelum ada yang dicentang, jadi keadaannya tidak
+  // cukup disimpulkan dari panjang daftar saja.
+  const [showList, setShowList] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ["services", tenant, "chatbot-options"],
@@ -60,64 +69,87 @@ export function BookableServicesField({
   const toggle = (id: number) =>
     onChange(value.includes(id) ? value.filter((item) => item !== id) : [...value, id])
 
+  const restricted = value.length > 0
+
   return (
     <div className="space-y-2">
-      <Label>{t("chatbot.bookable_services")}</Label>
-
-      <div className="overflow-hidden rounded-md border border-border/60">
-        <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 p-2">
-          <Input
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder={t("general.search")}
-            className="h-8"
-          />
-          <button
-            type="button"
-            className="shrink-0 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50"
-            disabled={value.length === 0}
-            onClick={() => onChange([])}
-          >
-            {t("chatbot.clear_selection")}
-          </button>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Label htmlFor="restrict-booking">{t("chatbot.restrict_booking")}</Label>
+          <p className="mt-0.5 text-xs text-pretty text-muted-foreground">
+            {t("chatbot.restrict_booking_hint")}
+          </p>
         </div>
-
-        <div className="max-h-64 overflow-y-auto">
-          {isLoading ? (
-            <div className="space-y-2 p-2">
-              {[0, 1, 2].map((row) => (
-                <Skeleton key={row} className="h-7 w-full" />
-              ))}
-            </div>
-          ) : shown.length === 0 ? (
-            <p className="p-4 text-center text-xs text-muted-foreground">
-              {t("chatbot.no_service_found")}
-            </p>
-          ) : (
-            shown.map((service) => (
-              <label
-                key={service.id}
-                className="flex cursor-pointer items-center gap-2.5 border-b border-border/40 px-3 py-2 text-sm transition-colors duration-100 last:border-b-0 hover:bg-muted/40"
-              >
-                <Checkbox
-                  checked={value.includes(service.id)}
-                  onCheckedChange={() => toggle(service.id)}
-                />
-                <span className="min-w-0 flex-1 truncate">{service.name}</span>
-                <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                  {formatCurrency(Number(service.price))}
-                </span>
-              </label>
-            ))
-          )}
-        </div>
+        <Switch
+          id="restrict-booking"
+          checked={restricted || showList}
+          onCheckedChange={(next) => {
+            setShowList(next)
+            // Mematikan pembatasan mengosongkan daftarnya: menyimpan
+            // centang yang tidak terlihat lagi hanya menunggu jadi kejutan.
+            if (!next) onChange([])
+          }}
+        />
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {value.length === 0
-          ? t("chatbot.bookable_services_hint")
-          : `${value.length} ${t("chatbot.services_selected")}`}
-      </p>
+      {!restricted && !showList ? null : (
+        <>
+          <div className="overflow-hidden rounded-md border border-border/60">
+            <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 p-2">
+              <Input
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder={t("general.search")}
+                className="h-8"
+              />
+              <button
+                type="button"
+                className="shrink-0 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50"
+                disabled={value.length === 0}
+                onClick={() => onChange([])}
+              >
+                {t("chatbot.clear_selection")}
+              </button>
+            </div>
+
+            <div className="max-h-64 overflow-y-auto">
+              {isLoading ? (
+                <div className="space-y-2 p-2">
+                  {[0, 1, 2].map((row) => (
+                    <Skeleton key={row} className="h-7 w-full" />
+                  ))}
+                </div>
+              ) : shown.length === 0 ? (
+                <p className="p-4 text-center text-xs text-muted-foreground">
+                  {t("chatbot.no_service_found")}
+                </p>
+              ) : (
+                shown.map((service) => (
+                  <label
+                    key={service.id}
+                    className="flex cursor-pointer items-center gap-2.5 border-b border-border/40 px-3 py-2 text-sm transition-colors duration-100 last:border-b-0 hover:bg-muted/40"
+                  >
+                    <Checkbox
+                      checked={value.includes(service.id)}
+                      onCheckedChange={() => toggle(service.id)}
+                    />
+                    <span className="min-w-0 flex-1 truncate">{service.name}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                      {formatCurrency(Number(service.price))}
+                    </span>
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
+
+          <p className="text-xs text-pretty text-muted-foreground">
+            {value.length === 0
+              ? t("chatbot.restrict_booking_empty")
+              : `${value.length} ${t("chatbot.services_selected")} — ${t("chatbot.bookable_services_hint")}`}
+          </p>
+        </>
+      )}
     </div>
   )
 }

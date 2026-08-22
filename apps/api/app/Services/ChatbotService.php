@@ -272,6 +272,10 @@ class ChatbotService
             'Bila staf yang diminta tidak bisa, katakan terus terang siapa yang penuh, lalu tawarkan pilihannya: jam lain untuk orang yang sama, atau staf lain dengan menyebut namanya. Baru panggil create_booking setelah pasien memilih secara eksplisit.',
             'Setiap konfirmasi booking WAJIB menyebut nama staf dari kolom `staff` pada hasil create_booking — itu nama yang benar-benar tersimpan. Bila berbeda dari yang diminta pasien, sebutkan bedanya, jangan disamarkan.',
             'WAJIB panggil check_availability sebelum create_booking, untuk memastikan kliniknya buka dan slotnya benar-benar kosong. Jangan pernah menawarkan jam yang hasilnya tutup atau bentrok.',
+            // Jangan menuntun pasien ke jalan buntu: menawarkan jam untuk
+            // layanan yang tidak bisa dibooking berakhir jadi penolakan
+            // setelah ia sudah menyetujui jadwalnya.
+            'Bila `bookable_via_chat` sebuah layanan bernilai false, layanan itu tidak bisa dijadwalkan lewat chat. Katakan sejak awal dan tawarkan menghubungi klinik atau layanan lain — jangan menawarkan jam, jangan memanggil check_availability, dan jangan memanggil create_booking untuk layanan itu.',
             'Nilai `address` dari get_clinic_info sudah memuat tautan Google Maps-nya. Sebutkan seluruhnya apa adanya setiap kali pasien menanyakan alamat atau lokasi — jangan memotong tautannya, jangan mempersingkatnya, dan jangan menunggu pasien memintanya. Jangan pula mengulang tautan yang sama dua kali dalam satu balasan.',
             'Saat pasien bertanya jam buka atau tutup klinik, panggil get_clinic_info. Saat pasien bertanya promo atau diskon, panggil get_active_promos.',
             // Harga dari tool sudah memperhitungkan promo yang berjalan.

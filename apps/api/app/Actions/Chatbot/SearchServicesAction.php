@@ -3,6 +3,7 @@
 namespace App\Actions\Chatbot;
 
 use App\Enums\ServiceStatus;
+use App\Models\ChatbotSetting;
 use App\Models\Service;
 use App\Support\PromoPricing;
 use App\Support\PromoQuote;
@@ -38,6 +39,12 @@ class SearchServicesAction
         $pricing = new PromoPricing;
         $pricing->preload($services);
 
+        // Boleh-tidaknya dibooking lewat chat ikut disebut sejak awal.
+        // Sebelumnya penjagaannya hanya ada di detik terakhir, jadi chatbot
+        // sempat menawarkan jadwal untuk layanan yang ternyata tidak bisa
+        // dibookingnya — dan pasien baru tahu setelah menyetujui jamnya.
+        $setting = ChatbotSetting::query()->first();
+
         return $services
             // Durasi sengaja tidak ikut: pasien hanya perlu tahu jam
             // bookingnya, bukan berapa menit treatment-nya berlangsung.
@@ -46,6 +53,7 @@ class SearchServicesAction
             ->map(fn (Service $service): array => PromoQuote::describe($service, $pricing, [
                 'id' => $service->id,
                 'name' => $service->name,
+                'bookable_via_chat' => $setting?->allowsBooking($service->id) ?? true,
             ]))
             ->all();
     }
