@@ -4,6 +4,7 @@ namespace App\Actions\Chatbot;
 
 use App\Models\Product;
 use App\Support\RichTextPlain;
+use App\Support\Search;
 
 /**
  * Informasi dan manfaat produk, untuk menjawab "ini buat apa?".
@@ -23,7 +24,7 @@ class GetProductInfoAction
     public function handle(?string $keyword = null): array
     {
         return Product::query()
-            ->when(filled($keyword), fn ($query) => $query->where('name', 'like', '%'.$keyword.'%'))
+            ->when(filled($keyword), fn ($query) => Search::apply($query, ['name'], $keyword))
             ->orderBy('name')
             ->limit(self::LIMIT)
             ->get(['id', 'name', 'knowledge'])

@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Services\ImportService;
 use App\Services\ServiceCatalogService;
 use App\Support\PromoPricing;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -30,7 +31,7 @@ class ServiceController extends Controller
         $query = Service::query()->with('categories');
 
         if ($params['search']) {
-            $query->where('name', 'like', '%'.$params['search'].'%');
+            Search::apply($query, ['name'], $params['search']);
         }
         // Katalog default hanya menampilkan layanan aktif; arsip diminta eksplisit.
         $status = $params['filters']['status'] ?? ServiceStatus::Active->value;

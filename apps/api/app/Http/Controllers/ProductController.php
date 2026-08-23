@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Services\ImportService;
 use App\Services\ProductService;
 use App\Support\PromoPricing;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -30,7 +31,7 @@ class ProductController extends Controller
         $query = Product::query()->with(['categories', 'unit']);
 
         if ($params['search']) {
-            $query->where('name', 'like', '%'.$params['search'].'%');
+            Search::apply($query, ['name'], $params['search']);
         }
         // Master produk default hanya menampilkan yang aktif; arsip diminta eksplisit.
         $status = $params['filters']['status'] ?? ServiceStatus::Active->value;

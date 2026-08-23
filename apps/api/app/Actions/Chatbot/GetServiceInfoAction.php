@@ -5,6 +5,7 @@ namespace App\Actions\Chatbot;
 use App\Enums\ServiceStatus;
 use App\Models\Service;
 use App\Support\RichTextPlain;
+use App\Support\Search;
 
 /**
  * Informasi dan manfaat layanan, untuk menjawab "treatment ini buat apa?".
@@ -31,7 +32,7 @@ class GetServiceInfoAction
     {
         return Service::query()
             ->where('status', ServiceStatus::Active)
-            ->when(filled($keyword), fn ($query) => $query->where('name', 'like', '%'.$keyword.'%'))
+            ->when(filled($keyword), fn ($query) => Search::apply($query, ['name'], $keyword))
             ->orderBy('name')
             ->limit(self::LIMIT)
             ->get(['id', 'name', 'knowledge'])

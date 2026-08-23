@@ -6,6 +6,7 @@ use App\Models\ChatbotSetting;
 use App\Models\Product;
 use App\Support\PromoPricing;
 use App\Support\PromoQuote;
+use App\Support\Search;
 
 /**
  * Ketersediaan produk yang ditanyakan pasien.
@@ -34,7 +35,7 @@ class GetProductStockAction
         $showsStock = ChatbotSetting::query()->first()?->allows_stock_info ?? true;
 
         $products = Product::query()
-            ->when(filled($keyword), fn ($query) => $query->where('name', 'like', '%'.$keyword.'%'))
+            ->when(filled($keyword), fn ($query) => Search::apply($query, ['name'], $keyword))
             ->orderBy('name')
             ->limit(self::LIMIT)
             ->get();

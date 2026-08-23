@@ -7,6 +7,7 @@ use App\Http\Requests\ExpenseRequest;
 use App\Http\Resources\ExpenseResource;
 use App\Models\Expense;
 use App\Services\ExpenseService;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,11 +25,7 @@ class ExpenseController extends Controller
             ->with(['recorder', 'categories'])
             ->between($params['filters']['from'] ?? null, $params['filters']['to'] ?? null);
 
-        if ($params['search']) {
-            $query->where(fn ($inner) => $inner
-                ->where('description', 'like', '%'.$params['search'].'%')
-                ->orWhere('note', 'like', '%'.$params['search'].'%'));
-        }
+        Search::apply($query, ['description', 'note'], $params['search']);
 
         $category = $params['filters']['category'] ?? 'all';
 

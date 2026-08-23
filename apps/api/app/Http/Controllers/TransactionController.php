@@ -8,6 +8,7 @@ use App\Http\Resources\ClinicIdentityResource;
 use App\Http\Resources\TransactionResource;
 use App\Models\Transaction;
 use App\Services\TransactionService;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -27,7 +28,7 @@ class TransactionController extends Controller
         $query = Transaction::query()->with(['patient', 'cashier:id,name']);
 
         if ($params['search']) {
-            $query->where('invoice_number', 'like', '%'.$params['search'].'%');
+            Search::apply($query, ['invoice_number'], $params['search']);
         }
         if (($params['filters']['payment_status'] ?? null)) {
             $query->where('payment_status', $params['filters']['payment_status']);

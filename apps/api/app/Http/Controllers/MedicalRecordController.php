@@ -15,6 +15,7 @@ use App\Models\Patient;
 use App\Models\Transaction;
 use App\Services\MedicalRecordService;
 use App\Support\PatientPurchases;
+use App\Support\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -201,7 +202,7 @@ class MedicalRecordController extends Controller
 
         if ($params['search']) {
             $search = $params['search'];
-            $query->whereHas('patient', fn ($q) => $q->where('name', 'like', '%'.$search.'%'));
+            $query->whereHas('patient', fn ($q) => Search::apply($q, ['name'], $search));
         }
 
         if (! $this->applyAllowedSort($query, $params, ['created_at', 'updated_at'])) {

@@ -10,6 +10,7 @@ use App\Http\Resources\CompanyProfile\CompanyProfileSettingResource;
 use App\Models\CompanyProfileSetting;
 use App\Services\CompanyProfileService;
 use App\Support\CompanyContentRegistry;
+use App\Support\Search;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
@@ -221,17 +222,14 @@ class CompanyContentController extends Controller
     }
 
     /**
+     * Kolom peta bahasa dicari sebagai teks JSON mentah — cukup untuk daftar
+     * CMS, dan tetap jalan di SQLite maupun pgsql.
+     *
      * @param  Builder<Model>  $query
      * @param  array<int, string>  $columns
      */
     private function applySearch(Builder $query, array $columns, string $keyword): void
     {
-        $query->where(function (Builder $inner) use ($columns, $keyword): void {
-            foreach ($columns as $column) {
-                // Kolom peta bahasa dicari sebagai teks JSON mentah — cukup
-                // untuk daftar CMS, dan tetap jalan di SQLite maupun pgsql.
-                $inner->orWhere($column, 'like', '%'.$keyword.'%');
-            }
-        });
+        Search::apply($query, $columns, $keyword);
     }
 }
