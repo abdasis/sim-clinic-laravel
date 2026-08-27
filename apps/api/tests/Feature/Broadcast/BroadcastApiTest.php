@@ -144,7 +144,7 @@ class BroadcastApiTest extends TestCase
             ->assertOk();
 
         $preview->assertJsonPath('data.count', 1)
-            ->assertJsonPath('data.sample.0.name', 'Lama Tidak Datang');
+            ->assertJsonPath('data.recipients.0.name', 'Lama Tidak Datang');
     }
 
     public function test_service_audience_filters_by_service_taken(): void
@@ -163,7 +163,7 @@ class BroadcastApiTest extends TestCase
         $this->getJson($this->tenantUrl('broadcasts/audience-preview?audience=service&service_id='.$facial->id))
             ->assertOk()
             ->assertJsonPath('data.count', 1)
-            ->assertJsonPath('data.sample.0.name', 'Suka Facial');
+            ->assertJsonPath('data.recipients.0.name', 'Suka Facial');
     }
 
     public function test_duplicate_and_missing_numbers_are_handled(): void

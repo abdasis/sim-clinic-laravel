@@ -1,6 +1,20 @@
 <?php
 
 return [
+    // Memilih kontak sendiri satu per satu
+    'selected_patients' => 'Kontak terpilih',
+    'patients_required' => 'Pilih setidaknya satu kontak.',
+    'pick_contacts' => 'Pilih kontak',
+    'pick_contacts_hint' => 'Cari nama pasien, lalu tekan untuk memilihnya. Bisa lebih dari satu.',
+    'selected_count' => ':count kontak dipilih',
+    'clear_selection' => 'Kosongkan pilihan',
+    'search_patients' => 'Cari nama atau nomor pasien',
+    'no_patient_match' => 'Tidak ada pasien yang cocok dengan pencarian ini.',
+    // Daftar penerima di pratinjau
+    'recipients_title' => 'Yang akan menerima',
+    'recipients_hint' => 'Daftar ini yang benar-benar dikirimi, sudah dikurangi nomor ganda.',
+    'opted_out' => ':count pasien tidak menerima promosi karena menolak, jadi tidak ikut dikirimi.',
+    'no_recipients' => 'Tidak ada satu pun penerima untuk pilihan ini.',
     'no_rules' => 'Belum ada aturan pengingat yang dibuat.',
     'no_templates' => 'Belum ada template pesan. Buat satu dulu di menu Template Pesan.',
     'title' => 'Broadcast WA',
@@ -87,6 +101,7 @@ return [
         'all' => 'Semua pasien',
         'inactive' => 'Pasien yang lama tidak datang',
         'service' => 'Pernah ambil layanan tertentu',
+        'selected' => 'Kontak terpilih',
     ],
     'status' => [
         'pending' => 'Menunggu',

@@ -29,6 +29,9 @@ import { FormTextarea } from "#/components/forms/form-textarea.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost, apiUpload } from "#/lib/api.ts"
+import { ContactPicker } from "./contact-picker.tsx"
+import { RecipientPreview } from "./recipient-preview.tsx"
+import type { AudiencePreview } from "./recipient-preview.tsx"
 import type { ApiError } from "#/lib/api.ts"
 
 const schema = z.object({
@@ -79,6 +82,7 @@ export function BroadcastFormDialog({
   const serviceId = form.watch("service_id")
 
   const [previewParams, setPreviewParams] = useState<Record<string, unknown> | null>(null)
+  const [patientIds, setPatientIds] = useState<number[]>([])
 
   // Berkas tidak masuk react-hook-form: yang dikirim ke server bukan nilai
   // teks melainkan FormData, dan schema zod-nya tidak punya kepentingan di
@@ -103,18 +107,24 @@ export function BroadcastFormDialog({
 
     if (audience === "inactive" && !days) return setPreviewParams(null)
     if (audience === "service" && !serviceId) return setPreviewParams(null)
+    // Belum ada kontak yang dipilih: tidak ada yang perlu dihitung, dan
+    // menembak server hanya untuk dijawab nol tidak menolong siapa pun.
+    if (audience === "selected" && patientIds.length === 0) {
+      return setPreviewParams(null)
+    }
 
     setPreviewParams({
       audience,
       days: audience === "inactive" ? days : undefined,
       service_id: audience === "service" ? serviceId : undefined,
+      patient_ids: audience === "selected" ? patientIds : undefined,
     })
-  }, [open, audience, days, serviceId])
+  }, [open, audience, days, serviceId, patientIds])
 
   const preview = useQuery({
     queryKey: ["broadcast-preview", tenant, previewParams],
     queryFn: () =>
-      apiGet<{ data: { count: number; without_phone: number } }>(
+      apiGet<{ data: AudiencePreview }>(
         `/${tenant}/clinic/broadcasts/audience-preview`,
         previewParams ?? {},
       ),
@@ -144,6 +154,7 @@ export function BroadcastFormDialog({
     if (open) {
       form.reset(EMPTY)
       clearImage()
+      setPatientIds([])
     }
     // clearImage sengaja tidak jadi dependensi: ia dibuat ulang tiap render
     // dan hanya menyentuh state lokal, jadi menambahkannya justru membuat
@@ -163,13 +174,14 @@ export function BroadcastFormDialog({
         values.audience === "service" && values.service_id
           ? Number(values.service_id)
           : undefined
+      const selected = values.audience === "selected" ? patientIds : undefined
 
       if (!image) {
         return apiPost<{ data: { id: number } }>(`/${tenant}/clinic/broadcasts`, {
           title: values.title,
           message: values.message,
           audience: values.audience,
-          audience_params: { days, service_id: serviceId },
+          audience_params: { days, service_id: serviceId, patient_ids: selected },
         })
       }
 
@@ -185,6 +197,11 @@ export function BroadcastFormDialog({
       if (serviceId !== undefined) {
         fd.append("audience_params[service_id]", String(serviceId))
       }
+      // FormData tidak mengenal larik, jadi tiap id ditulis dengan kurung
+      // siku kosong — bentuk yang dibaca PHP sebagai array.
+      selected?.forEach((id) => {
+        fd.append("audience_params[patient_ids][]", String(id))
+      })
 
       return apiUpload<{ data: { id: number } }>(`/${tenant}/clinic/broadcasts`, fd)
     },
@@ -243,8 +260,18 @@ export function BroadcastFormDialog({
                     { label: t("broadcast.audience.all"), value: "all" },
                     { label: t("broadcast.audience.inactive"), value: "inactive" },
                     { label: t("broadcast.audience.service"), value: "service" },
+                    { label: t("broadcast.audience.selected"), value: "selected" },
                   ]}
                 />
+
+                {audience === "selected" ? (
+                  <ContactPicker
+                    tenant={tenant}
+                    value={patientIds}
+                    onChange={setPatientIds}
+                    enabled={open}
+                  />
+                ) : null}
 
                 {audience === "inactive" ? (
                   <FormInput
@@ -271,25 +298,15 @@ export function BroadcastFormDialog({
                   />
                 ) : null}
 
-                {/* Jumlah penerima tampil sebelum tombol simpan ditekan —
-                    broadcast ke 900 orang tidak boleh terjadi karena salah pilih. */}
-                {preview.data ? (
-                  <div className="rounded-md border border-border/50 bg-muted/40 px-3 py-2 text-xs">
-                    <p className="font-medium">
-                      {t("broadcast.preview_count").replace(
-                        ":count",
-                        String(preview.data.data.count),
-                      )}
-                    </p>
-                    {preview.data.data.without_phone > 0 ? (
-                      <p className="mt-0.5 text-muted-foreground">
-                        {t("broadcast.without_phone").replace(
-                          ":count",
-                          String(preview.data.data.without_phone),
-                        )}
-                      </p>
-                    ) : null}
-                  </div>
+                {/* Daftar penerimanya tampil sebelum tombol simpan ditekan,
+                    bukan sekadar jumlahnya — broadcast ke 900 orang tidak
+                    boleh terjadi karena salah pilih sasaran, dan angka saja
+                    tidak cukup untuk menyadarinya. */}
+                {previewParams !== null ? (
+                  <RecipientPreview
+                    data={preview.data?.data}
+                    isLoading={preview.isLoading}
+                  />
                 ) : null}
 
                 <div className="space-y-2">

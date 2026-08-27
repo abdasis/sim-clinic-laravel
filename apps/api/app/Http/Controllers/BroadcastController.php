@@ -65,7 +65,13 @@ class BroadcastController extends Controller
             'data' => [
                 'count' => $built['recipients']->count(),
                 'without_phone' => $built['without_phone'],
-                'sample' => $built['recipients']->take(3)->map(fn (array $recipient) => [
+                'opted_out' => $built['opted_out'],
+                // Seluruh nama, bukan tiga contoh. Sebelumnya hanya tiga yang
+                // dikirim — dan layarnya bahkan tidak menampilkannya, jadi
+                // admin menekan kirim ke ratusan orang tanpa pernah melihat
+                // satu pun nama yang akan menerimanya.
+                'recipients' => $built['recipients']->map(fn (array $recipient) => [
+                    'patient_id' => $recipient['patient_id'],
                     'name' => $recipient['name'],
                     'phone' => $recipient['phone'],
                 ])->values(),

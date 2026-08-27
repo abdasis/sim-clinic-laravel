@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\BroadcastAudience;
 use App\Models\Patient;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -14,16 +15,26 @@ use Illuminate\Support\Facades\DB;
  * Satu nomor hanya menerima satu pesan walau dipakai dua pasien (ibu dan
  * anak sering memakai nomor yang sama); pasien tanpa nomor valid dilaporkan
  * terpisah supaya admin tahu siapa yang tidak terjangkau.
+ *
+ * Yang menolak promosi juga dihitung dan dilaporkan, tidak sekadar disaring
+ * diam-diam. Pada penerima yang dipilih sendiri satu per satu, hilangnya
+ * seseorang dari daftar tanpa keterangan terbaca sebagai sistem yang rusak —
+ * padahal ia justru sedang menghormati pilihan pasien itu.
  */
 class BroadcastAudienceBuilder
 {
     /**
      * @param  array<string, mixed>  $params
-     * @return array{recipients: Collection<int, array<string, mixed>>, without_phone: int}
+     * @return array{
+     *     recipients: Collection<int, array<string, mixed>>,
+     *     without_phone: int,
+     *     opted_out: int
+     * }
      */
     public function build(BroadcastAudience $audience, array $params = [], bool $marketing = true): array
     {
         $patients = $this->patientsFor($audience, $params, $marketing);
+        $optedOut = $marketing ? $this->optedOutCount($audience, $params) : 0;
         $lastVisits = $this->lastVisits($patients->pluck('id'));
 
         $withoutPhone = 0;
@@ -70,7 +81,11 @@ class BroadcastAudienceBuilder
             ]);
         }
 
-        return ['recipients' => $recipients, 'without_phone' => $withoutPhone];
+        return [
+            'recipients' => $recipients,
+            'without_phone' => $withoutPhone,
+            'opted_out' => $optedOut,
+        ];
     }
 
     /**
@@ -79,12 +94,48 @@ class BroadcastAudienceBuilder
      */
     private function patientsFor(BroadcastAudience $audience, array $params, bool $marketing): Collection
     {
-        $query = Patient::query()->orderBy('name');
+        $query = $this->scoped($audience, $params);
 
         // Promosi hanya untuk pasien yang memberi izin; pengingat operasional
         // perawatan tidak tunduk pada opt-in pemasaran.
         if ($marketing) {
             $query->where('whatsapp_opt_in', true);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Berapa banyak yang cocok dengan sasarannya tapi menolak promosi.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    private function optedOutCount(BroadcastAudience $audience, array $params): int
+    {
+        return $this->scoped($audience, $params)
+            ->where(fn ($query) => $query
+                ->where('whatsapp_opt_in', false)
+                ->orWhereNull('whatsapp_opt_in'))
+            ->count();
+    }
+
+    /**
+     * Penyaring sasaran tanpa urusan izin promosi.
+     *
+     * @param  array<string, mixed>  $params
+     * @return Builder<Patient>
+     */
+    private function scoped(BroadcastAudience $audience, array $params)
+    {
+        $query = Patient::query()->orderBy('name');
+
+        if ($audience === BroadcastAudience::Selected) {
+            $ids = array_filter(array_map('intval', (array) ($params['patient_ids'] ?? [])));
+
+            // Daftar kosong berarti tidak ada yang dipilih, bukan berarti
+            // semua pasien — whereIn([]) yang kosong sudah menjamin itu,
+            // tapi ditulis tegas supaya niatnya terbaca.
+            $query->whereIn('id', $ids === [] ? [0] : $ids);
         }
 
         if ($audience === BroadcastAudience::Inactive) {
@@ -107,7 +158,7 @@ class BroadcastAudienceBuilder
                 ->whereHas('items', fn ($item) => $item->where('service_id', $serviceId)));
         }
 
-        return $query->get();
+        return $query;
     }
 
     /**

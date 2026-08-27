@@ -31,6 +31,8 @@ class BroadcastRequest extends FormRequest
             'audience_params' => ['nullable', 'array'],
             'audience_params.days' => ['nullable', 'integer', 'min:1', 'max:730'],
             'audience_params.service_id' => ['nullable', TenantRule::exists('services')],
+            'audience_params.patient_ids' => ['nullable', 'array', 'max:500'],
+            'audience_params.patient_ids.*' => [TenantRule::exists('patients')],
         ];
     }
 
@@ -47,6 +49,13 @@ class BroadcastRequest extends FormRequest
             if ($audience === BroadcastAudience::Service->value && empty($params['service_id'])) {
                 $validator->errors()->add('audience_params.service_id', __('broadcast.service_required'));
             }
+
+            // Broadcast ke kontak terpilih tanpa satu pun kontak akan lolos
+            // sebagai kampanye kosong yang berstatus selesai tanpa mengirim
+            // apa pun — lebih baik ditolak di formulirnya.
+            if ($audience === BroadcastAudience::Selected->value && empty($params['patient_ids'])) {
+                $validator->errors()->add('audience_params.patient_ids', __('broadcast.patients_required'));
+            }
         });
     }
 
@@ -58,6 +67,7 @@ class BroadcastRequest extends FormRequest
             'image' => __('broadcast.image'),
             'audience' => __('broadcast.audience_label'),
             'audience_params.days' => __('broadcast.days'),
+            'audience_params.patient_ids' => __('broadcast.selected_patients'),
             'audience_params.service_id' => __('service.title'),
         ];
     }

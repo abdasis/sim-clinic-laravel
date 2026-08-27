@@ -13,6 +13,9 @@ enum BroadcastAudience: string
     /** Pasien yang pernah mengambil layanan tertentu. */
     case Service = 'service';
 
+    /** Sekumpulan pasien yang dipilih sendiri satu per satu. */
+    case Selected = 'selected';
+
     public function label(): string
     {
         return __('broadcast.audience.'.$this->value);

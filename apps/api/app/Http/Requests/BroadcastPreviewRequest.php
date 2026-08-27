@@ -26,6 +26,11 @@ class BroadcastPreviewRequest extends FormRequest
             // Layanan klinik lain tidak boleh dipakai menyaring penerima:
             // jumlah dan nama pasien yang muncul jadi bocoran lintas klinik.
             'service_id' => ['nullable', TenantRule::exists('services')],
+            // Pasien klinik lain ditolak dengan alasan yang sama seperti
+            // layanan: nama dan nomor yang muncul di pratinjau jadi bocoran
+            // lintas klinik.
+            'patient_ids' => ['nullable', 'array', 'max:500'],
+            'patient_ids.*' => [TenantRule::exists('patients')],
         ];
     }
 }
