@@ -1,6 +1,21 @@
 <?php
 
 return [
+    // Ganti kata sandi
+    'change_password' => 'Ganti Kata Sandi',
+    'change_password_desc' => 'Setelah diganti, sesi Anda di perangkat lain ikut keluar.',
+    'current_password' => 'Kata Sandi Saat Ini',
+    'new_password' => 'Kata Sandi Baru',
+    'confirm_password' => 'Ulangi Kata Sandi Baru',
+    'current_password_wrong' => 'Kata sandi saat ini tidak cocok.',
+    'password_must_differ' => 'Kata sandi baru harus berbeda dari yang sekarang.',
+    'password_changed' => 'Kata sandi berhasil diganti.',
+    'password_min_hint' => 'Minimal 8 karakter.',
+    // Admin menyetel ulang kata sandi staf
+    'reset_password' => 'Setel Ulang Kata Sandi',
+    'reset_password_desc' => 'Staf ini akan keluar dari semua perangkatnya dan harus masuk lagi dengan kata sandi baru. Sampaikan kata sandinya langsung kepada yang bersangkutan.',
+    'reset_self_not_allowed' => 'Untuk mengganti kata sandi sendiri, gunakan menu Ganti Kata Sandi - di sana kata sandi lama tetap diminta.',
+    'staff_password_reset' => 'Kata sandi staf berhasil disetel ulang.',
     'password_hint' => 'Minimal 8 karakter, kombinasi huruf dan angka.',
     'show_password' => 'Lihat kata sandi',
     'hide_password' => 'Sembunyikan kata sandi',

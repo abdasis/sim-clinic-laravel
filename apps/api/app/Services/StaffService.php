@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Actions\Password\ResetStaffPasswordAction;
 use App\Actions\Staff\ChangeStaffRoleAction;
 use App\Actions\Staff\CreateStaffAction;
 use App\Actions\Staff\DeactivateStaffAction;
@@ -46,5 +47,14 @@ class StaffService
     public function delete(User $staff): void
     {
         app(DeleteStaffAction::class)->handle($staff);
+    }
+
+    /**
+     * Setel ulang kata sandi staf. Seluruh sesinya dicabut tanpa kecuali —
+     * penyetelan ulang berarti akunnya sedang dipulihkan atau diamankan.
+     */
+    public function resetPassword(User $staff, string $newPassword, ?User $causer = null): void
+    {
+        app(ResetStaffPasswordAction::class)->handle($staff, $newPassword, $causer);
     }
 }

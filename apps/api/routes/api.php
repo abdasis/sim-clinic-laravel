@@ -119,6 +119,10 @@ Route::prefix('{tenant}')
         // Profil sendiri: preferensi tampilan, dibaca semua peran.
         Route::get('/me', [ProfileController::class, 'show']);
         Route::patch('/me', [ProfileController::class, 'update']);
+        // Dibatasi lajunya: kolom kata sandi lama di sini adalah satu-satunya
+        // tempat kata sandi bisa ditebak tanpa melewati halaman masuk.
+        Route::put('/me/password', [ProfileController::class, 'changePassword'])
+            ->middleware('throttle:6,1');
 
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users/invite', [UserController::class, 'invite']);
@@ -141,6 +145,7 @@ Route::prefix('{tenant}/clinic')
         Route::delete('staff/{staff}', [StaffController::class, 'destroy']);
         Route::patch('staff/{staff}/role', [StaffController::class, 'updateRole']);
         Route::post('staff/{staff}/deactivate', [StaffController::class, 'deactivate']);
+        Route::put('staff/{staff}/password', [StaffController::class, 'resetPassword']);
 
         // Izin peran klinik — matriks kecil, tanpa paginasi
         Route::get('roles', [RoleController::class, 'index']);

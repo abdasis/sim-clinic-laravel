@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Concerns\InteractsWithDataTable;
+use App\Http\Requests\ResetStaffPasswordRequest;
 use App\Http\Requests\StoreStaffRequest;
 use App\Http\Requests\UpdateStaffRequest;
 use App\Http\Requests\UpdateStaffRoleRequest;
@@ -109,6 +110,28 @@ class StaffController extends Controller
         return response()->json([
             'data' => new StaffResource($staff),
             'meta' => ['message' => __('staff.deactivated')],
+        ]);
+    }
+
+    /**
+     * Setel ulang kata sandi staf.
+     *
+     * Klinik tidak punya jalur lupa-kata-sandi lewat email, jadi tanpa ini
+     * terapis yang lupa kata sandinya terkunci selamanya — dan satu-satunya
+     * jalan keluar adalah membuat akun baru, yang memutus riwayat kerjanya.
+     */
+    public function resetPassword(
+        ResetStaffPasswordRequest $request,
+        User $staff,
+        StaffService $service,
+    ): JsonResponse {
+        $this->authorize('update', $staff);
+
+        $service->resetPassword($staff, $request->validated('password'), $request->user());
+
+        return response()->json([
+            'data' => null,
+            'meta' => ['message' => __('auth.staff_password_reset')],
         ]);
     }
 }

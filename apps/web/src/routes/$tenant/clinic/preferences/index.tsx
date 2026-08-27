@@ -38,6 +38,7 @@ import {
   normalizeAppearance,
 } from "#/types/appearance.ts"
 import type { Appearance, SidebarVariant, ThemeMode } from "#/types/appearance.ts"
+import { ChangePasswordCard } from "./components/change-password-card.tsx"
 import { OptionTile, SectionCard } from "./components/preference-controls.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/preferences/")({
@@ -219,6 +220,8 @@ function PreferencesPage() {
               ))}
             </div>
           </SectionCard>
+
+          <ChangePasswordCard tenant={tenant} />
         </div>
       )}
     </div>

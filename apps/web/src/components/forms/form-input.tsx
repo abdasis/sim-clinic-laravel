@@ -29,6 +29,14 @@ interface FormInputProps<T extends FieldValues> {
   step?: number
   /** Kelas tambahan untuk elemen input, mis. `tabular-nums`. */
   inputClassName?: string
+  /**
+   * Petunjuk pengisian otomatis untuk peramban dan pengelola kata sandi.
+   *
+   * Penting pada kolom kata sandi: tanpa `new-password`, peramban mengisi
+   * kolom kata sandi baru dengan yang lama, dan penggunanya menekan simpan
+   * tanpa sadar tidak mengganti apa pun.
+   */
+  autoComplete?: string
 }
 
 export function FormInput<T extends FieldValues>({
@@ -37,6 +45,7 @@ export function FormInput<T extends FieldValues>({
   label,
   placeholder,
   type = "text",
+  autoComplete,
   disabled,
   description,
   tooltip,
@@ -57,6 +66,7 @@ export function FormInput<T extends FieldValues>({
           <FormControl>
             <Input
               type={type}
+              autoComplete={autoComplete}
               placeholder={placeholder}
               disabled={disabled}
               aria-required={required}

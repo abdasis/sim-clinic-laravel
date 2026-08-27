@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { MoreHorizontal, Pencil, Trash2, UserMinus } from "lucide-react"
+import { KeyRound, MoreHorizontal, Pencil, Trash2, UserMinus } from "lucide-react"
 
 import {
   DropdownMenu,
@@ -18,6 +18,7 @@ import {
 import { useTrans } from "#/hooks/use-trans.ts"
 import type { StaffRow } from "../index.tsx"
 import { DeactivateStaffDialog } from "./deactivate-staff-dialog.tsx"
+import { ResetPasswordDialog } from "./reset-password-dialog.tsx"
 import { DeleteStaffDialog } from "./delete-staff-dialog.tsx"
 import { StaffEditModal } from "./staff-edit-modal.tsx"
 
@@ -31,6 +32,7 @@ export function StaffActionsCell({
   const { t } = useTrans()
   const [editOpen, setEditOpen] = useState(false)
   const [deactivateOpen, setDeactivateOpen] = useState(false)
+  const [resetOpen, setResetOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   // Staf yang sudah mencatat data klinik tidak bisa dihapus permanen —
@@ -67,6 +69,13 @@ export function StaffActionsCell({
             <Pencil className="size-4" />
             {t("general.edit")}
             <Kbd className="ml-auto">e</Kbd>
+          </DropdownMenuItem>
+          {/* Tanpa lencana pintasan: yang terpasang di item lain di menu ini
+              belum ada yang mendengarkannya, dan menambah satu lagi hanya
+              memperbanyak janji yang tidak ditepati. */}
+          <DropdownMenuItem onSelect={() => setResetOpen(true)}>
+            <KeyRound className="size-4" />
+            {t("auth.reset_password")}
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
@@ -117,6 +126,14 @@ export function StaffActionsCell({
         staffName={staff.name}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
+      />
+
+      <ResetPasswordDialog
+        tenant={tenant}
+        staffId={staff.id}
+        staffName={staff.name}
+        open={resetOpen}
+        onOpenChange={setResetOpen}
       />
 
       <DeactivateStaffDialog

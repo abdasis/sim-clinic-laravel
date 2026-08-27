@@ -45,6 +45,7 @@ use App\Models\WhatsappSetting;
 use App\Support\DeepSeekClient;
 use App\Support\WahaClient;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -144,5 +145,41 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Relation::enforceMorphMap(self::MORPH_MAP);
+
+        $this->bindTenantScopedUsers();
+    }
+
+    /**
+     * Ikat parameter rute {staff} dan {user} ke klinik yang sedang aktif.
+     *
+     * Model User tidak memakai TenantScope — ia juga menampung admin platform
+     * yang memang tidak bertenant — sehingga route model binding bawaan
+     * menemukan pengguna klinik mana pun hanya dari id-nya. Sementara itu
+     * seluruh policy dan pemeriksaan di controller hanya menanyakan wewenang
+     * pelakunya ("apakah dia admin klinik?"), bukan apakah sasarannya
+     * sekliniknya. Gabungan keduanya membuat admin satu klinik bisa mengubah,
+     * menonaktifkan, menghapus, dan menyetel ulang kata sandi staf klinik
+     * lain hanya dengan menebak id.
+     *
+     * Ditutup di pengikatannya, bukan satu per satu di controller: yang
+     * ditulis ulang di tujuh tempat pasti terlupa di tempat kedelapan.
+     */
+    private function bindTenantScopedUsers(): void
+    {
+        $resolver = function (string $value): User {
+            // Gagal tertutup: tanpa tenant aktif tidak ada yang bisa
+            // dipastikan sekliniknya, jadi tidak ada yang boleh ditemukan.
+            $tenant = app()->bound('tenant') ? app('tenant') : null;
+
+            abort_if($tenant === null, 404);
+
+            return User::query()
+                ->where('tenant_id', $tenant->id)
+                ->whereKey($value)
+                ->firstOrFail();
+        };
+
+        Route::bind('staff', $resolver);
+        Route::bind('user', $resolver);
     }
 }
