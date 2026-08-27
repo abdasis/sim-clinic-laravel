@@ -49,6 +49,7 @@ export function StockMovementForm({ tenant, onProductChange }: Props) {
   })
 
   const selectedProduct = form.watch("product_id")
+  const type = form.watch("type")
   useEffect(() => {
     onProductChange(selectedProduct)
   }, [selectedProduct, onProductChange])
@@ -103,8 +104,16 @@ export function StockMovementForm({ tenant, onProductChange }: Props) {
           control={form.control}
           name="type"
           label={t("inventory.type")}
+          // Keterangannya ikut berganti mengikuti pilihannya: "Stok Keluar"
+          // dan "Dipakai Sendiri" sama-sama mengurangi saldo, jadi bedanya
+          // tidak terbaca dari namanya saja.
+          description={t(`inventory.type_hint_${type}`)}
           options={[
             { label: t("clinic.stock_movement_type.in"), value: "in" },
+            {
+              label: t("clinic.stock_movement_type.used_internal"),
+              value: "used_internal",
+            },
             {
               label: t("clinic.stock_movement_type.out_manual"),
               value: "out_manual",

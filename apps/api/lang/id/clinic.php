@@ -39,6 +39,7 @@ return [
     'stock_movement_type' => [
         'in' => 'Stok Masuk',
         'out_manual' => 'Stok Keluar',
+        'used_internal' => 'Dipakai Sendiri',
         'sold_pos' => 'Terjual (POS)',
         'rollback' => 'Pengembalian',
     ],

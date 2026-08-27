@@ -15,7 +15,7 @@ class StockMovementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', Rule::in(['in', 'out_manual'])],
+            'type' => ['required', Rule::in(['in', 'out_manual', 'used_internal'])],
             'quantity' => ['required', 'integer', 'gt:0'],
             'note' => ['nullable', 'string', 'max:255'],
         ];

@@ -162,13 +162,21 @@ class StatsService
     {
         $window = [$from->copy()->startOfDay(), $to->copy()->endOfDay()];
         $base = fn () => DB::table('stock_movements')->where('tenant_id', $tenantId)->whereBetween('created_at', $window);
-        $outTypes = [StockMovementType::OutManual->value, StockMovementType::SoldPos->value];
+        $outTypes = [
+            StockMovementType::OutManual->value,
+            StockMovementType::UsedInternal->value,
+            StockMovementType::SoldPos->value,
+        ];
 
         return $this->payload(
             kpis: [
                 $this->kpi('movements', 'inventory.movements', $base()->count()),
                 $this->kpi('total_in', 'inventory.total_in', (int) $base()->whereIn('type', [StockMovementType::In->value, StockMovementType::Rollback->value])->sum('quantity'), self::UNIT_QTY),
                 $this->kpi('total_out', 'inventory.total_out', (int) $base()->whereIn('type', $outTypes)->sum('quantity'), self::UNIT_QTY),
+                // Dipisah dari total keluar, bukan menggantikannya: yang
+                // terpakai treatment adalah biaya layanan, dan itulah angka
+                // yang dicari saat menghitung ongkos bahan per periode.
+                $this->kpi('used_internal', 'inventory.used_internal', (int) $base()->where('type', StockMovementType::UsedInternal->value)->sum('quantity'), self::UNIT_QTY),
             ],
             trendMetric: 'inventory_net',
             // Masuk dihitung positif, keluar negatif, jadi garisnya membaca arah
