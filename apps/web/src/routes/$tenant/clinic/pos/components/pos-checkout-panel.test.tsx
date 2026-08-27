@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { PosCheckoutPanel, type PatientFormValues } from "./pos-checkout-panel.tsx"
+import { EMPTY_DISCOUNT } from "./discount-field.tsx"
 import { setTranslations } from "#/utils/trans.ts"
 
 setTranslations({
@@ -46,6 +47,8 @@ function Harness(
       patientOptions={PATIENTS}
       bookingOptions={[]}
       staff={[{ id: 9, name: "Mbak Rara", clinic_role: "therapist" }]}
+      discount={EMPTY_DISCOUNT}
+      onDiscountChange={() => {}}
       performerIds={[]}
       onPerformersChange={() => {}}
       onOfferedBy={() => {}}

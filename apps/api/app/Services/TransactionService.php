@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Actions\LogAuditAction;
 use App\Actions\Transaction\CancelTransactionAction;
 use App\Actions\Transaction\SoftDeleteTransactionAction;
+use App\Enums\DiscountType;
 use App\Enums\PaymentStatus;
 use App\Enums\StockMovementType;
 use App\Models\Product;
@@ -34,7 +35,9 @@ class TransactionService
                 : now();
 
             $lines = $this->buildLines($data['items'] ?? []);
-            $subtotal = array_sum(array_column($lines, 'subtotal'));
+            $itemsTotal = array_sum(array_column($lines, 'subtotal'));
+
+            $discount = $this->resolveDiscount($data, $itemsTotal);
 
             $transaction = Transaction::create([
                 'patient_id' => $data['patient_id'],
@@ -42,7 +45,13 @@ class TransactionService
                 'cashier_id' => Auth::id(),
                 // Nomor diambil di dalam transaction agar barisnya terkunci.
                 'invoice_number' => Transaction::generateInvoiceNumber($issuedAt),
-                'subtotal' => $subtotal,
+                'items_total' => $itemsTotal,
+                'discount_type' => $discount['type'],
+                'discount_value' => $discount['value'],
+                'discount_amount' => $discount['amount'],
+                // Tetap berarti jumlah yang harus dibayar: seluruh
+                // perhitungan sisa tagihan dan status lunas membacanya begitu.
+                'subtotal' => $discount['payable'],
                 'paid_amount' => 0,
                 'payment_status' => PaymentStatus::Unpaid,
                 'issued_at' => $issuedAt,
@@ -113,6 +122,35 @@ class TransactionService
      *
      * @return array<int, array<string, mixed>>
      */
+    /**
+     * Hitung potongan nota dari isian kasir.
+     *
+     * Nilainya disimpan apa adanya berikut hasil hitungnya. Menyimpan hasil
+     * saja membuat nota tidak bisa menjelaskan asalnya; menyimpan isian saja
+     * membuat angkanya berubah ketika harga layanan berubah — dan nota lama
+     * harus tetap menampilkan angka yang sama seperti saat dicetak.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{type: ?DiscountType, value: ?float, amount: float, payable: float}
+     */
+    private function resolveDiscount(array $data, float $itemsTotal): array
+    {
+        $type = isset($data['discount_type']) ? DiscountType::from($data['discount_type']) : null;
+        $value = isset($data['discount_value']) ? (float) $data['discount_value'] : null;
+
+        if ($type === null || $value === null || $value <= 0) {
+            return ['type' => null, 'value' => null, 'amount' => 0.0, 'payable' => round($itemsTotal, 2)];
+        }
+
+        // Dihitung sebagai selisih, bukan rumus terpisah, supaya potongan yang
+        // melebihi tagihan berhenti di gratis — sama seperti perlakuan promo,
+        // dan tidak pernah melahirkan nota bernilai minus.
+        $payable = $type->apply($itemsTotal, $value);
+        $amount = round($itemsTotal - $payable, 2);
+
+        return ['type' => $type, 'value' => $value, 'amount' => $amount, 'payable' => $payable];
+    }
+
     private function buildLines(array $items): array
     {
         // Harga promo dihitung ulang di server, bukan diterima dari klien —

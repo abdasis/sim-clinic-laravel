@@ -5,6 +5,11 @@ import { Form } from "#/components/ui/form.tsx"
 import { FormCombobox } from "#/components/forms/form-combobox.tsx"
 import { FormDatePicker } from "#/components/forms/form-date-picker.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import {
+  DiscountField,
+  discountAmount,
+  type DiscountState,
+} from "./discount-field.tsx"
 import { PaymentPanel, type PaymentData } from "./payment-panel.tsx"
 import { PerformerPicker, type StaffOption } from "./performer-picker.tsx"
 import { PosCart } from "./pos-cart.tsx"
@@ -43,7 +48,10 @@ interface PosCheckoutPanelProps {
   /** Pasien belum dipilih, jadi daftar kunjungan memang belum bisa diisi. */
   bookingsNeedPatient?: boolean
   items: LineItem[]
+  /** Total keranjang sebelum potongan nota. */
   total: number
+  discount: DiscountState
+  onDiscountChange: (next: DiscountState) => void
   onStep: (key: string, delta: number) => void
   onRemove: (key: string) => void
   onClear: () => void
@@ -86,6 +94,8 @@ export function PosCheckoutPanel({
   bookingsNeedPatient,
   items,
   total,
+  discount,
+  onDiscountChange,
   onStep,
   onRemove,
   onClear,
@@ -166,7 +176,18 @@ export function PosCheckoutPanel({
         onOfferedBy={onOfferedBy}
       />
 
-      <PaymentPanel total={total} onChange={onPaymentChange} />
+      <DiscountField
+        value={discount}
+        onChange={onDiscountChange}
+        total={total}
+      />
+
+      {/* Yang dibayar adalah jumlah setelah potongan: kembalian dan sisa
+          tagihan harus dihitung dari angka yang sama dengan yang ditagih. */}
+      <PaymentPanel
+        total={Math.max(0, total - discountAmount(discount, total))}
+        onChange={onPaymentChange}
+      />
     </div>
   )
 }

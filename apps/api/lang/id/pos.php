@@ -1,6 +1,16 @@
 <?php
 
 return [
+    // Potongan di tingkat nota
+    'discount' => 'Potongan',
+    'discount_type' => 'Jenis Potongan',
+    'discount_value' => 'Besar Potongan',
+    'discount_percent_max' => 'Potongan persen tidak boleh lebih dari 100%.',
+    'discount_hint_percent' => 'Boleh pecahan, mis. 70,5 untuk 70,5%.',
+    'discount_hint_fixed' => 'Nilai rupiah yang dipotong dari total.',
+    'discount_none' => 'Tanpa potongan',
+    'items_total' => 'Subtotal',
+    'payable' => 'Total Bayar',
     'no_performers' => 'Belum ada staf klinik yang bisa dicatat sebagai pelaksana.',
     'payment_status' => 'Status Bayar',
     'outstanding' => 'Sisa Bayar',

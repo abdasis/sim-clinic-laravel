@@ -61,14 +61,18 @@ class ReportService
         $start = Carbon::parse($from)->startOfDay();
         $end = Carbon::parse($to)->endOfDay();
 
-        $row = DB::table('transaction_items')
-            ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-            ->where('transactions.tenant_id', $tenantId)
-            ->where('transactions.payment_status', 'paid')
-            ->whereNull('transactions.cancelled_at')
-            ->whereBetween('transactions.created_at', [$start, $end])
-            ->selectRaw('COALESCE(SUM(transaction_items.subtotal), 0) as total_revenue')
-            ->selectRaw('COUNT(DISTINCT transactions.id) as paid_transactions_count')
+        // Dihitung dari notanya, bukan dari penjumlahan barisnya: potongan di
+        // tingkat nota tidak menempel pada baris mana pun, jadi menjumlahkan
+        // baris akan melaporkan omzet lebih besar daripada yang benar-benar
+        // ditagih. Rincian per layanan dan per produk tetap memakai baris —
+        // di sana pertanyaannya "apa yang laku", bukan "berapa yang masuk".
+        $row = DB::table('transactions')
+            ->where('tenant_id', $tenantId)
+            ->where('payment_status', 'paid')
+            ->whereNull('cancelled_at')
+            ->whereBetween('created_at', [$start, $end])
+            ->selectRaw('COALESCE(SUM(subtotal), 0) as total_revenue')
+            ->selectRaw('COUNT(*) as paid_transactions_count')
             ->first();
 
         return [

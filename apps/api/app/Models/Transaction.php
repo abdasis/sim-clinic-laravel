@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
+use App\Enums\DiscountType;
 use App\Enums\PaymentStatus;
 use App\Scopes\TenantScope;
 use Carbon\CarbonInterface;
@@ -25,6 +26,10 @@ class Transaction extends Model
         'booking_id',
         'cashier_id',
         'invoice_number',
+        'items_total',
+        'discount_type',
+        'discount_value',
+        'discount_amount',
         'subtotal',
         'paid_amount',
         'payment_status',
@@ -37,6 +42,10 @@ class Transaction extends Model
     protected function casts(): array
     {
         return [
+            'items_total' => 'decimal:2',
+            'discount_type' => DiscountType::class,
+            'discount_value' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'payment_status' => PaymentStatus::class,

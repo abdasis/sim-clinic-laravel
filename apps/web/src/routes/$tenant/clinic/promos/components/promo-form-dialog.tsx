@@ -111,6 +111,10 @@ export function PromoFormDialog({
     )
   }, [open, promo, form])
 
+  // Keterangan besaran potongan ikut jenisnya: 70,5 berarti persen di
+  // satu pilihan dan rupiah di pilihan lainnya.
+  const discountType = form.watch("discount_type")
+
   const mutation = useMutation({
     mutationFn: (values: Values) => {
       const payload = { ...values, targets: targets.map(({ type, id }) => ({ type, id })) }
@@ -182,8 +186,17 @@ export function PromoFormDialog({
                     name="discount_value"
                     label={t("promo.discount_value")}
                     type="number"
-                    min={1}
+                    // step bawaan input number adalah 1, jadi 70,5 ditolak
+                    // peramban sebelum sempat sampai ke server — padahal
+                    // kolomnya sudah desimal sejak awal.
+                    step={0.01}
+                    min={0.01}
                     required
+                    description={
+                      discountType === "percent"
+                        ? t("promo.percent_hint")
+                        : t("promo.fixed_hint")
+                    }
                     inputClassName="tabular-nums"
                   />
                 </div>

@@ -25,6 +25,10 @@ import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useIsMobile } from "#/hooks/use-mobile.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost } from "#/lib/api.ts"
+import {
+  EMPTY_DISCOUNT,
+  type DiscountState,
+} from "./components/discount-field.tsx"
 import type { ApiError } from "#/lib/api.ts"
 import { formatCurrency, formatDateTime } from "#/lib/format.ts"
 import type { PaymentData } from "./components/payment-panel.tsx"
@@ -140,6 +144,7 @@ function PosPage() {
   )
 
   const handlePayment = useCallback((next: PaymentData) => setPayment(next), [])
+  const [discount, setDiscount] = useState<DiscountState>(EMPTY_DISCOUNT)
 
   const canSubmit = !cart.isEmpty && !cart.hasStockIssue
 
@@ -152,6 +157,15 @@ function PosPage() {
           performer_ids: performerIds,
           booking_id: bookingId ? Number(bookingId) : null,
           issued_at: issuedAt ? issuedAt : null,
+          // Yang dikirim isian kasirnya, bukan hasil hitung di layar:
+          // angka yang tersimpan harus berasal dari satu perhitungan saja,
+          // dan itu milik server.
+          ...(discount.kind === "none" || discount.value === ""
+            ? {}
+            : {
+                discount_type: discount.kind,
+                discount_value: Number(discount.value.replace(",", ".")),
+              }),
           items: cart.items.map((item) => ({
             ...(item.kind === "product"
               ? { product_id: item.refId }
@@ -193,6 +207,9 @@ function PosPage() {
       // Katalog ikut disegarkan supaya saldo stoknya tidak basi setelah jualan.
       qc.invalidateQueries({ queryKey: ["products", tenant, "catalog"] })
       cart.clear()
+      // Potongan ikut dikosongkan: ia berlaku untuk satu nota, dan yang
+      // tertinggal akan diam-diam memangkas nota pasien berikutnya.
+      setDiscount(EMPTY_DISCOUNT)
       setPerformerIds([])
       // Tanggal sengaja dipertahankan: admin yang mencatat penjualan
       // sebulan lalu biasanya memasukkan beberapa nota untuk hari yang sama.
@@ -267,6 +284,8 @@ function PosPage() {
       onOfferedBy={cart.setOfferedBy}
       items={cart.items}
       total={cart.total}
+      discount={discount}
+      onDiscountChange={setDiscount}
       onStep={cart.step}
       onRemove={cart.remove}
       onClear={cart.clear}

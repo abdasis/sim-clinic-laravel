@@ -24,6 +24,14 @@ class TransactionResource extends JsonResource
                 ])->values()
                 : [],
             'booking_id' => $this->booking_id,
+            // Jumlah sebelum potongan dan potongannya sendiri dibawa
+            // terpisah supaya nota bisa menunjukkan keduanya; `subtotal`
+            // tetap berarti jumlah yang harus dibayar.
+            'items_total' => $this->items_total,
+            'discount_type' => $this->discount_type,
+            'discount_type_label' => $this->discount_type?->label(),
+            'discount_value' => $this->discount_value,
+            'discount_amount' => $this->discount_amount,
             'subtotal' => $this->subtotal,
             'paid_amount' => $this->paid_amount,
             'outstanding_amount' => $this->outstandingAmount(),

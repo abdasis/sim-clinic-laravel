@@ -16,6 +16,8 @@ return [
     'targets_count' => ':count item',
     'period' => 'Periode',
     'percent_max' => 'Potongan persen tidak boleh lebih dari 100%.',
+    'percent_hint' => 'Boleh pecahan, mis. 70,5 untuk 70,5%.',
+    'fixed_hint' => 'Nilai rupiah yang dipotong dari harga.',
     'created' => 'Promosi berhasil ditambahkan.',
     'updated' => 'Promosi berhasil diperbarui.',
     'deleted' => 'Promosi berhasil dihapus.',
