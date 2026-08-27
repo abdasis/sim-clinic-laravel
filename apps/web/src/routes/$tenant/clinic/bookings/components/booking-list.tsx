@@ -8,6 +8,7 @@ import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { cn } from "#/lib/utils.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import type { ScheduleBooking } from "#/components/schedule/schedule-grid.tsx"
+import { BookingDeleteAction } from "./booking-delete-action.tsx"
 import { BookingStatusAction } from "./booking-status-action.tsx"
 
 const dayHeading = new Intl.DateTimeFormat("id-ID", {
@@ -139,6 +140,7 @@ export function BookingList({
                   {t("general.edit")}
                 </Button>
                 <BookingStatusAction tenant={tenant} booking={booking} />
+                <BookingDeleteAction tenant={tenant} booking={booking} />
               </span>
             </div>
           ))}

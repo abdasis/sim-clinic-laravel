@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateBookingStatusRequest;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Services\BookingService;
+use App\Support\BookingReferences;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -128,6 +129,11 @@ class BookingController extends Controller
             ->orderBy('assignee_id')
             ->get();
 
+        // Jejak seluruh baris ditarik sekali, jadi kolom "boleh dihapus" tidak
+        // menembak satu kueri per booking.
+        $references = new BookingReferences;
+        $references->preload($bookings);
+
         $data = $bookings->map(fn (Booking $booking): array => [
             'id' => $booking->id,
             'patient_name' => $booking->patient?->name,
@@ -137,6 +143,7 @@ class BookingController extends Controller
             'start_at' => $booking->start_at?->toIso8601String(),
             'end_at' => $booking->end_at?->toIso8601String(),
             'status' => $booking->status,
+            'can_delete' => ! $references->has($booking->id),
         ])->all();
 
         return response()->json(['data' => $data, 'meta' => []]);
@@ -145,6 +152,16 @@ class BookingController extends Controller
     public function destroy(Booking $booking, BookingService $service): JsonResponse
     {
         $this->authorize('delete', $booking);
+
+        // Diperiksa di sini, bukan diserahkan ke foreign key: yang RESTRICT
+        // gagal sebagai galat basis data mentah, dan yang nullOnDelete tidak
+        // menahan apa pun sehingga notanya diam-diam kehilangan tautannya.
+        if ((new BookingReferences)->has($booking->id)) {
+            return response()->json([
+                'message' => __('booking.has_history'),
+                'errors' => ['booking' => [__('booking.has_history')]],
+            ], 422);
+        }
 
         $service->delete($booking);
 

@@ -13,6 +13,8 @@ export interface ScheduleBooking {
   start_at: string
   end_at: string
   status: string
+  /** Booking yang sudah punya rekam medis atau nota tidak boleh dihapus. */
+  can_delete?: boolean
 }
 
 interface ScheduleGridProps {
