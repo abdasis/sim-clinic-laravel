@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from "#/components/ui/dialog.tsx"
 import { Form } from "#/components/ui/form.tsx"
-import { ScrollArea } from "#/components/ui/scroll-area.tsx"
 import { FormDatePicker } from "#/components/forms/form-date-picker.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
@@ -153,7 +152,7 @@ export function PromoFormDialog({
             onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
             className="flex min-h-0 flex-col"
           >
-            <ScrollArea className="max-h-[62dvh] min-h-0 flex-1">
+            <div className="max-h-[62dvh] min-h-0 flex-1 overflow-y-auto">
               <div className="space-y-4 p-4">
                 <FormInput
                   control={form.control}
@@ -224,7 +223,7 @@ export function PromoFormDialog({
                   error={targetError}
                 />
               </div>
-            </ScrollArea>
+            </div>
 
             <DialogFooter className="border-t border-border/50 p-4">
               <FormSubmit loading={mutation.isPending}>

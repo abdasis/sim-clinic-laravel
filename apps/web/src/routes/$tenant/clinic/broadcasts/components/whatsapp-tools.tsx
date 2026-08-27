@@ -15,7 +15,6 @@ import {
 } from "#/components/ui/dialog.tsx"
 import { Input } from "#/components/ui/input.tsx"
 import { Label } from "#/components/ui/label.tsx"
-import { ScrollArea } from "#/components/ui/scroll-area.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { Switch } from "#/components/ui/switch.tsx"
 import { Textarea } from "#/components/ui/textarea.tsx"
@@ -176,7 +175,7 @@ export function TemplatesDialog({ tenant, open, onOpenChange }: ToolDialogProps)
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[30dvh]">
+        <div className="max-h-[30dvh] overflow-y-auto">
           {templates.isLoading ? (
             <Skeleton className="h-16 w-full" />
           ) : (templates.data?.data.length ?? 0) === 0 ? (
@@ -215,7 +214,7 @@ export function TemplatesDialog({ tenant, open, onOpenChange }: ToolDialogProps)
               ))}
             </ul>
           )}
-        </ScrollArea>
+        </div>
 
         <div className="space-y-2 border-t border-border/50 pt-3">
           <div className="space-y-1">

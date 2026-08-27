@@ -12,7 +12,6 @@ import {
   DialogTitle,
 } from "#/components/ui/dialog.tsx"
 import { Button } from "#/components/ui/button.tsx"
-import { ScrollArea } from "#/components/ui/scroll-area.tsx"
 import {
   Tooltip,
   TooltipContent,
@@ -178,7 +177,7 @@ export function CatalogImportDialog({
             {result.errors.length === 0 ? (
               <p className="text-xs text-muted-foreground">{t("import.no_errors")}</p>
             ) : (
-              <ScrollArea className="max-h-48">
+              <div className="max-h-48 overflow-y-auto">
                 <table className="w-full text-xs">
                   <thead className="text-muted-foreground">
                     <tr className="border-b border-border/50">
@@ -208,7 +207,7 @@ export function CatalogImportDialog({
                     ))}
                   </tbody>
                 </table>
-              </ScrollArea>
+              </div>
             )}
           </div>
         ) : null}

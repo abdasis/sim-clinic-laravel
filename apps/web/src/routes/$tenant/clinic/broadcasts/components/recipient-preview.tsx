@@ -1,4 +1,3 @@
-import { ScrollArea } from "#/components/ui/scroll-area.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 
@@ -32,6 +31,11 @@ interface RecipientPreviewProps {
  * Yang tidak terjangkau ikut disebut dan dibedakan sebabnya: nomor yang tidak
  * terbaca adalah data yang perlu dibetulkan, sedangkan yang menolak promosi
  * adalah pilihan pasien yang justru harus dihormati.
+ *
+ * Daftarnya digulir lewat wadah CSS biasa, bukan ScrollArea Radix: viewport
+ * ScrollArea memakai height 100% terhadap induk yang tingginya auto, jadi
+ * max-height di root-nya tidak mengekang apa pun — daftar panjang meluber
+ * keluar dan menimpa seluruh isi dialog.
  */
 export function RecipientPreview({ data, isLoading }: RecipientPreviewProps) {
   const { t } = useTrans()
@@ -78,24 +82,22 @@ export function RecipientPreview({ data, isLoading }: RecipientPreviewProps) {
           {t("broadcast.no_recipients")}
         </p>
       ) : (
-        <div className="rounded-sm border border-border/50 bg-background">
-          <ScrollArea className="max-h-40">
-            <ul className="divide-y divide-border/40">
-              {data.recipients.map((recipient) => (
-                <li
-                  key={recipient.patient_id}
-                  className="flex items-center justify-between gap-3 px-2.5 py-1.5"
-                >
-                  <span className="min-w-0 truncate text-xs">
-                    {recipient.name}
-                  </span>
-                  <span className="shrink-0 text-xxs tabular-nums text-muted-foreground">
-                    {recipient.phone}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </ScrollArea>
+        <div className="max-h-40 overflow-y-auto rounded-sm border border-border/50 bg-background">
+          <ul className="divide-y divide-border/40">
+            {data.recipients.map((recipient) => (
+              <li
+                key={recipient.patient_id}
+                className="flex items-center justify-between gap-3 px-2.5 py-1.5"
+              >
+                <span className="min-w-0 truncate text-xs">
+                  {recipient.name}
+                </span>
+                <span className="shrink-0 text-xxs tabular-nums text-muted-foreground">
+                  {recipient.phone}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

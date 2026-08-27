@@ -6,7 +6,6 @@ import { Cancel01Icon, Search01Icon, Tick02Icon } from "@hugeicons/core-free-ico
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { Input } from "#/components/ui/input.tsx"
-import { ScrollArea } from "#/components/ui/scroll-area.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
@@ -132,8 +131,9 @@ export function ContactPicker({
         />
       </div>
 
-      <div className="rounded-md border border-border/60">
-        <ScrollArea className="max-h-56">
+      {/* Alasan yang sama seperti di daftar penerima: max-height pada
+          ScrollArea Radix tidak memotong isinya. */}
+      <div className="max-h-56 overflow-y-auto rounded-md border border-border/60">
           {patients.isLoading ? (
             <div className="space-y-1 p-2">
               <Skeleton className="h-7 w-full" />
@@ -185,8 +185,7 @@ export function ContactPicker({
                 )
               })}
             </ul>
-          )}
-        </ScrollArea>
+        )}
       </div>
     </div>
   )

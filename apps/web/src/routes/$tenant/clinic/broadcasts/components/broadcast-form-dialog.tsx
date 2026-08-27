@@ -16,7 +16,6 @@ import {
   DialogTitle,
 } from "#/components/ui/dialog.tsx"
 import { Form } from "#/components/ui/form.tsx"
-import { ScrollArea } from "#/components/ui/scroll-area.tsx"
 import {
   Tooltip,
   TooltipContent,
@@ -243,7 +242,13 @@ export function BroadcastFormDialog({
             onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
             className="flex min-h-0 flex-col"
           >
-            <ScrollArea className="max-h-[62dvh] min-h-0 flex-1">
+            {/*
+              Wadah gulir CSS biasa, bukan ScrollArea Radix: viewport-nya
+              memakai height 100% terhadap induk yang tingginya auto, jadi
+              max-height di root tidak mengekang apa pun dan isinya meluber
+              menimpa seluruh dialog begitu daftarnya panjang.
+            */}
+            <div className="max-h-[62dvh] min-h-0 flex-1 overflow-y-auto">
               <div className="space-y-4 p-4">
                 <FormInput
                   control={form.control}
@@ -458,7 +463,7 @@ export function BroadcastFormDialog({
                   </div>
                 </div>
               </div>
-            </ScrollArea>
+            </div>
 
             <DialogFooter className="border-t border-border/50 p-4">
               <FormSubmit loading={mutation.isPending}>
