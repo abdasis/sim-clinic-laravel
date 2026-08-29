@@ -7,7 +7,17 @@ export interface LineItem {
   kind: "service" | "product"
   refId: number
   name: string
+  /** Harga yang ditagihkan — sudah dipotong promo bila ada. */
   unitPrice: number
+  /**
+   * Harga sebelum potongan promo; null berarti baris ini tidak sedang promo.
+   *
+   * Ikut dibawa ke keranjang, bukan berhenti di kartu katalog: kasir membaca
+   * keranjang saat menyebutkan tagihan, dan promo yang hilang di sana membuat
+   * potongannya tidak bisa ditunjukkan ke pasien yang justru datang karenanya.
+   */
+  basePrice: number | null
+  promoName: string | null
   qty: number
   /** null untuk layanan — layanan tidak terbatas stok. */
   stock: number | null
@@ -47,6 +57,8 @@ export function usePosCart() {
           refId: entry.id,
           name: entry.name,
           unitPrice: entry.price,
+          basePrice: entry.basePrice,
+          promoName: entry.promoName,
           qty: 1,
           stock: entry.stock,
           offeredBy: null,

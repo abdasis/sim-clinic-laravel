@@ -3,8 +3,10 @@ import {
   Delete02Icon,
   MinusSignIcon,
   PlusSignIcon,
+  Tag01Icon,
 } from "@hugeicons/core-free-icons"
 
+import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { Kbd } from "#/components/ui/kbd.tsx"
@@ -43,6 +45,15 @@ export function PosCart({
   onOfferedBy,
 }: PosCartProps) {
   const { t } = useTrans()
+
+  const savings = items.reduce(
+    (sum, item) =>
+      sum +
+      (item.basePrice === null
+        ? 0
+        : (item.basePrice - item.unitPrice) * item.qty),
+    0,
+  )
 
   return (
     <div className="space-y-3">
@@ -99,11 +110,27 @@ export function PosCart({
         </ul>
       )}
 
-      <div className="flex items-baseline justify-between border-t border-border/50 pt-3">
-        <span className="text-sm text-muted-foreground">{t("pos.total")}</span>
-        <span className="text-lg font-semibold tabular-nums">
-          {formatCurrency(total)}
-        </span>
+      <div className="space-y-1 border-t border-border/50 pt-3">
+        {/* Total hemat disebut sendiri: itu kalimat yang diucapkan kasir ke
+            pasien, dan menghitungnya dari selisih dua angka di layar bukan
+            pekerjaan yang boleh diserahkan ke orang yang sedang melayani. */}
+        {savings > 0 ? (
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-muted-foreground">
+              {t("pos.cart.savings")}
+            </span>
+            <span className="text-xs font-medium tabular-nums text-emerald-600">
+              −{formatCurrency(savings)}
+            </span>
+          </div>
+        ) : null}
+
+        <div className="flex items-baseline justify-between">
+          <span className="text-sm text-muted-foreground">{t("pos.total")}</span>
+          <span className="text-lg font-semibold tabular-nums">
+            {formatCurrency(total)}
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -133,9 +160,33 @@ function CartRow({
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{item.name}</p>
-          <p className="text-xs text-muted-foreground tabular-nums">
-            {formatCurrency(item.unitPrice)}
+          <p className="flex flex-wrap items-baseline gap-1.5 text-xs text-muted-foreground">
+            <span className="tabular-nums">
+              {formatCurrency(item.unitPrice)}
+            </span>
+            {/* Harga asli dicoret di sebelahnya: kasir membaca keranjang saat
+                menyebutkan tagihan, dan pasien yang datang karena promo perlu
+                melihat potongannya — bukan cuma angka yang kebetulan lebih
+                murah. */}
+            {item.basePrice !== null ? (
+              <span className="tabular-nums line-through opacity-70">
+                {formatCurrency(item.basePrice)}
+              </span>
+            ) : null}
           </p>
+          {item.promoName ? (
+            <Badge
+              variant="secondary"
+              className="mt-1 max-w-full gap-1 font-normal"
+            >
+              <HugeiconsIcon
+                icon={Tag01Icon}
+                strokeWidth={2}
+                className="size-3 shrink-0"
+              />
+              <span className="truncate">{item.promoName}</span>
+            </Badge>
+          ) : null}
         </div>
 
         <Tooltip>

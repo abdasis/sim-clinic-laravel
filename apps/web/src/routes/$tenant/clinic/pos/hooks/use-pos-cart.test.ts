@@ -30,6 +30,20 @@ const FACIAL: CatalogEntry = {
   stockStatus: "n/a",
 }
 
+/** Layanan yang sedang promo: harga tagih turun, harga asli tetap dibawa. */
+const FACIAL_PROMO: CatalogEntry = {
+  kind: "service",
+  id: 9,
+  name: "Facial Glow",
+  price: 160_000,
+  basePrice: 200_000,
+  promoName: "Promo Agustus",
+  unit: null,
+  stock: null,
+  minThreshold: null,
+  stockStatus: "n/a",
+}
+
 describe("usePosCart", () => {
   it("menambah entri yang sama menaikkan jumlah, bukan membuat baris kedua", () => {
     const { result } = renderHook(() => usePosCart())
@@ -88,5 +102,48 @@ describe("usePosCart", () => {
     act(() => result.current.setQty("service:7", 99))
 
     expect(result.current.hasStockIssue).toBe(false)
+  })
+
+  /**
+   * Promo hilang begitu barangnya masuk keranjang: kartunya menunjukkan
+   * potongan, tapi barisnya tidak membawa apa pun. Kasir membaca keranjang
+   * saat menyebutkan tagihan, jadi potongan yang lenyap di sana tidak bisa
+   * ditunjukkan ke pasien yang justru datang karenanya.
+   */
+  it("membawa promo dan harga asli ke dalam keranjang", () => {
+    const { result } = renderHook(() => usePosCart())
+
+    act(() => {
+      result.current.add(FACIAL_PROMO)
+    })
+
+    const line = result.current.items[0]
+
+    expect(line.unitPrice).toBe(160_000)
+    expect(line.basePrice).toBe(200_000)
+    expect(line.promoName).toBe("Promo Agustus")
+  })
+
+  it("menagih harga promo, bukan harga asli", () => {
+    const { result } = renderHook(() => usePosCart())
+
+    act(() => {
+      result.current.add(FACIAL_PROMO)
+      result.current.add(FACIAL_PROMO)
+    })
+
+    expect(result.current.total).toBe(320_000)
+  })
+
+  /** Baris tanpa promo tidak boleh mengaku punya harga asli yang berbeda. */
+  it("tidak mengarang harga asli untuk baris tanpa promo", () => {
+    const { result } = renderHook(() => usePosCart())
+
+    act(() => {
+      result.current.add(SERUM)
+    })
+
+    expect(result.current.items[0].basePrice).toBeNull()
+    expect(result.current.items[0].promoName).toBeNull()
   })
 })

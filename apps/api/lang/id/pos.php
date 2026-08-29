@@ -81,6 +81,7 @@ return [
         'increase' => 'Tambah jumlah',
         'decrease' => 'Kurangi jumlah',
         'items_count' => ':count item',
+        'savings' => 'Hemat',
     ],
     'catalog' => [
         'title' => 'Katalog',
