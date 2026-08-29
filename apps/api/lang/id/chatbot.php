@@ -1,6 +1,31 @@
 <?php
 
 return [
+    // Diagnosa: kenapa chatbot tidak membalas
+    'diagnostics' => [
+        'title' => 'Kesehatan Chatbot',
+        'desc' => 'Chatbot hanya bisa menjawab bila seluruh rantai di bawah tersambung. Satu saja putus, pesan pasien tidak terbalas.',
+        'healthy' => 'Semua tersambung. Chatbot siap menjawab.',
+        'unhealthy' => 'Ada yang putus, jadi pesan pasien tidak terbalas.',
+        'recheck' => 'Periksa ulang',
+        'last_inbound' => 'Pesan masuk terakhir',
+        'last_reply' => 'Balasan terakhir',
+        'never' => 'Belum pernah',
+        // Nama tiap mata rantai
+        'label' => [
+            'chatbot_active' => 'Chatbot dinyalakan',
+            'ai_configured' => 'Kunci AI terpasang',
+            'gateway_configured' => 'Gateway WhatsApp tersetel',
+            'session_connected' => 'Sesi WhatsApp tersambung',
+            'webhook_configured' => 'Webhook terpasang',
+        ],
+        // Yang perlu dikerjakan saat mata rantainya putus
+        'chatbot_active' => 'Saklar chatbot sedang mati. Nyalakan di halaman ini, lalu simpan.',
+        'ai_configured' => 'Kunci penyedia AI belum dipasang di server. Hubungi pengelola sistem.',
+        'gateway_configured' => 'Alamat gateway atau sesi WhatsApp klinik belum diisi. Lengkapi di menu Broadcast, bagian Alat WhatsApp.',
+        'session_connected' => 'Sesi WhatsApp sedang terputus. Buka Alat WhatsApp, mulai sesinya, lalu pindai ulang QR bila diminta.',
+        'webhook_configured' => 'Token webhook belum dipasang di server, jadi pesan masuk tidak pernah sampai. Hubungi pengelola sistem.',
+    ],
     // Informasi stok produk
     'stock_section' => 'Informasi Stok Produk',
     'stock_section_desc' => 'Atur apakah chatbot boleh menyebutkan angka stok produk ke pasien.',

@@ -18,6 +18,7 @@ import {
 } from "#/components/ui/tooltip.tsx"
 import { Label } from "#/components/ui/label.tsx"
 import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
+import { ChatbotDiagnostics } from "./components/chatbot-diagnostics.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPut, apiUpload } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
@@ -166,6 +167,11 @@ function ChatbotSettingsPage() {
         <h1 className="text-xl font-semibold tracking-tight">{t("chatbot.title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("chatbot.subtitle")}</p>
       </header>
+
+      {/* Diletakkan paling atas: yang dicari orang saat membuka halaman ini
+          biasanya bukan setelannya, melainkan jawaban atas "kenapa chatbotnya
+          diam". */}
+      <ChatbotDiagnostics tenant={tenant} />
 
       <Section
         title={t("chatbot.settings")}

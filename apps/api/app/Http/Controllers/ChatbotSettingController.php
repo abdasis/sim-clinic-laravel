@@ -7,6 +7,7 @@ use App\Http\Requests\ChatbotSettingRequest;
 use App\Http\Resources\ChatbotSettingResource;
 use App\Models\ChatbotSetting;
 use App\Services\ChatbotSettingService;
+use App\Support\ChatbotDiagnostics;
 use Illuminate\Http\JsonResponse;
 
 class ChatbotSettingController extends Controller
@@ -56,5 +57,20 @@ class ChatbotSettingController extends Controller
             'data' => new ChatbotSettingResource($setting),
             'meta' => ['message' => __('chatbot.avatar_saved')],
         ]);
+    }
+
+    /**
+     * Kesehatan tiap mata rantai yang membuat chatbot bisa menjawab.
+     *
+     * Ketika chatbot berhenti membalas, yang putus hampir selalu di luar
+     * kode — saklar, kunci AI, gateway, sesi, atau webhook. Sebelum ini tidak
+     * satu pun terlihat dari layar mana pun, dan satu-satunya cara
+     * mengetahuinya adalah membaca log server yang tidak bisa diakses klinik.
+     */
+    public function diagnostics(ChatbotDiagnostics $diagnostics): JsonResponse
+    {
+        $this->authorize('viewAny', ChatbotSetting::class);
+
+        return response()->json(['data' => $diagnostics->run(), 'meta' => []]);
     }
 }

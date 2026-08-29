@@ -274,6 +274,7 @@ Route::prefix('{tenant}/clinic')
 
         // Chatbot WhatsApp — setelan agen dan layanan yang boleh dibooking
         Route::get('chatbot/settings', [ChatbotSettingController::class, 'show']);
+        Route::get('chatbot/diagnostics', [ChatbotSettingController::class, 'diagnostics']);
         Route::put('chatbot/settings', [ChatbotSettingController::class, 'update']);
         Route::post('chatbot/settings/avatar', [ChatbotSettingController::class, 'avatar']);
 

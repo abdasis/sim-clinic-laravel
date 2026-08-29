@@ -80,17 +80,33 @@ class ProcessInboundMessageJob implements ShouldQueue
         // mengetik" untuk balasan yang tidak akan pernah datang justru
         // menjanjikan sesuatu yang tidak ditepati.
         $client = app(ChatbotService::class)->isActive() ? $this->client() : null;
-        $client?->startTyping($this->senderPhone);
+
+        // Tidak ada gateway berarti balasannya tidak akan pernah sampai ke
+        // mana pun. Menyusunnya tetap berarti membayar penyedia AI untuk
+        // kalimat yang langsung dibuang, dan itu terjadi pada setiap pesan
+        // masuk selama gatewaynya putus — justru saat tidak ada seorang pun
+        // yang menyadarinya.
+        if ($client === null) {
+            Log::channel('chatbot')->warning('Job: dihentikan sebelum menyusun balasan', [
+                'tenant_id' => $this->tenantId,
+                'from' => $this->senderPhone,
+                'alasan' => 'chatbot mati atau gateway WhatsApp belum siap',
+            ]);
+
+            return;
+        }
+
+        $client->startTyping($this->senderPhone);
 
         try {
             $this->respond($client);
         } finally {
-            $client?->stopTyping($this->senderPhone);
+            $client->stopTyping($this->senderPhone);
         }
     }
 
     /** Susun balasan lalu kirim; dipanggil di antara start/stop typing. */
-    private function respond(?WahaClient $client): void
+    private function respond(WahaClient $client): void
     {
         try {
             $answer = app(ChatbotService::class)->reply($this->senderPhone, $this->body);
@@ -167,12 +183,8 @@ class ProcessInboundMessageJob implements ShouldQueue
         return true;
     }
 
-    private function send(string $answer, ?WahaClient $client): void
+    private function send(string $answer, WahaClient $client): void
     {
-        if ($client === null) {
-            return;
-        }
-
         try {
             $client->send($this->senderPhone, $answer);
         } catch (Throwable $e) {
