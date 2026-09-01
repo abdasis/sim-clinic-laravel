@@ -24,6 +24,7 @@ class Broadcast extends Model
         'title',
         'kind',
         'status',
+        'paused_reason',
         'message',
         'image_path',
         'audience',

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
+  Alert02Icon,
   ArrowTurnBackwardIcon,
   BubbleChatIcon,
   Delete02Icon,
@@ -20,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "#/components/ui/alert-dialog.tsx"
+import { Alert, AlertDescription, AlertTitle } from "#/components/ui/alert.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { Progress } from "#/components/ui/progress.tsx"
@@ -57,6 +59,7 @@ interface BroadcastDetail {
   message: string
   status?: string | null
   status_label?: string | null
+  paused_reason?: string | null
   kind_label?: string | null
   audience_label: string
   recipients_total: number
@@ -169,6 +172,22 @@ function BroadcastDetailPage() {
 
   return (
     <div className="space-y-4">
+
+      {/* Dijeda gateway terbaca sama dengan dijeda orang kalau sebabnya tidak
+          disebut — yang tersisa cuma campaign berhenti tanpa petunjuk apakah
+          ada yang perlu dibereskan dulu sebelum dilanjutkan. */}
+      {broadcast.status === "paused" && broadcast.paused_reason ? (
+        <Alert variant="destructive">
+          <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} />
+          <AlertTitle>{t("broadcast.paused_by_gateway")}</AlertTitle>
+          <AlertDescription>
+            <p>{t("broadcast.paused_by_gateway_desc")}</p>
+            <p className="mt-1.5 font-mono text-xs break-words text-destructive/80">
+              {t("broadcast.paused_gateway_said")}: {broadcast.paused_reason}
+            </p>
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">

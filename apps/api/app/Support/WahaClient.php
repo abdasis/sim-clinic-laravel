@@ -57,7 +57,7 @@ class WahaClient
         ]);
 
         if (! $response->successful()) {
-            throw new RuntimeException('WAHA menolak pengiriman: HTTP '.$response->status());
+            throw WahaException::rejected('WAHA menolak pengiriman', $response);
         }
     }
 
@@ -96,7 +96,7 @@ class WahaClient
         ]);
 
         if (! $response->successful()) {
-            throw new RuntimeException('WAHA menolak pengiriman gambar: HTTP '.$response->status());
+            throw WahaException::rejected('WAHA menolak pengiriman gambar', $response);
         }
     }
 

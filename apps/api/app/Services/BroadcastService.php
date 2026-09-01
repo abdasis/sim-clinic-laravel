@@ -82,7 +82,9 @@ class BroadcastService
 
         app(RequeueFailedRecipientsAction::class)->handle($broadcast);
 
-        $broadcast->update(['status' => BroadcastStatus::Sending]);
+        // Alasan jeda sebelumnya ikut dihapus: campaign yang jalan lagi
+        // tidak boleh masih menyandang keterangan berhenti yang lama.
+        $broadcast->update(['status' => BroadcastStatus::Sending, 'paused_reason' => null]);
 
         foreach ($pendingIds as $index => $recipientId) {
             SendBroadcastRecipientJob::dispatch($recipientId, $broadcast->tenant_id)
@@ -133,7 +135,7 @@ class BroadcastService
             return $broadcast->refresh();
         }
 
-        $broadcast->update(['status' => $status]);
+        $broadcast->update(['status' => $status, 'paused_reason' => null]);
 
         app(LogAuditAction::class)->handle(
             'broadcast.status_changed',

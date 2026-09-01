@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Actions\Broadcast\PauseStalledBroadcastAction;
 use App\Enums\BroadcastRecipientStatus;
 use App\Enums\BroadcastStatus;
 use App\Models\Broadcast;
@@ -15,6 +16,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 /**
  * Kirim satu penerima broadcast dari antrian. Satu pesan satu job:
@@ -77,13 +79,23 @@ class SendBroadcastRecipientJob implements ShouldQueue
 
         try {
             $this->deliver($client, $broadcast, $recipient);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Gagal mengirim pesan broadcast dari antrian', [
                 'exception' => $e,
                 'broadcast_id' => $broadcast->id,
                 'recipient_id' => $recipient->id,
                 'attempt' => $recipient->attempts,
             ]);
+
+            // Sesi yang putus akan menolak sisa antreannya dengan cara yang
+            // sama persis. Diperiksa sebelum retry: mengulang 3 kali per
+            // nomor terhadap sesi mati cuma menahan antrean berjam-jam,
+            // lalu menghanguskan semua orang di ujungnya.
+            if ($this->sessionIsDown($client)) {
+                app(PauseStalledBroadcastAction::class)->handle($broadcast, $e->getMessage());
+
+                return;
+            }
 
             if ($this->attempts() >= $this->tries) {
                 $recipient->update([
@@ -147,6 +159,64 @@ class SendBroadcastRecipientJob implements ShouldQueue
             basename($image),
             $recipient->message,
         );
+    }
+
+    /**
+     * Sesi WhatsApp-nya masih hidup?
+     *
+     * Ditanyakan ke gateway, bukan ditebak dari isi balasannya: WAHA memakai
+     * 422 yang sama untuk sesi terputus, nomor yang ditolak, dan payload yang
+     * cacat, jadi mencocokkan kalimat errornya cuma memindahkan tebakan.
+     *
+     * Gateway yang tidak bisa ditanya dianggap mati juga. Menjeda campaign
+     * yang sebenarnya sehat masih bisa dilanjutkan sekali klik; menghanguskan
+     * ratusan penerima yang sebenarnya baik-baik saja tidak.
+     */
+    private function sessionIsDown(WahaClient $client): bool
+    {
+        try {
+            return ! $client->isConnected();
+        } catch (Throwable $e) {
+            Log::error('Gagal memeriksa sesi WhatsApp setelah pengiriman ditolak.', [
+                'exception' => $e,
+                'recipient_id' => $this->recipientId,
+            ]);
+
+            return true;
+        }
+    }
+
+    /**
+     * Dipanggil saat job mati di luar handle(): percobaan habis, worker
+     * dihentikan, atau timeout.
+     *
+     * Tanpa ini penerimanya tertinggal "menunggu" selamanya dan campaign-nya
+     * tidak pernah menutup — dua penerima di isu #320 tersangkut begitu,
+     * dan statusnya berhenti di "sedang mengirim" walau workernya sudah lama
+     * berhenti.
+     */
+    public function failed(?Throwable $e): void
+    {
+        $tenant = Tenant::find($this->tenantId);
+
+        if ($tenant === null) {
+            return;
+        }
+
+        app()->instance('tenant', $tenant);
+
+        $recipient = BroadcastRecipient::query()->find($this->recipientId);
+
+        if ($recipient === null || $recipient->status !== BroadcastRecipientStatus::Pending) {
+            return;
+        }
+
+        $recipient->update([
+            'status' => BroadcastRecipientStatus::Failed,
+            'error' => mb_substr($e?->getMessage() ?: __('broadcast.job_died'), 0, 250),
+        ]);
+
+        $this->finishIfDrained($recipient->broadcast);
     }
 
     /**

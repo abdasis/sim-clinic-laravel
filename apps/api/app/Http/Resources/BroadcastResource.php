@@ -16,6 +16,8 @@ class BroadcastResource extends JsonResource
             'kind_label' => $this->kind?->label(),
             'status' => $this->status,
             'status_label' => $this->status?->label(),
+            // Kenapa berhentinya, kalau bukan orang yang menghentikan.
+            'paused_reason' => $this->paused_reason,
             'message' => $this->message,
             'image_url' => $this->image_url,
             'audience' => $this->audience,

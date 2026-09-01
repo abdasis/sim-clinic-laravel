@@ -223,7 +223,14 @@ class BroadcastApiTest extends TestCase
         Broadcast::find($broadcast)->update(['status' => BroadcastStatus::Sending]);
         $recipient = Broadcast::find($broadcast)->recipients()->first();
 
-        Http::fake(['waha.test/*' => Http::response(['error' => true], 500)]);
+        // Sesinya sehat, kirimannya sendiri yang ditolak — kegagalan milik
+        // nomor ini saja. Gateway yang mati punya jalur lain (campaign-nya
+        // dijeda, penerimanya dibiarkan menunggu); lihat
+        // BroadcastGatewayFailureTest.
+        Http::fake([
+            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
+            'waha.test/api/sendText' => Http::response(['message' => 'Number not registered on WhatsApp'], 422),
+        ]);
 
         // Jalankan percobaan terakhir langsung: job harus menandai gagal
         // beserta pesan galatnya, bukan melempar tanpa jejak.
@@ -235,9 +242,10 @@ class BroadcastApiTest extends TestCase
 
         $fresh = $recipient->fresh();
         $this->assertSame('failed', $fresh->status->value);
-        $this->assertNotNull($fresh->error);
+        $this->assertStringContainsString('Number not registered', (string) $fresh->error);
 
-        Http::assertSent(fn ($request) => $request->hasHeader('X-Api-Key', 'secret-token')
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/api/sendText')
+            && $request->hasHeader('X-Api-Key', 'secret-token')
             && $request['chatId'] === '6282222222222@c.us'
             && $request['session'] === 'klinik-uji');
     }
