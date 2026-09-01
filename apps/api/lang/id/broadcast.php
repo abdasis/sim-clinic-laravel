@@ -87,7 +87,7 @@ return [
     'send_all' => 'Kirim Semua',
     'send_all_confirm' => 'Semua penerima yang masih menunggu, termasuk yang sebelumnya gagal, akan dikirimi pesan lewat WhatsApp. Lanjutkan?',
     'paused_by_gateway' => 'Pengiriman berhenti sendiri',
-    'paused_by_gateway_desc' => 'WhatsApp klinik tidak bisa mengirim, jadi sisanya ditahan supaya tidak ikut hangus. Pastikan sambungannya pulih di menu Koneksi WhatsApp, lalu tekan Lanjutkan — yang sudah terkirim tidak akan dikirim dua kali.',
+    'paused_by_gateway_desc' => 'WhatsApp klinik sedang tidak bisa mengirim, jadi sisanya ditahan supaya tidak ikut hangus. Pengiriman akan dilanjutkan sendiri begitu sambungannya pulih — tidak perlu ditunggui. Kalau tidak mau menunggu, cek menu Koneksi WhatsApp lalu tekan Lanjutkan; yang sudah terkirim tidak akan dikirim dua kali.',
     'paused_gateway_said' => 'Kata gateway',
     'failed_summary' => ':failed pesan gagal terkirim.',
     'send_one' => 'Kirim via WhatsApp',

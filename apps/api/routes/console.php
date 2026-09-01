@@ -21,6 +21,11 @@ Schedule::command('clinic:send-auto-reminders')->dailyAt('08:30');
 // ambang sependek sepuluh menit.
 Schedule::command('clinic:close-idle-chats')->everyFiveMinutes()->withoutOverlapping();
 
+// Broadcast yang berhenti karena gatewaynya tersendat dilanjutkan sendiri
+// begitu WhatsApp kliniknya tersambung lagi. Lima menit cukup rapat: yang
+// ditunggu halaman gateway yang dimuat ulang, bukan orang yang memindai QR.
+Schedule::command('clinic:resume-broadcasts')->everyFiveMinutes()->withoutOverlapping();
+
 // Bersihkan arsip lama lebih dulu supaya ruang sudah lega saat dump baru
 // ditulis — bukan sebaliknya, yang bisa gagal justru karena disk penuh.
 Schedule::command('backup:clean')->dailyAt('01:00');

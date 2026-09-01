@@ -61,7 +61,7 @@ class BroadcastService
      *
      * @return array{queued: int}
      */
-    public function queueSend(Broadcast $broadcast): array
+    public function queueSend(Broadcast $broadcast, bool $automatic = false): array
     {
         $client = app(WahaClient::class);
 
@@ -84,7 +84,15 @@ class BroadcastService
 
         // Alasan jeda sebelumnya ikut dihapus: campaign yang jalan lagi
         // tidak boleh masih menyandang keterangan berhenti yang lama.
-        $broadcast->update(['status' => BroadcastStatus::Sending, 'paused_reason' => null]);
+        //
+        // Hitungan lanjut-otomatis hanya direset oleh orang. Kalau penjadwal
+        // ikut meresetnya, gateway yang putus-nyambung memicu jeda-lanjut
+        // tanpa akhir dan tidak ada yang pernah dimintai perhatian.
+        $broadcast->update([
+            'status' => BroadcastStatus::Sending,
+            'paused_reason' => null,
+            'auto_resumes' => $automatic ? $broadcast->auto_resumes + 1 : 0,
+        ]);
 
         foreach ($pendingIds as $index => $recipientId) {
             SendBroadcastRecipientJob::dispatch($recipientId, $broadcast->tenant_id)

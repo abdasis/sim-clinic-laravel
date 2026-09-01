@@ -9,6 +9,7 @@ use App\Models\Broadcast;
 use App\Models\Patient;
 use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
+use App\Support\WahaException;
 use Illuminate\Contracts\Queue\Job as JobContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -54,17 +55,44 @@ class BroadcastGatewayFailureTest extends TestCase
         return Broadcast::find($id);
     }
 
-    /** Tiru worker yang percobaannya sudah habis. */
-    private function runExhausted(int $recipientId): void
+    /** Tiru worker pada percobaan ke-$attempt. */
+    private function runAttempt(int $recipientId, int $attempt): void
     {
         $job = new SendBroadcastRecipientJob($recipientId, $this->tenant->id);
 
         $queueJob = Mockery::mock(JobContract::class);
-        $queueJob->shouldReceive('attempts')->andReturn(3);
+        $queueJob->shouldReceive('attempts')->andReturn($attempt);
         $queueJob->shouldReceive('getJobId')->andReturn('1');
         $job->setJob($queueJob);
 
         $job->handle();
+    }
+
+    /** Tiru worker yang percobaannya sudah habis. */
+    private function runExhausted(int $recipientId): void
+    {
+        $this->runAttempt($recipientId, 99);
+    }
+
+    /**
+     * Gangguan sesaat yang sungguhan terjadi di lapangan: halaman WhatsApp
+     * Web milik gateway dimuat ulang di tengah blast. WAHA membalas 500
+     * dengan ProtocolError, dan sesinya sebentar berstatus STARTING.
+     *
+     * @return array<string, mixed>
+     */
+    private function browserCrash(string $session = 'STARTING'): array
+    {
+        return [
+            'waha.test/api/sessions/*' => Http::response(['status' => $session], 200),
+            'waha.test/api/sendText' => Http::response([
+                'statusCode' => 500,
+                'exception' => [
+                    'name' => 'ProtocolError',
+                    'message' => 'Protocol error (Runtime.callFunctionOn): Execution context was destroyed.',
+                ],
+            ], 500),
+        ];
     }
 
     /**
@@ -241,6 +269,87 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->assertNull($broadcast->paused_reason, 'keterangan jeda lama masih menempel');
         $this->assertSame('sent', $sent->fresh()->status->value, 'yang sudah terkirim ikut dikirim ulang');
         Queue::assertPushed(SendBroadcastRecipientJob::class, 2);
+    }
+
+    /**
+     * Gateway yang tersendat sesaat ditunggu, bukan dijadikan alasan
+     * menghentikan campaign.
+     *
+     * Halaman WhatsApp Web milik gateway dimuat ulang di tengah blast lalu
+     * pulih sendiri semenit kemudian. Menjeda seluruh campaign untuk itu
+     * berarti tiap kedipan gateway menuntut orang menunggui layar.
+     */
+    public function test_a_passing_gateway_hiccup_is_retried_not_paused(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+        Http::fake($this->browserCrash());
+
+        $broadcast = $this->makeBroadcast(3);
+        $broadcast->update(['status' => BroadcastStatus::Sending]);
+        $recipient = $broadcast->recipients()->orderBy('id')->first();
+
+        // Percobaan pertama: job melempar supaya antrean mengulangnya nanti.
+        try {
+            $this->runAttempt($recipient->id, 1);
+            $this->fail('job tidak melempar, jadi antrean tidak akan mengulangnya');
+        } catch (WahaException $e) {
+            $this->assertSame(500, $e->status);
+        }
+
+        $this->assertSame(BroadcastStatus::Sending, $broadcast->fresh()->status, 'campaign dijeda padahal cuma tersendat');
+        $this->assertSame(BroadcastRecipientStatus::Pending, $recipient->fresh()->status);
+    }
+
+    /**
+     * Tersendat yang tidak pulih-pulih tetap tidak menghanguskan nomornya.
+     *
+     * Setelah percobaannya habis, yang salah tetap gatewaynya — jadi
+     * campaign-nya yang berhenti, bukan orang yang kebetulan sedang antre.
+     */
+    public function test_a_gateway_that_never_recovers_pauses_instead_of_burning(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+        Http::fake($this->browserCrash());
+
+        $broadcast = $this->makeBroadcast(3);
+        $broadcast->update(['status' => BroadcastStatus::Sending]);
+        $recipient = $broadcast->recipients()->orderBy('id')->first();
+
+        $this->runExhausted($recipient->id);
+
+        $this->assertSame(BroadcastStatus::Paused, $broadcast->fresh()->status);
+        $this->assertSame(BroadcastRecipientStatus::Pending, $recipient->fresh()->status);
+    }
+
+    /**
+     * Nomor yang ditolak gateway sehat tidak menghentikan yang lain.
+     *
+     * Satu nomor mati di daftar 130 pasien bukan alasan menahan 129 sisanya,
+     * dan penolakan begini menjawab sama persis tiap kali — tidak ada gunanya
+     * diulang.
+     */
+    public function test_a_rejected_number_fails_alone_and_is_not_retried(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+        Http::fake([
+            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
+            'waha.test/api/sendText' => Http::response(['message' => 'Number not registered on WhatsApp'], 422),
+        ]);
+
+        $broadcast = $this->makeBroadcast(3);
+        $broadcast->update(['status' => BroadcastStatus::Sending]);
+        $recipient = $broadcast->recipients()->orderBy('id')->first();
+
+        // Percobaan pertama, jauh dari batas: tetap ditandai gagal saat itu
+        // juga, bukan diulang.
+        $this->runAttempt($recipient->id, 1);
+
+        $this->assertSame(BroadcastRecipientStatus::Failed, $recipient->fresh()->status);
+        $this->assertStringContainsString('Number not registered', (string) $recipient->fresh()->error);
+        $this->assertSame(BroadcastStatus::Sending, $broadcast->fresh()->status, 'satu nomor mati menghentikan seluruh blast');
     }
 
     /**

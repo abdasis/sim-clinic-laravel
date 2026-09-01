@@ -190,7 +190,15 @@ class WahaClient
      */
     public function isConnected(): bool
     {
-        return ($this->sessionStatus()['status'] ?? null) === 'WORKING';
+        return $this->sessionState() === WahaSessionState::Working;
+    }
+
+    /** Keadaan sesi dalam bentuk yang bisa dipilah pemanggil. */
+    public function sessionState(): WahaSessionState
+    {
+        $status = $this->sessionStatus()['status'] ?? null;
+
+        return WahaSessionState::parse(is_string($status) ? $status : null);
     }
 
     /** Idempoten di sisi WAHA: sesi yang sudah jalan tidak dimulai dua kali. */

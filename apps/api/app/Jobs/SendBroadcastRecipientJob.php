@@ -9,6 +9,8 @@ use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\Tenant;
 use App\Support\WahaClient;
+use App\Support\WahaException;
+use App\Support\WahaSessionState;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -28,10 +30,19 @@ class SendBroadcastRecipientJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 3;
+    public int $tries = 5;
 
-    /** @var array<int, int> detik tunggu antar percobaan */
-    public array $backoff = [30, 120];
+    /**
+     * Detik tunggu antar percobaan.
+     *
+     * Panjang karena yang ditunggu biasanya halaman WhatsApp Web milik
+     * gateway yang sedang dimuat ulang; itu butuh puluhan detik, bukan
+     * sekejap. Nomor yang memang ditolak tidak ikut menunggu selama ini —
+     * penolakan seperti itu tidak diulang sama sekali.
+     *
+     * @var array<int, int>
+     */
+    public array $backoff = [30, 60, 120, 300];
 
     public function __construct(
         public readonly int $recipientId,
@@ -87,17 +98,12 @@ class SendBroadcastRecipientJob implements ShouldQueue
                 'attempt' => $recipient->attempts,
             ]);
 
-            // Sesi yang putus akan menolak sisa antreannya dengan cara yang
-            // sama persis. Diperiksa sebelum retry: mengulang 3 kali per
-            // nomor terhadap sesi mati cuma menahan antrean berjam-jam,
-            // lalu menghanguskan semua orang di ujungnya.
-            if ($this->sessionIsDown($client)) {
-                app(PauseStalledBroadcastAction::class)->handle($broadcast, $e->getMessage());
+            $state = $this->sessionState($client);
 
-                return;
-            }
-
-            if ($this->attempts() >= $this->tries) {
+            // Sesi sehat tapi kirimannya ditolak mentah: yang bermasalah
+            // nomor ini, bukan gatewaynya. Tidak diulang — penolakan begini
+            // menjawab sama persis tiap kali — dan nomor lain jalan terus.
+            if ($state === WahaSessionState::Working && $this->isNumberRejection($e)) {
                 $recipient->update([
                     'status' => BroadcastRecipientStatus::Failed,
                     'error' => mb_substr($e->getMessage(), 0, 250),
@@ -107,7 +113,28 @@ class SendBroadcastRecipientJob implements ShouldQueue
                 return;
             }
 
-            throw $e; // biarkan queue melakukan retry dengan backoff
+            // Sesi yang butuh orang (QR perlu dipindai ulang, sesi mati)
+            // tidak akan pulih sendiri; sisa antrean akan ditolak dengan cara
+            // yang sama persis.
+            if ($state->needsAttention()) {
+                app(PauseStalledBroadcastAction::class)->handle($broadcast, $e->getMessage());
+
+                return;
+            }
+
+            // Sisanya gangguan sesaat — halaman WhatsApp Web milik gateway
+            // yang dimuat ulang di tengah blast, jaringan yang tersendat.
+            // Yang begini pulih sendiri, jadi ditunggu dan diulang.
+            if ($this->attempts() < $this->tries) {
+                throw $e;
+            }
+
+            // Sudah ditunggu sampai habis dan gatewaynya masih tersendat.
+            // Menandai nomor ini gagal menyalahkan orang yang salah, jadi
+            // campaign-nya yang dijeda — sisanya tetap utuh menunggu.
+            app(PauseStalledBroadcastAction::class)->handle($broadcast, $e->getMessage());
+
+            return;
         }
 
         $recipient->update([
@@ -162,28 +189,42 @@ class SendBroadcastRecipientJob implements ShouldQueue
     }
 
     /**
-     * Sesi WhatsApp-nya masih hidup?
+     * Keadaan sesi saat kiriman ditolak.
      *
      * Ditanyakan ke gateway, bukan ditebak dari isi balasannya: WAHA memakai
-     * 422 yang sama untuk sesi terputus, nomor yang ditolak, dan payload yang
-     * cacat, jadi mencocokkan kalimat errornya cuma memindahkan tebakan.
+     * 422 yang sama untuk sesi terputus dan nomor yang ditolak, jadi
+     * mencocokkan kalimat errornya cuma memindahkan tebakan. Keadaan sesinya
+     * yang memisahkan keduanya.
      *
-     * Gateway yang tidak bisa ditanya dianggap mati juga. Menjeda campaign
-     * yang sebenarnya sehat masih bisa dilanjutkan sekali klik; menghanguskan
-     * ratusan penerima yang sebenarnya baik-baik saja tidak.
+     * Gateway yang tidak bisa ditanya dihitung "belum jelas", bukan mati:
+     * dari sisi aplikasi itu tidak terbedakan dari tersendat sesaat, dan
+     * menunggu sebentar jauh lebih murah daripada salah menghentikan blast.
      */
-    private function sessionIsDown(WahaClient $client): bool
+    private function sessionState(WahaClient $client): WahaSessionState
     {
         try {
-            return ! $client->isConnected();
+            return $client->sessionState();
         } catch (Throwable $e) {
             Log::error('Gagal memeriksa sesi WhatsApp setelah pengiriman ditolak.', [
                 'exception' => $e,
                 'recipient_id' => $this->recipientId,
             ]);
 
-            return true;
+            return WahaSessionState::Unknown;
         }
+    }
+
+    /**
+     * Penolakan yang menyangkut nomor atau isi kirimannya sendiri, bukan
+     * kesehatan gateway.
+     *
+     * 4xx berarti gateway paham permintaannya dan tetap menolak — nomor tidak
+     * terdaftar di WhatsApp, misalnya. 5xx sebaliknya: gatewaynya yang
+     * tersandung, dan itu bukan urusan nomor yang kebetulan sedang antre.
+     */
+    private function isNumberRejection(Throwable $e): bool
+    {
+        return $e instanceof WahaException && $e->status >= 400 && $e->status < 500;
     }
 
     /**
