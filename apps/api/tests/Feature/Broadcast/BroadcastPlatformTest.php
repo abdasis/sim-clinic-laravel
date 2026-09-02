@@ -309,7 +309,11 @@ class BroadcastPlatformTest extends TestCase
         $this->assertStringContainsString('ZmFrZS1wbmctYnl0ZXM=', $qr);
     }
 
-    public function test_connection_creates_session_on_404_then_returns_qr(): void
+    /**
+     * Menyalakan sesi kini tindakan tersendiri; layar yang cuma menanya tidak
+     * ikut membuat sesi (lihat WhatsappConnectionTest).
+     */
+    public function test_preparing_creates_session_on_404_then_returns_qr(): void
     {
         $this->actingAsClinicUser();
         $this->wahaReady();
@@ -342,7 +346,7 @@ class BroadcastPlatformTest extends TestCase
             return Http::response([], 200);
         });
 
-        $response = $this->getJson($this->tenantUrl('broadcasts/connection'));
+        $response = $this->postJson($this->tenantUrl('broadcasts/connection/prepare'));
 
         $response->assertOk()
             ->assertJsonPath('data.connected', false)

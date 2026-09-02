@@ -18,13 +18,13 @@ use App\Models\BroadcastRecipient;
 use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use App\Services\BroadcastService;
+use App\Services\WhatsappConnectionService;
 use App\Support\BroadcastAudienceBuilder;
 use App\Support\PhoneNumber;
 use App\Support\TenantCache;
 use App\Support\WahaClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class BroadcastController extends Controller
 {
@@ -200,83 +200,24 @@ class BroadcastController extends Controller
     /**
      * Keadaan sesi WAHA klinik ini, plus QR bila belum tersambung.
      *
-     * `available` false berarti belum ada yang bisa ditampilkan sama sekali:
-     * entah server WAHA-nya belum diisi pengelola platform, atau klinik ini
-     * belum menyebut nama sesinya.
+     * Hanya membaca. Layar Koneksi menanyakannya ulang tiap 4 detik supaya QR
+     * yang kedaluwarsa berganti sendiri; menyalakan sesi dari sini berarti
+     * memulai ulang sesinya belasan kali semenit, dan nomornya tidak pernah
+     * sempat tersambung.
      */
-    public function connection(): JsonResponse
+    public function connection(WhatsappConnectionService $connections): JsonResponse
     {
         $this->authorize('viewAny', Broadcast::class);
 
-        $client = app(WahaClient::class);
-
-        if ($client === null) {
-            return response()->json([
-                'data' => ['available' => false, 'connected' => false, 'qr' => null],
-                'meta' => [],
-            ]);
-        }
-
-        try {
-            $status = $client->sessionStatus();
-            $statusValue = $status['status'] ?? 'NOT_FOUND';
-
-            if ($statusValue === 'WORKING') {
-                return response()->json([
-                    'data' => [
-                        'available' => true,
-                        'connected' => true,
-                        'qr' => null,
-                        'number' => $this->accountNumber($status),
-                        'name' => $status['me']['pushName'] ?? null,
-                    ],
-                    'meta' => [],
-                ]);
-            }
-
-            if ($statusValue === 'NOT_FOUND') {
-                $client->createSession();
-            } elseif ($statusValue === 'FAILED') {
-                $client->restartSession();
-            } else {
-                // STARTING / SCAN_QR_CODE — sesi sudah ada, tinggal dijalankan.
-                $client->startSession();
-            }
-
-            // null aman kalau masih STARTING dan QR belum terbit.
-            $qr = $client->qrCode();
-        } catch (\Throwable $e) {
-            Log::error('WAHA tidak merespons', ['exception' => $e]);
-
-            return response()->json([
-                'data' => ['available' => true, 'connected' => false, 'qr' => null, 'error' => true],
-                'meta' => [],
-            ]);
-        }
-
-        return response()->json([
-            'data' => [
-                'available' => true,
-                'connected' => false,
-                'qr' => $qr,
-                'number' => null,
-                'name' => null,
-            ],
-            'meta' => [],
-        ]);
+        return response()->json(['data' => $connections->state(), 'meta' => []]);
     }
 
-    /**
-     * WAHA menyebut akunnya sebagai chat id (`628xx@c.us`); yang dibaca admin
-     * hanya nomornya.
-     *
-     * @param  array<string, mixed>  $status
-     */
-    private function accountNumber(array $status): ?string
+    /** Nyalakan sesinya — tindakan tersendiri, diminta admin sekali. */
+    public function prepareConnection(WhatsappConnectionService $connections): JsonResponse
     {
-        $id = $status['me']['id'] ?? null;
+        $this->authorize('viewAny', Broadcast::class);
 
-        return is_string($id) ? explode('@', $id)[0] : null;
+        return response()->json(['data' => $connections->prepare(), 'meta' => []]);
     }
 
     /** Ringkasan dashboard WhatsApp: koneksi, pesan hari ini, campaign aktif. */

@@ -34,31 +34,60 @@ interface ToolDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
+interface ConnectionState {
+  available: boolean
+  connected: boolean
+  number?: string | null
+  name?: string | null
+  qr?: string | null
+  error?: boolean
+  needs_start?: boolean
+}
+
 /**
  * Koneksi WhatsApp lewat WAHA: status terhubung, atau QR untuk dipindai.
- * Selagi belum terhubung, status di-poll tiap 4 detik supaya begitu admin
- * memindai, layarnya langsung berubah tanpa muat ulang.
+ * Selagi belum terhubung, status ditanya ulang tiap 4 detik supaya begitu
+ * admin memindai, layarnya langsung berubah tanpa muat ulang.
+ *
+ * Menanya dan menyalakan sengaja dipisah. Tanyaan tiap 4 detik yang ikut
+ * menyalakan sesi berarti memulai ulang sambungannya belasan kali semenit,
+ * dan nomornya tidak pernah sempat tersambung — persis keluhan "WA-nya
+ * keluar terus" dari klinik. Menyalakan dilakukan sekali saat dialognya
+ * dibuka, dan sesudah itu hanya kalau admin memintanya.
  */
 export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps) {
   const { t } = useTrans()
+  const qc = useQueryClient()
 
   const connection = useQuery({
     queryKey: ["wa-connection", tenant],
     queryFn: () =>
-      apiGet<{
-        data: {
-          available: boolean
-          connected: boolean
-          number?: string | null
-          name?: string | null
-          qr?: string | null
-          error?: boolean
-        }
-      }>(`/${tenant}/clinic/broadcasts/connection`),
+      apiGet<{ data: ConnectionState }>(`/${tenant}/clinic/broadcasts/connection`),
     enabled: open,
     refetchInterval: (query) =>
       open && query.state.data && !query.state.data.data.connected ? 4000 : false,
   })
+
+  const prepare = useMutation({
+    mutationFn: () =>
+      apiPost<{ data: ConnectionState }>(
+        `/${tenant}/clinic/broadcasts/connection/prepare`,
+        {},
+      ),
+    onSuccess: (result) => {
+      qc.setQueryData(["wa-connection", tenant], result)
+    },
+    onError: (err: ApiError) => toast.error(err.message),
+  })
+
+  // Sekali tiap dialog dibuka, bukan tiap tanyaan: sesi yang sedang membuka
+  // WhatsApp Web butuh puluhan detik dan tidak boleh dipotong di tengah.
+  useEffect(() => {
+    if (open) {
+      prepare.mutate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, tenant])
 
   const state = connection.data?.data
 
@@ -108,8 +137,28 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
               <Skeleton className="mx-auto size-64" />
             )}
             <p className="text-xs text-pretty text-muted-foreground">
-              {t("broadcast.scan_hint")}
+              {state.needs_start
+                ? t("broadcast.session_needs_start")
+                : t("broadcast.scan_hint")}
             </p>
+            {/* Menyalakan ulang atas permintaan, bukan otomatis tiap tanyaan.
+                Ditahan 30 detik di sisi server, jadi menekannya berkali-kali
+                tidak bisa memotong sesi yang sedang bangun. */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => prepare.mutate()}
+                  disabled={prepare.isPending}
+                >
+                  {prepare.isPending
+                    ? t("general.loading")
+                    : t("broadcast.reconnect")}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("broadcast.reconnect_hint")}</TooltipContent>
+            </Tooltip>
             {state.error ? (
               <p className="text-xs text-destructive">{t("broadcast.waha_error")}</p>
             ) : null}

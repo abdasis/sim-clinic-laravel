@@ -207,6 +207,7 @@ Route::prefix('{tenant}/clinic')
         Route::get('broadcasts/auto-reminder', [BroadcastAutoReminderController::class, 'show']);
         Route::put('broadcasts/auto-reminder', [BroadcastAutoReminderController::class, 'update']);
         Route::get('broadcasts/connection', [BroadcastController::class, 'connection']);
+        Route::post('broadcasts/connection/prepare', [BroadcastController::class, 'prepareConnection']);
         Route::get('broadcasts/dashboard', [BroadcastController::class, 'dashboard']);
         Route::post('broadcasts/test-message', [BroadcastController::class, 'sendTest']);
         Route::post('broadcasts/{broadcast}/send', [BroadcastController::class, 'send']);
