@@ -22,6 +22,7 @@ import {
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import { formatDateTime } from "#/lib/format.ts"
+import { cn } from "#/lib/utils.ts"
 import { BroadcastFormDialog } from "./components/broadcast-form-dialog.tsx"
 import { AutoReminderDialog } from "./components/auto-reminder-dialog.tsx"
 import { BroadcastSettingsDialog } from "./components/broadcast-settings-dialog.tsx"
@@ -68,6 +69,7 @@ function BroadcastsPage() {
           today: { sent: number; failed: number; pending: number }
           reminders_today: { total: number; sent: number; failed: number }
           active_campaigns: number
+          quota: { limit: number; used: number; remaining: number }
         }
       }>(`/${tenant}/clinic/broadcasts/dashboard`),
   })
@@ -142,7 +144,7 @@ function BroadcastsPage() {
       </div>
 
       {dashboard.data ? (
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border border-border/50 bg-card p-3">
             <p className="text-xs text-muted-foreground">{t("broadcast.today_messages")}</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
@@ -170,6 +172,10 @@ function BroadcastsPage() {
               {dashboard.data.data.active_campaigns}
             </p>
           </div>
+          {/* Jatah harian disebut sebelum tombol kirim ditekan, bukan setelah
+              campaign berhenti sendiri separuh jalan. Batas inilah yang
+              menjaga nomor klinik tidak diblokir WhatsApp. */}
+          <QuotaCard quota={dashboard.data.data.quota} />
         </div>
       ) : null}
 
@@ -272,6 +278,51 @@ function BroadcastsPage() {
       <ConnectionDialog tenant={tenant} open={connectionOpen} onOpenChange={setConnectionOpen} />
       <TemplatesDialog tenant={tenant} open={templatesOpen} onOpenChange={setTemplatesOpen} />
       <RemindersDialog tenant={tenant} open={remindersOpen} onOpenChange={setRemindersOpen} />
+    </div>
+  )
+}
+
+/** Sisa jatah kirim hari ini, dengan tanda saat sudah mepet. */
+function QuotaCard({
+  quota,
+}: {
+  quota: { limit: number; used: number; remaining: number }
+}) {
+  const { t } = useTrans()
+  const share = quota.limit > 0 ? quota.used / quota.limit : 0
+  const spent = quota.remaining === 0
+  const tight = !spent && share >= 0.8
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border border-border/50 bg-card p-3 transition-colors",
+        tight && "border-amber-500/50",
+        spent && "border-destructive/50",
+      )}
+    >
+      <p className="text-xs text-muted-foreground">{t("broadcast.quota_today")}</p>
+      <p
+        className={cn(
+          "mt-1 text-lg font-semibold tabular-nums",
+          tight && "text-amber-600",
+          spent && "text-destructive",
+        )}
+      >
+        {quota.remaining}
+        <span className="ml-1 text-xs font-normal text-muted-foreground">
+          / {quota.limit}
+        </span>
+      </p>
+      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn(
+            "h-full rounded-full transition-all",
+            spent ? "bg-destructive" : tight ? "bg-amber-500" : "bg-primary",
+          )}
+          style={{ width: `${Math.min(100, Math.round(share * 100))}%` }}
+        />
+      </div>
     </div>
   )
 }

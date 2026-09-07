@@ -24,7 +24,11 @@ use Illuminate\Support\Facades\Log;
  */
 class PauseStalledBroadcastAction
 {
-    public function handle(Broadcast $broadcast, string $reason): void
+    /**
+     * @param  int|null  $coolDownMinutes  masa diam sebelum boleh dicoba lagi;
+     *                                     null berarti begitu gatewaynya pulih
+     */
+    public function handle(Broadcast $broadcast, string $reason, ?int $coolDownMinutes = null): void
     {
         // Job pertama yang sampai di sini yang menjeda; sisanya menyusul
         // dengan alasan yang sama dan tidak perlu mencatat ulang.
@@ -39,6 +43,7 @@ class PauseStalledBroadcastAction
         $broadcast->update([
             'status' => BroadcastStatus::Paused,
             'paused_reason' => mb_substr($reason, 0, 250),
+            'resume_after' => $coolDownMinutes === null ? null : now()->addMinutes($coolDownMinutes),
         ]);
 
         Log::error('Broadcast dijeda karena gateway WhatsApp tidak bisa mengirim.', [

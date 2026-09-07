@@ -18,6 +18,8 @@ class BroadcastResource extends JsonResource
             'status_label' => $this->status?->label(),
             // Kenapa berhentinya, kalau bukan orang yang menghentikan.
             'paused_reason' => $this->paused_reason,
+            // Kapan boleh dicoba lagi, kalau memang ada masa diamnya.
+            'resume_after' => $this->resume_after?->toIso8601String(),
             'message' => $this->message,
             'image_url' => $this->image_url,
             'audience' => $this->audience,

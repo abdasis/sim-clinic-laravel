@@ -64,6 +64,11 @@ class ResumeStalledBroadcasts extends Command
             ->where('status', BroadcastStatus::Paused)
             ->whereNotNull('paused_reason')
             ->where('auto_resumes', '<', self::MAX_AUTO_RESUMES)
+            // Masa diam dihormati apa adanya. Campaign yang berhenti karena
+            // WhatsApp menahan laju kiriman tidak boleh dilanjutkan lima menit
+            // kemudian seperti gangguan biasa — itu sama saja mengabaikan
+            // peringatan yang baru saja diberikan.
+            ->where(fn ($query) => $query->whereNull('resume_after')->orWhere('resume_after', '<=', now()))
             ->get();
 
         if ($stalled->isEmpty()) {

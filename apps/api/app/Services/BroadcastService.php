@@ -14,6 +14,7 @@ use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\BroadcastReminderSetting;
+use App\Support\DailyMessageQuota;
 use App\Support\WahaClient;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,8 +27,24 @@ use Throwable;
  */
 class BroadcastService
 {
-    /** Jarak detik antar pesan agar tidak menyembur dan memicu blokir spam. */
-    private const SECONDS_BETWEEN_MESSAGES = 5;
+    /**
+     * Rentang detik antar pesan, diacak per kiriman.
+     *
+     * Jaraknya bukan cuma soal tidak menyembur. Jeda yang persis sama untuk
+     * ratusan pesan berturut-turut adalah irama yang tidak pernah dihasilkan
+     * orang mengetik, dan justru keteraturan itu yang paling gampang dibaca
+     * sebagai bot — walau isi pesannya sah. Rata-ratanya sengaja tetap 5
+     * detik supaya durasi blast tidak berubah.
+     *
+     * ponytail: rentang selebar ini cukup untuk ratusan pesan sekali blast.
+     * Untuk daftar yang jauh lebih besar (di atas seribu), sebarannya perlu
+     * lebih lebar dan sebaiknya berkelompok — jeda panjang sesekali di antara
+     * rentetan pendek, meniru orang yang berhenti sejenak — bukan sekadar
+     * acak seragam.
+     */
+    private const MIN_SECONDS_BETWEEN_MESSAGES = 3;
+
+    private const MAX_SECONDS_BETWEEN_MESSAGES = 7;
 
     /**
      * @param  array<string, mixed>  $data
@@ -71,6 +88,18 @@ class BroadcastService
 
         $this->guardConnected($client);
 
+        // Jatah yang sudah habis ditolak di depan, bukan setelah ratusan job
+        // diantrekan untuk gugur satu per satu. Sisa jatah yang cuma menutup
+        // sebagian tetap dijalankan — yang tidak kebagian hari ini dijeda oleh
+        // worker begitu jatahnya menyentuh batas, lalu dilanjutkan besok.
+        $quota = DailyMessageQuota::today();
+
+        abort_if(
+            $quota->isSpent(),
+            422,
+            __('broadcast.daily_limit_reached', ['limit' => $quota->limit]),
+        );
+
         // Yang gagal ikut diantrekan lagi: menekan kirim setelah sesi pulih
         // memang bermaksud mengulang yang tidak sampai, dan tanpa ini
         // campaign yang seluruhnya gagal jadi jalan buntu — satu-satunya
@@ -91,12 +120,23 @@ class BroadcastService
         $broadcast->update([
             'status' => BroadcastStatus::Sending,
             'paused_reason' => null,
+            'resume_after' => null,
             'auto_resumes' => $automatic ? $broadcast->auto_resumes + 1 : 0,
         ]);
 
-        foreach ($pendingIds as $index => $recipientId) {
+        // Jarak ditumpuk berjalan, bukan dikali nomor urut: mengalikan indeks
+        // dengan angka acak bisa membuat pesan ke-5 mendarat sebelum ke-4,
+        // dan pasien menerima sapaan dengan urutan yang tidak masuk akal.
+        $offset = 0;
+
+        foreach ($pendingIds as $recipientId) {
             SendBroadcastRecipientJob::dispatch($recipientId, $broadcast->tenant_id)
-                ->delay(now()->addSeconds($index * self::SECONDS_BETWEEN_MESSAGES));
+                ->delay(now()->addSeconds($offset));
+
+            $offset += random_int(
+                self::MIN_SECONDS_BETWEEN_MESSAGES,
+                self::MAX_SECONDS_BETWEEN_MESSAGES,
+            );
         }
 
         app(LogAuditAction::class)->handle(

@@ -16,7 +16,7 @@ class WhatsappSetting extends Model
 {
     use BelongsToTenant;
 
-    protected $fillable = ['tenant_id', 'session'];
+    protected $fillable = ['tenant_id', 'session', 'daily_message_limit'];
 
     public function isConfigured(): bool
     {

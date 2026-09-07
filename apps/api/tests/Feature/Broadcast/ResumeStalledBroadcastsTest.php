@@ -151,6 +151,55 @@ class ResumeStalledBroadcastsTest extends TestCase
     }
 
     /**
+     * Campaign yang berhenti karena laju ditahan menunggu masa diamnya habis.
+     *
+     * Melanjutkan lima menit kemudian, seperti gangguan gateway biasa, sama
+     * saja dengan mengabaikan peringatan yang baru saja diberikan WhatsApp —
+     * dan itu yang berujung nomor klinik diblokir.
+     */
+    public function test_a_cooling_off_campaign_is_not_resumed_early(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+
+        $broadcast = $this->stalled(2, [
+            'paused_reason' => 'WAHA menolak pengiriman: HTTP 429 — Too many requests',
+            'resume_after' => now()->addMinutes(25),
+        ]);
+
+        $this->sessionIs('WORKING');
+        Queue::fake();
+
+        $this->artisan('clinic:resume-broadcasts')->assertSuccessful();
+
+        $this->assertSame(BroadcastStatus::Paused, $broadcast->fresh()->status);
+        Queue::assertNothingPushed();
+    }
+
+    /** Begitu masa diamnya lewat, campaign-nya jalan lagi sendiri. */
+    public function test_it_resumes_once_the_cooling_off_has_passed(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+
+        $broadcast = $this->stalled(2, [
+            'paused_reason' => 'WAHA menolak pengiriman: HTTP 429 — Too many requests',
+            'resume_after' => now()->subMinute(),
+        ]);
+
+        $this->sessionIs('WORKING');
+        Queue::fake();
+
+        $this->artisan('clinic:resume-broadcasts')->assertSuccessful();
+
+        $broadcast->refresh();
+
+        $this->assertSame(BroadcastStatus::Sending, $broadcast->status);
+        $this->assertNull($broadcast->resume_after);
+        Queue::assertPushed(SendBroadcastRecipientJob::class, 2);
+    }
+
+    /**
      * Perintahnya benar-benar terjadwal.
      *
      * Lanjut-otomatis yang tidak pernah dipanggil scheduler sama saja dengan

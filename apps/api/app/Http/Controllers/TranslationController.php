@@ -34,8 +34,19 @@ class TranslationController extends Controller
 
         return response()->json([
             'data' => $translations,
-            'meta' => ['locale' => $locale],
+            // Sidik isi terjemahan, dipakai frontend untuk tahu apakah salinan
+            // yang disimpannya masih sama. Tanpa penanda ini, salinan lokal
+            // yang basi tidak akan pernah ketahuan basinya.
+            'meta' => ['locale' => $locale, 'version' => $this->version($translations)],
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $translations
+     */
+    private function version(array $translations): string
+    {
+        return substr(md5(json_encode($translations) ?: ''), 0, 12);
     }
 
     /**

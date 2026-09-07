@@ -8,6 +8,7 @@ use App\Enums\BroadcastStatus;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\Tenant;
+use App\Support\DailyMessageQuota;
 use App\Support\WahaClient;
 use App\Support\WahaException;
 use App\Support\WahaSessionState;
@@ -43,6 +44,16 @@ class SendBroadcastRecipientJob implements ShouldQueue
      * @var array<int, int>
      */
     public array $backoff = [30, 60, 120, 300];
+
+    /**
+     * Lama diam setelah gateway menahan laju kiriman.
+     *
+     * Setengah jam, bukan hitungan detik seperti gangguan biasa: yang
+     * disampaikan WhatsApp bukan "coba lagi sebentar" melainkan "kamu terlalu
+     * banyak mengirim". Melanjutkan lebih cepat dari itu sama saja dengan
+     * mengabaikan peringatan yang baru saja diberikan.
+     */
+    private const THROTTLE_COOL_DOWN_MINUTES = 30;
 
     public function __construct(
         public readonly int $recipientId,
@@ -86,6 +97,22 @@ class SendBroadcastRecipientJob implements ShouldQueue
             return;
         }
 
+        // Kuota diperiksa di sini, bukan saat mengantre: job yang diantrekan
+        // pagi bisa berjalan sore setelah campaign lain ikut menghabiskan
+        // jatah nomor yang sama. Yang menentukan keadaan saat pesannya
+        // benar-benar berangkat.
+        $quota = DailyMessageQuota::today();
+
+        if ($quota->isSpent()) {
+            app(PauseStalledBroadcastAction::class)->handle(
+                $broadcast,
+                __('broadcast.daily_limit_reached', ['limit' => $quota->limit]),
+                $this->minutesUntilTomorrow(),
+            );
+
+            return;
+        }
+
         $recipient->increment('attempts');
 
         try {
@@ -97,6 +124,17 @@ class SendBroadcastRecipientJob implements ShouldQueue
                 'recipient_id' => $recipient->id,
                 'attempt' => $recipient->attempts,
             ]);
+
+            // Ditahan laju: seluruh blast berhenti, bukan cuma nomor ini.
+            // Diperiksa paling dulu karena 429 berbagi kode 4xx dengan
+            // penolakan nomor — tanpa ini penerimanya dihanguskan permanen,
+            // padahal yang perlu justru berhenti menembak sebentar.
+            if ($e instanceof WahaException && $e->isThrottle()) {
+                app(PauseStalledBroadcastAction::class)
+                    ->handle($broadcast, $e->getMessage(), self::THROTTLE_COOL_DOWN_MINUTES);
+
+                return;
+            }
 
             $state = $this->sessionState($client);
 
@@ -186,6 +224,18 @@ class SendBroadcastRecipientJob implements ShouldQueue
             basename($image),
             $recipient->message,
         );
+    }
+
+    /**
+     * Sisa menit sampai hari berganti — saat jatah kirimnya penuh lagi.
+     *
+     * Lewat sedikit dari tengah malam, bukan tepat: campaign yang dilanjutkan
+     * persis saat pergantian hari beresiko masih terhitung di hari kemarin
+     * oleh kueri yang sepersekian detik lebih dulu.
+     */
+    private function minutesUntilTomorrow(): int
+    {
+        return (int) ceil(now()->diffInMinutes(now()->addDay()->startOfDay())) + 5;
     }
 
     /**

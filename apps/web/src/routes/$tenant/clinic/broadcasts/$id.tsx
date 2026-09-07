@@ -36,6 +36,7 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete, apiGet, apiPatch, apiPost } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 import { useNavigate } from "@tanstack/react-router"
+import { formatDateTime } from "#/lib/format.ts"
 import { cn } from "#/lib/utils.ts"
 
 export const Route = createFileRoute("/$tenant/clinic/broadcasts/$id")({
@@ -60,6 +61,7 @@ interface BroadcastDetail {
   status?: string | null
   status_label?: string | null
   paused_reason?: string | null
+  resume_after?: string | null
   kind_label?: string | null
   audience_label: string
   recipients_total: number
@@ -182,6 +184,17 @@ function BroadcastDetailPage() {
           <AlertTitle>{t("broadcast.paused_by_gateway")}</AlertTitle>
           <AlertDescription>
             <p>{t("broadcast.paused_by_gateway_desc")}</p>
+            {/* Masa diam disebutkan kalau memang ada: tanpa itu, "akan
+                dilanjutkan sendiri" terbaca seperti janji kosong saat
+                pengirimannya sengaja ditahan setengah jam. */}
+            {broadcast.resume_after ? (
+              <p className="mt-1 font-medium">
+                {t("broadcast.resume_after").replace(
+                  ":time",
+                  formatDateTime(broadcast.resume_after),
+                )}
+              </p>
+            ) : null}
             <p className="mt-1.5 font-mono text-xs break-words text-destructive/80">
               {t("broadcast.paused_gateway_said")}: {broadcast.paused_reason}
             </p>

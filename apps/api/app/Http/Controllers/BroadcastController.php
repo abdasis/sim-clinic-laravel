@@ -20,6 +20,7 @@ use App\Models\WhatsappSetting;
 use App\Services\BroadcastService;
 use App\Services\WhatsappConnectionService;
 use App\Support\BroadcastAudienceBuilder;
+use App\Support\DailyMessageQuota;
 use App\Support\PhoneNumber;
 use App\Support\TenantCache;
 use App\Support\WahaClient;
@@ -278,6 +279,10 @@ class BroadcastController extends Controller
                     'failed' => (int) ($reminderToday['failed'] ?? 0),
                 ],
                 'active_campaigns' => (int) $counts['active_campaigns'],
+                // Jatah harian ikut dilaporkan supaya admin tahu sebelum
+                // menekan kirim, bukan setelah campaign-nya berhenti sendiri
+                // separuh jalan.
+                'quota' => DailyMessageQuota::today()->toArray(),
             ],
             'meta' => [],
         ]);

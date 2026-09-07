@@ -26,6 +26,7 @@ class Broadcast extends Model
         'status',
         'paused_reason',
         'auto_resumes',
+        'resume_after',
         'message',
         'image_path',
         'audience',
@@ -40,6 +41,7 @@ class Broadcast extends Model
             'kind' => BroadcastKind::class,
             'status' => BroadcastStatus::class,
             'audience_params' => 'array',
+            'resume_after' => 'datetime',
         ];
     }
 

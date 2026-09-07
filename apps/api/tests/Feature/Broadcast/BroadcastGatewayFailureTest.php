@@ -96,20 +96,23 @@ class BroadcastGatewayFailureTest extends TestCase
     }
 
     /**
-     * Jeda antar pesan sudah ada dan bukan sebab kegagalannya.
+     * Jeda antar pesan sudah ada, dan tidak berirama.
      *
-     * Laporan menduga pengiriman terlalu cepat, padahal tiap job sudah
-     * dijadwalkan 5 detik berjarak. Dikunci di sini supaya "perlambat lagi"
-     * tidak dipakai sebagai jawaban atas gejala yang sebabnya lain.
+     * Laporan #320 menduga pengiriman terlalu cepat, padahal tiap job sudah
+     * dijadwalkan berjarak. Yang dikunci di sini dua hal: jaraknya memang ada
+     * (jadi "perlambat lagi" bukan jawaban atas gejala yang sebabnya lain),
+     * dan jaraknya tidak seragam — ratusan pesan dengan selang persis sama
+     * adalah irama yang tidak pernah dihasilkan orang mengetik, dan justru
+     * itu yang gampang dibaca sebagai bot.
      */
-    public function test_messages_are_already_paced_five_seconds_apart(): void
+    public function test_messages_are_paced_with_an_uneven_gap(): void
     {
         $this->actingAsClinicUser();
         $this->configured();
         Http::fake(['waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200)]);
         Queue::fake();
 
-        $broadcast = $this->makeBroadcast(3);
+        $broadcast = $this->makeBroadcast(30);
 
         $this->postJson($this->tenantUrl("broadcasts/{$broadcast->id}/send"))->assertOk();
 
@@ -121,7 +124,22 @@ class BroadcastGatewayFailureTest extends TestCase
         });
 
         sort($delays);
-        $this->assertSame([0, 5, 10], $delays, 'pesan tidak dijadwalkan berjarak 5 detik');
+
+        $gaps = [];
+        for ($i = 1; $i < count($delays); $i++) {
+            $gaps[] = $delays[$i] - $delays[$i - 1];
+        }
+
+        $this->assertSame(0, $delays[0], 'pesan pertama tidak berangkat langsung');
+        $this->assertGreaterThan(1, count(array_unique($gaps)), 'jeda antar pesan masih seragam');
+
+        foreach ($gaps as $gap) {
+            $this->assertGreaterThanOrEqual(3, $gap, 'ada pesan yang menyembur terlalu rapat');
+            $this->assertLessThanOrEqual(7, $gap, 'ada jeda yang jauh lebih lama dari seharusnya');
+        }
+
+        // Rata-ratanya tetap sekitar 5 detik, jadi durasi blast tidak berubah.
+        $this->assertEqualsWithDelta(5.0, array_sum($gaps) / count($gaps), 1.0);
     }
 
     /**
@@ -350,6 +368,59 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->assertSame(BroadcastRecipientStatus::Failed, $recipient->fresh()->status);
         $this->assertStringContainsString('Number not registered', (string) $recipient->fresh()->error);
         $this->assertSame(BroadcastStatus::Sending, $broadcast->fresh()->status, 'satu nomor mati menghentikan seluruh blast');
+    }
+
+    /**
+     * Gateway yang bilang "terlalu banyak" bukan berarti nomornya bermasalah.
+     *
+     * 429 punya kode 4xx yang sama dengan penolakan nomor, jadi tanpa
+     * pemisahan ia jatuh ke cabang "nomor ditolak" dan penerimanya dihanguskan
+     * permanen — padahal yang perlu justru berhenti mengirim sebentar. Terus
+     * menembak saat WhatsApp sedang menahan laju adalah cara tercepat membuat
+     * nomor klinik diblokir.
+     */
+    public function test_being_throttled_does_not_burn_the_recipient(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+        Http::fake([
+            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
+            'waha.test/api/sendText' => Http::response(['message' => 'Too many requests'], 429),
+        ]);
+
+        $broadcast = $this->makeBroadcast(3);
+        $broadcast->update(['status' => BroadcastStatus::Sending]);
+        $recipient = $broadcast->recipients()->orderBy('id')->first();
+
+        $this->runAttempt($recipient->id, 1);
+
+        $this->assertSame(
+            BroadcastRecipientStatus::Pending,
+            $recipient->fresh()->status,
+            'penerima dihanguskan padahal gatewaynya cuma menahan laju',
+        );
+    }
+
+    /** Ditahan laju berarti seluruh blast berhenti, bukan cuma satu nomor. */
+    public function test_being_throttled_pauses_the_whole_campaign(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+        Http::fake([
+            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
+            'waha.test/api/sendText' => Http::response(['message' => 'Too many requests'], 429),
+        ]);
+
+        $broadcast = $this->makeBroadcast(3);
+        $broadcast->update(['status' => BroadcastStatus::Sending]);
+
+        $this->runAttempt($broadcast->recipients()->orderBy('id')->first()->id, 1);
+
+        $broadcast->refresh();
+
+        $this->assertSame(BroadcastStatus::Paused, $broadcast->status);
+        $this->assertNotNull($broadcast->resume_after, 'tidak ada jeda pendinginan sebelum dicoba lagi');
+        $this->assertTrue($broadcast->resume_after->isFuture());
     }
 
     /**
