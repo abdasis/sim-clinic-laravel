@@ -4,6 +4,7 @@ namespace Tests\Feature\Transaction;
 
 use App\Enums\ClinicRole;
 use App\Models\Activity;
+use App\Models\CompanyProfileSetting;
 use App\Models\Patient;
 use App\Models\Transaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -121,5 +122,86 @@ class InvoicePrintTest extends TestCase
             ->assertNotFound();
 
         $this->assertSame(0, $transaction->fresh()->print_count);
+    }
+
+    public function test_user_can_download_invoice_pdf(): void
+    {
+        $this->actingAsClinicUser();
+        $transaction = $this->makeTransaction();
+
+        $response = $this->get($this->tenantUrl("transactions/{$transaction->id}/invoice/pdf"));
+
+        $response->assertOk();
+        $this->assertSame('application/pdf', $response->headers->get('content-type'));
+        $this->assertSame(
+            'attachment; filename='.$transaction->invoice_number.'.pdf',
+            $response->headers->get('content-disposition')
+        );
+        $this->assertNotEmpty($response->getContent());
+    }
+
+    public function test_therapist_cannot_download_invoice_pdf(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Therapist);
+        $transaction = $this->makeTransaction();
+
+        $this->get($this->tenantUrl("transactions/{$transaction->id}/invoice/pdf"))
+            ->assertForbidden();
+    }
+
+    public function test_invoice_pdf_from_another_clinic_is_not_found(): void
+    {
+        $this->actingAsClinicUser();
+        $transaction = $this->makeTransaction();
+
+        $other = $this->createTenant('klinik-lain');
+        $this->actingAsClinicUser(ClinicRole::Admin, $other);
+
+        $this->get($this->tenantUrl("transactions/{$transaction->id}/invoice/pdf", $other))
+            ->assertNotFound();
+    }
+
+    /**
+     * site_name kini peta bahasa — kop nota harus ambil satu bahasa,
+     * bukan menjebak htmlspecialchars dengan array. Regresi issue #326.
+     */
+    public function test_invoice_pdf_renders_when_site_name_is_translatable_array(): void
+    {
+        $this->actingAsClinicUser();
+        CompanyProfileSetting::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'site_name' => ['id' => 'Klinik Uji', 'en' => 'Test Clinic'],
+        ]);
+        $transaction = $this->makeTransaction();
+
+        $response = $this->get($this->tenantUrl("transactions/{$transaction->id}/invoice/pdf"));
+
+        $response->assertOk();
+        $this->assertSame('application/pdf', $response->headers->get('content-type'));
+        $this->assertNotEmpty($response->getContent());
+    }
+
+    /** site_name masih string tunggal (warisan) — nota tetap render. */
+    public function test_invoice_pdf_renders_when_site_name_is_string(): void
+    {
+        $this->actingAsClinicUser();
+        CompanyProfileSetting::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'site_name' => 'Klinik Sederhana',
+        ]);
+        $transaction = $this->makeTransaction();
+
+        $this->get($this->tenantUrl("transactions/{$transaction->id}/invoice/pdf"))
+            ->assertOk();
+    }
+
+    /** Tanpa company profile sama sekali — jatuh ke nama tenant. */
+    public function test_invoice_pdf_renders_when_site_name_missing(): void
+    {
+        $this->actingAsClinicUser();
+        $transaction = $this->makeTransaction();
+
+        $this->get($this->tenantUrl("transactions/{$transaction->id}/invoice/pdf"))
+            ->assertOk();
     }
 }
