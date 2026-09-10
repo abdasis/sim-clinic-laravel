@@ -61,4 +61,9 @@ class TransactionItem extends Model
     {
         return $this->belongsTo(User::class, 'offered_by');
     }
+
+    public function getKindAttribute(): string
+    {
+        return $this->service_id !== null ? 'service' : 'product';
+    }
 }

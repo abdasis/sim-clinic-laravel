@@ -122,4 +122,41 @@ class InvoicePrintTest extends TestCase
 
         $this->assertSame(0, $transaction->fresh()->print_count);
     }
+
+    public function test_user_can_download_invoice_pdf(): void
+    {
+        $this->actingAsClinicUser();
+        $transaction = $this->makeTransaction();
+
+        $response = $this->get($this->tenantUrl("transactions/{$transaction->id}/invoice/pdf"));
+
+        $response->assertOk();
+        $this->assertSame('application/pdf', $response->headers->get('content-type'));
+        $this->assertSame(
+            'attachment; filename='.$transaction->invoice_number.'.pdf',
+            $response->headers->get('content-disposition')
+        );
+        $this->assertNotEmpty($response->getContent());
+    }
+
+    public function test_therapist_cannot_download_invoice_pdf(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Therapist);
+        $transaction = $this->makeTransaction();
+
+        $this->get($this->tenantUrl("transactions/{$transaction->id}/invoice/pdf"))
+            ->assertForbidden();
+    }
+
+    public function test_invoice_pdf_from_another_clinic_is_not_found(): void
+    {
+        $this->actingAsClinicUser();
+        $transaction = $this->makeTransaction();
+
+        $other = $this->createTenant('klinik-lain');
+        $this->actingAsClinicUser(ClinicRole::Admin, $other);
+
+        $this->get($this->tenantUrl("transactions/{$transaction->id}/invoice/pdf", $other))
+            ->assertNotFound();
+    }
 }

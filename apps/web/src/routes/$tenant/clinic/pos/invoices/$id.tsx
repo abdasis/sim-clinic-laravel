@@ -1,33 +1,24 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useParams,
-} from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { PrinterIcon, ShoppingCart01Icon } from "@hugeicons/core-free-icons"
+import {
+  Download01Icon,
+  PrinterIcon,
+  ShoppingCart01Icon,
+} from "@hugeicons/core-free-icons"
 
 import { ClinicBreadcrumb } from "#/components/clinic-breadcrumb.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { Kbd } from "#/components/ui/kbd.tsx"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "#/components/ui/tooltip.tsx"
+import { Tooltip, TooltipContent, TooltipTrigger } from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { apiGet, apiPost } from "#/lib/api.ts"
+import { apiDownload, apiGet, apiPost } from "#/lib/api.ts"
 import { formatDateTime } from "#/lib/format.ts"
-import {
-  Receipt,
-  type ReceiptClinic,
-  type ReceiptData,
-} from "../components/receipt.tsx"
+import { Receipt, type ReceiptClinic, type ReceiptData } from "../components/receipt.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/pos/invoices/$id")({
   /**
@@ -100,6 +91,25 @@ function InvoicePage() {
   // tengah effect yang sama akan menembakkan cetakan kedua.
   const autoPrinted = useRef(false)
 
+  const [downloading, setDownloading] = useState(false)
+
+  const downloadPdf = async () => {
+    if (!invoice || downloading || print.isPending) return
+
+    setDownloading(true)
+    try {
+      await apiDownload(
+        `/${tenant}/clinic/transactions/${id}/invoice/pdf`,
+        {},
+        `${invoice.invoice_number ?? "invoice"}.pdf`,
+      )
+    } catch {
+      toast.error(t("invoice.download_failed"))
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   useEffect(() => {
     if (!autoprint || autoPrinted.current || !invoice || print.isPending) {
       return
@@ -130,9 +140,14 @@ function InvoicePage() {
       if (target?.isContentEditable) return
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
 
-      if (event.key === "p" && invoice && !print.isPending) {
+      if (event.key === "p" && invoice && !print.isPending && !downloading) {
         event.preventDefault()
         print.mutate()
+      }
+
+      if (event.key === "d" && invoice && !downloading && !print.isPending) {
+        event.preventDefault()
+        void downloadPdf()
       }
 
       if (event.key === "b") {
@@ -144,7 +159,7 @@ function InvoicePage() {
     window.addEventListener("keydown", onKey)
 
     return () => window.removeEventListener("keydown", onKey)
-  }, [invoice, navigate, print, tenant])
+  }, [downloading, id, invoice, navigate, print, t, tenant])
 
   return (
     // Jarak halaman dilepas saat cetak supaya kertasnya tidak dapat margin dobel.
@@ -195,9 +210,32 @@ function InvoicePage() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 transition-transform duration-150 ease-out hover:-translate-y-px active:scale-[0.96]"
+                  disabled={!invoice || downloading || print.isPending}
+                  onClick={() => void downloadPdf()}
+                >
+                  <HugeiconsIcon
+                    icon={Download01Icon}
+                    strokeWidth={2}
+                    className="size-4"
+                  />
+                  {downloading ? t("general.loading") : t("invoice.download_pdf")}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="flex items-center gap-2">
+                {t("invoice.download_pdf")}
+                <Kbd>d</Kbd>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
                   size="sm"
                   className="gap-2 transition-transform duration-150 ease-out hover:-translate-y-px"
-                  disabled={!invoice || print.isPending}
+                  disabled={!invoice || downloading || print.isPending}
                   onClick={() => print.mutate()}
                 >
                   <HugeiconsIcon

@@ -21,12 +21,14 @@ class InvoiceService
 
     public function render(Transaction $transaction): array
     {
-        $transaction->loadMissing('items', 'payments', 'patient', 'cashier');
+        $transaction->loadMissing('items', 'payments', 'patient', 'cashier', 'performers');
 
         $tenant = app()->bound('tenant') ? app('tenant') : null;
+        $tenant?->loadMissing('companyProfile');
 
         return [
             'tenant' => $tenant,
+            'transaction' => $transaction,
             'patient' => $transaction->patient,
             'cashier' => $transaction->cashier,
             'items' => $transaction->items,

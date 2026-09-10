@@ -51,4 +51,6 @@ return [
     'cancelled_note' => 'Nota ini tidak berlaku sebagai bukti pembayaran.',
     'paid_amount' => 'Sudah Dibayar',
     'outstanding' => 'Sisa Bayar',
+    'download_pdf' => 'Unduh PDF',
+    'download_failed' => 'Gagal mengunduh. Coba lagi ya.',
 ];
