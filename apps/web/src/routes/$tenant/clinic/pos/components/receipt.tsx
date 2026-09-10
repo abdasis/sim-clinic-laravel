@@ -83,6 +83,12 @@ const ADDRESS_LIMIT = 90
  * Panjangnya hanya dipagari, tidak dirapikan: memendekkan alamat adalah
  * keputusan orang yang tahu tempatnya, bukan yang bisa disimpulkan mesin dari
  * teksnya.
+ *
+ * ponytail: aturan yang sama juga hidup di `App\Support\ReceiptAddress` untuk
+ * nota yang diunduh sebagai PDF. Dua salinan karena memang ada dua perender
+ * nota, dan keduanya sudah menduplikasi seluruh tata letaknya sejak awal.
+ * Menyatukannya berarti satu perender saja, dan itu pekerjaan tersendiri;
+ * sampai saat itu, perubahan di sini wajib diikutkan ke sana.
  */
 export function receiptAddress(raw?: string | null): string | null {
   if (!raw) return null

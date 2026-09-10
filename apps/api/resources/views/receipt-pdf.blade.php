@@ -67,7 +67,7 @@
 
     $clinicName = \App\Support\ClinicIdentity::displayName($tenant) ?: config('app.name');
     $clinicTagline = $tenant?->companyProfile?->tagline;
-    $clinicAddress = $tenant?->companyProfile?->address;
+    $clinicAddress = \App\Support\ReceiptAddress::format($tenant?->companyProfile?->address);
     $clinicPhone = $tenant?->phone;
     $receiptNote = $tenant?->companyProfile?->receipt_note;
     $printCount = max(1, (int) ($transaction->print_count ?? 1));
@@ -224,7 +224,7 @@
         </div>
     @endif
 
-    <div style="margin-top: 3mm;">
+    <div style="margin-top: 2mm;">
         <div class="text-center" style="font-size: 6.5pt; color: #444; letter-spacing: 2px;">
             --- &#10022; &#9829; &#10022; ---
         </div>
@@ -235,26 +235,21 @@
             {{ __('invoice.thank_you_sub') }} {{ $clinicName }}
         </div>
 
-        <div class="rule-dashed"></div>
+        {{--
+            Keterangan cetak hanya muncul pada cetak ulang. Pada cetakan pertama
+            ia cuma mengulang tanggal yang sudah ada di kepala nota — tiga baris
+            di tiap struk yang tidak pernah dibaca siapa pun.
 
+            Untuk cetakan kedua dan seterusnya penandanya justru wajib: tanpa
+            itu satu transaksi bisa beredar sebagai dua bukti bayar yang sama
+            sahnya. Nomor dan waktunya dirapatkan jadi satu baris.
+        --}}
         @if ($printCount > 1)
-            <div style="border: 1px solid #000; text-align: center; font-size: 6.5pt; font-weight: bold; letter-spacing: 0.5px; padding: 1px 0; margin-bottom: 1mm;" class="uppercase">
-                {{ __('invoice.reprint') }} #{{ $printCount }}
+            <div style="border: 1px solid #000; text-align: center; font-size: 6.5pt; padding: 1px 2px; margin-top: 1.5mm;">
+                <span class="font-bold uppercase" style="letter-spacing: 0.5px;">{{ __('invoice.reprint') }} #{{ $printCount }}</span>
+                <span style="color: #555;">{{ $printedAt }}</span>
             </div>
         @endif
-
-        <table style="font-size: 6.5pt; color: #555;">
-            <tr>
-                <td style="width: 50px;">{{ __('invoice.print_count') }}</td>
-                <td style="width: 6px; text-align: center;">:</td>
-                <td>{{ $printCount }}</td>
-            </tr>
-            <tr>
-                <td>{{ __('invoice.printed_at') }}</td>
-                <td style="text-align: center;">:</td>
-                <td>{{ $printedAt }}</td>
-            </tr>
-        </table>
     </div>
 </body>
 </html>
