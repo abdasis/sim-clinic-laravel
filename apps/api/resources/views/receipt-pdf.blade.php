@@ -65,7 +65,7 @@
     $outstanding = (float) (isset($transaction) ? $transaction->outstandingAmount() : max(0, $total - $paid));
     $change = max(0, $paid - $total);
 
-    $clinicName = $tenant?->companyProfile?->site_name ?: ($tenant?->name ?: config('app.name'));
+    $clinicName = \App\Support\ClinicIdentity::displayName($tenant) ?: config('app.name');
     $clinicTagline = $tenant?->companyProfile?->tagline;
     $clinicAddress = $tenant?->companyProfile?->address;
     $clinicPhone = $tenant?->phone;
