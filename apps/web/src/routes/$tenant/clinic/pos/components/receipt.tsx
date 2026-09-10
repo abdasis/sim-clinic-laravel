@@ -57,6 +57,56 @@ interface ReceiptProps {
   printedAt: string
 }
 
+/**
+ * Pagar terakhir panjang alamat di kertas 48mm — kira-kira tiga baris pada
+ * ukuran huruf terkecil yang masih terbaca.
+ *
+ * Sengaja longgar. Memotong alamat lebih pendek dari ini menghasilkan
+ * penggalan yang tidak menuntun siapa pun ke mana pun ("Blok A 10, Tanjung…"),
+ * dan alamat yang salah lebih buruk daripada alamat yang panjang. Alamat yang
+ * benar-benar ringkas hanya bisa datang dari orang yang menulisnya di
+ * Pengaturan → Profil Perusahaan; angka ini cuma menahan nilai yang benar-benar
+ * kebablasan.
+ */
+const ADDRESS_LIMIT = 90
+
+/**
+ * Alamat sebagaimana layak dicetak di nota: tanpa tautan, ringkas, satu
+ * paragraf.
+ *
+ * Tautan peta dibuang apa pun bentuknya. Di layar ia berguna, di atas kertas
+ * ia deretan karakter acak yang tidak bisa diklik siapa pun — dua baris kertas
+ * terbuang untuk sesuatu yang tidak pernah dibaca. Membuangnya di sini, bukan
+ * meminta orang merapikan isi kolomnya, karena kolom alamat akan diisi ulang
+ * oleh orang lain lagi nanti dan hasilnya harus tetap benar.
+ *
+ * Panjangnya hanya dipagari, tidak dirapikan: memendekkan alamat adalah
+ * keputusan orang yang tahu tempatnya, bukan yang bisa disimpulkan mesin dari
+ * teksnya.
+ */
+export function receiptAddress(raw?: string | null): string | null {
+  if (!raw) return null
+
+  const cleaned = raw
+    // Tautan dengan skema, termasuk yang tercetak terpenggal seperti "os://".
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, " ")
+    // Tautan telanjang: www.contoh.com, maps.app.goo.gl/xxxx.
+    .replace(/\b(?:www\.|[a-z0-9-]+\.(?:com|id|co|net|org|goo\.gl|app\.goo\.gl))\/?\S*/gi, " ")
+    .replace(/\s+/g, " ")
+    // Tanda baca yang menggantung setelah tautannya dibuang.
+    .replace(/\s*([,.;|-])\s*$/g, "")
+    .trim()
+
+  if (cleaned === "") return null
+  if (cleaned.length <= ADDRESS_LIMIT) return cleaned
+
+  // Dipotong di batas kata supaya tidak ada penggalan kata yang menggantung.
+  const head = cleaned.slice(0, ADDRESS_LIMIT)
+  const cut = Math.max(head.lastIndexOf(" "), head.lastIndexOf(","))
+
+  return `${(cut > 0 ? head.slice(0, cut) : head).replace(/[,.;]$/, "")}\u2026`
+}
+
 /** Pemisah antar bagian. Putus-putus, tapi cukup tebal untuk kepala termal. */
 function Rule({ solid = false }: { solid?: boolean }) {
   return (
@@ -174,11 +224,12 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
   // adalah yang berikutnya — nota tidak boleh mengaku cetakan ke-0.
   const printCount = Math.max(1, Number(data.print_count ?? 0))
   const totalQty = data.items.reduce((sum, item) => sum + Number(item.qty), 0)
+  const address = receiptAddress(clinic?.address)
 
   return (
     <article
       data-receipt
-      className="mx-auto w-[48mm] bg-white px-[2mm] pt-[3mm] pb-[10mm] text-xxs leading-snug text-neutral-900"
+      className="mx-auto w-[48mm] bg-white px-[2mm] pt-[2mm] pb-[4mm] text-xxs leading-snug text-neutral-900"
     >
       <header className="text-center">
         {clinic?.logo_url ? (
@@ -200,9 +251,9 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
           </p>
         ) : null}
 
-        {clinic?.address ? (
-          <p className="mt-[1mm] text-3xs text-balance text-neutral-700">
-            {clinic.address}
+        {address ? (
+          <p className="mt-[0.8mm] text-3xs text-balance text-neutral-700">
+            {address}
           </p>
         ) : null}
 
@@ -353,7 +404,7 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
         </p>
       ) : null}
 
-      <footer className="mt-[3mm]">
+      <footer className="mt-[2mm]">
         {/* Garis berornamen, bukan perforasi biasa: bagian ini penutup yang
             personal, jadi pemisahnya pun berbeda dari pemisah data di atas. */}
         <div className="flex items-center gap-[1mm]" aria-hidden="true">
@@ -363,29 +414,29 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
           <span className="h-px flex-1 bg-neutral-800" />
         </div>
 
-        <p className="mt-[1mm] text-center font-script text-xl leading-none">
+        <p className="mt-[0.8mm] text-center font-script text-lg leading-none">
           {t("invoice.thank_you")}
         </p>
-        <p className="mt-[1mm] text-center text-3xs tracking-[0.1em] text-neutral-700 uppercase">
+        <p className="mt-[0.5mm] text-center text-3xs tracking-[0.1em] text-neutral-700 uppercase">
           {t("invoice.thank_you_sub")} {clinicName}
         </p>
 
-        <Rule />
+        {/* Keterangan cetak hanya muncul pada cetakan ulang. Pada cetakan
+            pertama ia cuma mengulang tanggal yang sudah ada di kepala nota,
+            dan tiga baris tambahan di tiap struk itu gulungan kertas yang
+            terbuang tanpa ada yang membacanya.
 
-        {/* Cetakan kedua dan seterusnya ditandai jelas: tanpa itu satu
-            transaksi bisa beredar sebagai dua bukti bayar yang sama sahnya. */}
+            Untuk cetakan kedua dan seterusnya keterangan ini justru wajib:
+            tanpa penanda, satu transaksi bisa beredar sebagai dua bukti bayar
+            yang sama sahnya. Nomor dan waktunya dirapatkan jadi satu baris. */}
         {printCount > 1 ? (
-          <p className="mb-[1mm] border border-neutral-900 py-[0.4mm] text-center text-3xs font-bold tracking-[0.14em] uppercase">
-            {t("invoice.reprint")} #{printCount}
+          <p className="mt-[1.5mm] flex flex-wrap items-baseline justify-center gap-x-[1.5mm] border border-neutral-900 px-[1mm] py-[0.4mm] text-center text-3xs">
+            <span className="font-bold tracking-[0.12em] uppercase">
+              {t("invoice.reprint")} #{printCount}
+            </span>
+            <span className="text-neutral-600 tabular-nums">{printedAt}</span>
           </p>
         ) : null}
-
-        {/* Sejajar berlabel seperti nota cetak: label rata kiri, titik dua
-            sejajar, nilainya menyusul — mudah dipindai walau kertasnya sempit. */}
-        <dl className="grid grid-cols-[auto_2mm_1fr] text-3xs text-neutral-600 tabular-nums">
-          <MetaRow label={t("invoice.print_count")} value={String(printCount)} />
-          <MetaRow label={t("invoice.printed_at")} value={printedAt} />
-        </dl>
       </footer>
     </article>
   )

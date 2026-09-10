@@ -11,7 +11,6 @@ return [
     'customer' => 'Pelanggan',
     'served_by' => 'Dilayani',
     'printed_by' => 'Dicetak oleh',
-    'printed_at' => 'Waktu cetak',
     'description' => 'Deskripsi',
     'group_service' => 'Layanan / Tindakan',
     'group_product' => 'Produk',
@@ -22,7 +21,6 @@ return [
     // Frasa penutup mengikuti nota cetak klinik yang sudah berjalan.
     'thank_you' => 'Thank You',
     'thank_you_sub' => 'for trusting',
-    'print_count' => 'No. cetak',
     'print_not_recorded' => 'Nota tetap dicetak, tapi nomor cetakannya gagal dicatat.',
     'invoice_number' => 'Nomor Nota',
     'date' => 'Tanggal',

@@ -3,7 +3,7 @@ import { cleanup, render } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { setTranslations } from "#/utils/trans.ts"
-import { Receipt, type ReceiptData } from "./receipt.tsx"
+import { Receipt, receiptAddress, type ReceiptData } from "./receipt.tsx"
 
 setTranslations({
   invoice: {
@@ -177,6 +177,45 @@ describe("Receipt", () => {
     expect(ulang.getByText("Cetak Ulang #3")).toBeTruthy()
   })
 
+  /**
+   * Kertas termal habis per milimeter. Pada cetakan pertama, keterangan cetak
+   * cuma mengulang tanggal yang sudah ada di kepala nota — tiga baris di tiap
+   * struk yang tidak pernah dibaca siapa pun.
+   */
+  it("tidak mencetak keterangan cetak pada nota pertama", () => {
+    const { queryByText } = renderReceipt(base)
+
+    expect(queryByText("15 Agu 2026, 18.56")).toBeNull()
+  })
+
+  /** Pada cetak ulang, nomor dan waktunya justru wajib — dirapatkan satu baris. */
+  it("menyebut nomor dan waktu cetak ulang dalam satu baris", () => {
+    const { getByText } = renderReceipt({ ...base, print_count: 3 })
+
+    const badge = getByText("Cetak Ulang #3")
+
+    expect(badge.parentElement?.textContent).toContain("15 Agu 2026, 18.56")
+  })
+
+  /**
+   * Tautan peta di atas kertas cuma deretan karakter yang tidak bisa diklik
+   * siapa pun, dan memakan dua baris penuh di kertas 48mm.
+   */
+  it("membuang tautan peta dari alamat yang dicetak", () => {
+    const { queryByText, getByText } = renderReceipt(base, {
+      name: "Meba Clinic",
+      address:
+        "Jl Ringroad Blok A 10, Medan https://maps.app.goo.gl/5MwdHVGJ6E2Vuzq197",
+      phone: null,
+      logo_url: null,
+      tagline: null,
+      receipt_note: null,
+    })
+
+    expect(queryByText(/maps\.app\.goo\.gl/)).toBeNull()
+    expect(getByText("Jl Ringroad Blok A 10, Medan")).toBeTruthy()
+  })
+
   it("menyatakan transaksi yang dibatalkan tidak berlaku sebagai bukti bayar", () => {
     const { getByText } = renderReceipt({
       ...base,
@@ -281,5 +320,57 @@ describe("Receipt", () => {
     })
 
     expect(queryByText("Sisa Bayar")).toBeNull()
+  })
+})
+
+describe("receiptAddress", () => {
+  it("membuang tautan berskema apa pun bentuknya", () => {
+    expect(receiptAddress("Jl Merdeka 10 https://maps.app.goo.gl/abc")).toBe(
+      "Jl Merdeka 10",
+    )
+    expect(receiptAddress("Jl Merdeka 10 os://maps.app.goo.gl/abc")).toBe(
+      "Jl Merdeka 10",
+    )
+  })
+
+  it("membuang tautan telanjang tanpa skema", () => {
+    expect(receiptAddress("Jl Merdeka 10, www.mebaclinic.com")).toBe(
+      "Jl Merdeka 10",
+    )
+  })
+
+  it("merapatkan baris dan spasi berlebih jadi satu paragraf", () => {
+    expect(receiptAddress("Jl Merdeka 10\n\n  Medan   Selayang")).toBe(
+      "Jl Merdeka 10 Medan Selayang",
+    )
+  })
+
+  /**
+   * Alamat klinik yang wajar dibiarkan utuh. Memotongnya lebih pendek
+   * menghasilkan penggalan yang tidak menuntun siapa pun ke mana pun, dan
+   * alamat yang salah lebih buruk daripada alamat yang panjang.
+   */
+  it("membiarkan alamat klinik yang wajar tetap utuh", () => {
+    const address = "Jl Ringroad Blok A 10, Tanjung Sari, Kecamatan Medan Selayang"
+
+    expect(receiptAddress(address)).toBe(address)
+  })
+
+  /** Yang benar-benar kebablasan tetap dipagari, dipotong di batas kata. */
+  it("memagari alamat yang benar-benar kebablasan", () => {
+    const trimmed = receiptAddress(
+      "Jl Ringroad Pusat Bisnis Center Blok A Nomor 10, Kelurahan Tanjung Sari, Kecamatan Medan Selayang, Kota Medan, Sumatera Utara 20132",
+    )
+
+    expect(trimmed).toBeTruthy()
+    expect((trimmed as string).length).toBeLessThanOrEqual(92)
+    expect(trimmed).toMatch(/\u2026$/)
+    expect(trimmed).not.toMatch(/\s\u2026$/)
+  })
+
+  it("tidak menyisakan apa pun kalau isinya cuma tautan", () => {
+    expect(receiptAddress("https://maps.app.goo.gl/abc")).toBeNull()
+    expect(receiptAddress("   ")).toBeNull()
+    expect(receiptAddress(null)).toBeNull()
   })
 })
