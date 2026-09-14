@@ -171,7 +171,7 @@ function AmountRow({
 /** Pita status selebar kertas — dibaca sekilas tanpa perlu mengeja. */
 function Band({ children }: { children: React.ReactNode }) {
   return (
-    <p className="bg-neutral-900 py-[0.7mm] text-center text-3xs font-bold tracking-[0.18em] text-white uppercase">
+    <p className="bg-neutral-900 py-[0.7mm] text-center text-xxs font-bold tracking-[0.18em] text-white uppercase">
       {children}
     </p>
   )
@@ -183,10 +183,15 @@ function Band({ children }: { children: React.ReactNode }) {
  * sebenarnya, sehingga pemenggalan barisnya sama persis dengan hasil cetak.
  * Layar hanya memperbesarnya lewat `data-receipt-frame` agar terbaca.
  *
- * Dua hal yang menentukan bentuknya, dan keduanya milik kepala termal 203dpi:
- * huruf di bawah 9px saling menempel jadi noda, dan garis setipis rambut
- * hilang sama sekali. Karena itu tidak ada teks di bawah `text-3xs`, tidak ada
- * border dotted, dan ikon garis tipis diganti label teks.
+ * Ukuran hurufnya dinaikkan satu tingkat dari rancangan pertama. Batas bawah
+ * 9px memang masih terbaca oleh kepala termal, tapi "masih terbaca" bukan
+ * ukuran yang tepat untuk kertas yang dibaca sambil berdiri di meja kasir,
+ * kerap oleh orang yang matanya tidak semuda perancangnya.
+ *
+ * Dua hal lain menentukan bentuknya, dan keduanya milik kepala termal 203dpi:
+ * garis setipis rambut hilang sama sekali, dan huruf terlalu kecil saling
+ * menempel jadi noda. Karena itu tidak ada border dotted dan ikon garis tipis
+ * diganti label teks.
  *
  * Barisnya disusun bertingkat (nama di atas, "jumlah x harga" dan nominal di
  * bawahnya) — bukan tiga kolom sejajar. Di kertas 48mm nama treatment yang
@@ -235,7 +240,7 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
   return (
     <article
       data-receipt
-      className="mx-auto w-[48mm] bg-white px-[2mm] pt-[2mm] pb-[4mm] text-xxs leading-snug text-neutral-900"
+      className="mx-auto w-[48mm] bg-white px-[2mm] pt-[2mm] pb-[4mm] text-2xs leading-snug text-neutral-900"
     >
       <header className="text-center">
         {clinic?.logo_url ? (
@@ -247,24 +252,24 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
           />
         ) : null}
 
-        <h1 className="text-2xs leading-tight font-bold tracking-[0.14em] uppercase">
+        <h1 className="text-xs leading-tight font-bold tracking-[0.14em] uppercase">
           {clinicName}
         </h1>
 
         {clinic?.tagline ? (
-          <p className="mt-[0.5mm] text-3xs tracking-[0.12em] text-neutral-700 uppercase">
+          <p className="mt-[0.5mm] text-xxs tracking-[0.12em] text-neutral-700 uppercase">
             {clinic.tagline}
           </p>
         ) : null}
 
         {address ? (
-          <p className="mt-[0.8mm] text-3xs text-balance text-neutral-700">
+          <p className="mt-[0.8mm] text-xxs text-balance text-neutral-700">
             {address}
           </p>
         ) : null}
 
         {clinic?.phone ? (
-          <p className="mt-[0.5mm] text-3xs font-medium tabular-nums">
+          <p className="mt-[0.5mm] text-xxs font-medium tabular-nums">
             {t("invoice.phone_short")} {clinic.phone}
           </p>
         ) : null}
@@ -279,7 +284,7 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
       {data.cancelled_at ? (
         <div className="mt-[1mm]">
           <Band>{t("invoice.cancelled")}</Band>
-          <p className="mt-[0.5mm] text-center text-3xs font-medium">
+          <p className="mt-[0.5mm] text-center text-xxs font-medium">
             {t("invoice.cancelled_note")}
           </p>
         </div>
@@ -308,7 +313,7 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
 
       {groups.map((group) => (
         <section key={group.key} className="mb-[1mm] last:mb-0">
-          <h2 className="text-3xs font-bold tracking-[0.1em] text-neutral-700 uppercase">
+          <h2 className="text-xxs font-bold tracking-[0.1em] text-neutral-700 uppercase">
             {group.label}
           </h2>
           <ul className="mt-[0.5mm]">
@@ -360,10 +365,10 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
       </div>
 
       <div className="mt-[1mm] flex items-baseline justify-between gap-2 border-t-2 border-neutral-900 pt-[1mm]">
-        <span className="text-2xs font-bold tracking-tight uppercase">
+        <span className="text-xs font-bold tracking-tight uppercase">
           {t("invoice.grand_total")} (IDR)
         </span>
-        <span className="text-sm leading-none font-bold tabular-nums">
+        <span className="text-base leading-none font-bold tabular-nums">
           {formatAmount(total)}
         </span>
       </div>
@@ -405,7 +410,7 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
       ) : null}
 
       {clinic?.receipt_note ? (
-        <p className="mt-[1.5mm] text-center text-3xs text-neutral-700 italic">
+        <p className="mt-[1.5mm] text-center text-xxs text-neutral-700 italic">
           *{clinic.receipt_note}
         </p>
       ) : null}
@@ -415,15 +420,15 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
             personal, jadi pemisahnya pun berbeda dari pemisah data di atas. */}
         <div className="flex items-center gap-[1mm]" aria-hidden="true">
           <span className="h-px flex-1 bg-neutral-800" />
-          <span className="text-3xs leading-none">&#10022;</span>
-          <span className="text-3xs leading-none">&#9829;</span>
+          <span className="text-xxs leading-none">&#10022;</span>
+          <span className="text-xxs leading-none">&#9829;</span>
           <span className="h-px flex-1 bg-neutral-800" />
         </div>
 
         <p className="mt-[0.8mm] text-center font-script text-lg leading-none">
           {t("invoice.thank_you")}
         </p>
-        <p className="mt-[0.5mm] text-center text-3xs tracking-[0.1em] text-neutral-700 uppercase">
+        <p className="mt-[0.5mm] text-center text-xxs tracking-[0.1em] text-neutral-700 uppercase">
           {t("invoice.thank_you_sub")} {clinicName}
         </p>
 
@@ -436,7 +441,7 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
             tanpa penanda, satu transaksi bisa beredar sebagai dua bukti bayar
             yang sama sahnya. Nomor dan waktunya dirapatkan jadi satu baris. */}
         {printCount > 1 ? (
-          <p className="mt-[1.5mm] flex flex-wrap items-baseline justify-center gap-x-[1.5mm] border border-neutral-900 px-[1mm] py-[0.4mm] text-center text-3xs">
+          <p className="mt-[1.5mm] flex flex-wrap items-baseline justify-center gap-x-[1.5mm] border border-neutral-900 px-[1mm] py-[0.4mm] text-center text-xxs">
             <span className="font-bold tracking-[0.12em] uppercase">
               {t("invoice.reprint")} #{printCount}
             </span>

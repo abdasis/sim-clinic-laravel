@@ -139,6 +139,33 @@ class ReceiptPdfLayoutTest extends TestCase
         $this->assertSame(1, $pages, "nota {$itemCount} item tumpah ke halaman kedua");
     }
 
+    /**
+     * Lebar halaman mengikuti area cetak kepala termal, bukan lebar kertasnya.
+     *
+     * Bedanya tidak terlihat di layar tapi menentukan di atas kertas: halaman
+     * 57mm yang dikirim ke printer yang cuma bisa mencetak 48mm tidak ditolak
+     * — drivernya mengecilkan seluruh halaman supaya muat, dan notanya
+     * tercetak lebih kecil dari yang dirancang. Itu yang dilaporkan klinik
+     * sebagai tulisannya kekecilan.
+     */
+    public function test_the_page_is_as_wide_as_the_print_head_not_the_paper(): void
+    {
+        $this->actingAsClinicUser();
+
+        $pdf = $this->get($this->tenantUrl("transactions/{$this->makeTransaction()->id}/invoice/pdf"))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(
+            1,
+            preg_match('~/MediaBox\s*\[\s*0(?:\.0+)?\s+0(?:\.0+)?\s+([0-9.]+)~', $pdf, $box),
+            'MediaBox tidak ditemukan di PDF',
+        );
+
+        // 48mm dalam poin; kepala termal 203dpi mencetak 384 titik.
+        $this->assertEqualsWithDelta(136.06, (float) $box[1], 0.5);
+    }
+
     /** @return array<string, array{int}> */
     public static function itemCounts(): array
     {

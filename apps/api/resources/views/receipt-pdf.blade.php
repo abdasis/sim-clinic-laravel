@@ -4,15 +4,20 @@
     <meta charset="utf-8">
     <title>{{ $invoice_number }}</title>
     <style>
+        {{--
+            Lebar halaman PDF disamakan dengan area cetak kepala termal
+            (48mm), diatur di InvoiceController. Margin kiri-kanan tipis saja;
+            gulungan kertas tidak punya tepi atas-bawah.
+        --}}
         @page {
-            margin: 2mm 3mm;
+            margin: 0 2mm;
         }
         * {
             box-sizing: border-box;
         }
         body {
             font-family: DejaVu Sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            font-size: 7.5pt;
+            font-size: 8.5pt;
             line-height: 1.25;
             color: #000;
             margin: 0;
@@ -37,7 +42,7 @@
             background: #000;
             color: #fff;
             text-align: center;
-            font-size: 6.5pt;
+            font-size: 7.5pt;
             font-weight: bold;
             letter-spacing: 1px;
             padding: 1.5px 0;
@@ -76,21 +81,21 @@
     $printedAt = now()->format('d/m/Y H:i');
 @endphp
 
-    <div class="text-center font-bold uppercase" style="font-size: 8.5pt; letter-spacing: 0.5px;">
+    <div class="text-center font-bold uppercase" style="font-size: 9.5pt; letter-spacing: 0.5px;">
         {{ $clinicName }}
     </div>
     @if ($clinicTagline)
-        <div class="text-center" style="font-size: 6.5pt; color: #444; margin-top: 0.5mm;">
+        <div class="text-center" style="font-size: 7.5pt; color: #444; margin-top: 0.5mm;">
             {{ $clinicTagline }}
         </div>
     @endif
     @if ($clinicAddress)
-        <div class="text-center" style="font-size: 6.5pt; color: #444; margin-top: 0.5mm;">
+        <div class="text-center" style="font-size: 7.5pt; color: #444; margin-top: 0.5mm;">
             {{ $clinicAddress }}
         </div>
     @endif
     @if ($clinicPhone)
-        <div class="text-center" style="font-size: 6.5pt; margin-top: 0.5mm;">
+        <div class="text-center" style="font-size: 7.5pt; margin-top: 0.5mm;">
             {{ __('invoice.phone_short') }} {{ $clinicPhone }}
         </div>
     @endif
@@ -101,10 +106,10 @@
 
     @if (isset($transaction) && $transaction->cancelled_at)
         <div class="band uppercase" style="margin-top: 1mm;">{{ __('invoice.cancelled') }}</div>
-        <div class="text-center" style="font-size: 6.5pt; margin-top: 0.5mm;">{{ __('invoice.cancelled_note') }}</div>
+        <div class="text-center" style="font-size: 7.5pt; margin-top: 0.5mm;">{{ __('invoice.cancelled_note') }}</div>
     @endif
 
-    <table style="margin-top: 1.5mm; font-size: 7pt;">
+    <table style="margin-top: 1.5mm; font-size: 8pt;">
         <tr>
             <td style="width: 38px; color: #555;">{{ __('invoice.number_short') }}</td>
             <td style="width: 6px; text-align: center; color: #555;">:</td>
@@ -137,7 +142,7 @@
     <div class="rule-dashed"></div>
 
     @foreach ($groups as $group)
-        <div style="font-size: 6.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #444; margin-top: 1.5mm; margin-bottom: 0.5mm;">
+        <div style="font-size: 7.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #444; margin-top: 1.5mm; margin-bottom: 0.5mm;">
             {{ $group['label'] }}
         </div>
         @foreach ($group['items'] as $item)
@@ -161,7 +166,7 @@
 
     <div class="rule-solid"></div>
 
-    <table style="font-size: 7.5pt;">
+    <table style="font-size: 8.5pt;">
         <tr>
             <td style="color: #444;">{{ __('invoice.item_total') }} ({{ str_replace(':count', (string) $totalQty, __('invoice.item_count')) }})</td>
             <td class="text-right">{{ number_format($discount > 0 ? $gross : $total, 0, ',', '.') }}</td>
@@ -175,7 +180,7 @@
     </table>
 
     <div style="border-top: 1.5px solid #000; margin-top: 1mm; padding-top: 1mm;">
-        <table style="font-size: 8.5pt;" class="font-bold">
+        <table style="font-size: 9.5pt;" class="font-bold">
             <tr>
                 <td class="uppercase">{{ __('invoice.grand_total') }} (IDR)</td>
                 <td class="text-right">{{ number_format($total, 0, ',', '.') }}</td>
@@ -185,7 +190,7 @@
 
     @if ($payments->isNotEmpty())
         <div class="rule-dashed"></div>
-        <table style="font-size: 7pt;">
+        <table style="font-size: 8pt;">
             @foreach ($payments as $payment)
                 <tr>
                     <td style="color: #444;">{{ $payment->method?->label() ?? $payment->method }}</td>
@@ -209,7 +214,7 @@
 
     @if ($outstanding > 0)
         <div style="border: 1px solid #000; margin-top: 1.5mm; padding: 1mm;">
-            <table style="font-size: 7.5pt;" class="font-bold">
+            <table style="font-size: 8.5pt;" class="font-bold">
                 <tr>
                     <td>{{ __('invoice.outstanding') }}</td>
                     <td class="text-right">{{ number_format($outstanding, 0, ',', '.') }}</td>
@@ -219,19 +224,19 @@
     @endif
 
     @if ($receiptNote)
-        <div class="text-center" style="font-size: 6.5pt; color: #444; font-style: italic; margin-top: 2mm;">
+        <div class="text-center" style="font-size: 7.5pt; color: #444; font-style: italic; margin-top: 2mm;">
             *{{ $receiptNote }}
         </div>
     @endif
 
     <div style="margin-top: 2mm;">
-        <div class="text-center" style="font-size: 6.5pt; color: #444; letter-spacing: 2px;">
+        <div class="text-center" style="font-size: 7.5pt; color: #444; letter-spacing: 2px;">
             --- &#10022; &#9829; &#10022; ---
         </div>
-        <div class="text-center font-bold" style="font-size: 9pt; margin-top: 1mm;">
+        <div class="text-center font-bold" style="font-size: 10.5pt; margin-top: 1mm;">
             {{ __('invoice.thank_you') }}
         </div>
-        <div class="text-center uppercase" style="font-size: 6.5pt; color: #444; letter-spacing: 0.5px; margin-top: 0.5mm;">
+        <div class="text-center uppercase" style="font-size: 7.5pt; color: #444; letter-spacing: 0.5px; margin-top: 0.5mm;">
             {{ __('invoice.thank_you_sub') }} {{ $clinicName }}
         </div>
 
@@ -245,7 +250,7 @@
             sahnya. Nomor dan waktunya dirapatkan jadi satu baris.
         --}}
         @if ($printCount > 1)
-            <div style="border: 1px solid #000; text-align: center; font-size: 6.5pt; padding: 1px 2px; margin-top: 1.5mm;">
+            <div style="border: 1px solid #000; text-align: center; font-size: 7.5pt; padding: 1px 2px; margin-top: 1.5mm;">
                 <span class="font-bold uppercase" style="letter-spacing: 0.5px;">{{ __('invoice.reprint') }} #{{ $printCount }}</span>
                 <span style="color: #555;">{{ $printedAt }}</span>
             </div>

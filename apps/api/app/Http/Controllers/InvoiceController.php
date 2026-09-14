@@ -25,9 +25,20 @@ class InvoiceController extends Controller
         $data = app(InvoiceService::class)->render($transaction);
 
         return Pdf::loadView('receipt-pdf', $data)
-            ->setPaper([0, 0, 163.28, $this->paperHeight($transaction)], 'portrait')
+            ->setPaper([0, 0, self::PAPER_WIDTH, $this->paperHeight($transaction)], 'portrait')
             ->download($transaction->invoice_number.'.pdf');
     }
+
+    /**
+     * Lebar halaman nota: 48mm dalam poin.
+     *
+     * Disamakan dengan area cetak kepala termal (384 titik pada 203dpi),
+     * bukan dengan lebar kertasnya (57mm). Halaman 57mm yang dikirim ke
+     * printer yang cuma bisa mencetak 48mm tidak ditolak — drivernya
+     * mengecilkan seluruh halaman supaya muat, dan notanya tercetak lebih
+     * kecil dari yang dirancang tanpa ada yang tampak salah di layar.
+     */
+    private const PAPER_WIDTH = 136.06;
 
     /**
      * Tinggi kertas nota, mengikuti isinya.
@@ -37,16 +48,18 @@ class InvoiceController extends Controller
      * dan pada saat yang sama tidak cukup untuk nota sepuluh baris, yang
      * diam-diam tumpah ke halaman kedua dan tercetak sebagai dua potong kertas.
      *
-     * Angkanya diukur, bukan ditaksir: nota kosong butuh ~230pt dan tiap baris
-     * item menambah ~43pt pada nama layanan sepanjang dua baris. Yang dipakai
-     * di sini dilebihkan (50pt per item) supaya nama yang lebih panjang dari
-     * itu tetap muat — dijaga tesnya di ReceiptPdfLayoutTest.
+     * Angkanya diukur ulang tiap kali lebar kertas atau ukuran hurufnya
+     * berubah, bukan ditaksir: pada lebar 48mm dan ukuran huruf sekarang,
+     * nota kosong butuh ~280pt dan tiap baris item menambah ~63pt untuk nama
+     * layanan sepanjang dua baris. Yang dipakai di sini dilebihkan (70pt per
+     * item) supaya nama yang lebih panjang tetap muat — dijaga tesnya di
+     * ReceiptPdfLayoutTest, yang menghitung halaman PDF-nya sungguhan.
      */
     private function paperHeight(Transaction $transaction): float
     {
-        return 280
-            + ($transaction->items->count() * 50)
-            + ($transaction->payments->count() * 14);
+        return 320
+            + ($transaction->items->count() * 70)
+            + ($transaction->payments->count() * 16);
     }
 
     /**

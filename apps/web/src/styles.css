@@ -893,9 +893,20 @@ a {
     text-rendering: geometricPrecision;
   }
 
-  /* Struk 57mm: sisakan margin tipis supaya teks tidak tergunting rol. */
+  /* Lebar halaman disamakan dengan area cetak kepala termal (48mm / 384 titik
+     pada 203dpi), bukan dengan lebar kertasnya (57mm).
+
+     Ini bedanya menentukan. Halaman 57mm yang dikirim ke printer yang cuma
+     bisa mencetak 48mm tidak ditolak — drivernya mengecilkan seluruh halaman
+     supaya muat, sekitar 84%. Hasilnya nota tercetak lebih kecil dari yang
+     dirancang dan menyisakan lajur kosong di kanan, dan tidak ada yang
+     tampak salah di layar. Disamakan dengan area cetaknya, tidak ada lagi
+     yang perlu dikecilkan siapa pun.
+
+     Marginnya nol: gulungan kertas tidak punya tepi atas-bawah, dan jarak
+     kiri-kanan sudah dipegang padding notanya sendiri. */
   @page {
-    size: 57mm auto;
-    margin: 3mm 2mm;
+    size: 48mm auto;
+    margin: 0;
   }
 }
