@@ -41,7 +41,6 @@ return [
     'performers' => 'Terapis',
     'phone_short' => 'Telp.',
     'change' => 'Kembali',
-    'member_discount' => 'Potongan Member',
     'points_earned' => 'Poin didapat',
     'points_unit' => 'poin',
     'discount' => 'Diskon Promo',

@@ -8,7 +8,6 @@ import { Button } from "#/components/ui/button.tsx"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
-import { formatCurrency } from "#/lib/format.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
 import { MembershipTierActionsCell } from "./components/membership-tier-actions-cell.tsx"
 import {
@@ -21,7 +20,6 @@ export const Route = createFileRoute("/$tenant/clinic/memberships/")({
 })
 
 interface MembershipTierRow extends MembershipTierFormValues {
-  discount_type_label?: string | null
   status_label: string
   patients_count?: number
 }
@@ -45,31 +43,6 @@ function MembershipTiersPage() {
               </p>
             ) : null}
           </div>
-        ),
-      },
-      {
-        accessorKey: "discount_value",
-        header: t("membership.discount"),
-        cell: ({ row }) => (
-          <span className="tabular-nums">
-            {row.original.discount_type === "percent"
-              ? `${Number(row.original.discount_value)}%`
-              : formatCurrency(Number(row.original.discount_value))}
-          </span>
-        ),
-      },
-      {
-        id: "stacks",
-        header: t("membership.stacks_with_promo"),
-        cell: ({ row }) => (
-          <Badge
-            variant={row.original.stacks_with_promo ? "default" : "outline"}
-            className="font-normal"
-          >
-            {row.original.stacks_with_promo
-              ? t("general.yes")
-              : t("general.no")}
-          </Badge>
         ),
       },
       {

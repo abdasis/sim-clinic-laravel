@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Auth;
  * Hapus tingkat member yang memang tidak dipegang siapa pun.
  *
  * Tingkat yang masih menempel di pasien ditolak, bukan dilepas diam-diam:
- * melepasnya berarti potongan yang sedang berjalan hilang tanpa ada yang
- * memutuskan, dan pasien baru tahu saat membayar di kasir.
+ * melepasnya berarti klasifikasi yang sedang berjalan hilang tanpa ada yang
+ * memutuskan, dan pasien baru tahu saat labelnya lenyap di layar.
  */
 class DeleteMembershipTierAction
 {

@@ -25,7 +25,7 @@ setTranslations({
     amount: "Jumlah",
     paid_amount: "Dibayar",
     outstanding: "Sisa",
-    member_active: "Member aktif — potongan otomatis di nota.",
+    member_active: "Tingkat member pasien ini.",
     loyalty_balance: "Poin saat ini",
     loyalty_points_unit: "poin",
     cart: { title: "Keranjang" },
@@ -82,15 +82,6 @@ function renderPanel(ui: React.ReactElement) {
   )
 }
 
-/** Nilai rupiah dicetak sebagai span "tabular-nums" — dicari lewat itu, bukan
- * lewat isi teksnya saja, karena elemen leluhur ikut "mengandung" teks yang
- * sama dan membuat pencarian berbasis teks menemukan lebih dari satu. */
-function amountSpans(container: HTMLElement): string[] {
-  return Array.from(container.querySelectorAll("span.tabular-nums")).map(
-    (el) => el.textContent ?? "",
-  )
-}
-
 /**
  * Di layar lebar panel ini tidak berada di dalam drawer, jadi daftar pasien
  * dan terapis di-portal ke `<body>`. Pernah rusak karena halamannya mengirim
@@ -128,44 +119,11 @@ describe("PosCheckoutPanel", () => {
     expect(screen.queryByText("Ibu Sinta")).toBeNull()
   })
 
-  /**
-   * Manfaat member tidak boleh baru ketahuan saat nota sudah tercetak —
-   * ditunjukkan begitu pasiennya dipilih, sebelum kasir sempat menghitung
-   * sendiri.
-   */
-  it("menunjukkan badge dan perkiraan potongan saat pasiennya member", () => {
-    const renderResult = renderPanel(
-      <Harness
-        membership={{
-          id: 1,
-          name: "Gold",
-          discount_type: "percent",
-          discount_value: 10,
-          stacks_with_promo: false,
-        }}
-        items={[
-          {
-            key: "service:1",
-            kind: "service",
-            refId: 1,
-            name: "Facial",
-            unitPrice: 200_000,
-            basePrice: null,
-            promoName: null,
-            qty: 1,
-            stock: null,
-            offeredBy: null,
-          },
-        ]}
-        total={200_000}
-      />,
-    )
+  /** Tingkat member ditunjukkan begitu pasiennya dipilih, sebagai label saja. */
+  it("menunjukkan badge tingkat member saat pasiennya member", () => {
+    renderPanel(<Harness membership={{ id: 1, name: "Gold" }} />)
 
-    const { container } = renderResult
     expect(screen.getByText("Gold")).toBeTruthy()
-    expect(
-      amountSpans(container).some((text) => text.includes("20.000")),
-    ).toBe(true)
   })
 
   it("tidak menampilkan apa pun saat pasiennya bukan member", () => {
@@ -213,45 +171,5 @@ describe("PosCheckoutPanel", () => {
 
     // floor(105.000 / 10.000) = 10 poin.
     expect(screen.getByText("+10 poin")).toBeTruthy()
-  })
-
-  /**
-   * Yang dibayar adalah jumlah setelah potongan member: kembalian dan sisa
-   * tagihan harus dihitung dari angka yang sama dengan yang ditagih, bukan
-   * dari total keranjang sebelum potongan.
-   */
-  it("mengurangi total pembayaran dengan potongan member", () => {
-    const { container } = renderPanel(
-      <Harness
-        membership={{
-          id: 1,
-          name: "Gold",
-          discount_type: "percent",
-          discount_value: 10,
-          stacks_with_promo: false,
-        }}
-        items={[
-          {
-            key: "service:1",
-            kind: "service",
-            refId: 1,
-            name: "Facial",
-            unitPrice: 200_000,
-            basePrice: null,
-            promoName: null,
-            qty: 1,
-            stock: null,
-            offeredBy: null,
-          },
-        ]}
-        total={200_000}
-      />,
-    )
-
-    // 200.000 dikurangi 10% member = 180.000, bukan 200.000. Baris Total di
-    // panel Pembayaran wajib menampilkan 180.000 — keranjang di atasnya tetap
-    // menyebut 200.000 apa adanya, karena itu bukan yang ditagihkan.
-    const spans = amountSpans(container)
-    expect(spans.some((text) => text.includes("180.000"))).toBe(true)
   })
 })

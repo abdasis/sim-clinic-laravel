@@ -42,9 +42,6 @@ export interface ReceiptData {
   issued_at?: string | null
   created_at?: string | null
   cancelled_at?: string | null
-  /** Potongan keanggotaan, disalin saat nota dibuat. */
-  member_tier_name?: string | null
-  member_discount_amount?: string | null
   /** Poin loyalitas dari nota ini; nol selama belum lunas. */
   points_earned?: number | null
   print_count?: number | null
@@ -226,11 +223,7 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
 
     return sum + Math.max(listPrice, unitPrice) * Number(item.qty)
   }, 0)
-  // Manfaat keanggotaan dipisahkan dari potongan lain. Pasien membayar di
-  // muka untuk jadi member, jadi angkanya berhak berdiri sendiri — tercampur
-  // jadi satu dengan promo, tidak ada yang bisa membuktikan kartunya terpakai.
-  const memberDiscount = Math.max(0, Number(data.member_discount_amount ?? 0))
-  const discount = Math.max(0, gross - total - memberDiscount)
+  const discount = Math.max(0, gross - total)
   const paid = Number(data.paid_amount ?? 0)
   const outstanding = Number(data.outstanding_amount ?? 0)
   const change = paid - total
@@ -361,7 +354,7 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
             ":count",
             String(totalQty),
           )})`}
-          value={formatAmount(discount + memberDiscount > 0 ? gross : total)}
+          value={formatAmount(discount > 0 ? gross : total)}
         />
         {/* Potongan ditulis sebagai barisnya sendiri: pasien yang datang
             karena promo berhak melihat angkanya, bukan cuma harga akhir
@@ -370,16 +363,6 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
           <AmountRow
             label={t("invoice.discount")}
             value={`-${formatAmount(discount)}`}
-          />
-        ) : null}
-        {memberDiscount > 0 ? (
-          <AmountRow
-            label={
-              data.member_tier_name
-                ? `${t("invoice.member_discount")} (${data.member_tier_name})`
-                : t("invoice.member_discount")
-            }
-            value={`-${formatAmount(memberDiscount)}`}
           />
         ) : null}
       </div>

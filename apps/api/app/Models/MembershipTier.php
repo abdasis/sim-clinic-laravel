@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
-use App\Enums\DiscountType;
 use App\Enums\MembershipStatus;
 use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
@@ -12,12 +11,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tingkat keanggotaan berikut potongan yang menyertainya.
+ * Tingkat keanggotaan — label klasifikasi pasien, tanpa potongan harga.
  *
- * Besaran potongannya hidup di sini, bukan menempel di tiap pasien: klinik
- * sesekali menaikkan manfaatnya, dan kalau angkanya tersebar di ratusan baris
- * pasien, satu perubahan berarti menyunting semuanya — dan yang terlewat
- * diam-diam memakai angka lama.
+ * Sempat membawa potongan otomatis (persen/nominal), tapi klinik memilih
+ * poin loyalitas saja sebagai manfaatnya — dua mekanisme sekaligus cuma
+ * menambah satu lapis hitungan lagi di kasir. Tingkat tetap berguna sebagai
+ * dasar klasifikasi (dan manfaat lain di masa depan), hanya saja tidak lagi
+ * menyentuh tagihan.
  */
 #[ScopedBy([TenantScope::class])]
 class MembershipTier extends Model
@@ -30,25 +30,18 @@ class MembershipTier extends Model
      */
     protected $attributes = [
         'status' => 'active',
-        'stacks_with_promo' => false,
     ];
 
     protected $fillable = [
         'tenant_id',
         'name',
         'description',
-        'discount_type',
-        'discount_value',
-        'stacks_with_promo',
         'status',
     ];
 
     protected function casts(): array
     {
         return [
-            'discount_type' => DiscountType::class,
-            'discount_value' => 'decimal:2',
-            'stacks_with_promo' => 'boolean',
             'status' => MembershipStatus::class,
         ];
     }
@@ -61,11 +54,5 @@ class MembershipTier extends Model
     public function isActive(): bool
     {
         return $this->status === MembershipStatus::Active;
-    }
-
-    /** Harga setelah potongan tingkat ini. */
-    public function applyTo(float $amount): float
-    {
-        return $this->discount_type->apply($amount, (float) $this->discount_value);
     }
 }

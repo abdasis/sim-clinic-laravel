@@ -14,7 +14,6 @@ import { Form } from "#/components/ui/form.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
-import { FormSwitch } from "#/components/forms/form-switch.tsx"
 import { FormTextarea } from "#/components/forms/form-textarea.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
@@ -24,9 +23,6 @@ import type { ApiError } from "#/lib/api.ts"
 const schema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  discount_type: z.string().min(1),
-  discount_value: z.coerce.number().gt(0),
-  stacks_with_promo: z.boolean().optional(),
   status: z.string().optional(),
 })
 
@@ -36,9 +32,6 @@ export interface MembershipTierFormValues {
   id: number
   name: string
   description?: string | null
-  discount_type: string
-  discount_value: string | number
-  stacks_with_promo: boolean
   status: string
 }
 
@@ -53,9 +46,6 @@ interface MembershipTierFormDialogProps {
 const EMPTY: Values = {
   name: "",
   description: "",
-  discount_type: "percent",
-  discount_value: 10,
-  stacks_with_promo: false,
   status: "active",
 }
 
@@ -80,16 +70,11 @@ export function MembershipTierFormDialog({
         ? {
             name: tier.name,
             description: tier.description ?? "",
-            discount_type: tier.discount_type,
-            discount_value: Number(tier.discount_value),
-            stacks_with_promo: tier.stacks_with_promo,
             status: tier.status,
           }
         : EMPTY,
     )
   }, [open, tier, form])
-
-  const discountType = form.watch("discount_type")
 
   const mutation = useMutation({
     mutationFn: (values: Values) =>
@@ -136,42 +121,6 @@ export function MembershipTierFormDialog({
                   control={form.control}
                   name="description"
                   label={t("membership.description")}
-                />
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormSelect
-                    control={form.control}
-                    name="discount_type"
-                    label={t("promo.discount_type")}
-                    options={[
-                      { label: t("clinic.discount_type.percent"), value: "percent" },
-                      { label: t("clinic.discount_type.fixed"), value: "fixed" },
-                    ]}
-                  />
-                  <FormInput
-                    control={form.control}
-                    name="discount_value"
-                    label={t("membership.discount_value")}
-                    type="number"
-                    // step bawaan input number adalah 1, jadi 12,5 ditolak
-                    // peramban sebelum sempat sampai ke server.
-                    step={0.01}
-                    min={0.01}
-                    required
-                    description={
-                      discountType === "percent"
-                        ? t("promo.percent_hint")
-                        : t("promo.fixed_hint")
-                    }
-                    inputClassName="tabular-nums"
-                  />
-                </div>
-
-                <FormSwitch
-                  control={form.control}
-                  name="stacks_with_promo"
-                  label={t("membership.stacks_with_promo")}
-                  description={t("membership.stacks_with_promo_hint")}
                 />
 
                 <FormSelect

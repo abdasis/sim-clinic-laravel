@@ -22,7 +22,6 @@ setTranslations({
     paid_amount: "Sudah Dibayar",
     change: "Kembali",
     discount: "Diskon Promo",
-    member_discount: "Potongan Member",
     points_earned: "Poin didapat",
     points_unit: "poin",
     reprint: "Cetak Ulang",
@@ -266,47 +265,6 @@ describe("Receipt", () => {
     expect(getByText("1.000.000")).toBeTruthy()
     expect(getByText("Diskon Promo")).toBeTruthy()
     expect(getByText("-190.000")).toBeTruthy()
-  })
-
-  /**
-   * Pasien membayar di muka untuk jadi member. Kalau potongannya tercampur
-   * jadi satu dengan promo, tidak ada yang bisa membuktikan kartunya terpakai.
-   */
-  it("menyebut potongan member sebagai barisnya sendiri, dengan nama tingkatnya", () => {
-    const { getByText } = renderReceipt({
-      ...base,
-      subtotal: "760000.00",
-      member_tier_name: "Gold",
-      member_discount_amount: "50000.00",
-    })
-
-    expect(getByText("Potongan Member (Gold)")).toBeTruthy()
-    expect(getByText("-50.000")).toBeTruthy()
-  })
-
-  /** Potongan promo dan potongan member tidak boleh saling menghitung dua kali. */
-  it("memisahkan potongan promo dari potongan member", () => {
-    const { getByText } = renderReceipt({
-      ...base,
-      // Harga normal 900.000; promo menurunkannya ke 810.000 lewat list_price.
-      items: [
-        { id: 1, name: "Chemical Peeling", kind: "service", list_price: "400000.00", unit_price: "350000.00", qty: 1, subtotal: "350000.00" },
-        { id: 2, name: "Serum Vitamin C", kind: "product", list_price: "130000.00", unit_price: "120000.00", qty: 2, subtotal: "240000.00" },
-      ],
-      subtotal: "540000.00",
-      member_tier_name: "Gold",
-      member_discount_amount: "50000.00",
-    })
-
-    // Bruto 660.000, promo 70.000, member 50.000, bayar 540.000.
-    expect(getByText("-70.000")).toBeTruthy()
-    expect(getByText("-50.000")).toBeTruthy()
-  })
-
-  it("tidak menyebut keanggotaan pada nota bukan member", () => {
-    const { queryByText } = renderReceipt(base)
-
-    expect(queryByText(/Potongan Member/)).toBeNull()
   })
 
   /** Pasien melihat sendiri berapa poin yang baru saja diperoleh, bukan mengira-ngira. */

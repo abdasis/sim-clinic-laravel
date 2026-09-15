@@ -29,7 +29,6 @@ import {
   EMPTY_DISCOUNT,
   type DiscountState,
 } from "./components/discount-field.tsx"
-import type { MembershipInfo } from "./components/member-discount.ts"
 import type { ApiError } from "#/lib/api.ts"
 import { formatCurrency, formatDateTime } from "#/lib/format.ts"
 import type { PaymentData } from "./components/payment-panel.tsx"
@@ -37,6 +36,7 @@ import {
   PosCheckoutPanel,
   patientSchema,
   type CreatedTransaction,
+  type MembershipInfo,
 } from "./components/pos-checkout-panel.tsx"
 import { PosShortcutHelp } from "./components/pos-shortcut-help.tsx"
 import { ProductCatalog } from "./components/product-catalog.tsx"

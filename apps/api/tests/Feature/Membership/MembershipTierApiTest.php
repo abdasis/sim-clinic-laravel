@@ -10,10 +10,10 @@ use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
 /**
- * Master tingkat member.
+ * Master tingkat member — label klasifikasi pasien, tanpa potongan harga.
  *
- * Besaran potongannya hidup di sini, bukan menempel di tiap pasien, supaya
- * klinik yang menaikkan manfaat member cukup menyuntingnya sekali.
+ * Manfaat keanggotaan berjalan lewat poin loyalitas (lihat LoyaltyPointsTest);
+ * tingkat di sini murni menandai siapa Gold, siapa Silver.
  */
 class MembershipTierApiTest extends TestCase
 {
@@ -24,8 +24,6 @@ class MembershipTierApiTest extends TestCase
     {
         return [
             'name' => 'Gold',
-            'discount_type' => 'percent',
-            'discount_value' => 10,
             ...$overrides,
         ];
     }
@@ -37,7 +35,6 @@ class MembershipTierApiTest extends TestCase
         $this->postJson($this->tenantUrl('membership-tiers'), $this->payload())
             ->assertCreated()
             ->assertJsonPath('data.name', 'Gold')
-            ->assertJsonPath('data.stacks_with_promo', false)
             ->assertJsonPath('data.status', 'active');
     }
 
@@ -52,21 +49,11 @@ class MembershipTierApiTest extends TestCase
             ->assertJsonValidationErrors('name');
     }
 
-    /** Potongan persen di atas 100 melahirkan tagihan negatif. */
-    public function test_a_percentage_above_one_hundred_is_rejected(): void
-    {
-        $this->actingAsClinicUser();
-
-        $this->postJson($this->tenantUrl('membership-tiers'), $this->payload(['discount_value' => 120]))
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('discount_value');
-    }
-
     /**
      * Tingkat yang masih dipegang pasien tidak boleh lenyap.
      *
-     * Menghapusnya berarti potongan yang sedang berjalan hilang tanpa ada
-     * yang memutuskan, dan pasien baru tahu saat membayar di kasir.
+     * Menghapusnya berarti klasifikasi yang sedang berjalan hilang tanpa ada
+     * yang memutuskan, dan pasien baru tahu saat labelnya lenyap di layar.
      */
     public function test_a_tier_still_held_by_patients_cannot_be_deleted(): void
     {
@@ -75,8 +62,6 @@ class MembershipTierApiTest extends TestCase
         $tier = MembershipTier::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Gold',
-            'discount_type' => 'percent',
-            'discount_value' => 10,
         ]);
 
         Patient::factory()->create([
@@ -102,7 +87,7 @@ class MembershipTierApiTest extends TestCase
         $this->assertDatabaseMissing('membership_tiers', ['id' => $id]);
     }
 
-    /** Kasir perlu menelusuri asal potongan, bukan mengubahnya. */
+    /** Kasir perlu menelusuri tingkat pasien, bukan mengubahnya. */
     public function test_a_cashier_may_read_but_not_change_tiers(): void
     {
         $this->actingAsClinicUser(ClinicRole::Cashier);
@@ -111,7 +96,7 @@ class MembershipTierApiTest extends TestCase
         $this->postJson($this->tenantUrl('membership-tiers'), $this->payload())->assertForbidden();
     }
 
-    /** Terapis tidak berurusan dengan harga sama sekali. */
+    /** Terapis tidak berurusan dengan keanggotaan sama sekali. */
     public function test_a_therapist_cannot_see_tiers(): void
     {
         $this->actingAsClinicUser(ClinicRole::Therapist);
@@ -127,8 +112,6 @@ class MembershipTierApiTest extends TestCase
         $tier = MembershipTier::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Gold',
-            'discount_type' => 'percent',
-            'discount_value' => 10,
         ]);
 
         $other = $this->createTenant('klinik-lain');
@@ -148,8 +131,6 @@ class MembershipTierApiTest extends TestCase
         $tier = MembershipTier::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Gold',
-            'discount_type' => 'percent',
-            'discount_value' => 10,
         ]);
 
         $patient = Patient::factory()->create([
@@ -161,7 +142,7 @@ class MembershipTierApiTest extends TestCase
         $this->getJson($this->tenantUrl('patients'))
             ->assertOk()
             ->assertJsonPath('data.0.membership_tier_name', 'Gold')
-            ->assertJsonPath('data.0.membership.discount_value', $tier->discount_value)
+            ->assertJsonPath('data.0.membership.name', 'Gold')
             ->assertJsonPath('data.0.member_until', now()->addYear()->format('Y-m-d'));
 
         $this->assertNotNull($patient->fresh()->activeMembership());
@@ -175,8 +156,6 @@ class MembershipTierApiTest extends TestCase
         $tier = MembershipTier::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Gold',
-            'discount_type' => 'percent',
-            'discount_value' => 10,
         ]);
 
         Patient::factory()->create([

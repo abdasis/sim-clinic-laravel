@@ -20,8 +20,7 @@ class CreateMembershipTierAction
             $tier,
             Auth::user(),
             ['attributes' => $tier->getAttributes()],
-            'Menambahkan tingkat member '.$tier->name.' dengan potongan '
-                .$tier->discount_value.($tier->discount_type->value === 'percent' ? '%' : ' rupiah').'.',
+            'Menambahkan tingkat member '.$tier->name.'.',
         );
 
         return $tier;

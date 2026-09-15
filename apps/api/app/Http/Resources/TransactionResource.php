@@ -28,11 +28,6 @@ class TransactionResource extends JsonResource
             // terpisah supaya nota bisa menunjukkan keduanya; `subtotal`
             // tetap berarti jumlah yang harus dibayar.
             'items_total' => $this->items_total,
-            // Manfaat keanggotaan disebut terpisah dari promo dan dari
-            // kelonggaran kasir: pasien yang membayar untuk jadi member
-            // berhak melihat angkanya sendiri, bukan tercampur jadi satu.
-            'member_tier_name' => $this->member_tier_name,
-            'member_discount_amount' => $this->member_discount_amount,
             'discount_type' => $this->discount_type,
             'discount_type_label' => $this->discount_type?->label(),
             'discount_value' => $this->discount_value,
