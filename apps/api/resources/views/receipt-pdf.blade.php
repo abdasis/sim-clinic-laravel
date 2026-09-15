@@ -64,7 +64,12 @@
         $unitPrice = (float) $item->unit_price;
         return $sum + (max($listPrice, $unitPrice) * (int) $item->qty);
     }, 0);
-    $discount = max(0, $gross - $total);
+    // Poin yang ditukar berdiri sendiri, di luar potongan promo: pasien
+    // menyerahkan sesuatu yang dikumpulkannya untuk baris ini, jadi ia harus
+    // bisa dihitung ulang dari nota — bukan lebur jadi selisih harga.
+    $pointsRedeemed = max(0, (int) ($transaction->points_redeemed ?? 0));
+    $pointsRedeemedAmount = max(0, (float) ($transaction->points_redeemed_amount ?? 0));
+    $discount = max(0, $gross - $total - $pointsRedeemedAmount);
     $pointsEarned = max(0, (int) ($transaction->points_earned ?? 0));
 
     $paid = (float) ($transaction->paid_amount ?? $payments->sum('amount'));
@@ -170,12 +175,18 @@
     <table style="font-size: 8.5pt;">
         <tr>
             <td style="color: #444;">{{ __('invoice.item_total') }} ({{ str_replace(':count', (string) $totalQty, __('invoice.item_count')) }})</td>
-            <td class="text-right">{{ number_format($discount > 0 ? $gross : $total, 0, ',', '.') }}</td>
+            <td class="text-right">{{ number_format($discount + $pointsRedeemedAmount > 0 ? $gross : $total, 0, ',', '.') }}</td>
         </tr>
         @if ($discount > 0)
             <tr>
                 <td style="color: #444;">{{ __('invoice.discount') }}</td>
                 <td class="text-right">-{{ number_format($discount, 0, ',', '.') }}</td>
+            </tr>
+        @endif
+        @if ($pointsRedeemed > 0)
+            <tr>
+                <td style="color: #444;">{{ __('invoice.points_redeemed') }} ({{ $pointsRedeemed }} {{ __('invoice.points_unit') }})</td>
+                <td class="text-right">-{{ number_format($pointsRedeemedAmount, 0, ',', '.') }}</td>
             </tr>
         @endif
     </table>

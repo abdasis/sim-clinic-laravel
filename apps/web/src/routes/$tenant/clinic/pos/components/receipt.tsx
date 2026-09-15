@@ -42,6 +42,9 @@ export interface ReceiptData {
   issued_at?: string | null
   created_at?: string | null
   cancelled_at?: string | null
+  /** Poin yang ditukar jadi potongan, berikut nilai rupiahnya saat itu. */
+  points_redeemed?: number | null
+  points_redeemed_amount?: string | null
   /** Poin loyalitas dari nota ini; nol selama belum lunas. */
   points_earned?: number | null
   print_count?: number | null
@@ -223,7 +226,15 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
 
     return sum + Math.max(listPrice, unitPrice) * Number(item.qty)
   }, 0)
-  const discount = Math.max(0, gross - total)
+  // Poin yang ditukar berdiri sendiri, di luar potongan promo: pasien
+  // menyerahkan sesuatu yang dikumpulkannya untuk baris ini, jadi ia harus
+  // bisa dihitung ulang dari nota — bukan lebur jadi selisih harga.
+  const pointsRedeemed = Math.max(0, Number(data.points_redeemed ?? 0))
+  const pointsRedeemedAmount = Math.max(
+    0,
+    Number(data.points_redeemed_amount ?? 0),
+  )
+  const discount = Math.max(0, gross - total - pointsRedeemedAmount)
   const paid = Number(data.paid_amount ?? 0)
   const outstanding = Number(data.outstanding_amount ?? 0)
   const change = paid - total
@@ -354,7 +365,9 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
             ":count",
             String(totalQty),
           )})`}
-          value={formatAmount(discount > 0 ? gross : total)}
+          value={formatAmount(
+            discount + pointsRedeemedAmount > 0 ? gross : total,
+          )}
         />
         {/* Potongan ditulis sebagai barisnya sendiri: pasien yang datang
             karena promo berhak melihat angkanya, bukan cuma harga akhir
@@ -363,6 +376,12 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
           <AmountRow
             label={t("invoice.discount")}
             value={`-${formatAmount(discount)}`}
+          />
+        ) : null}
+        {pointsRedeemed > 0 ? (
+          <AmountRow
+            label={`${t("invoice.points_redeemed")} (${pointsRedeemed} ${t("invoice.points_unit")})`}
+            value={`-${formatAmount(pointsRedeemedAmount)}`}
           />
         ) : null}
       </div>

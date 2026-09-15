@@ -28,6 +28,10 @@ setTranslations({
     member_active: "Tingkat member pasien ini.",
     loyalty_balance: "Poin saat ini",
     loyalty_points_unit: "poin",
+    points_redeem: "Tukar Poin",
+    points_redeem_all: "Tukar semua",
+    points_redeem_hint: "Tiap poin memotong Rp1.000 dari tagihan.",
+    points_capped: "Poin yang dipakai menyesuaikan tagihan.",
     cart: { title: "Keranjang" },
   },
   commission: { therapist: "Terapis" },
@@ -37,6 +41,22 @@ const PATIENTS = [
   { label: "Ibu Sinta", value: "1" },
   { label: "Pak Budi", value: "2" },
 ]
+
+/** Satu baris keranjang seharga sekian — sisanya tidak diperiksa tes ini. */
+function cartLine(unitPrice: number) {
+  return {
+    key: "service:1",
+    kind: "service" as const,
+    refId: 1,
+    name: "Facial",
+    unitPrice,
+    basePrice: null,
+    promoName: null,
+    qty: 1,
+    stock: null,
+    offeredBy: null,
+  }
+}
 
 function Harness(
   props: Partial<React.ComponentProps<typeof PosCheckoutPanel>>,
@@ -151,25 +171,66 @@ describe("PosCheckoutPanel", () => {
     renderPanel(
       <Harness
         loyaltyPoints={0}
-        items={[
-          {
-            key: "service:1",
-            kind: "service",
-            refId: 1,
-            name: "Facial",
-            unitPrice: 105_000,
-            basePrice: null,
-            promoName: null,
-            qty: 1,
-            stock: null,
-            offeredBy: null,
-          },
-        ]}
+        items={[cartLine(105_000)]}
         total={105_000}
       />,
     )
 
     // floor(105.000 / 10.000) = 10 poin.
     expect(screen.getByText("+10 poin")).toBeTruthy()
+  })
+
+  /**
+   * Yang dibayar adalah jumlah setelah penukaran poin: kembalian dan sisa
+   * tagihan harus dihitung dari angka yang sama dengan yang ditagih, bukan
+   * dari total keranjang sebelum poinnya dipakai.
+   */
+  it("mengurangi total pembayaran dengan poin yang ditukar", () => {
+    const { container } = renderPanel(
+      <Harness
+        loyaltyPoints={50}
+        redeemPoints="30"
+        onRedeemPointsChange={() => {}}
+        items={[cartLine(200_000)]}
+        total={200_000}
+      />,
+    )
+
+    // 200.000 dikurangi 30 poin x Rp1.000 = 170.000. Keranjang di atasnya
+    // tetap menyebut 200.000 apa adanya, karena itu bukan yang ditagihkan.
+    const spans = Array.from(
+      container.querySelectorAll("span.tabular-nums"),
+    ).map((el) => el.textContent ?? "")
+
+    expect(spans.some((text) => text.includes("170.000"))).toBe(true)
+  })
+
+  /** Poin yang dipakai ikut memangkas perkiraan poin yang akan didapat. */
+  it("menghitung perkiraan poin dari yang benar-benar dibayar", () => {
+    renderPanel(
+      <Harness
+        loyaltyPoints={50}
+        redeemPoints="30"
+        onRedeemPointsChange={() => {}}
+        items={[cartLine(200_000)]}
+        total={200_000}
+      />,
+    )
+
+    // floor(170.000 / 10.000) = 17 poin, bukan 20 dari harga penuh.
+    expect(screen.getByText("+17 poin")).toBeTruthy()
+  })
+
+  it("tidak menawarkan penukaran saat pasiennya belum punya poin", () => {
+    renderPanel(
+      <Harness
+        loyaltyPoints={0}
+        onRedeemPointsChange={() => {}}
+        items={[cartLine(200_000)]}
+        total={200_000}
+      />,
+    )
+
+    expect(screen.queryByLabelText("Tukar Poin")).toBeNull()
   })
 })

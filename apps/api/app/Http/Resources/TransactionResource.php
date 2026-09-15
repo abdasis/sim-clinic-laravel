@@ -36,6 +36,11 @@ class TransactionResource extends JsonResource
             // baru dipastikan (lihat PayTransactionAction) begitu pembayaran
             // benar-benar menutup tagihan.
             'points_earned' => $this->points_earned,
+            // Poin yang ditukar jadi potongan pada nota ini, berikut nilai
+            // rupiahnya saat itu — nota lama tetap menyebut angka yang sama
+            // walau tarif tukarnya berubah belakangan.
+            'points_redeemed' => $this->points_redeemed,
+            'points_redeemed_amount' => $this->points_redeemed_amount,
             'subtotal' => $this->subtotal,
             'paid_amount' => $this->paid_amount,
             'outstanding_amount' => $this->outstandingAmount(),

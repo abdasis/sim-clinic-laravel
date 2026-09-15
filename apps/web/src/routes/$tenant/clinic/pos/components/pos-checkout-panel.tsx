@@ -11,10 +11,15 @@ import {
   discountAmount,
   type DiscountState,
 } from "./discount-field.tsx"
-import { loyaltyPointsPreview } from "./loyalty-points.ts"
+import {
+  capToBill,
+  loyaltyPointsPreview,
+  redeemValue,
+} from "./loyalty-points.ts"
 import { PaymentPanel, type PaymentData } from "./payment-panel.tsx"
 import { PerformerPicker, type StaffOption } from "./performer-picker.tsx"
 import { PosCart } from "./pos-cart.tsx"
+import { RedeemPointsField } from "./redeem-points-field.tsx"
 import type { LineItem } from "../hooks/use-pos-cart.ts"
 
 export const patientSchema = z.object({
@@ -64,6 +69,9 @@ interface PosCheckoutPanelProps {
   loyaltyPoints?: number | null
   discount: DiscountState
   onDiscountChange: (next: DiscountState) => void
+  /** Poin yang hendak ditukar; string supaya kolomnya boleh kosong. */
+  redeemPoints?: string
+  onRedeemPointsChange?: (next: string) => void
   onStep: (key: string, delta: number) => void
   onRemove: (key: string) => void
   onClear: () => void
@@ -110,6 +118,8 @@ export function PosCheckoutPanel({
   loyaltyPoints = null,
   discount,
   onDiscountChange,
+  redeemPoints = "",
+  onRedeemPointsChange,
   onStep,
   onRemove,
   onClear,
@@ -124,7 +134,15 @@ export function PosCheckoutPanel({
   // menolaknya juga.
   const today = new Date().toISOString().slice(0, 10)
 
-  const payableTotal = Math.max(0, total - discountAmount(discount, total))
+  // Urutannya mengikuti server: potongan nota lebih dulu, penukaran poin di
+  // atas sisanya. Kebalikannya membuat angka di layar kasir berbeda dengan
+  // yang tersimpan, dan selisihnya baru ketahuan setelah nota tercetak.
+  const afterDiscount = Math.max(0, total - discountAmount(discount, total))
+  const redeemed = capToBill(
+    Math.min(Number(redeemPoints) || 0, loyaltyPoints ?? 0),
+    afterDiscount,
+  )
+  const payableTotal = Math.max(0, afterDiscount - redeemValue(redeemed))
   const pointsPreview = loyaltyPointsPreview(payableTotal)
 
   return (
@@ -231,10 +249,19 @@ export function PosCheckoutPanel({
         total={total}
       />
 
-      <PaymentPanel
-        total={payableTotal}
-        onChange={onPaymentChange}
-      />
+      {/* Muncul hanya saat pasiennya punya poin yang benar-benar terpakai —
+          komponennya sendiri yang memutuskan, karena batasnya ikut berubah
+          tiap kali keranjang atau potongannya berubah. */}
+      {onRedeemPointsChange ? (
+        <RedeemPointsField
+          value={redeemPoints}
+          onChange={onRedeemPointsChange}
+          balance={loyaltyPoints ?? 0}
+          payable={afterDiscount}
+        />
+      ) : null}
+
+      <PaymentPanel total={payableTotal} onChange={onPaymentChange} />
     </div>
   )
 }

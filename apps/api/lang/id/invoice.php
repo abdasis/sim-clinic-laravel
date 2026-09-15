@@ -43,6 +43,7 @@ return [
     'change' => 'Kembali',
     'points_earned' => 'Poin didapat',
     'points_unit' => 'poin',
+    'points_redeemed' => 'Tukar Poin',
     'discount' => 'Diskon Promo',
     'item_count' => ':count item',
     // Penanda status dicetak sebagai pita agar terbaca sekilas dari kertas.

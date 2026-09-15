@@ -22,6 +22,7 @@ setTranslations({
     paid_amount: "Sudah Dibayar",
     change: "Kembali",
     discount: "Diskon Promo",
+    points_redeemed: "Tukar Poin",
     points_earned: "Poin didapat",
     points_unit: "poin",
     reprint: "Cetak Ulang",
@@ -265,6 +266,47 @@ describe("Receipt", () => {
     expect(getByText("1.000.000")).toBeTruthy()
     expect(getByText("Diskon Promo")).toBeTruthy()
     expect(getByText("-190.000")).toBeTruthy()
+  })
+
+  /**
+   * Pasien menyerahkan sesuatu yang dikumpulkannya untuk baris ini, jadi poin
+   * yang ditukar harus bisa dihitung ulang dari nota — bukan lebur jadi
+   * selisih harga yang tidak bisa dipertanggungjawabkan di meja kasir.
+   */
+  it("menyebut poin yang ditukar berikut jumlah poinnya", () => {
+    const { getByText } = renderReceipt({
+      ...base,
+      subtotal: "780000.00",
+      points_redeemed: 30,
+      points_redeemed_amount: "30000.00",
+    })
+
+    expect(getByText("Tukar Poin (30 poin)")).toBeTruthy()
+    expect(getByText("-30.000")).toBeTruthy()
+  })
+
+  /** Penukaran poin tidak boleh terhitung ulang sebagai potongan promo. */
+  it("memisahkan potongan promo dari penukaran poin", () => {
+    const { getByText } = renderReceipt({
+      ...base,
+      items: [
+        { id: 1, name: "Chemical Peeling", kind: "service", list_price: "400000.00", unit_price: "350000.00", qty: 1, subtotal: "350000.00" },
+        { id: 2, name: "Serum Vitamin C", kind: "product", list_price: "130000.00", unit_price: "120000.00", qty: 2, subtotal: "240000.00" },
+      ],
+      subtotal: "560000.00",
+      points_redeemed: 30,
+      points_redeemed_amount: "30000.00",
+    })
+
+    // Bruto 660.000, promo 70.000, poin 30.000, bayar 560.000.
+    expect(getByText("-70.000")).toBeTruthy()
+    expect(getByText("-30.000")).toBeTruthy()
+  })
+
+  it("tidak menyebut penukaran pada nota yang tidak memakai poin", () => {
+    const { queryByText } = renderReceipt(base)
+
+    expect(queryByText(/Tukar Poin/)).toBeNull()
   })
 
   /** Pasien melihat sendiri berapa poin yang baru saja diperoleh, bukan mengira-ngira. */

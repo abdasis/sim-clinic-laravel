@@ -40,6 +40,7 @@ class CancelTransactionAction
             $transaction->update(['cancelled_at' => now()]);
 
             $this->reclaimLoyaltyPoints($transaction);
+            $this->refundRedeemedPoints($transaction);
 
             return $transaction;
         });
@@ -83,5 +84,33 @@ class CancelTransactionAction
         );
 
         $transaction->update(['points_earned' => 0]);
+    }
+
+    /**
+     * Kembalikan poin yang sempat ditukar jadi potongan di nota ini.
+     *
+     * Kebalikan dari penarikan di atas dan wajib berpasangan dengannya:
+     * notanya batal, jadi potongannya pun batal — poin yang sudah dibayarkan
+     * pasien untuk tagihan yang tidak jadi harus kembali utuh ke saldonya.
+     *
+     * Nilai rupiahnya sengaja tidak ikut dinolkan: nota batal tetap terlihat
+     * di daftar, dan angkanya harus tetap menjelaskan bentuk tagihan yang
+     * dulu terbit. Yang dinolkan cuma jumlah poinnya, supaya pembatalan yang
+     * terlanjur terpanggil dua kali tidak mengembalikan dua kali.
+     */
+    private function refundRedeemedPoints(Transaction $transaction): void
+    {
+        if ($transaction->points_redeemed <= 0) {
+            return;
+        }
+
+        app(AdjustLoyaltyPointsAction::class)->handle(
+            $transaction->patient,
+            $transaction->points_redeemed,
+            'penukaran di nota '.$transaction->invoice_number.' dibatalkan',
+            $transaction,
+        );
+
+        $transaction->update(['points_redeemed' => 0]);
     }
 }

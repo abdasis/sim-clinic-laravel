@@ -137,9 +137,13 @@ function PosPage() {
   })
 
   // Kunjungan milik pasien sebelumnya tidak boleh ikut terbawa saat kasir
-  // berganti pasien — tagihannya akan menunjuk kunjungan orang lain.
+  // berganti pasien — tagihannya akan menunjuk kunjungan orang lain. Poin
+  // yang sudah diketik pun ikut dikosongkan: saldonya milik pasien yang tadi,
+  // dan membawanya menyeberang membuat simpan ditolak server tanpa sebab
+  // yang terlihat di layar.
   useEffect(() => {
     patientForm.setValue("booking_id", "")
+    setRedeemPoints("")
   }, [patientId, patientForm])
 
   // Hanya peran yang mengerjakan tindakan yang boleh jadi pelaksana maupun
@@ -150,6 +154,7 @@ function PosPage() {
 
   const handlePayment = useCallback((next: PaymentData) => setPayment(next), [])
   const [discount, setDiscount] = useState<DiscountState>(EMPTY_DISCOUNT)
+  const [redeemPoints, setRedeemPoints] = useState("")
 
   // Dipakai dua kali di bawah (badge member, saldo poin) — dihitung sekali
   // saja di sini, bukan `.find()` berulang tiap dipakai.
@@ -177,6 +182,9 @@ function PosPage() {
                 discount_type: discount.kind,
                 discount_value: Number(discount.value.replace(",", ".")),
               }),
+          // Yang dikirim jumlah poinnya, bukan nilai rupiahnya: tarif tukar
+          // milik server, dan kasir tidak bisa menawar potongan lewat payload.
+          points_redeemed: Number(redeemPoints) || 0,
           items: cart.items.map((item) => ({
             ...(item.kind === "product"
               ? { product_id: item.refId }
@@ -217,10 +225,16 @@ function PosPage() {
       qc.invalidateQueries({ queryKey: ["transactions"] })
       // Katalog ikut disegarkan supaya saldo stoknya tidak basi setelah jualan.
       qc.invalidateQueries({ queryKey: ["products", tenant, "catalog"] })
+      // Saldo poin pasien berubah begitu notanya menukar poin; tanpa ini
+      // kasir masih melihat saldo lama saat melayani orang yang sama lagi.
+      qc.invalidateQueries({ queryKey: ["patients", tenant, "options"] })
       cart.clear()
       // Potongan ikut dikosongkan: ia berlaku untuk satu nota, dan yang
-      // tertinggal akan diam-diam memangkas nota pasien berikutnya.
+      // tertinggal akan diam-diam memangkas nota pasien berikutnya. Begitu
+      // juga penukaran poin — poinnya sudah terpakai di nota yang baru saja
+      // terbit.
       setDiscount(EMPTY_DISCOUNT)
+      setRedeemPoints("")
       setPerformerIds([])
       // Tanggal sengaja dipertahankan: admin yang mencatat penjualan
       // sebulan lalu biasanya memasukkan beberapa nota untuk hari yang sama.
@@ -299,6 +313,8 @@ function PosPage() {
       loyaltyPoints={selectedPatient?.loyalty_points ?? null}
       discount={discount}
       onDiscountChange={setDiscount}
+      redeemPoints={redeemPoints}
+      onRedeemPointsChange={setRedeemPoints}
       onStep={cart.step}
       onRemove={cart.remove}
       onClear={cart.clear}

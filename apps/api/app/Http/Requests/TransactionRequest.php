@@ -6,6 +6,7 @@ use App\Enums\BookingStatus;
 use App\Enums\DiscountType;
 use App\Models\Booking;
 use App\Rules\TenantRule;
+use App\Support\LoyaltyPoints;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
@@ -33,6 +34,10 @@ class TransactionRequest extends FormRequest
             // barang. Pecahan diizinkan: 70,5% adalah angka yang wajar.
             'discount_type' => ['nullable', new Enum(DiscountType::class)],
             'discount_value' => ['nullable', 'numeric', 'gt:0', 'required_with:discount_type'],
+            // Poin yang ditukar jadi potongan. Nol berarti tidak menukar;
+            // minimumnya dijaga di withValidator supaya nol tidak ikut
+            // tertolak. Kelebihan di atas tagihan dipangkas server.
+            'points_redeemed' => ['nullable', 'integer', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.qty' => ['required', 'integer', 'gt:0'],
             // Satu baris mewakili tepat satu layanan atau satu produk.
@@ -50,6 +55,15 @@ class TransactionRequest extends FormRequest
             if ($this->input('discount_type') === DiscountType::Percent->value
                 && (float) $this->input('discount_value') > 100) {
                 $validator->errors()->add('discount_value', __('pos.discount_percent_max'));
+            }
+
+            $points = (int) $this->input('points_redeemed', 0);
+
+            if ($points > 0 && $points < LoyaltyPoints::MIN_REDEEM) {
+                $validator->errors()->add(
+                    'points_redeemed',
+                    __('pos.points_min_redeem', ['min' => LoyaltyPoints::MIN_REDEEM]),
+                );
             }
 
             $bookingId = $this->input('booking_id');
@@ -79,6 +93,7 @@ class TransactionRequest extends FormRequest
             'items' => __('pos.items'),
             'discount_type' => __('pos.discount_type'),
             'discount_value' => __('pos.discount_value'),
+            'points_redeemed' => __('pos.points_redeem'),
             'items.*.qty' => __('pos.qty'),
             'items.*.service_id' => __('pos.item'),
             'items.*.product_id' => __('pos.item'),

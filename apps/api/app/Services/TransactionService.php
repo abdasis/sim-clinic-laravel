@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Actions\LogAuditAction;
+use App\Actions\Loyalty\RedeemLoyaltyPointsAction;
 use App\Actions\Transaction\CancelTransactionAction;
 use App\Actions\Transaction\SoftDeleteTransactionAction;
 use App\Enums\DiscountType;
@@ -11,6 +12,7 @@ use App\Enums\StockMovementType;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Transaction;
+use App\Support\LoyaltyPoints;
 use App\Support\PromoPricing;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
@@ -39,6 +41,16 @@ class TransactionService
 
             $discount = $this->resolveDiscount($data, $itemsTotal);
 
+            // Poin ditukar di atas sisa setelah potongan nota, bukan di atas
+            // harga kotor: urutannya menentukan berapa poin yang benar-benar
+            // terpakai, dan pasien tidak boleh kehilangan poin untuk bagian
+            // tagihan yang sudah dipotong promo.
+            $pointsRedeemed = LoyaltyPoints::capToBill(
+                (int) ($data['points_redeemed'] ?? 0),
+                $discount['payable'],
+            );
+            $redeemedAmount = LoyaltyPoints::redeemValue($pointsRedeemed);
+
             $transaction = Transaction::create([
                 'patient_id' => $data['patient_id'],
                 'booking_id' => $data['booking_id'] ?? null,
@@ -49,9 +61,11 @@ class TransactionService
                 'discount_type' => $discount['type'],
                 'discount_value' => $discount['value'],
                 'discount_amount' => $discount['amount'],
+                'points_redeemed' => $pointsRedeemed,
+                'points_redeemed_amount' => $redeemedAmount,
                 // Tetap berarti jumlah yang harus dibayar: seluruh
                 // perhitungan sisa tagihan dan status lunas membacanya begitu.
-                'subtotal' => $discount['payable'],
+                'subtotal' => round($discount['payable'] - $redeemedAmount, 2),
                 'paid_amount' => 0,
                 'payment_status' => PaymentStatus::Unpaid,
                 'issued_at' => $issuedAt,
@@ -59,6 +73,12 @@ class TransactionService
 
             // Pelaksana kunjungan: dasar fee per pasien, bisa lebih dari satu.
             $transaction->syncPerformers($data['performer_ids'] ?? []);
+
+            // Saldo baru dipotong setelah notanya ada, supaya jejak poinnya
+            // menunjuk nota yang bisa dibuka. Saldo kurang menggagalkan
+            // seluruh DB transaction ini, jadi tidak ada nota yang terlanjur
+            // memotong tagihan dengan poin yang ternyata tidak ada.
+            app(RedeemLoyaltyPointsAction::class)->handle($transaction, $pointsRedeemed);
 
             foreach ($lines as $line) {
                 $transaction->items()->create([

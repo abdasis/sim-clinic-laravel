@@ -28,6 +28,8 @@ class Transaction extends Model
         'invoice_number',
         'items_total',
         'points_earned',
+        'points_redeemed',
+        'points_redeemed_amount',
         'discount_type',
         'discount_value',
         'discount_amount',
@@ -45,6 +47,8 @@ class Transaction extends Model
         return [
             'items_total' => 'decimal:2',
             'points_earned' => 'integer',
+            'points_redeemed' => 'integer',
+            'points_redeemed_amount' => 'decimal:2',
             'discount_type' => DiscountType::class,
             'discount_value' => 'decimal:2',
             'discount_amount' => 'decimal:2',
