@@ -22,7 +22,7 @@ setTranslations({
     paid_amount: "Sudah Dibayar",
     change: "Kembali",
     discount: "Diskon Promo",
-    points_redeemed: "Tukar Poin",
+    points_redeemed: "Tukar :count poin",
     points_earned: "Poin didapat",
     points_unit: "poin",
     reprint: "Cetak Ulang",
@@ -281,8 +281,33 @@ describe("Receipt", () => {
       points_redeemed_amount: "30000.00",
     })
 
-    expect(getByText("Tukar Poin (30 poin)")).toBeTruthy()
+    expect(getByText("Tukar 30 poin")).toBeTruthy()
     expect(getByText("-30.000")).toBeTruthy()
+  })
+
+  /**
+   * Nominal tidak boleh pecah dua baris di kertas 48mm.
+   *
+   * Pernah terjadi: label "Tukar Poin (100 poin)" membungkus dan mendorong
+   * angkanya terbelah jadi "-100.00" lalu "0" — yang tercetak bukan angka
+   * lagi, dan pasien tidak bisa membacanya sebagai jumlah apa pun.
+   */
+  it("tidak pernah memecah nominal ke baris kedua", () => {
+    const { container } = renderReceipt({
+      ...base,
+      subtotal: "780000.00",
+      points_redeemed: 30,
+      points_redeemed_amount: "30000.00",
+    })
+
+    const amounts = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-amount]"),
+    )
+
+    expect(amounts.length).toBeGreaterThan(0)
+    expect(
+      amounts.every((el) => el.className.includes("whitespace-nowrap")),
+    ).toBe(true)
   })
 
   /** Penukaran poin tidak boleh terhitung ulang sebagai potongan promo. */
@@ -306,7 +331,7 @@ describe("Receipt", () => {
   it("tidak menyebut penukaran pada nota yang tidak memakai poin", () => {
     const { queryByText } = renderReceipt(base)
 
-    expect(queryByText(/Tukar Poin/)).toBeNull()
+    expect(queryByText(/Tukar \d+ poin/)).toBeNull()
   })
 
   /** Pasien melihat sendiri berapa poin yang baru saja diperoleh, bukan mengira-ngira. */

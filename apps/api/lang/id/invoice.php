@@ -43,7 +43,9 @@ return [
     'change' => 'Kembali',
     'points_earned' => 'Poin didapat',
     'points_unit' => 'poin',
-    'points_redeemed' => 'Tukar Poin',
+    // Dipendekkan dari "Tukar Poin (100 poin)": di kertas 48mm label sepanjang
+    // itu membungkus dan mendorong nominalnya pecah jadi dua baris.
+    'points_redeemed' => 'Tukar :count poin',
     'discount' => 'Diskon Promo',
     'item_count' => ':count item',
     // Penanda status dicetak sebagai pita agar terbaca sekilas dari kertas.

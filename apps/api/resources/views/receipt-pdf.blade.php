@@ -185,8 +185,8 @@
         @endif
         @if ($pointsRedeemed > 0)
             <tr>
-                <td style="color: #444;">{{ __('invoice.points_redeemed') }} ({{ $pointsRedeemed }} {{ __('invoice.points_unit') }})</td>
-                <td class="text-right">-{{ number_format($pointsRedeemedAmount, 0, ',', '.') }}</td>
+                <td style="color: #444;">{{ __('invoice.points_redeemed', ['count' => $pointsRedeemed]) }}</td>
+                <td class="text-right" style="white-space: nowrap;">-{{ number_format($pointsRedeemedAmount, 0, ',', '.') }}</td>
             </tr>
         @endif
     </table>

@@ -160,11 +160,15 @@ function AmountRow({
   return (
     <div className="flex items-baseline justify-between gap-2">
       <span className={bold ? "font-bold" : "text-neutral-700"}>{label}</span>
+      {/* Nominal tidak pernah boleh pecah dua baris: di kertas 48mm angka yang
+          terbelah ("-100.00" lalu "0") tidak terbaca sebagai angka sama
+          sekali. Labelnya yang mengalah dan membungkus. */}
       <span
+        data-amount
         className={
           bold
-            ? "font-bold tabular-nums"
-            : "font-medium tabular-nums text-neutral-900"
+            ? "shrink-0 font-bold whitespace-nowrap tabular-nums"
+            : "shrink-0 font-medium whitespace-nowrap tabular-nums text-neutral-900"
         }
       >
         {value}
@@ -347,7 +351,10 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
                   <span className="text-neutral-600">
                     {item.qty} x {formatAmount(Number(item.unit_price))}
                   </span>
-                  <span className="font-medium">
+                  <span
+                    data-amount
+                    className="shrink-0 font-medium whitespace-nowrap"
+                  >
                     {formatAmount(Number(item.subtotal))}
                   </span>
                 </div>
@@ -380,7 +387,10 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
         ) : null}
         {pointsRedeemed > 0 ? (
           <AmountRow
-            label={`${t("invoice.points_redeemed")} (${pointsRedeemed} ${t("invoice.points_unit")})`}
+            label={t("invoice.points_redeemed").replace(
+              ":count",
+              String(pointsRedeemed),
+            )}
             value={`-${formatAmount(pointsRedeemedAmount)}`}
           />
         ) : null}
@@ -390,7 +400,10 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
         <span className="text-xs font-bold tracking-tight uppercase">
           {t("invoice.grand_total")} (IDR)
         </span>
-        <span className="text-base leading-none font-bold tabular-nums">
+        <span
+          data-amount
+          className="shrink-0 text-base leading-none font-bold whitespace-nowrap tabular-nums"
+        >
           {formatAmount(total)}
         </span>
       </div>
@@ -427,7 +440,9 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
       {outstanding > 0 ? (
         <div className="mt-[1mm] flex items-baseline justify-between gap-2 border border-neutral-900 px-[1mm] py-[0.6mm] font-bold">
           <span>{t("invoice.outstanding")}</span>
-          <span className="tabular-nums">{formatAmount(outstanding)}</span>
+          <span data-amount className="shrink-0 whitespace-nowrap tabular-nums">
+            {formatAmount(outstanding)}
+          </span>
         </div>
       ) : null}
 
@@ -436,7 +451,10 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
       {pointsEarned > 0 ? (
         <div className="mt-[1mm] flex items-baseline justify-between gap-2 text-xxs text-neutral-700">
           <span>{t("invoice.points_earned")}</span>
-          <span className="font-medium tabular-nums text-neutral-900">
+          <span
+            data-amount
+            className="shrink-0 font-medium whitespace-nowrap tabular-nums text-neutral-900"
+          >
             +{pointsEarned} {t("invoice.points_unit")}
           </span>
         </div>
