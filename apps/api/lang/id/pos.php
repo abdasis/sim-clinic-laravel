@@ -35,7 +35,7 @@ return [
     'loyalty_balance' => 'Poin saat ini',
     'loyalty_points_unit' => 'poin',
     'points_redeem' => 'Tukar Poin',
-    'points_redeem_hint' => 'Tiap poin memotong Rp1.000 dari tagihan. Sisa poin yang tidak terpakai tetap tersimpan.',
+    'points_redeem_hint' => 'Tiap poin memotong :value dari tagihan. Sisa poin yang tidak terpakai tetap tersimpan.',
     'points_redeem_none' => 'Pasien ini belum punya poin yang bisa ditukar.',
     'points_redeem_all' => 'Tukar semua',
     'points_min_redeem' => 'Penukaran poin paling sedikit :min poin.',

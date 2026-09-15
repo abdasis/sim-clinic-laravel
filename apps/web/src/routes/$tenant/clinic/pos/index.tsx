@@ -29,6 +29,7 @@ import {
   EMPTY_DISCOUNT,
   type DiscountState,
 } from "./components/discount-field.tsx"
+import type { LoyaltyRates } from "./components/loyalty-points.ts"
 import type { ApiError } from "#/lib/api.ts"
 import { formatCurrency, formatDateTime } from "#/lib/format.ts"
 import type { PaymentData } from "./components/payment-panel.tsx"
@@ -111,6 +112,16 @@ function PosPage() {
         `/${tenant}/clinic/staff`,
         { per_page: 100 },
       ),
+  })
+
+  // Tarif poin milik tiap klinik. Diambil di sini, bukan dipatok di komponen:
+  // perkiraan poin yang dilihat kasir sebelum menekan simpan harus memakai
+  // tarif yang sama dengan yang dipakai server saat menyimpannya.
+  const loyaltyRates = useQuery({
+    queryKey: ["loyalty-settings", tenant],
+    queryFn: () =>
+      apiGet<{ data: LoyaltyRates }>(`/${tenant}/clinic/loyalty-settings`),
+    staleTime: 5 * 60 * 1000,
   })
 
   const patients = useQuery({
@@ -315,6 +326,7 @@ function PosPage() {
       onDiscountChange={setDiscount}
       redeemPoints={redeemPoints}
       onRedeemPointsChange={setRedeemPoints}
+      loyaltyRates={loyaltyRates.data?.data}
       onStep={cart.step}
       onRemove={cart.remove}
       onClear={cart.clear}

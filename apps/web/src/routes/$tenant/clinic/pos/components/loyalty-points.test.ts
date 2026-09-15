@@ -30,6 +30,38 @@ describe("redeemValue", () => {
   })
 })
 
+/**
+ * Tarif milik tiap klinik, jadi yang dijaga bukan angkanya melainkan bahwa
+ * angka yang dikirim benar-benar dipakai — bukan bawaan yang diam-diam menang.
+ */
+describe("tarif klinik", () => {
+  const rates = { earn_rate: 50_000, redeem_rate: 500, min_redeem: 5 }
+
+  it("memakai tarif dapat poin milik klinik", () => {
+    expect(loyaltyPointsPreview(200_000, rates)).toBe(4)
+    expect(loyaltyPointsPreview(200_000)).toBe(20)
+  })
+
+  it("memakai tarif tukar milik klinik", () => {
+    expect(redeemValue(20, rates)).toBe(10_000)
+    expect(redeemValue(20)).toBe(20_000)
+  })
+
+  it("memangkas penukaran menurut tarif tukar klinik", () => {
+    // Rp200.000 menampung 400 poin saat satu poin bernilai Rp500.
+    expect(capToBill(500, 200_000, rates)).toBe(400)
+    expect(capToBill(500, 200_000)).toBe(200)
+  })
+
+  /** Tarif rusak tidak boleh melahirkan Infinity di layar kasir. */
+  it("jatuh ke bawaan saat tarifnya nol atau bukan angka", () => {
+    const broken = { earn_rate: 0, redeem_rate: Number.NaN, min_redeem: 10 }
+
+    expect(loyaltyPointsPreview(200_000, broken)).toBe(20)
+    expect(redeemValue(20, broken)).toBe(20_000)
+  })
+})
+
 describe("capToBill", () => {
   /**
    * Poin memotong yang harus dibayar; ia bukan uang yang bisa diambil pulang

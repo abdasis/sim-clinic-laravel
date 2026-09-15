@@ -9,6 +9,7 @@ import { useDataTable } from "#/hooks/use-data-table.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import type { DataTableParams, DataTableResponse } from "#/types/data-table.ts"
+import { LoyaltyRatesCard } from "./components/loyalty-rates-card.tsx"
 import { MembershipTierActionsCell } from "./components/membership-tier-actions-cell.tsx"
 import {
   MembershipTierFormDialog,
@@ -116,6 +117,13 @@ function MembershipTiersPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
       />
+
+      {/* Tarif poin berdiri di atas daftar tingkat: manfaat member berjalan
+          lewat poin, jadi angkanya yang paling sering ditanyakan di halaman
+          ini — bukan daftar tingkatnya. */}
+      <div className="mb-4">
+        <LoyaltyRatesCard tenant={tenant} />
+      </div>
 
       <DataTable
         table={table}

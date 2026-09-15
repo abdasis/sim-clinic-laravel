@@ -100,4 +100,34 @@ describe("RedeemPointsField", () => {
 
     expect(screen.queryByText("Poin yang dipakai menyesuaikan tagihan.")).toBeNull()
   })
+
+  /** Tarif milik tiap klinik; kolomnya harus ikut, bukan memakai bawaan. */
+  it("menilai poin dengan tarif klinik yang dikirim", () => {
+    renderField({
+      value: "20",
+      rates: { earn_rate: 50_000, redeem_rate: 500, min_redeem: 5 },
+    })
+
+    // 20 poin x Rp500 = Rp10.000, bukan Rp20.000 menurut tarif bawaan.
+    expect(screen.getByText(/10\.000/)).toBeTruthy()
+  })
+
+  /**
+   * Minimum tukar pun milik klinik: saldo 6 poin ditolak oleh bawaan (10)
+   * tapi sah kalau kliniknya menyetel minimum 5.
+   */
+  it("mengikuti minimum tukar milik klinik", () => {
+    const { container } = renderField({ balance: 6 })
+
+    expect(container.textContent).toBe("")
+
+    cleanup()
+
+    renderField({
+      balance: 6,
+      rates: { earn_rate: 50_000, redeem_rate: 500, min_redeem: 5 },
+    })
+
+    expect(screen.getByLabelText("Tukar Poin")).toBeTruthy()
+  })
 })

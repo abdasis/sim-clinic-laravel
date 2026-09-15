@@ -8,7 +8,12 @@ import {
 } from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { formatCurrency } from "#/lib/format.ts"
-import { MIN_REDEEM, capToBill, redeemValue } from "./loyalty-points.ts"
+import {
+  DEFAULT_RATES,
+  capToBill,
+  redeemValue,
+  type LoyaltyRates,
+} from "./loyalty-points.ts"
 
 interface RedeemPointsFieldProps {
   /** Apa yang diketik kasir; string supaya kolomnya boleh kosong. */
@@ -18,6 +23,8 @@ interface RedeemPointsFieldProps {
   balance: number
   /** Tagihan setelah potongan nota — batas atas penukaran. */
   payable: number
+  /** Tarif klinik ini; bawaan dipakai selama jawabannya belum tiba. */
+  rates?: LoyaltyRates
 }
 
 /**
@@ -37,18 +44,19 @@ export function RedeemPointsField({
   onChange,
   balance,
   payable,
+  rates = DEFAULT_RATES,
 }: RedeemPointsFieldProps) {
   const { t } = useTrans()
 
   // Yang benar-benar bisa dipakai pada tagihan ini, bukan seluruh saldo.
-  const usable = capToBill(balance, payable)
+  const usable = capToBill(balance, payable, rates)
 
-  if (usable < MIN_REDEEM) return null
+  if (usable < rates.min_redeem) return null
 
   const typed = Number(value)
   const points = Number.isFinite(typed) ? Math.max(0, Math.floor(typed)) : 0
-  const applied = capToBill(Math.min(points, balance), payable)
-  const amount = redeemValue(applied)
+  const applied = capToBill(Math.min(points, balance), payable, rates)
+  const amount = redeemValue(applied, rates)
   // Diketik melebihi yang bisa dipakai: angkanya tetap dibiarkan berdiri di
   // kolom, tapi kasir diberi tahu berapa yang benar-benar terpakai sebelum
   // menyebut angkanya ke pasien.
@@ -110,7 +118,10 @@ export function RedeemPointsField({
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">
-          {t("pos.points_redeem_hint")}
+          {t("pos.points_redeem_hint").replace(
+            ":value",
+            formatCurrency(rates.redeem_rate),
+          )}
         </p>
       )}
     </div>

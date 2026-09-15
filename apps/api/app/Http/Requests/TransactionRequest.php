@@ -58,11 +58,12 @@ class TransactionRequest extends FormRequest
             }
 
             $points = (int) $this->input('points_redeemed', 0);
+            $minRedeem = LoyaltyPoints::minRedeem();
 
-            if ($points > 0 && $points < LoyaltyPoints::MIN_REDEEM) {
+            if ($points > 0 && $points < $minRedeem) {
                 $validator->errors()->add(
                     'points_redeemed',
-                    __('pos.points_min_redeem', ['min' => LoyaltyPoints::MIN_REDEEM]),
+                    __('pos.points_min_redeem', ['min' => $minRedeem]),
                 );
             }
 

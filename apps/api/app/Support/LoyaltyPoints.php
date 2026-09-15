@@ -2,47 +2,36 @@
 
 namespace App\Support;
 
+use App\Models\LoyaltySetting;
+
 /**
  * Konversi belanja ke poin loyalitas, dan poin kembali ke rupiah.
  *
- * Kelas baca murni, tanpa DB — dipakai di dua titik (nota menjadi lunas, dan
- * nota menukar poin), dan hasil keduanya disnapshot di kolom nota supaya
- * perubahan tarif belakangan tidak diam-diam menulis ulang riwayat.
+ * Tarifnya milik tiap klinik (lihat LoyaltySetting), jadi kelas ini membacanya
+ * lebih dulu — bukan lagi konstanta yang cuma bisa berubah lewat rilis.
+ * Hitungannya sendiri tetap murni dan ada di satu tempat, supaya sisi kasir
+ * dan sisi nota tidak pernah memakai rumus yang berbeda.
  *
- * ponytail: kedua tarif masih tetap untuk semua klinik. Naikkan ke setelan per
- * tenant begitu ada klinik yang minta tarifnya sendiri — bentuk snapshotnya di
- * nota sudah menampung itu, jadi yang berubah cuma sumber angkanya.
+ * Mengubah tarif tidak menulis ulang riwayat: poin yang didapat dan nilai
+ * rupiah yang ditukar sudah disnapshot di kolom transaksi begitu notanya
+ * terbit, jadi nota lama tetap menyebut angka yang berlaku saat itu.
  */
 class LoyaltyPoints
 {
-    /** Rupiah belanja per satu poin yang didapat. */
-    private const RATE = 10_000;
-
-    /** Rupiah potongan per satu poin yang ditukar. */
-    private const REDEEM_RATE = 1_000;
-
-    /**
-     * Tukar paling sedikit segini.
-     *
-     * Bukan untuk menyulitkan: penukaran receh membuat tiap nota punya baris
-     * potongan seharga seribu rupiah, dan riwayat poin pasien jadi daftar
-     * panjang yang tidak menceritakan apa pun.
-     */
-    public const MIN_REDEEM = 10;
-
     /**
      * Poin dari satu nota. Sisa di bawah tarif dibuang, bukan dibulatkan —
-     * Rp19.000 tetap 1 poin, bukan 2, karena belum genap Rp20.000.
+     * dengan tarif Rp10.000, belanja Rp19.000 tetap 1 poin karena belum
+     * genap Rp20.000.
      */
     public static function earn(float $amount): int
     {
-        return (int) floor(max(0.0, $amount) / self::RATE);
+        return (int) floor(max(0.0, $amount) / self::rates()['earn_rate']);
     }
 
     /** Nilai rupiah dari sejumlah poin yang ditukar. */
     public static function redeemValue(int $points): float
     {
-        return (float) (max(0, $points) * self::REDEEM_RATE);
+        return max(0, $points) * self::rates()['redeem_rate'];
     }
 
     /**
@@ -59,6 +48,30 @@ class LoyaltyPoints
      */
     public static function capToBill(int $points, float $payable): int
     {
-        return (int) min(max(0, $points), floor(max(0.0, $payable) / self::REDEEM_RATE));
+        return (int) min(
+            max(0, $points),
+            floor(max(0.0, $payable) / self::rates()['redeem_rate']),
+        );
+    }
+
+    /** Tukar paling sedikit segini, menurut setelan klinik ini. */
+    public static function minRedeem(): int
+    {
+        return self::rates()['min_redeem'];
+    }
+
+    /**
+     * Tarif klinik yang sedang aktif.
+     *
+     * Sengaja dibaca ulang tiap dipanggil, bukan diingat: satu nota cuma
+     * memanggilnya beberapa kali, sementara tarif yang terlanjur diingat
+     * setelah kasir menyimpannya kembali menghitung dengan angka lama —
+     * kesalahan yang jauh lebih mahal daripada kueri yang dihemat.
+     *
+     * @return array{earn_rate: float, redeem_rate: float, min_redeem: int}
+     */
+    private static function rates(): array
+    {
+        return LoyaltySetting::current();
     }
 }

@@ -21,6 +21,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InboundMessageController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\LoyaltySettingController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\MembershipTierController;
 use App\Http\Controllers\MessageTemplateController;
@@ -225,6 +226,12 @@ Route::prefix('{tenant}/clinic')
         Route::apiResource('membership-tiers', MembershipTierController::class)
             ->parameters(['membership-tiers' => 'membershipTier'])
             ->except('show');
+
+        // Tarif poin loyalitas. Dibaca juga oleh layar kasir, bukan cuma
+        // halaman setelan: perkiraan poin sebelum nota terbit harus memakai
+        // tarif yang sama dengan yang dipakai server saat menyimpannya.
+        Route::get('loyalty-settings', [LoyaltySettingController::class, 'show']);
+        Route::put('loyalty-settings', [LoyaltySettingController::class, 'update']);
 
         // US5 POS / Transaction
         Route::get('transactions/{transaction}/invoice', [InvoiceController::class, 'show']);

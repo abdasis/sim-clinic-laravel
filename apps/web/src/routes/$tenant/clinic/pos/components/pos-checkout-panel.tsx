@@ -12,9 +12,11 @@ import {
   type DiscountState,
 } from "./discount-field.tsx"
 import {
+  DEFAULT_RATES,
   capToBill,
   loyaltyPointsPreview,
   redeemValue,
+  type LoyaltyRates,
 } from "./loyalty-points.ts"
 import { PaymentPanel, type PaymentData } from "./payment-panel.tsx"
 import { PerformerPicker, type StaffOption } from "./performer-picker.tsx"
@@ -72,6 +74,8 @@ interface PosCheckoutPanelProps {
   /** Poin yang hendak ditukar; string supaya kolomnya boleh kosong. */
   redeemPoints?: string
   onRedeemPointsChange?: (next: string) => void
+  /** Tarif poin klinik ini; bawaan dipakai selama jawabannya belum tiba. */
+  loyaltyRates?: LoyaltyRates
   onStep: (key: string, delta: number) => void
   onRemove: (key: string) => void
   onClear: () => void
@@ -120,6 +124,7 @@ export function PosCheckoutPanel({
   onDiscountChange,
   redeemPoints = "",
   onRedeemPointsChange,
+  loyaltyRates = DEFAULT_RATES,
   onStep,
   onRemove,
   onClear,
@@ -141,9 +146,13 @@ export function PosCheckoutPanel({
   const redeemed = capToBill(
     Math.min(Number(redeemPoints) || 0, loyaltyPoints ?? 0),
     afterDiscount,
+    loyaltyRates,
   )
-  const payableTotal = Math.max(0, afterDiscount - redeemValue(redeemed))
-  const pointsPreview = loyaltyPointsPreview(payableTotal)
+  const payableTotal = Math.max(
+    0,
+    afterDiscount - redeemValue(redeemed, loyaltyRates),
+  )
+  const pointsPreview = loyaltyPointsPreview(payableTotal, loyaltyRates)
 
   return (
     <div className="space-y-4">
@@ -258,6 +267,7 @@ export function PosCheckoutPanel({
           onChange={onRedeemPointsChange}
           balance={loyaltyPoints ?? 0}
           payable={afterDiscount}
+          rates={loyaltyRates}
         />
       ) : null}
 

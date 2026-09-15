@@ -1,32 +1,60 @@
 /**
- * Perkiraan poin loyalitas dari satu nota, sebelum disimpan.
+ * Hitungan poin loyalitas di sisi kasir, sebelum notanya disimpan.
  *
- * Meniru App\Support\LoyaltyPoints: floor, bukan pembulatan — Rp19.000
- * tetap 1 poin, bukan 2. Murni tampilan; server menghitung ulang sendiri
- * tepat saat nota benar-benar lunas (lihat PayTransactionAction), jadi
- * angka di sini bisa berbeda kalau pembayarannya nanti dicicil.
+ * Meniru App\Support\LoyaltyPoints: floor, bukan pembulatan — dengan tarif
+ * Rp10.000, belanja Rp19.000 tetap 1 poin karena belum genap Rp20.000.
+ * Murni tampilan; server menghitung ulang sendiri dengan tarif yang sama,
+ * jadi angka di sini bisa berbeda kalau pembayarannya nanti dicicil.
  *
- * ponytail: kedua tarif menggandakan konstanta di App\Support\LoyaltyPoints.
- * Duplikasi disengaja supaya kasir melihat angkanya sebelum menekan simpan,
- * tanpa menunggu jawaban server. Mengubah tarif di sana wajib diikutkan ke
- * sini; saat tarifnya jadi setelan per klinik, nilainya ikut turun lewat API
- * dan berkas ini tinggal membacanya.
+ * Tarifnya diterima sebagai parameter, bukan konstanta: tiap klinik menyetel
+ * angkanya sendiri (lihat LoyaltySetting di server) dan layar kasir
+ * mengambilnya lewat API.
  */
-const RATE = 10_000
+export interface LoyaltyRates {
+  /** Rupiah belanja untuk mendapat satu poin. */
+  earn_rate: number
+  /** Rupiah potongan dari satu poin yang ditukar. */
+  redeem_rate: number
+  /** Tukar paling sedikit sekian poin. */
+  min_redeem: number
+}
 
-/** Rupiah potongan per satu poin yang ditukar. */
-const REDEEM_RATE = 1_000
+/**
+ * Dipakai selama tarif klinik belum selesai diambil.
+ *
+ * Nilainya sama dengan bawaan di server supaya layar tidak pernah menampilkan
+ * angka yang tidak pernah berlaku di mana pun — dan begitu jawabannya tiba,
+ * angkanya diganti tanpa kasir sempat menekan simpan.
+ */
+export const DEFAULT_RATES: LoyaltyRates = {
+  earn_rate: 10_000,
+  redeem_rate: 1_000,
+  min_redeem: 10,
+}
 
-/** Tukar paling sedikit segini — menahan penukaran receh. */
-export const MIN_REDEEM = 10
+/** Tarif nol akan membuat pembagian meledak; jatuh ke bawaan bila ada. */
+function safeRate(rate: number, fallback: number): number {
+  return Number.isFinite(rate) && rate > 0 ? rate : fallback
+}
 
-export function loyaltyPointsPreview(payableTotal: number): number {
-  return Math.floor(Math.max(0, payableTotal) / RATE)
+export function loyaltyPointsPreview(
+  payableTotal: number,
+  rates: LoyaltyRates = DEFAULT_RATES,
+): number {
+  return Math.floor(
+    Math.max(0, payableTotal) / safeRate(rates.earn_rate, DEFAULT_RATES.earn_rate),
+  )
 }
 
 /** Nilai rupiah dari sejumlah poin yang ditukar. */
-export function redeemValue(points: number): number {
-  return Math.max(0, Math.floor(points)) * REDEEM_RATE
+export function redeemValue(
+  points: number,
+  rates: LoyaltyRates = DEFAULT_RATES,
+): number {
+  return (
+    Math.max(0, Math.floor(points)) *
+    safeRate(rates.redeem_rate, DEFAULT_RATES.redeem_rate)
+  )
 }
 
 /**
@@ -36,9 +64,16 @@ export function redeemValue(points: number): number {
  * sebagai kembalian — jadi kelebihannya dipangkas, dan sisanya tetap
  * tersimpan di saldo pasien.
  */
-export function capToBill(points: number, payable: number): number {
+export function capToBill(
+  points: number,
+  payable: number,
+  rates: LoyaltyRates = DEFAULT_RATES,
+): number {
   return Math.min(
     Math.max(0, Math.floor(points)),
-    Math.floor(Math.max(0, payable) / REDEEM_RATE),
+    Math.floor(
+      Math.max(0, payable) /
+        safeRate(rates.redeem_rate, DEFAULT_RATES.redeem_rate),
+    ),
   )
 }

@@ -23,6 +23,7 @@ use App\Models\CompanyTreatment;
 use App\Models\CompanyValueProp;
 use App\Models\Expense;
 use App\Models\Invitation;
+use App\Models\LoyaltySetting;
 use App\Models\MedicalPhoto;
 use App\Models\MedicalRecord;
 use App\Models\MembershipTier;
@@ -73,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
         'product' => Product::class,
         'promo' => Promo::class,
         'membership_tier' => MembershipTier::class,
+        'loyalty_setting' => LoyaltySetting::class,
         'expense' => Expense::class,
         'category' => Category::class,
         'unit' => Unit::class,
