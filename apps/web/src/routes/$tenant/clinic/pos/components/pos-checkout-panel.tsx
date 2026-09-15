@@ -1,7 +1,6 @@
 import { z } from "zod"
 import type { UseFormReturn } from "react-hook-form"
 
-import { Badge } from "#/components/ui/badge.tsx"
 import { Form } from "#/components/ui/form.tsx"
 import { FormCombobox } from "#/components/forms/form-combobox.tsx"
 import { FormDatePicker } from "#/components/forms/form-date-picker.tsx"
@@ -42,12 +41,6 @@ export interface CreatedTransaction {
   invoice_number: string
 }
 
-/** Tingkat member pasien — label klasifikasi, tidak lagi membawa potongan. */
-export interface MembershipInfo {
-  id: number
-  name: string
-}
-
 interface PosCheckoutPanelProps {
   form: UseFormReturn<PatientFormValues>
   patientOptions: { label: string; value: string }[]
@@ -65,8 +58,6 @@ interface PosCheckoutPanelProps {
   items: LineItem[]
   /** Total keranjang sebelum potongan nota. */
   total: number
-  /** Keanggotaan pasien terpilih, atau null bila bukan member. */
-  membership?: MembershipInfo | null
   /** Saldo poin pasien terpilih; null berarti belum ada pasien dipilih. */
   loyaltyPoints?: number | null
   discount: DiscountState
@@ -118,7 +109,6 @@ export function PosCheckoutPanel({
   bookingsNeedPatient,
   items,
   total,
-  membership = null,
   loyaltyPoints = null,
   discount,
   onDiscountChange,
@@ -171,22 +161,8 @@ export function PosCheckoutPanel({
             error={optionsError}
           />
 
-          {/* Ditunjukkan begitu pasiennya dipilih — sekadar label tingkat,
-              manfaatnya sendiri berjalan lewat poin loyalitas di bawah. */}
-          {membership ? (
-            <div className="mt-2 flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
-              <Badge variant="secondary" className="shrink-0 font-normal">
-                {membership.name}
-              </Badge>
-              <span className="truncate text-muted-foreground">
-                {t("pos.member_active")}
-              </span>
-            </div>
-          ) : null}
-
-          {/* Saldo poin berlaku untuk pasien mana pun, bukan cuma member —
-              dua manfaat yang berbeda, jadi barisnya sengaja dipisah dari
-              badge di atas. */}
+          {/* Saldo poin berlaku untuk pasien mana pun — tidak ada tingkat
+              keanggotaan, yang menentukan cuma belanjanya. */}
           {loyaltyPoints !== null ? (
             <div className="mt-2 flex items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2 text-xs text-muted-foreground">
               <span>

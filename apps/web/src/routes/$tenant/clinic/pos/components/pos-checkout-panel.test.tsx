@@ -25,7 +25,6 @@ setTranslations({
     amount: "Jumlah",
     paid_amount: "Dibayar",
     outstanding: "Sisa",
-    member_active: "Tingkat member pasien ini.",
     loyalty_balance: "Poin saat ini",
     loyalty_points_unit: "poin",
     points_redeem: "Tukar Poin",
@@ -137,19 +136,6 @@ describe("PosCheckoutPanel", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "" })[0])
 
     expect(screen.queryByText("Ibu Sinta")).toBeNull()
-  })
-
-  /** Tingkat member ditunjukkan begitu pasiennya dipilih, sebagai label saja. */
-  it("menunjukkan badge tingkat member saat pasiennya member", () => {
-    renderPanel(<Harness membership={{ id: 1, name: "Gold" }} />)
-
-    expect(screen.getByText("Gold")).toBeTruthy()
-  })
-
-  it("tidak menampilkan apa pun saat pasiennya bukan member", () => {
-    renderPanel(<Harness />)
-
-    expect(screen.queryByText("Gold")).toBeNull()
   })
 
   /** Poin berlaku untuk pasien mana pun, bukan cuma member. */

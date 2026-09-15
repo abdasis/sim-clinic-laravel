@@ -169,7 +169,7 @@ function ClinicLayout() {
       ],
     },
     { key: "promos", label: t("promo.title"), permission: "promo.view", roles: ["admin", "cashier"], icon: DiscountTag01Icon, group: "finance" },
-    { key: "memberships", label: t("membership.title"), permission: "membership.view", roles: ["admin", "cashier"], icon: CrownIcon, group: "finance" },
+    { key: "loyalty", label: t("loyalty.title"), permission: "loyalty.view", roles: ["admin", "cashier"], icon: CrownIcon, group: "finance" },
     { key: "expenses", label: t("expense.title"), permission: "expense.view", roles: ["admin"], icon: MoneyBag02Icon, group: "finance" },
     // Komunikasi & Pengaturan.
     { key: "broadcasts", label: t("broadcast.title"), permission: "broadcast.view", roles: ["admin"], icon: BubbleChatIcon, group: "system" },

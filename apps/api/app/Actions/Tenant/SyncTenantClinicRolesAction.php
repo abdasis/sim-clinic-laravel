@@ -34,7 +34,7 @@ class SyncTenantClinicRolesAction
             'medical_record' => 'rw', 'product' => 'rw', 'inventory' => 'rw',
             'transaction' => 'rw', 'invoice' => 'rw', 'report' => 'rw',
             'content' => 'rw', 'promo' => 'rw', 'expense' => 'rw', 'broadcast' => 'rw',
-            'membership' => 'rw',
+            'loyalty' => 'rw',
             'category' => 'rw',
             // Satuan hanya dipakai formulir produk, dan produk hanya admin.
             'unit' => 'rw',
@@ -53,7 +53,8 @@ class SyncTenantClinicRolesAction
         'cashier' => [
             'patient' => 'rw', 'transaction' => 'rw', 'invoice' => 'rw',
             // Kasir hanya perlu menelusuri asal potongan harga, bukan mengubahnya.
-            'promo' => 'r', 'membership' => 'r',
+            // Tarif poin dibaca untuk perkiraan di layar bayar, tidak diubah.
+            'promo' => 'r', 'loyalty' => 'r',
         ],
     ];
 

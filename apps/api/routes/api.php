@@ -23,7 +23,6 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LoyaltySettingController;
 use App\Http\Controllers\MedicalRecordController;
-use App\Http\Controllers\MembershipTierController;
 use App\Http\Controllers\MessageTemplateController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PaymentController;
@@ -223,10 +222,6 @@ Route::prefix('{tenant}/clinic')
 
         // Promo — potongan harga layanan/produk dalam rentang tanggal
         Route::apiResource('promos', PromoController::class);
-        Route::apiResource('membership-tiers', MembershipTierController::class)
-            ->parameters(['membership-tiers' => 'membershipTier'])
-            ->except('show');
-
         // Tarif poin loyalitas. Dibaca juga oleh layar kasir, bukan cuma
         // halaman setelan: perkiraan poin sebelum nota terbit harus memakai
         // tarif yang sama dengan yang dipakai server saat menyimpannya.

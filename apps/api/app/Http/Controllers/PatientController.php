@@ -24,7 +24,7 @@ class PatientController extends Controller
 
         // Nama pembawa ikut ditampilkan di daftar; tanpa eager load,
         // resource menembak satu kueri per baris.
-        $query = Patient::query()->with(['referrer:id,name', 'membershipTier']);
+        $query = Patient::query()->with(['referrer:id,name']);
 
         Search::apply($query, ['name', 'whatsapp'], $params['search']);
         if (! $this->applyAllowedSort($query, $params, ['name', 'whatsapp', 'gender', 'birth_date', 'created_at'])) {

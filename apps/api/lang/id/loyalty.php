@@ -3,6 +3,7 @@
 return [
 
     'title' => 'Poin Loyalitas',
+    'page_desc' => 'Semua pasien mengumpulkan poin dari belanjanya, dan menukarnya jadi potongan di kasir. Tidak ada tingkat keanggotaan — yang menentukan cuma belanjanya.',
     'section_desc' => 'Tarif poin klinik ini. Nota yang sudah terbit tidak ikut berubah — angkanya tersimpan apa adanya saat nota itu dibuat.',
     'earn_rate' => 'Belanja per Poin',
     'earn_rate_hint' => 'Tiap belanja sebesar ini, pasien dapat 1 poin. Sisa yang belum genap tidak dibulatkan ke atas.',

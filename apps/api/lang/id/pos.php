@@ -31,7 +31,6 @@ return [
     'already_cancelled' => 'Transaksi ini sudah dibatalkan sebelumnya.',
     'title' => 'Kasir (POS)',
     'patient' => 'Pasien',
-    'member_active' => 'Tingkat member pasien ini.',
     'loyalty_balance' => 'Poin saat ini',
     'loyalty_points_unit' => 'poin',
     'points_redeem' => 'Tukar Poin',

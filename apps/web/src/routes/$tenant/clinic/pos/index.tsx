@@ -37,7 +37,6 @@ import {
   PosCheckoutPanel,
   patientSchema,
   type CreatedTransaction,
-  type MembershipInfo,
 } from "./components/pos-checkout-panel.tsx"
 import { PosShortcutHelp } from "./components/pos-shortcut-help.tsx"
 import { ProductCatalog } from "./components/product-catalog.tsx"
@@ -58,8 +57,6 @@ export const Route = createFileRoute("/$tenant/clinic/pos/")({
 interface PatientRow {
   id: number
   name: string
-  /** Keanggotaan yang benar-benar berlaku hari ini, atau null bila bukan member. */
-  membership: MembershipInfo | null
   /** Saldo poin loyalitas saat ini. */
   loyalty_points: number
 }
@@ -167,8 +164,8 @@ function PosPage() {
   const [discount, setDiscount] = useState<DiscountState>(EMPTY_DISCOUNT)
   const [redeemPoints, setRedeemPoints] = useState("")
 
-  // Dipakai dua kali di bawah (badge member, saldo poin) — dihitung sekali
-  // saja di sini, bukan `.find()` berulang tiap dipakai.
+  // Saldo poinnya dibaca di panel kanan — dihitung sekali di sini, bukan
+  // `.find()` berulang tiap dipakai.
   const selectedPatient = patients.data?.data.find(
     (patient) => String(patient.id) === patientId,
   )
@@ -320,7 +317,6 @@ function PosPage() {
       onOfferedBy={cart.setOfferedBy}
       items={cart.items}
       total={cart.total}
-      membership={selectedPatient?.membership ?? null}
       loyaltyPoints={selectedPatient?.loyalty_points ?? null}
       discount={discount}
       onDiscountChange={setDiscount}

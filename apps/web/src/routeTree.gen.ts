@@ -46,10 +46,10 @@ import { Route as TenantClinicCompanyProfileIndexRouteImport } from './routes/$t
 import { Route as TenantClinicCompanyProfileSettingsRouteImport } from './routes/$tenant/clinic/company-profile/settings'
 import { Route as TenantClinicExpensesIndexRouteImport } from './routes/$tenant/clinic/expenses/index'
 import { Route as TenantClinicInventoryIndexRouteImport } from './routes/$tenant/clinic/inventory/index'
+import { Route as TenantClinicLoyaltyIndexRouteImport } from './routes/$tenant/clinic/loyalty/index'
 import { Route as TenantClinicMedicalRecordsIndexRouteImport } from './routes/$tenant/clinic/medical-records/index'
 import { Route as TenantClinicMedicalRecordsRecordIdRouteImport } from './routes/$tenant/clinic/medical-records/$recordId'
 import { Route as TenantClinicMedicalRecordsNewRouteImport } from './routes/$tenant/clinic/medical-records/new'
-import { Route as TenantClinicMembershipsIndexRouteImport } from './routes/$tenant/clinic/memberships/index'
 import { Route as TenantClinicPatientsIndexRouteImport } from './routes/$tenant/clinic/patients/index'
 import { Route as TenantClinicPatientsNewRouteImport } from './routes/$tenant/clinic/patients/new'
 import { Route as TenantClinicPosIndexRouteImport } from './routes/$tenant/clinic/pos/index'
@@ -272,6 +272,12 @@ const TenantClinicInventoryIndexRoute =
     path: '/inventory/',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
+const TenantClinicLoyaltyIndexRoute =
+  TenantClinicLoyaltyIndexRouteImport.update({
+    id: '/loyalty/',
+    path: '/loyalty/',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
 const TenantClinicMedicalRecordsIndexRoute =
   TenantClinicMedicalRecordsIndexRouteImport.update({
     id: '/medical-records/',
@@ -288,12 +294,6 @@ const TenantClinicMedicalRecordsNewRoute =
   TenantClinicMedicalRecordsNewRouteImport.update({
     id: '/medical-records/new',
     path: '/medical-records/new',
-    getParentRoute: () => TenantClinicRouteRoute,
-  } as any)
-const TenantClinicMembershipsIndexRoute =
-  TenantClinicMembershipsIndexRouteImport.update({
-    id: '/memberships/',
-    path: '/memberships/',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
 const TenantClinicPatientsIndexRoute =
@@ -481,8 +481,8 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/company-profile/': typeof TenantClinicCompanyProfileIndexRoute
   '/$tenant/clinic/expenses/': typeof TenantClinicExpensesIndexRoute
   '/$tenant/clinic/inventory/': typeof TenantClinicInventoryIndexRoute
+  '/$tenant/clinic/loyalty/': typeof TenantClinicLoyaltyIndexRoute
   '/$tenant/clinic/medical-records/': typeof TenantClinicMedicalRecordsIndexRoute
-  '/$tenant/clinic/memberships/': typeof TenantClinicMembershipsIndexRoute
   '/$tenant/clinic/patients/': typeof TenantClinicPatientsIndexRoute
   '/$tenant/clinic/pos/': typeof TenantClinicPosIndexRoute
   '/$tenant/clinic/preferences/': typeof TenantClinicPreferencesIndexRoute
@@ -545,8 +545,8 @@ export interface FileRoutesByTo {
   '/$tenant/clinic/company-profile': typeof TenantClinicCompanyProfileIndexRoute
   '/$tenant/clinic/expenses': typeof TenantClinicExpensesIndexRoute
   '/$tenant/clinic/inventory': typeof TenantClinicInventoryIndexRoute
+  '/$tenant/clinic/loyalty': typeof TenantClinicLoyaltyIndexRoute
   '/$tenant/clinic/medical-records': typeof TenantClinicMedicalRecordsIndexRoute
-  '/$tenant/clinic/memberships': typeof TenantClinicMembershipsIndexRoute
   '/$tenant/clinic/patients': typeof TenantClinicPatientsIndexRoute
   '/$tenant/clinic/pos': typeof TenantClinicPosIndexRoute
   '/$tenant/clinic/preferences': typeof TenantClinicPreferencesIndexRoute
@@ -614,8 +614,8 @@ export interface FileRoutesById {
   '/$tenant/clinic/company-profile/': typeof TenantClinicCompanyProfileIndexRoute
   '/$tenant/clinic/expenses/': typeof TenantClinicExpensesIndexRoute
   '/$tenant/clinic/inventory/': typeof TenantClinicInventoryIndexRoute
+  '/$tenant/clinic/loyalty/': typeof TenantClinicLoyaltyIndexRoute
   '/$tenant/clinic/medical-records/': typeof TenantClinicMedicalRecordsIndexRoute
-  '/$tenant/clinic/memberships/': typeof TenantClinicMembershipsIndexRoute
   '/$tenant/clinic/patients/': typeof TenantClinicPatientsIndexRoute
   '/$tenant/clinic/pos/': typeof TenantClinicPosIndexRoute
   '/$tenant/clinic/preferences/': typeof TenantClinicPreferencesIndexRoute
@@ -683,8 +683,8 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/company-profile/'
     | '/$tenant/clinic/expenses/'
     | '/$tenant/clinic/inventory/'
+    | '/$tenant/clinic/loyalty/'
     | '/$tenant/clinic/medical-records/'
-    | '/$tenant/clinic/memberships/'
     | '/$tenant/clinic/patients/'
     | '/$tenant/clinic/pos/'
     | '/$tenant/clinic/preferences/'
@@ -747,8 +747,8 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/company-profile'
     | '/$tenant/clinic/expenses'
     | '/$tenant/clinic/inventory'
+    | '/$tenant/clinic/loyalty'
     | '/$tenant/clinic/medical-records'
-    | '/$tenant/clinic/memberships'
     | '/$tenant/clinic/patients'
     | '/$tenant/clinic/pos'
     | '/$tenant/clinic/preferences'
@@ -815,8 +815,8 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/company-profile/'
     | '/$tenant/clinic/expenses/'
     | '/$tenant/clinic/inventory/'
+    | '/$tenant/clinic/loyalty/'
     | '/$tenant/clinic/medical-records/'
-    | '/$tenant/clinic/memberships/'
     | '/$tenant/clinic/patients/'
     | '/$tenant/clinic/pos/'
     | '/$tenant/clinic/preferences/'
@@ -1116,6 +1116,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicInventoryIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
+    '/$tenant/clinic/loyalty/': {
+      id: '/$tenant/clinic/loyalty/'
+      path: '/loyalty'
+      fullPath: '/$tenant/clinic/loyalty/'
+      preLoaderRoute: typeof TenantClinicLoyaltyIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
     '/$tenant/clinic/medical-records/': {
       id: '/$tenant/clinic/medical-records/'
       path: '/medical-records'
@@ -1135,13 +1142,6 @@ declare module '@tanstack/react-router' {
       path: '/medical-records/new'
       fullPath: '/$tenant/clinic/medical-records/new'
       preLoaderRoute: typeof TenantClinicMedicalRecordsNewRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
-    '/$tenant/clinic/memberships/': {
-      id: '/$tenant/clinic/memberships/'
-      path: '/memberships'
-      fullPath: '/$tenant/clinic/memberships/'
-      preLoaderRoute: typeof TenantClinicMembershipsIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
     '/$tenant/clinic/patients/': {
@@ -1405,8 +1405,8 @@ interface TenantClinicRouteRouteChildren {
   TenantClinicCompanyProfileIndexRoute: typeof TenantClinicCompanyProfileIndexRoute
   TenantClinicExpensesIndexRoute: typeof TenantClinicExpensesIndexRoute
   TenantClinicInventoryIndexRoute: typeof TenantClinicInventoryIndexRoute
+  TenantClinicLoyaltyIndexRoute: typeof TenantClinicLoyaltyIndexRoute
   TenantClinicMedicalRecordsIndexRoute: typeof TenantClinicMedicalRecordsIndexRoute
-  TenantClinicMembershipsIndexRoute: typeof TenantClinicMembershipsIndexRoute
   TenantClinicPatientsIndexRoute: typeof TenantClinicPatientsIndexRoute
   TenantClinicPreferencesIndexRoute: typeof TenantClinicPreferencesIndexRoute
   TenantClinicProductsIndexRoute: typeof TenantClinicProductsIndexRoute
@@ -1447,8 +1447,8 @@ const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
   TenantClinicCompanyProfileIndexRoute: TenantClinicCompanyProfileIndexRoute,
   TenantClinicExpensesIndexRoute: TenantClinicExpensesIndexRoute,
   TenantClinicInventoryIndexRoute: TenantClinicInventoryIndexRoute,
+  TenantClinicLoyaltyIndexRoute: TenantClinicLoyaltyIndexRoute,
   TenantClinicMedicalRecordsIndexRoute: TenantClinicMedicalRecordsIndexRoute,
-  TenantClinicMembershipsIndexRoute: TenantClinicMembershipsIndexRoute,
   TenantClinicPatientsIndexRoute: TenantClinicPatientsIndexRoute,
   TenantClinicPreferencesIndexRoute: TenantClinicPreferencesIndexRoute,
   TenantClinicProductsIndexRoute: TenantClinicProductsIndexRoute,

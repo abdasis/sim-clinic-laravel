@@ -84,12 +84,6 @@ function NewPatientPage() {
               gender: values.gender || undefined,
               // "" dari select berarti tanpa pembawa; backend menerima null.
               referred_by: values.referred_by ? Number(values.referred_by) : null,
-              // "" dari select berarti bukan member; backend menerima null.
-              membership_tier_id: values.membership_tier_id
-                ? Number(values.membership_tier_id)
-                : null,
-              member_since: values.member_since || null,
-              member_until: values.member_until || null,
             } as never),
           )}
           className="space-y-4"
