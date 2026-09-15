@@ -185,10 +185,12 @@ function ReportsPage() {
           ) : (
             <>
               <TabsContent value="revenue">
-                {data ? <RevenueSummary data={data.data as RevenueData} /> : null}
+                {data && tab === "revenue" ? (
+                  <RevenueSummary data={data.data as RevenueData} />
+                ) : null}
               </TabsContent>
               <TabsContent value="services">
-                {data ? (
+                {data && tab === "services" ? (
                   <SalesTable
                     nameLabel={t("report.service_name")}
                     rows={(data.data as ServiceSalesRow[]).map(toSalesRow)}
@@ -196,7 +198,7 @@ function ReportsPage() {
                 ) : null}
               </TabsContent>
               <TabsContent value="products">
-                {data ? (
+                {data && tab === "products" ? (
                   <SalesTable
                     nameLabel={t("report.product_name")}
                     rows={(data.data as ProductSalesRow[]).map(toSalesRow)}
