@@ -140,6 +140,42 @@ class ReceiptPdfLayoutTest extends TestCase
     }
 
     /**
+     * Manfaat keanggotaan disebut sendiri, lengkap dengan nama tingkatnya.
+     *
+     * Pasien membayar di muka untuk jadi member. Kalau potongannya tercampur
+     * jadi satu dengan promo, tidak ada yang bisa membuktikan kartunya
+     * terpakai — dan yang paling sering menanyakannya justru membernya.
+     */
+    public function test_a_member_discount_is_named_on_its_own_line(): void
+    {
+        $this->actingAsClinicUser();
+
+        $transaction = $this->makeTransaction();
+        $transaction->update([
+            'items_total' => 250000,
+            'member_tier_name' => 'Gold',
+            'member_discount_amount' => 25000,
+            'subtotal' => 225000,
+        ]);
+
+        $html = $this->render($transaction->fresh());
+
+        $this->assertStringContainsString(__('invoice.member_discount'), $html);
+        $this->assertStringContainsString('Gold', $html);
+        $this->assertStringContainsString('25.000', $html);
+    }
+
+    /** Nota bukan member tidak menyebut keanggotaan sama sekali. */
+    public function test_a_non_member_receipt_says_nothing_about_membership(): void
+    {
+        $this->actingAsClinicUser();
+
+        $html = $this->render($this->makeTransaction());
+
+        $this->assertStringNotContainsString(__('invoice.member_discount'), $html);
+    }
+
+    /**
      * Lebar halaman mengikuti area cetak kepala termal, bukan lebar kertasnya.
      *
      * Bedanya tidak terlihat di layar tapi menentukan di atas kertas: halaman

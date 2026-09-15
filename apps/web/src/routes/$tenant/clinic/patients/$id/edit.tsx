@@ -58,6 +58,9 @@ function EditPatientPage() {
         ...withoutNulls(data.data),
         referred_by: data.data.referred_by ? String(data.data.referred_by) : "",
         whatsapp_opt_in: data.data.whatsapp_opt_in ?? true,
+        membership_tier_id: data.data.membership_tier_id
+          ? String(data.data.membership_tier_id)
+          : "",
       })
     }
   }, [data, form])
@@ -104,6 +107,12 @@ function EditPatientPage() {
               gender: values.gender || undefined,
               // "" dari select berarti tanpa pembawa; backend menerima null.
               referred_by: values.referred_by ? Number(values.referred_by) : null,
+              // "" dari select berarti bukan member; backend menerima null.
+              membership_tier_id: values.membership_tier_id
+                ? Number(values.membership_tier_id)
+                : null,
+              member_since: values.member_since || null,
+              member_until: values.member_until || null,
             } as never),
           )}
           className="space-y-4"

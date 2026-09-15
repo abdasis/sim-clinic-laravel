@@ -64,7 +64,12 @@
         $unitPrice = (float) $item->unit_price;
         return $sum + (max($listPrice, $unitPrice) * (int) $item->qty);
     }, 0);
-    $discount = max(0, $gross - $total);
+    // Manfaat keanggotaan dipisahkan dari potongan lain. Pasien membayar di
+    // muka untuk jadi member, jadi angkanya berhak berdiri sendiri — tercampur
+    // jadi satu dengan promo, tidak ada yang bisa membuktikan kartunya terpakai.
+    $memberTier = $transaction->member_tier_name ?? null;
+    $memberDiscount = max(0, (float) ($transaction->member_discount_amount ?? 0));
+    $discount = max(0, $gross - $total - $memberDiscount);
 
     $paid = (float) ($transaction->paid_amount ?? $payments->sum('amount'));
     $outstanding = (float) (isset($transaction) ? $transaction->outstandingAmount() : max(0, $total - $paid));
@@ -169,12 +174,20 @@
     <table style="font-size: 8.5pt;">
         <tr>
             <td style="color: #444;">{{ __('invoice.item_total') }} ({{ str_replace(':count', (string) $totalQty, __('invoice.item_count')) }})</td>
-            <td class="text-right">{{ number_format($discount > 0 ? $gross : $total, 0, ',', '.') }}</td>
+            <td class="text-right">{{ number_format($discount + $memberDiscount > 0 ? $gross : $total, 0, ',', '.') }}</td>
         </tr>
         @if ($discount > 0)
             <tr>
                 <td style="color: #444;">{{ __('invoice.discount') }}</td>
                 <td class="text-right">-{{ number_format($discount, 0, ',', '.') }}</td>
+            </tr>
+        @endif
+        @if ($memberDiscount > 0)
+            <tr>
+                <td style="color: #444;">
+                    {{ __('invoice.member_discount') }}@if ($memberTier) ({{ $memberTier }})@endif
+                </td>
+                <td class="text-right">-{{ number_format($memberDiscount, 0, ',', '.') }}</td>
             </tr>
         @endif
     </table>

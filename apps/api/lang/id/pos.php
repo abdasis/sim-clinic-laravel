@@ -31,6 +31,7 @@ return [
     'already_cancelled' => 'Transaksi ini sudah dibatalkan sebelumnya.',
     'title' => 'Kasir (POS)',
     'patient' => 'Pasien',
+    'member_active' => 'Member aktif — potongan otomatis di nota.',
     'transaction_date' => 'Tanggal Transaksi',
     'transaction_date_hint' => 'Kosongkan untuk hari ini. Boleh dimundurkan untuk mencatat penjualan yang terlewat.',
     'performers' => 'Yang Mengerjakan',
@@ -82,6 +83,7 @@ return [
         'decrease' => 'Kurangi jumlah',
         'items_count' => ':count item',
         'savings' => 'Hemat',
+        'member_discount' => 'Potongan member',
     ],
     'catalog' => [
         'title' => 'Katalog',

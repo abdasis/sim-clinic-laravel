@@ -24,6 +24,10 @@ export const patientSchema = z.object({
   // "" berarti tidak ada pembawa; dikonversi ke null saat submit.
   referred_by: z.string().optional(),
   whatsapp_opt_in: z.boolean().optional(),
+  // "" berarti bukan member; dikonversi ke null saat submit.
+  membership_tier_id: z.string().optional(),
+  member_since: z.string().optional(),
+  member_until: z.string().optional(),
 })
 
 export type PatientValues = z.infer<typeof patientSchema>
@@ -37,6 +41,9 @@ export const patientDefaults: PatientValues = {
   notes: "",
   referred_by: "",
   whatsapp_opt_in: true,
+  membership_tier_id: "",
+  member_since: "",
+  member_until: "",
 }
 
 export function PatientFormFields({
@@ -55,6 +62,18 @@ export function PatientFormFields({
       apiGet<{ data: { id: number; name: string }[] }>(
         `/${tenant}/clinic/staff`,
         { per_page: 100 },
+      ),
+    enabled: Boolean(tenant),
+  })
+
+  // Tingkat member aktif saja — yang dinonaktifkan tidak boleh dipilih untuk
+  // pasien baru, walau pasien lama yang sudah memegangnya tetap tersimpan.
+  const tiers = useQuery({
+    queryKey: ["membership-tiers", tenant, "options"],
+    queryFn: () =>
+      apiGet<{ data: { id: number; name: string; status: string }[] }>(
+        `/${tenant}/clinic/membership-tiers`,
+        { per_page: 100, filter: { status: "active" } },
       ),
     enabled: Boolean(tenant),
   })
@@ -143,6 +162,35 @@ export function PatientFormFields({
           label={t("patient.notes")}
           description={t("patient.notes_hint")}
           className="sm:col-span-2"
+        />
+      </FormSection>
+
+      <FormSection
+        title={t("membership.title")}
+        description={t("membership.section_desc")}
+      >
+        <FormSelect
+          control={control}
+          name="membership_tier_id"
+          label={t("membership.tier")}
+          options={[
+            { label: t("membership.not_a_member"), value: "" },
+            ...(tiers.data?.data ?? []).map((tier) => ({
+              label: tier.name,
+              value: String(tier.id),
+            })),
+          ]}
+        />
+        <FormDatePicker
+          control={control}
+          name="member_since"
+          label={t("membership.member_since")}
+        />
+        <FormDatePicker
+          control={control}
+          name="member_until"
+          label={t("membership.member_until")}
+          description={t("membership.member_until_hint")}
         />
       </FormSection>
     </div>

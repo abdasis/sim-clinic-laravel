@@ -8,9 +8,12 @@ use App\Actions\Transaction\SoftDeleteTransactionAction;
 use App\Enums\DiscountType;
 use App\Enums\PaymentStatus;
 use App\Enums\StockMovementType;
+use App\Models\MembershipTier;
+use App\Models\Patient;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Transaction;
+use App\Support\MemberDiscount;
 use App\Support\PromoPricing;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
@@ -37,7 +40,18 @@ class TransactionService
             $lines = $this->buildLines($data['items'] ?? []);
             $itemsTotal = array_sum(array_column($lines, 'subtotal'));
 
-            $discount = $this->resolveDiscount($data, $itemsTotal);
+            // Potongan member dihitung lebih dulu dan tidak bisa ditawar
+            // kasir: itu manfaat yang sudah dibayar pasien saat mendaftar.
+            // Potongan manual menyusul di atas sisanya, jadi kasir yang
+            // memberi kelonggaran tambahan tidak diam-diam menghapus
+            // manfaat keanggotaannya.
+            $member = MemberDiscount::for(
+                $this->activeMembership($data['patient_id'], $issuedAt),
+                $lines,
+            );
+
+            $afterMember = round($itemsTotal - $member->amount, 2);
+            $discount = $this->resolveDiscount($data, $afterMember);
 
             $transaction = Transaction::create([
                 'patient_id' => $data['patient_id'],
@@ -46,6 +60,11 @@ class TransactionService
                 // Nomor diambil di dalam transaction agar barisnya terkunci.
                 'invoice_number' => Transaction::generateInvoiceNumber($issuedAt),
                 'items_total' => $itemsTotal,
+                // Nama tingkatnya disalin, bukan cuma ditautkan: tingkat bisa
+                // berganti nama atau besaran belakangan, sedangkan nota lama
+                // wajib tetap terbaca sama seperti saat dicetak.
+                'member_tier_name' => $member->tierName,
+                'member_discount_amount' => $member->amount,
                 'discount_type' => $discount['type'],
                 'discount_value' => $discount['value'],
                 'discount_amount' => $discount['amount'],
@@ -133,6 +152,20 @@ class TransactionService
      * @param  array<string, mixed>  $data
      * @return array{type: ?DiscountType, value: ?float, amount: float, payable: float}
      */
+    /**
+     * Keanggotaan yang berlaku pada tanggal nota, bukan hari ini.
+     *
+     * Nota yang dimundurkan untuk mencatat penjualan yang terlewat harus
+     * memakai keadaan pasien saat itu — kalau tidak, transaksi bulan lalu
+     * ikut mendapat potongan dari kartu yang baru dibeli minggu ini.
+     */
+    private function activeMembership(mixed $patientId, Carbon $issuedAt): ?MembershipTier
+    {
+        $patient = Patient::query()->with('membershipTier')->find($patientId);
+
+        return $patient?->activeMembership($issuedAt);
+    }
+
     private function resolveDiscount(array $data, float $itemsTotal): array
     {
         $type = isset($data['discount_type']) ? DiscountType::from($data['discount_type']) : null;

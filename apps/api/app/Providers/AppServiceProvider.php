@@ -25,6 +25,7 @@ use App\Models\Expense;
 use App\Models\Invitation;
 use App\Models\MedicalPhoto;
 use App\Models\MedicalRecord;
+use App\Models\MembershipTier;
 use App\Models\MessageTemplate;
 use App\Models\Patient;
 use App\Models\Payment;
@@ -71,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
         'booking_reminder_setting' => BookingReminderSetting::class,
         'product' => Product::class,
         'promo' => Promo::class,
+        'membership_tier' => MembershipTier::class,
         'expense' => Expense::class,
         'category' => Category::class,
         'unit' => Unit::class,

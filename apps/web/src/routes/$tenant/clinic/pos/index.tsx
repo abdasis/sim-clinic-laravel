@@ -29,6 +29,7 @@ import {
   EMPTY_DISCOUNT,
   type DiscountState,
 } from "./components/discount-field.tsx"
+import type { MembershipInfo } from "./components/member-discount.ts"
 import type { ApiError } from "#/lib/api.ts"
 import { formatCurrency, formatDateTime } from "#/lib/format.ts"
 import type { PaymentData } from "./components/payment-panel.tsx"
@@ -56,6 +57,8 @@ export const Route = createFileRoute("/$tenant/clinic/pos/")({
 interface PatientRow {
   id: number
   name: string
+  /** Keanggotaan yang benar-benar berlaku hari ini, atau null bila bukan member. */
+  membership: MembershipInfo | null
 }
 
 interface BookingRow {
@@ -284,6 +287,10 @@ function PosPage() {
       onOfferedBy={cart.setOfferedBy}
       items={cart.items}
       total={cart.total}
+      membership={
+        patients.data?.data.find((patient) => String(patient.id) === patientId)
+          ?.membership ?? null
+      }
       discount={discount}
       onDiscountChange={setDiscount}
       onStep={cart.step}

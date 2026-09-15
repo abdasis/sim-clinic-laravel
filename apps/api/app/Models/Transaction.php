@@ -27,6 +27,8 @@ class Transaction extends Model
         'cashier_id',
         'invoice_number',
         'items_total',
+        'member_tier_name',
+        'member_discount_amount',
         'discount_type',
         'discount_value',
         'discount_amount',
@@ -43,6 +45,7 @@ class Transaction extends Model
     {
         return [
             'items_total' => 'decimal:2',
+            'member_discount_amount' => 'decimal:2',
             'discount_type' => DiscountType::class,
             'discount_value' => 'decimal:2',
             'discount_amount' => 'decimal:2',

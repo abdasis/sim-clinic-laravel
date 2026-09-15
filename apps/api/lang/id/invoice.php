@@ -41,6 +41,7 @@ return [
     'performers' => 'Terapis',
     'phone_short' => 'Telp.',
     'change' => 'Kembali',
+    'member_discount' => 'Potongan Member',
     'discount' => 'Diskon Promo',
     'item_count' => ':count item',
     // Penanda status dicetak sebagai pita agar terbaca sekilas dari kertas.

@@ -49,6 +49,7 @@ import { Route as TenantClinicInventoryIndexRouteImport } from './routes/$tenant
 import { Route as TenantClinicMedicalRecordsIndexRouteImport } from './routes/$tenant/clinic/medical-records/index'
 import { Route as TenantClinicMedicalRecordsRecordIdRouteImport } from './routes/$tenant/clinic/medical-records/$recordId'
 import { Route as TenantClinicMedicalRecordsNewRouteImport } from './routes/$tenant/clinic/medical-records/new'
+import { Route as TenantClinicMembershipsIndexRouteImport } from './routes/$tenant/clinic/memberships/index'
 import { Route as TenantClinicPatientsIndexRouteImport } from './routes/$tenant/clinic/patients/index'
 import { Route as TenantClinicPatientsNewRouteImport } from './routes/$tenant/clinic/patients/new'
 import { Route as TenantClinicPosIndexRouteImport } from './routes/$tenant/clinic/pos/index'
@@ -289,6 +290,12 @@ const TenantClinicMedicalRecordsNewRoute =
     path: '/medical-records/new',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
+const TenantClinicMembershipsIndexRoute =
+  TenantClinicMembershipsIndexRouteImport.update({
+    id: '/memberships/',
+    path: '/memberships/',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
 const TenantClinicPatientsIndexRoute =
   TenantClinicPatientsIndexRouteImport.update({
     id: '/patients/',
@@ -475,6 +482,7 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/expenses/': typeof TenantClinicExpensesIndexRoute
   '/$tenant/clinic/inventory/': typeof TenantClinicInventoryIndexRoute
   '/$tenant/clinic/medical-records/': typeof TenantClinicMedicalRecordsIndexRoute
+  '/$tenant/clinic/memberships/': typeof TenantClinicMembershipsIndexRoute
   '/$tenant/clinic/patients/': typeof TenantClinicPatientsIndexRoute
   '/$tenant/clinic/pos/': typeof TenantClinicPosIndexRoute
   '/$tenant/clinic/preferences/': typeof TenantClinicPreferencesIndexRoute
@@ -538,6 +546,7 @@ export interface FileRoutesByTo {
   '/$tenant/clinic/expenses': typeof TenantClinicExpensesIndexRoute
   '/$tenant/clinic/inventory': typeof TenantClinicInventoryIndexRoute
   '/$tenant/clinic/medical-records': typeof TenantClinicMedicalRecordsIndexRoute
+  '/$tenant/clinic/memberships': typeof TenantClinicMembershipsIndexRoute
   '/$tenant/clinic/patients': typeof TenantClinicPatientsIndexRoute
   '/$tenant/clinic/pos': typeof TenantClinicPosIndexRoute
   '/$tenant/clinic/preferences': typeof TenantClinicPreferencesIndexRoute
@@ -606,6 +615,7 @@ export interface FileRoutesById {
   '/$tenant/clinic/expenses/': typeof TenantClinicExpensesIndexRoute
   '/$tenant/clinic/inventory/': typeof TenantClinicInventoryIndexRoute
   '/$tenant/clinic/medical-records/': typeof TenantClinicMedicalRecordsIndexRoute
+  '/$tenant/clinic/memberships/': typeof TenantClinicMembershipsIndexRoute
   '/$tenant/clinic/patients/': typeof TenantClinicPatientsIndexRoute
   '/$tenant/clinic/pos/': typeof TenantClinicPosIndexRoute
   '/$tenant/clinic/preferences/': typeof TenantClinicPreferencesIndexRoute
@@ -674,6 +684,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/expenses/'
     | '/$tenant/clinic/inventory/'
     | '/$tenant/clinic/medical-records/'
+    | '/$tenant/clinic/memberships/'
     | '/$tenant/clinic/patients/'
     | '/$tenant/clinic/pos/'
     | '/$tenant/clinic/preferences/'
@@ -737,6 +748,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/expenses'
     | '/$tenant/clinic/inventory'
     | '/$tenant/clinic/medical-records'
+    | '/$tenant/clinic/memberships'
     | '/$tenant/clinic/patients'
     | '/$tenant/clinic/pos'
     | '/$tenant/clinic/preferences'
@@ -804,6 +816,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/expenses/'
     | '/$tenant/clinic/inventory/'
     | '/$tenant/clinic/medical-records/'
+    | '/$tenant/clinic/memberships/'
     | '/$tenant/clinic/patients/'
     | '/$tenant/clinic/pos/'
     | '/$tenant/clinic/preferences/'
@@ -1124,6 +1137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicMedicalRecordsNewRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
+    '/$tenant/clinic/memberships/': {
+      id: '/$tenant/clinic/memberships/'
+      path: '/memberships'
+      fullPath: '/$tenant/clinic/memberships/'
+      preLoaderRoute: typeof TenantClinicMembershipsIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
     '/$tenant/clinic/patients/': {
       id: '/$tenant/clinic/patients/'
       path: '/patients'
@@ -1386,6 +1406,7 @@ interface TenantClinicRouteRouteChildren {
   TenantClinicExpensesIndexRoute: typeof TenantClinicExpensesIndexRoute
   TenantClinicInventoryIndexRoute: typeof TenantClinicInventoryIndexRoute
   TenantClinicMedicalRecordsIndexRoute: typeof TenantClinicMedicalRecordsIndexRoute
+  TenantClinicMembershipsIndexRoute: typeof TenantClinicMembershipsIndexRoute
   TenantClinicPatientsIndexRoute: typeof TenantClinicPatientsIndexRoute
   TenantClinicPreferencesIndexRoute: typeof TenantClinicPreferencesIndexRoute
   TenantClinicProductsIndexRoute: typeof TenantClinicProductsIndexRoute
@@ -1427,6 +1448,7 @@ const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
   TenantClinicExpensesIndexRoute: TenantClinicExpensesIndexRoute,
   TenantClinicInventoryIndexRoute: TenantClinicInventoryIndexRoute,
   TenantClinicMedicalRecordsIndexRoute: TenantClinicMedicalRecordsIndexRoute,
+  TenantClinicMembershipsIndexRoute: TenantClinicMembershipsIndexRoute,
   TenantClinicPatientsIndexRoute: TenantClinicPatientsIndexRoute,
   TenantClinicPreferencesIndexRoute: TenantClinicPreferencesIndexRoute,
   TenantClinicProductsIndexRoute: TenantClinicProductsIndexRoute,
@@ -1470,12 +1492,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
