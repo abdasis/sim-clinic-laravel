@@ -1,4 +1,4 @@
-const rawBaseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
+const rawBaseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8123/api"
 const baseUrl = rawBaseUrl.endsWith("/api")
   ? rawBaseUrl
   : `${rawBaseUrl.replace(/\/+$/, "")}/api`

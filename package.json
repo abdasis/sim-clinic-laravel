@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "dev:web": "bun run --filter web dev",
-    "dev:api": "cd apps/api && php artisan serve --port=8000",
+    "dev:api": "cd apps/api && php artisan serve --port=8123",
     "build:web": "bun run --filter web build",
     "migrate": "cd apps/api && php artisan migrate",
     "dev": "concurrently -n api,web -c blue,green \"bun:dev:api\" \"bun:dev:web\""

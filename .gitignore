@@ -35,3 +35,5 @@ apps/api/bootstrap/cache/
 apps/web/.output/
 apps/web/.vinxi/
 apps/web/.tanstack/
+# DB backup lokal (berisi data user, jangan di-commit)
+.backup/

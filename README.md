@@ -37,7 +37,7 @@ cd apps/api
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
-php artisan serve  # port 8000
+php artisan serve --port=8123  # port 8123
 ```
 
 ### 3. Frontend TanStack Start (apps/web)
@@ -45,7 +45,7 @@ php artisan serve  # port 8000
 ```bash
 cd apps/web
 bun install
-bun run dev  # port 3000
+bun run dev  # port 3123
 ```
 
 ### 4. Jalankan semua (dari root)
@@ -60,5 +60,5 @@ bun run dev
 | Service | Port |
 |---------|------|
 | PostgreSQL | 5435 |
-| Laravel API | 8000 |
-| TanStack Start | 3000 |
+| Laravel API | 8123 |
+| TanStack Start | 3123 |

@@ -7,8 +7,8 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        'http://localhost:3001',
-        'http://127.0.0.1:3001',
+        'http://localhost:3123',
+        'http://127.0.0.1:3123',
         'https://mebaclinic.com',
         'https://www.mebaclinic.com',
     ],
