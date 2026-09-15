@@ -12,6 +12,7 @@ return [
     'min_redeem' => 'Minimum Tukar',
     'min_redeem_hint' => 'Penukaran paling sedikit sekian poin, supaya nota tidak penuh potongan receh.',
     'redeem_exceeds_earn' => 'Nilai satu poin harus lebih kecil daripada belanja yang menghasilkannya. Kalau tidak, tiap kunjungan mencetak potongan untuk kunjungan berikutnya tanpa henti.',
+    'member_switch_hint' => 'Aktifkan untuk mendaftarkan pasien ini sebagai member. Berlaku sejak disimpan.',
     'setting_saved' => 'Tarif poin berhasil disimpan.',
     'preview' => 'Contohnya',
     'preview_text' => 'Belanja :spend dapat :points poin, dan :points poin memotong :value.',

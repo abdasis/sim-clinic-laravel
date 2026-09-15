@@ -25,6 +25,8 @@ class Patient extends Model
         'address',
         'notes',
         'referred_by',
+        'is_member',
+        'member_since',
         'loyalty_points',
         'whatsapp_opt_in',
         'deleted_at',
@@ -35,9 +37,36 @@ class Patient extends Model
         return [
             'whatsapp_opt_in' => 'boolean',
             'birth_date' => 'date',
+            'is_member' => 'boolean',
+            'member_since' => 'date',
             'loyalty_points' => 'integer',
             'deleted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Tanggal pendaftaran mengikuti penandanya sendiri.
+     *
+     * Ditegakkan di model, bukan di tiap Action yang menyentuh pasien:
+     * pendaftaran member bisa datang dari formulir pasien baru, dari
+     * penyuntingan, dan nanti mungkin dari layar kasir — yang ditulis ulang di
+     * tiga tempat pasti terlupa di tempat keempat, dan yang tertinggal adalah
+     * member tanpa tanggal atau tanggal milik keanggotaan yang sudah dicabut.
+     *
+     * Tanggal yang sudah ada tidak ditimpa: menyimpan ulang data pasien tidak
+     * boleh memundurkan sejak kapan dia jadi member.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Patient $patient): void {
+            if (! $patient->isDirty('is_member')) {
+                return;
+            }
+
+            $patient->member_since = $patient->is_member
+                ? ($patient->member_since ?? now()->toDateString())
+                : null;
+        });
     }
 
     /** Staf yang membawa pasien ini — dasar bonus pasien baru. */

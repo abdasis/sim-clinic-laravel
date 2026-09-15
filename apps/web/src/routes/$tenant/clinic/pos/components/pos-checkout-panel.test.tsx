@@ -33,6 +33,9 @@ setTranslations({
     points_capped: "Poin yang dipakai menyesuaikan tagihan.",
     cart: { title: "Keranjang" },
   },
+  patient: {
+    not_member_hint: "Pasien ini belum terdaftar sebagai member.",
+  },
   commission: { therapist: "Terapis" },
 })
 
@@ -138,9 +141,9 @@ describe("PosCheckoutPanel", () => {
     expect(screen.queryByText("Ibu Sinta")).toBeNull()
   })
 
-  /** Poin berlaku untuk pasien mana pun, bukan cuma member. */
+  /** Saldo member ditunjukkan begitu pasiennya dipilih. */
   it("menunjukkan saldo poin begitu pasiennya dipilih", () => {
-    renderPanel(<Harness loyaltyPoints={42} />)
+    renderPanel(<Harness loyaltyPoints={42} isMember />)
 
     expect(screen.getByText("Poin saat ini")).toBeTruthy()
     expect(screen.getByText("42")).toBeTruthy()
@@ -157,6 +160,7 @@ describe("PosCheckoutPanel", () => {
     renderPanel(
       <Harness
         loyaltyPoints={0}
+        isMember
         items={[cartLine(105_000)]}
         total={105_000}
       />,
@@ -175,6 +179,7 @@ describe("PosCheckoutPanel", () => {
     const { container } = renderPanel(
       <Harness
         loyaltyPoints={50}
+        isMember
         redeemPoints="30"
         onRedeemPointsChange={() => {}}
         items={[cartLine(200_000)]}
@@ -196,6 +201,7 @@ describe("PosCheckoutPanel", () => {
     renderPanel(
       <Harness
         loyaltyPoints={50}
+        isMember
         redeemPoints="30"
         onRedeemPointsChange={() => {}}
         items={[cartLine(200_000)]}
@@ -205,6 +211,25 @@ describe("PosCheckoutPanel", () => {
 
     // floor(170.000 / 10.000) = 17 poin, bukan 20 dari harga penuh.
     expect(screen.getByText("+17 poin")).toBeTruthy()
+  })
+
+  /**
+   * Menjanjikan poin ke pelanggan biasa berarti kasir menyebut angka yang
+   * tidak akan pernah masuk — dan pasien menanyakannya di kunjungan berikutnya.
+   */
+  it("tidak menjanjikan poin kepada pelanggan biasa", () => {
+    renderPanel(
+      <Harness
+        loyaltyPoints={0}
+        items={[cartLine(200_000)]}
+        total={200_000}
+      />,
+    )
+
+    expect(screen.queryByText(/\+\d+ poin/)).toBeNull()
+    expect(
+      screen.getByText("Pasien ini belum terdaftar sebagai member."),
+    ).toBeTruthy()
   })
 
   it("tidak menawarkan penukaran saat pasiennya belum punya poin", () => {

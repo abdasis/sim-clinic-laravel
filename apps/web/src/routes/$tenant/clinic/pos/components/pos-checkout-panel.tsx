@@ -60,6 +60,8 @@ interface PosCheckoutPanelProps {
   total: number
   /** Saldo poin pasien terpilih; null berarti belum ada pasien dipilih. */
   loyaltyPoints?: number | null
+  /** Hanya member yang mengumpulkan poin dari transaksi ini. */
+  isMember?: boolean
   discount: DiscountState
   onDiscountChange: (next: DiscountState) => void
   /** Poin yang hendak ditukar; string supaya kolomnya boleh kosong. */
@@ -110,6 +112,7 @@ export function PosCheckoutPanel({
   items,
   total,
   loyaltyPoints = null,
+  isMember = false,
   discount,
   onDiscountChange,
   redeemPoints = "",
@@ -161,21 +164,29 @@ export function PosCheckoutPanel({
             error={optionsError}
           />
 
-          {/* Saldo poin berlaku untuk pasien mana pun — tidak ada tingkat
-              keanggotaan, yang menentukan cuma belanjanya. */}
+          {/* Perkiraan poin hanya dijanjikan kepada member. Menampilkannya
+              untuk pelanggan biasa berarti kasir menyebut angka yang tidak
+              akan pernah masuk — dan pasien menanyakannya di kunjungan
+              berikutnya. */}
           {loyaltyPoints !== null ? (
             <div className="mt-2 flex items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2 text-xs text-muted-foreground">
-              <span>
-                {t("pos.loyalty_balance")}{" "}
-                <span className="font-medium tabular-nums text-foreground">
-                  {loyaltyPoints}
-                </span>
-              </span>
-              {pointsPreview > 0 ? (
-                <span className="shrink-0 font-medium tabular-nums text-primary">
-                  +{pointsPreview} {t("pos.loyalty_points_unit")}
-                </span>
-              ) : null}
+              {isMember ? (
+                <>
+                  <span>
+                    {t("pos.loyalty_balance")}{" "}
+                    <span className="font-medium tabular-nums text-foreground">
+                      {loyaltyPoints}
+                    </span>
+                  </span>
+                  {pointsPreview > 0 ? (
+                    <span className="shrink-0 font-medium tabular-nums text-primary">
+                      +{pointsPreview} {t("pos.loyalty_points_unit")}
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <span>{t("patient.not_member_hint")}</span>
+              )}
             </div>
           ) : null}
 

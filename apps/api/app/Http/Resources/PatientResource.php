@@ -20,6 +20,10 @@ class PatientResource extends JsonResource
             'referred_by' => $this->referred_by,
             'referrer_name' => $this->referrer?->name,
             'whatsapp_opt_in' => (bool) $this->whatsapp_opt_in,
+            // Hanya member yang mengumpulkan poin; saldo yang terlanjur
+            // terkumpul tetap terbaca walau keanggotaannya sudah dicabut.
+            'is_member' => (bool) $this->is_member,
+            'member_since' => $this->member_since?->format('Y-m-d'),
             'loyalty_points' => $this->loyalty_points,
             'address' => $this->address,
             'notes' => $this->notes,

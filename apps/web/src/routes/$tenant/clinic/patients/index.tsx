@@ -4,6 +4,7 @@ import { UserAdd01Icon } from "@hugeicons/core-free-icons"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDataTable } from "#/hooks/use-data-table.ts"
 import { DataTable } from "#/components/datatable/datatable.tsx"
+import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { IndexCta } from "#/components/stats/index-cta.tsx"
 import { StatsSection } from "#/components/stats/stats-section.tsx"
@@ -24,6 +25,7 @@ interface PatientRow {
   gender: string
   gender_label: string
   referrer_name?: string | null
+  is_member?: boolean
   loyalty_points?: number
   can_delete?: boolean
 }
@@ -54,6 +56,23 @@ function PatientsPage() {
             <span>{row.original.referrer_name}</span>
           ) : (
             <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        // Hanya member yang mengumpulkan poin, jadi statusnya berdiri
+        // bersebelahan dengan saldonya: angka nol pada non-member berarti
+        // "memang tidak ikut", bukan "belum pernah belanja".
+        id: "is_member",
+        header: t("patient.is_member"),
+        cell: ({ row }) =>
+          row.original.is_member ? (
+            <Badge variant="default" className="font-normal">
+              {t("patient.member_badge")}
+            </Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              {t("patient.not_member_badge")}
+            </span>
           ),
       },
       {

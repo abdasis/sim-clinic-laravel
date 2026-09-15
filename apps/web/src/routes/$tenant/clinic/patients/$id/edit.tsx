@@ -58,6 +58,7 @@ function EditPatientPage() {
         ...withoutNulls(data.data),
         referred_by: data.data.referred_by ? String(data.data.referred_by) : "",
         whatsapp_opt_in: data.data.whatsapp_opt_in ?? true,
+        is_member: data.data.is_member ?? false,
       })
     }
   }, [data, form])

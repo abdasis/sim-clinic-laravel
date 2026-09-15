@@ -18,6 +18,9 @@ use Tests\TestCase;
  * Diberikan tepat di transisi menuju lunas — bukan saat nota dibuat (baru
  * janji, belum dibayar) dan bukan per cicilan (pembayaran bertahap yang
  * belum genap tidak menghasilkan poin sebagian).
+ *
+ * Pasien di berkas ini sengaja dijadikan member: hanya member yang
+ * mengumpulkan poin (lihat MemberOnlyPointsTest untuk aturan itu sendiri).
  */
 class LoyaltyPointsTest extends TestCase
 {
@@ -27,7 +30,7 @@ class LoyaltyPointsTest extends TestCase
     {
         return Transaction::factory()->create([
             'tenant_id' => $this->tenant->id,
-            'patient_id' => ($patient ?? Patient::factory()->create(['tenant_id' => $this->tenant->id]))->id,
+            'patient_id' => ($patient ?? Patient::factory()->create(['tenant_id' => $this->tenant->id, 'is_member' => true]))->id,
             'cashier_id' => auth()->id(),
             'subtotal' => $subtotal,
         ]);
@@ -111,7 +114,7 @@ class LoyaltyPointsTest extends TestCase
     public function test_points_accumulate_across_multiple_invoices(): void
     {
         $this->actingAsClinicUser();
-        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+        $patient = Patient::factory()->create(['tenant_id' => $this->tenant->id, 'is_member' => true]);
 
         $this->pay($this->makeTransaction(50_000, $patient), 50_000);
         $this->pay($this->makeTransaction(30_000, $patient), 30_000);
@@ -123,8 +126,8 @@ class LoyaltyPointsTest extends TestCase
     public function test_points_do_not_leak_to_another_patient(): void
     {
         $this->actingAsClinicUser();
-        $a = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
-        $b = Patient::factory()->create(['tenant_id' => $this->tenant->id]);
+        $a = Patient::factory()->create(['tenant_id' => $this->tenant->id, 'is_member' => true]);
+        $b = Patient::factory()->create(['tenant_id' => $this->tenant->id, 'is_member' => true]);
 
         $this->pay($this->makeTransaction(100_000, $a), 100_000);
 

@@ -60,6 +60,7 @@ class LoyaltySettingTest extends TestCase
     {
         return $this->patient ??= Patient::factory()->create([
             'tenant_id' => $this->tenant->id,
+            'is_member' => true,
             'loyalty_points' => 100,
         ]);
     }

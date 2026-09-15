@@ -83,10 +83,19 @@ class PayTransactionAction
      * transisi ke lunas. Dihitung dari `subtotal` (yang benar-benar
      * ditagihkan setelah semua potongan), bukan dari uang yang diserahkan:
      * pasien mendapat poin dari belanjanya, bukan dari kelebihan bayarnya.
+     *
+     * Hanya member yang mendapatkannya — itu satu-satunya beda member dari
+     * pelanggan biasa. Saldo yang terlanjur terkumpul tetap milik pasien dan
+     * tetap bisa ditukar walau keanggotaannya dicabut; yang berhenti cuma
+     * pertumbuhannya.
      */
     private function awardLoyaltyPoints(Transaction $transaction, PaymentStatus $oldStatus, PaymentStatus $newStatus): void
     {
         if ($oldStatus === PaymentStatus::Paid || $newStatus !== PaymentStatus::Paid) {
+            return;
+        }
+
+        if (! $transaction->patient?->is_member) {
             return;
         }
 

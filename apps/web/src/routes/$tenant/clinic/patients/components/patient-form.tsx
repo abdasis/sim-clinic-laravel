@@ -23,6 +23,8 @@ export const patientSchema = z.object({
   notes: z.string().optional(),
   // "" berarti tidak ada pembawa; dikonversi ke null saat submit.
   referred_by: z.string().optional(),
+  // Penanda member. Hanya member yang mengumpulkan poin dari belanjanya.
+  is_member: z.boolean().optional(),
   whatsapp_opt_in: z.boolean().optional(),
 })
 
@@ -36,6 +38,7 @@ export const patientDefaults: PatientValues = {
   address: "",
   notes: "",
   referred_by: "",
+  is_member: false,
   whatsapp_opt_in: true,
 }
 
@@ -112,6 +115,21 @@ export function PatientFormFields({
           name="address"
           label={t("patient.address")}
           className="sm:col-span-2"
+        />
+      </FormSection>
+
+      {/* Berdiri sendiri, bukan diselipkan di catatan: ini satu-satunya
+          saklar di formulir ini yang mengubah apa yang pasien terima di
+          kasir, bukan sekadar data yang dicatat. */}
+      <FormSection
+        title={t("loyalty.title")}
+        description={t("patient.is_member_hint")}
+      >
+        <FormSwitch
+          control={control}
+          name="is_member"
+          label={t("patient.is_member")}
+          description={t("loyalty.member_switch_hint")}
         />
       </FormSection>
 

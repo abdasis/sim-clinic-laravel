@@ -25,6 +25,10 @@ class PatientRequest extends FormRequest
             'address' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'referred_by' => ['nullable', TenantRule::exists('users')],
+            // Penanda member. Tanggal pendaftarannya ditetapkan model, bukan
+            // diterima dari klien: yang mengirim formulir tidak berwenang
+            // memutuskan sejak kapan seseorang jadi member.
+            'is_member' => ['nullable', 'boolean'],
             'whatsapp_opt_in' => ['nullable', 'boolean'],
         ];
     }
@@ -38,6 +42,7 @@ class PatientRequest extends FormRequest
             'whatsapp' => __('patient.whatsapp'),
             'address' => __('patient.address'),
             'notes' => __('patient.notes'),
+            'is_member' => __('patient.is_member'),
         ];
     }
 }

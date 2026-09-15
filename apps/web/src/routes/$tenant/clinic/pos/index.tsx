@@ -57,6 +57,8 @@ export const Route = createFileRoute("/$tenant/clinic/pos/")({
 interface PatientRow {
   id: number
   name: string
+  /** Hanya member yang mengumpulkan poin dari belanjanya. */
+  is_member: boolean
   /** Saldo poin loyalitas saat ini. */
   loyalty_points: number
 }
@@ -318,6 +320,7 @@ function PosPage() {
       items={cart.items}
       total={cart.total}
       loyaltyPoints={selectedPatient?.loyalty_points ?? null}
+      isMember={selectedPatient?.is_member ?? false}
       discount={discount}
       onDiscountChange={setDiscount}
       redeemPoints={redeemPoints}

@@ -3,6 +3,12 @@
 return [
     'referred_by' => 'Dibawa Oleh',
     'loyalty_points' => 'Poin',
+    'is_member' => 'Member',
+    'is_member_hint' => 'Hanya member yang mengumpulkan poin dari belanjanya. Poin yang sudah terkumpul tetap bisa ditukar walau keanggotaannya dicabut.',
+    'member_since' => 'Member Sejak',
+    'member_badge' => 'Member',
+    'not_member_badge' => 'Bukan member',
+    'not_member_hint' => 'Pasien ini belum terdaftar sebagai member, jadi transaksinya tidak menghasilkan poin.',
     'referred_by_hint' => 'Staf yang membawa pasien ini. Dasar bonus pasien baru Rp5.000.',
     'deactivated' => 'Pasien berhasil dinonaktifkan.',
     'deactivate' => 'Nonaktifkan',

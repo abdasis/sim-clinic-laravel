@@ -35,6 +35,7 @@ class RedeemLoyaltyPointsTest extends TestCase
         $this->actingAsClinicUser();
         $this->patient = Patient::factory()->create([
             'tenant_id' => $this->tenant->id,
+            'is_member' => true,
             'loyalty_points' => 50,
         ]);
         $this->service = Service::create([
