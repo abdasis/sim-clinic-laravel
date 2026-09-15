@@ -3,8 +3,10 @@
 namespace App\Actions\Transaction;
 
 use App\Actions\LogAuditAction;
+use App\Actions\Loyalty\AdjustLoyaltyPointsAction;
 use App\Enums\PaymentStatus;
 use App\Models\Transaction;
+use App\Support\LoyaltyPoints;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -39,6 +41,13 @@ class PayTransactionAction
                 'payment_status' => $newStatus,
             ]);
 
+            // Poin diberikan tepat sekali, di transisi menuju lunas — bukan
+            // di tiap setoran. Pembayaran bertahap yang belum genap tidak
+            // menghasilkan poin sebagian, dan pembayaran susulan setelah
+            // lunas (kelebihan bayar) tidak menambah lagi karena statusnya
+            // sudah lunas sebelum baris ini tercapai.
+            $this->awardLoyaltyPoints($locked, $oldStatus, $newStatus);
+
             return [
                 'transaction' => $locked,
                 'old_status' => $oldStatus,
@@ -67,6 +76,34 @@ class PayTransactionAction
         }
 
         return $paidAmount >= $subtotal ? PaymentStatus::Paid : PaymentStatus::PartiallyPaid;
+    }
+
+    /**
+     * Snapshot poin ke nota, lalu tambahkan ke saldo pasien — sekali, pada
+     * transisi ke lunas. Dihitung dari `subtotal` (yang benar-benar
+     * ditagihkan setelah semua potongan), bukan dari uang yang diserahkan:
+     * pasien mendapat poin dari belanjanya, bukan dari kelebihan bayarnya.
+     */
+    private function awardLoyaltyPoints(Transaction $transaction, PaymentStatus $oldStatus, PaymentStatus $newStatus): void
+    {
+        if ($oldStatus === PaymentStatus::Paid || $newStatus !== PaymentStatus::Paid) {
+            return;
+        }
+
+        $earned = LoyaltyPoints::earn((float) $transaction->subtotal);
+
+        if ($earned <= 0) {
+            return;
+        }
+
+        $transaction->update(['points_earned' => $earned]);
+
+        app(AdjustLoyaltyPointsAction::class)->handle(
+            $transaction->patient,
+            $earned,
+            'nota '.$transaction->invoice_number,
+            $transaction,
+        );
     }
 
     /**

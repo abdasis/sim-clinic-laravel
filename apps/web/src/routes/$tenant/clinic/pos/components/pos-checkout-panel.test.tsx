@@ -26,6 +26,8 @@ setTranslations({
     paid_amount: "Dibayar",
     outstanding: "Sisa",
     member_active: "Member aktif — potongan otomatis di nota.",
+    loyalty_balance: "Poin saat ini",
+    loyalty_points_unit: "poin",
     cart: { title: "Keranjang" },
   },
   commission: { therapist: "Terapis" },
@@ -170,6 +172,47 @@ describe("PosCheckoutPanel", () => {
     renderPanel(<Harness />)
 
     expect(screen.queryByText("Gold")).toBeNull()
+  })
+
+  /** Poin berlaku untuk pasien mana pun, bukan cuma member. */
+  it("menunjukkan saldo poin begitu pasiennya dipilih", () => {
+    renderPanel(<Harness loyaltyPoints={42} />)
+
+    expect(screen.getByText("Poin saat ini")).toBeTruthy()
+    expect(screen.getByText("42")).toBeTruthy()
+  })
+
+  it("tidak menampilkan baris poin sebelum pasiennya dipilih", () => {
+    renderPanel(<Harness />)
+
+    expect(screen.queryByText("Poin saat ini")).toBeNull()
+  })
+
+  /** Perkiraan poin dari keranjang saat ini, dihitung dari yang benar-benar dibayar. */
+  it("menunjukkan perkiraan poin yang akan didapat dari transaksi ini", () => {
+    renderPanel(
+      <Harness
+        loyaltyPoints={0}
+        items={[
+          {
+            key: "service:1",
+            kind: "service",
+            refId: 1,
+            name: "Facial",
+            unitPrice: 105_000,
+            basePrice: null,
+            promoName: null,
+            qty: 1,
+            stock: null,
+            offeredBy: null,
+          },
+        ]}
+        total={105_000}
+      />,
+    )
+
+    // floor(105.000 / 10.000) = 10 poin.
+    expect(screen.getByText("+10 poin")).toBeTruthy()
   })
 
   /**

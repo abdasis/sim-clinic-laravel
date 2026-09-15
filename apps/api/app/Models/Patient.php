@@ -29,6 +29,7 @@ class Patient extends Model
         'membership_tier_id',
         'member_since',
         'member_until',
+        'loyalty_points',
         'whatsapp_opt_in',
         'deleted_at',
     ];
@@ -40,6 +41,7 @@ class Patient extends Model
             'birth_date' => 'date',
             'member_since' => 'date',
             'member_until' => 'date',
+            'loyalty_points' => 'integer',
             'deleted_at' => 'datetime',
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Actions\Transaction;
 
 use App\Actions\LogAuditAction;
+use App\Actions\Loyalty\AdjustLoyaltyPointsAction;
 use App\Enums\StockMovementType;
 use App\Models\Transaction;
 use App\Services\StockService;
@@ -38,6 +39,8 @@ class CancelTransactionAction
 
             $transaction->update(['cancelled_at' => now()]);
 
+            $this->reclaimLoyaltyPoints($transaction);
+
             return $transaction;
         });
 
@@ -54,5 +57,31 @@ class CancelTransactionAction
         );
 
         return $transaction;
+    }
+
+    /**
+     * Tarik kembali poin yang sudah terlanjur diberikan nota ini.
+     *
+     * Nota yang belum sempat lunas tidak pernah menyimpan `points_earned`
+     * (lihat PayTransactionAction), jadi baris ini aman dipanggil untuk
+     * pembatalan apa pun tanpa perlu tahu dulu apakah notanya pernah lunas.
+     * points_earned dikosongkan sesudahnya supaya pembatalan yang terlanjur
+     * dipanggil dua kali (dijaga guard di atas, tapi tetap) tidak menarik dua
+     * kali.
+     */
+    private function reclaimLoyaltyPoints(Transaction $transaction): void
+    {
+        if ($transaction->points_earned <= 0) {
+            return;
+        }
+
+        app(AdjustLoyaltyPointsAction::class)->handle(
+            $transaction->patient,
+            -$transaction->points_earned,
+            'nota '.$transaction->invoice_number.' dibatalkan',
+            $transaction,
+        );
+
+        $transaction->update(['points_earned' => 0]);
     }
 }

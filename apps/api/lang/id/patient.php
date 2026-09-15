@@ -2,6 +2,7 @@
 
 return [
     'referred_by' => 'Dibawa Oleh',
+    'loyalty_points' => 'Poin',
     'referred_by_hint' => 'Staf yang membawa pasien ini. Dasar bonus pasien baru Rp5.000.',
     'deactivated' => 'Pasien berhasil dinonaktifkan.',
     'deactivate' => 'Nonaktifkan',

@@ -45,6 +45,8 @@ export interface ReceiptData {
   /** Potongan keanggotaan, disalin saat nota dibuat. */
   member_tier_name?: string | null
   member_discount_amount?: string | null
+  /** Poin loyalitas dari nota ini; nol selama belum lunas. */
+  points_earned?: number | null
   print_count?: number | null
   patient_name?: string | null
   cashier_name?: string | null
@@ -243,6 +245,7 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
   const printCount = Math.max(1, Number(data.print_count ?? 0))
   const totalQty = data.items.reduce((sum, item) => sum + Number(item.qty), 0)
   const address = receiptAddress(clinic?.address)
+  const pointsEarned = Math.max(0, Number(data.points_earned ?? 0))
 
   return (
     <article
@@ -423,6 +426,17 @@ export function Receipt({ data, clinic, printedAt }: ReceiptProps) {
         <div className="mt-[1mm] flex items-baseline justify-between gap-2 border border-neutral-900 px-[1mm] py-[0.6mm] font-bold">
           <span>{t("invoice.outstanding")}</span>
           <span className="tabular-nums">{formatAmount(outstanding)}</span>
+        </div>
+      ) : null}
+
+      {/* Nol tidak pernah dicetak: baris yang selalu ada tapi kadang "+0 poin"
+          cuma menambah keraguan tanpa memberi apa-apa. */}
+      {pointsEarned > 0 ? (
+        <div className="mt-[1mm] flex items-baseline justify-between gap-2 text-xxs text-neutral-700">
+          <span>{t("invoice.points_earned")}</span>
+          <span className="font-medium tabular-nums text-neutral-900">
+            +{pointsEarned} {t("invoice.points_unit")}
+          </span>
         </div>
       ) : null}
 

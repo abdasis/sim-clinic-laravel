@@ -35,6 +35,7 @@ class PatientResource extends JsonResource
                     : null,
             ),
             'membership_tier_name' => $this->membershipTier?->name,
+            'loyalty_points' => $this->loyalty_points,
             'address' => $this->address,
             'notes' => $this->notes,
             // Pasien yang sudah punya jejak hanya diarsipkan; dialognya perlu

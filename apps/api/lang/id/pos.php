@@ -32,6 +32,8 @@ return [
     'title' => 'Kasir (POS)',
     'patient' => 'Pasien',
     'member_active' => 'Member aktif — potongan otomatis di nota.',
+    'loyalty_balance' => 'Poin saat ini',
+    'loyalty_points_unit' => 'poin',
     'transaction_date' => 'Tanggal Transaksi',
     'transaction_date_hint' => 'Kosongkan untuk hari ini. Boleh dimundurkan untuk mencatat penjualan yang terlewat.',
     'performers' => 'Yang Mengerjakan',

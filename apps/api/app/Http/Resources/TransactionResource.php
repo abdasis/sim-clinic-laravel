@@ -37,6 +37,10 @@ class TransactionResource extends JsonResource
             'discount_type_label' => $this->discount_type?->label(),
             'discount_value' => $this->discount_value,
             'discount_amount' => $this->discount_amount,
+            // Poin yang diberikan nota ini — nol selama belum lunas, karena
+            // baru dipastikan (lihat PayTransactionAction) begitu pembayaran
+            // benar-benar menutup tagihan.
+            'points_earned' => $this->points_earned,
             'subtotal' => $this->subtotal,
             'paid_amount' => $this->paid_amount,
             'outstanding_amount' => $this->outstandingAmount(),

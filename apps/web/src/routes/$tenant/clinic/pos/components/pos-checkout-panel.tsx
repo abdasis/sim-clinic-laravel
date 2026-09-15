@@ -12,6 +12,7 @@ import {
   discountAmount,
   type DiscountState,
 } from "./discount-field.tsx"
+import { loyaltyPointsPreview } from "./loyalty-points.ts"
 import {
   memberDiscountAmount,
   type MembershipInfo,
@@ -58,6 +59,8 @@ interface PosCheckoutPanelProps {
   total: number
   /** Keanggotaan pasien terpilih, atau null bila bukan member. */
   membership?: MembershipInfo | null
+  /** Saldo poin pasien terpilih; null berarti belum ada pasien dipilih. */
+  loyaltyPoints?: number | null
   discount: DiscountState
   onDiscountChange: (next: DiscountState) => void
   onStep: (key: string, delta: number) => void
@@ -103,6 +106,7 @@ export function PosCheckoutPanel({
   items,
   total,
   membership = null,
+  loyaltyPoints = null,
   discount,
   onDiscountChange,
   onStep,
@@ -125,6 +129,8 @@ export function PosCheckoutPanel({
   // angka yang dilihat kasir sebelum menekan bayar sama dengan yang tersimpan.
   const memberAmount = memberDiscountAmount(items, membership)
   const afterMember = Math.max(0, total - memberAmount)
+  const payableTotal = Math.max(0, afterMember - discountAmount(discount, afterMember))
+  const pointsPreview = loyaltyPointsPreview(payableTotal)
 
   return (
     <div className="space-y-4">
@@ -159,6 +165,25 @@ export function PosCheckoutPanel({
               {memberAmount > 0 ? (
                 <span className="shrink-0 font-medium tabular-nums text-primary">
                   −{formatCurrency(memberAmount)}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* Saldo poin berlaku untuk pasien mana pun, bukan cuma member —
+              dua manfaat yang berbeda, jadi barisnya sengaja dipisah dari
+              badge di atas. */}
+          {loyaltyPoints !== null ? (
+            <div className="mt-2 flex items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2 text-xs text-muted-foreground">
+              <span>
+                {t("pos.loyalty_balance")}{" "}
+                <span className="font-medium tabular-nums text-foreground">
+                  {loyaltyPoints}
+                </span>
+              </span>
+              {pointsPreview > 0 ? (
+                <span className="shrink-0 font-medium tabular-nums text-primary">
+                  +{pointsPreview} {t("pos.loyalty_points_unit")}
                 </span>
               ) : null}
             </div>

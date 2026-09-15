@@ -70,6 +70,7 @@
     $memberTier = $transaction->member_tier_name ?? null;
     $memberDiscount = max(0, (float) ($transaction->member_discount_amount ?? 0));
     $discount = max(0, $gross - $total - $memberDiscount);
+    $pointsEarned = max(0, (int) ($transaction->points_earned ?? 0));
 
     $paid = (float) ($transaction->paid_amount ?? $payments->sum('amount'));
     $outstanding = (float) (isset($transaction) ? $transaction->outstandingAmount() : max(0, $total - $paid));
@@ -234,6 +235,17 @@
                 </tr>
             </table>
         </div>
+    @endif
+
+    {{-- Nol tidak pernah dicetak: baris yang selalu ada tapi kadang "+0 poin"
+         cuma menambah keraguan tanpa memberi apa-apa. --}}
+    @if ($pointsEarned > 0)
+        <table style="font-size: 7.5pt; color: #444; margin-top: 1mm;">
+            <tr>
+                <td>{{ __('invoice.points_earned') }}</td>
+                <td class="text-right" style="color: #000; font-weight: bold;">+{{ $pointsEarned }} {{ __('invoice.points_unit') }}</td>
+            </tr>
+        </table>
     @endif
 
     @if ($receiptNote)

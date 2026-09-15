@@ -23,6 +23,8 @@ setTranslations({
     change: "Kembali",
     discount: "Diskon Promo",
     member_discount: "Potongan Member",
+    points_earned: "Poin didapat",
+    points_unit: "poin",
     reprint: "Cetak Ulang",
     cancelled: "Transaksi Dibatalkan",
     cancelled_note: "Nota ini tidak berlaku sebagai bukti pembayaran.",
@@ -305,6 +307,21 @@ describe("Receipt", () => {
     const { queryByText } = renderReceipt(base)
 
     expect(queryByText(/Potongan Member/)).toBeNull()
+  })
+
+  /** Pasien melihat sendiri berapa poin yang baru saja diperoleh, bukan mengira-ngira. */
+  it("menyebut poin loyalitas yang didapat dari nota ini", () => {
+    const { getByText } = renderReceipt({ ...base, points_earned: 18 })
+
+    expect(getByText("Poin didapat")).toBeTruthy()
+    expect(getByText("+18 poin")).toBeTruthy()
+  })
+
+  /** Nol tidak pernah dicetak — baris "+0 poin" cuma menambah keraguan. */
+  it("tidak mencetak baris poin saat notanya belum lunas", () => {
+    const { queryByText } = renderReceipt({ ...base, points_earned: 0 })
+
+    expect(queryByText("Poin didapat")).toBeNull()
   })
 
   it("tidak mengarang potongan untuk transaksi lama tanpa harga normal", () => {

@@ -59,6 +59,8 @@ interface PatientRow {
   name: string
   /** Keanggotaan yang benar-benar berlaku hari ini, atau null bila bukan member. */
   membership: MembershipInfo | null
+  /** Saldo poin loyalitas saat ini. */
+  loyalty_points: number
 }
 
 interface BookingRow {
@@ -148,6 +150,12 @@ function PosPage() {
 
   const handlePayment = useCallback((next: PaymentData) => setPayment(next), [])
   const [discount, setDiscount] = useState<DiscountState>(EMPTY_DISCOUNT)
+
+  // Dipakai dua kali di bawah (badge member, saldo poin) — dihitung sekali
+  // saja di sini, bukan `.find()` berulang tiap dipakai.
+  const selectedPatient = patients.data?.data.find(
+    (patient) => String(patient.id) === patientId,
+  )
 
   const canSubmit = !cart.isEmpty && !cart.hasStockIssue
 
@@ -287,10 +295,8 @@ function PosPage() {
       onOfferedBy={cart.setOfferedBy}
       items={cart.items}
       total={cart.total}
-      membership={
-        patients.data?.data.find((patient) => String(patient.id) === patientId)
-          ?.membership ?? null
-      }
+      membership={selectedPatient?.membership ?? null}
+      loyaltyPoints={selectedPatient?.loyalty_points ?? null}
       discount={discount}
       onDiscountChange={setDiscount}
       onStep={cart.step}

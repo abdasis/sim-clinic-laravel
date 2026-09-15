@@ -24,6 +24,7 @@ interface PatientRow {
   gender: string
   gender_label: string
   referrer_name?: string | null
+  loyalty_points?: number
   can_delete?: boolean
 }
 
@@ -54,6 +55,13 @@ function PatientsPage() {
           ) : (
             <span className="text-muted-foreground">—</span>
           ),
+      },
+      {
+        accessorKey: "loyalty_points",
+        header: t("patient.loyalty_points"),
+        cell: ({ row }) => (
+          <span className="tabular-nums">{row.original.loyalty_points ?? 0}</span>
+        ),
       },
       {
         id: "actions",

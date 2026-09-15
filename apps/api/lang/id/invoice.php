@@ -42,6 +42,8 @@ return [
     'phone_short' => 'Telp.',
     'change' => 'Kembali',
     'member_discount' => 'Potongan Member',
+    'points_earned' => 'Poin didapat',
+    'points_unit' => 'poin',
     'discount' => 'Diskon Promo',
     'item_count' => ':count item',
     // Penanda status dicetak sebagai pita agar terbaca sekilas dari kertas.
