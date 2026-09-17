@@ -37,3 +37,13 @@ apps/web/.vinxi/
 apps/web/.tanstack/
 # DB backup lokal (berisi data user, jangan di-commit)
 .backup/
+
+# --- Berkas infrastruktur: sengaja TIDAK masuk repo ---
+# Hidup di /home/mebaclinic/infra dan dipakai dari sana oleh systemd.
+# deploy.sh menarik kode lewat git pull, jadi berkas infra yang ikut terlacak
+# akan terhapus dari server saat pull berikutnya.
+deploy.sh
+webhook.js
+docker-compose.yml
+docker-compose.prod.yml
+
