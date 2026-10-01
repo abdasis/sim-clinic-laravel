@@ -182,7 +182,8 @@
             <th class="num" style="width:8%">TREATMENT (Rp)</th>
             <th class="num" style="width:8%">PRODUK (Rp)</th>
             <th class="num" style="width:8%">TOTAL (Rp)</th>
-            <th class="num" style="width:7%">FEE &amp; KOMISI</th>
+            <th class="num" style="width:6%">FEE</th>
+            <th class="num" style="width:6%">KOMISI</th>
             <th class="num" style="width:8%">TOTAL BERSIH</th>
         </tr>
     </thead>
@@ -206,10 +207,11 @@
                 <td class="num">{{ $line['product_amount'] ? $rp($line['product_amount']) : '—' }}</td>
                 <td class="num"><strong>{{ $rp($line['total']) }}</strong></td>
                 <td class="num">{{ $line['fee_amount'] ? $rp($line['fee_amount']) : '—' }}</td>
+                <td class="num">{{ $line['commission_amount'] ? $rp($line['commission_amount']) : '—' }}</td>
                 <td class="num">{{ $rp($line['net_amount']) }}</td>
             </tr>
         @empty
-            <tr><td colspan="12" class="empty">Belum ada transaksi lunas pada periode ini.</td></tr>
+            <tr><td colspan="13" class="empty">Belum ada transaksi lunas pada periode ini.</td></tr>
         @endforelse
     </tbody>
     <tfoot>
@@ -219,6 +221,7 @@
             <td class="num">{{ $rp($report['totals']['product']) }}</td>
             <td class="num">{{ $rp($report['totals']['revenue']) }}</td>
             <td class="num">{{ $rp($report['totals']['fee']) }}</td>
+            <td class="num">{{ $rp($report['totals']['commission']) }}</td>
             <td class="num">{{ $rp($report['totals']['net']) }}</td>
         </tr>
     </tfoot>

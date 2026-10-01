@@ -12,6 +12,7 @@ export interface MonthlyRow {
   product_amount: number
   total: number
   fee_amount: number
+  commission_amount: number
   net_amount: number
 }
 
@@ -20,6 +21,7 @@ export interface MonthlyTotals {
   product: number
   revenue: number
   fee: number
+  commission: number
   net: number
 }
 

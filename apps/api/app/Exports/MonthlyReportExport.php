@@ -29,7 +29,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class MonthlyReportExport
 {
     /** Kolom terakhir tabel kunjungan; dipakai untuk semua merge selebar halaman. */
-    private const LAST_COLUMN = 'L';
+    private const LAST_COLUMN = 'M';
 
     private const INK = '0B3B2E';
 
@@ -87,7 +87,7 @@ class MonthlyReportExport
     {
         $widths = [
             'A' => 5, 'B' => 12, 'C' => 18, 'D' => 22, 'E' => 13, 'F' => 30,
-            'G' => 30, 'H' => 15, 'I' => 15, 'J' => 15, 'K' => 14, 'L' => 16,
+            'G' => 30, 'H' => 15, 'I' => 15, 'J' => 15, 'K' => 14, 'L' => 14, 'M' => 16,
         ];
 
         foreach ($widths as $column => $width) {
@@ -165,7 +165,11 @@ class MonthlyReportExport
         // nilainya; yang berisi uang diberi tanda (Rp) supaya tidak tertukar.
         $headers = [
             'NO', 'TANGGAL', 'STAF', 'NAMA PASIEN', 'BAYAR', 'TINDAKAN', 'PRODUK',
-            'TREATMENT (Rp)', 'PRODUK (Rp)', 'TOTAL (Rp)', 'FEE & KOMISI (Rp)', 'TOTAL BERSIH (Rp)',
+            'TREATMENT (Rp)', 'PRODUK (Rp)', 'TOTAL (Rp)',
+            // Dipisah dari komisi: disatukan, baris berbunyi Rp11.400
+            // sementara tarif per pasien jelas Rp5.000, dan selisihnya tidak
+            // pernah bisa dijelaskan tanpa membuka menu aturan fee.
+            'FEE (Rp)', 'KOMISI (Rp)', 'TOTAL BERSIH (Rp)',
         ];
 
         $sheet->fromArray($headers, null, 'A'.$row);
@@ -212,6 +216,7 @@ class MonthlyReportExport
                 $line['product_amount'],
                 $line['total'],
                 $line['fee_amount'],
+                $line['commission_amount'],
                 $line['net_amount'],
             ], null, 'A'.$row);
 
@@ -247,7 +252,7 @@ class MonthlyReportExport
         $sheet->setCellValue("A{$row}", 'TOTAL');
         $sheet->mergeCells("A{$row}:G{$row}");
 
-        foreach (['H', 'I', 'J', 'K', self::LAST_COLUMN] as $column) {
+        foreach (['H', 'I', 'J', 'K', 'L', self::LAST_COLUMN] as $column) {
             $sheet->setCellValue("{$column}{$row}", "=SUM({$column}{$firstDataRow}:{$column}{$lastDataRow})");
         }
 

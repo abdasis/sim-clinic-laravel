@@ -15,6 +15,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
@@ -112,6 +113,80 @@ class MonthlyReportTest extends TestCase
 
         $cash = collect($response->json('data.payments'))->firstWhere('method', 'cash');
         $this->assertEqualsWithDelta(2_045_000, $cash['total'], 0.01);
+    }
+
+    /**
+     * Fee kerja dan komisi penjualan berdiri di kolom masing-masing.
+     *
+     * Keduanya pernah menyatu jadi satu angka, dan admin klinik membaca baris
+     * berbunyi Rp11.400 sementara tarif per pasien jelas Rp5.000 — selisihnya
+     * komisi 5%, tapi laporannya tidak pernah menyebutkan itu di mana pun.
+     * Yang dikunci di sini bukan besarnya, melainkan bahwa keduanya bisa
+     * dibaca terpisah dan tetap berjumlah sama.
+     */
+    public function test_the_visit_row_separates_work_fee_from_sales_commission(): void
+    {
+        // Layanan 100rb + produk 28rb: fee 5rb, komisi 5% x 128rb = 6.400.
+        $this->paidSale(100_000, 28_000, '2026-05-02');
+
+        CommissionRule::create(['tenant_id' => $this->tenant->id, 'name' => 'Fee pasien', 'type' => 'per_patient', 'amount' => 5000]);
+        CommissionRule::create(['tenant_id' => $this->tenant->id, 'name' => 'Target penjualan', 'type' => 'revenue_percent', 'percent' => 5, 'min_revenue' => 0]);
+
+        $row = $this->getJson($this->tenantUrl('reports/monthly?from=2026-05-01&to=2026-05-31'))
+            ->assertOk()
+            ->json('data.rows.0');
+
+        $this->assertEqualsWithDelta(5_000, $row['fee_amount'], 0.01);
+        $this->assertEqualsWithDelta(6_400, $row['commission_amount'], 0.01);
+        // Sejumlah angka yang dulu tampil menyatu sebagai 11.400.
+        $this->assertEqualsWithDelta(
+            11_400,
+            $row['fee_amount'] + $row['commission_amount'],
+            0.01,
+        );
+        // Bersih memotong keduanya, bukan cuma fee kerjanya.
+        $this->assertEqualsWithDelta(116_600, $row['net_amount'], 0.01);
+    }
+
+    /** Tanpa aturan komisi, kolomnya nol — bukan hilang atau ikut ke fee. */
+    public function test_a_clinic_without_a_sales_rule_sees_fee_only(): void
+    {
+        $this->paidSale(100_000, 28_000, '2026-05-02');
+
+        CommissionRule::create(['tenant_id' => $this->tenant->id, 'name' => 'Fee pasien', 'type' => 'per_patient', 'amount' => 5000]);
+
+        $row = $this->getJson($this->tenantUrl('reports/monthly?from=2026-05-01&to=2026-05-31'))
+            ->assertOk()
+            ->json('data.rows.0');
+
+        $this->assertEqualsWithDelta(5_000, $row['fee_amount'], 0.01);
+        $this->assertEqualsWithDelta(0, $row['commission_amount'], 0.01);
+    }
+
+    /**
+     * Kepala laporan memakai nama yang dipelihara klinik di profilnya, bukan
+     * nama pendaftaran: klinik yang sudah berganti nama menerima berkas
+     * berkepala nama lamanya, dan itu yang dibagikan ke pemilik.
+     */
+    public function test_the_export_is_headed_with_the_clinic_display_name(): void
+    {
+        $this->paidSale(200_000, 0, '2026-05-02');
+
+        $this->tenant->companyProfile()->create([
+            'tenant_id' => $this->tenant->id,
+            'site_name' => 'Meba Clinic',
+        ]);
+
+        $path = tempnam(sys_get_temp_dir(), 'rpt').'.xlsx';
+        file_put_contents($path, $this->get($this->tenantUrl(
+            'reports/monthly/export?from=2026-05-01&to=2026-05-31&format=xlsx'
+        ))->assertOk()->streamedContent());
+
+        $sheet = IOFactory::load($path)->getActiveSheet();
+
+        $this->assertSame('MEBA CLINIC', $sheet->getCell('A1')->getValue());
+
+        unlink($path);
     }
 
     public function test_export_returns_xlsx_and_pdf(): void

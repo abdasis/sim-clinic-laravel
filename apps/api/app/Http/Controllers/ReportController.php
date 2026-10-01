@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\MonthlyReportExport;
 use App\Http\Requests\ReportRangeRequest;
 use App\Services\ReportService;
+use App\Support\ClinicIdentity;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -88,7 +89,11 @@ class ReportController extends Controller
         $to = $request->validated('to');
         $format = $request->query('format', 'xlsx');
         $report = $service->monthly($from, $to);
-        $clinicName = app('tenant')->name;
+        // Nama yang dipelihara klinik di profilnya, bukan nama pendaftaran —
+        // sama seperti kop nota dan sidebar. Laporan satu-satunya saluran yang
+        // masih memakai `tenants.name`, dan klinik yang sudah mengganti
+        // namanya menerima berkas berkepala nama lamanya.
+        $clinicName = ClinicIdentity::displayName(app('tenant'));
         $filename = 'laporan-bulanan-'.$from.'-sd-'.$to;
 
         if ($format === 'pdf') {

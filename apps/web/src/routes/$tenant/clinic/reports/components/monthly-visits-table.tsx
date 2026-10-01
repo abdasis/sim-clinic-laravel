@@ -92,6 +92,7 @@ export function MonthlyVisitsTable({
               <th className={numHead}>{t("report.product_amount")}</th>
               <th className={numHead}>{t("pos.total")}</th>
               <th className={numHead}>{t("report.fee_col")}</th>
+              <th className={numHead}>{t("report.commission_col")}</th>
               <th className={numHead}>{t("report.net_col")}</th>
             </tr>
           </thead>
@@ -141,6 +142,12 @@ export function MonthlyVisitsTable({
                 <td className={cn(cell, "text-right text-xs")}>
                   <Amount value={row.fee_amount} className="text-muted-foreground" />
                 </td>
+                <td className={cn(cell, "text-right text-xs")}>
+                  <Amount
+                    value={row.commission_amount}
+                    className="text-muted-foreground"
+                  />
+                </td>
                 <td className={cn(cell, "text-right font-medium")}>
                   <Amount value={row.net_amount} />
                 </td>
@@ -164,6 +171,9 @@ export function MonthlyVisitsTable({
               </td>
               <td className={cn(cell, "text-right tabular-nums")}>
                 {formatAmount(totals.fee)}
+              </td>
+              <td className={cn(cell, "text-right tabular-nums")}>
+                {formatAmount(totals.commission)}
               </td>
               <td className={cn(cell, "text-right tabular-nums")}>
                 {formatAmount(totals.net)}

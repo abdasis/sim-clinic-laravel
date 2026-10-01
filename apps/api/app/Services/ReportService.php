@@ -188,7 +188,12 @@ class ReportService
             $total = (float) $transaction->subtotal;
             // Fee baris ini sudah dihitung per nota oleh CommissionCalculator;
             // laporan klinik menampilkannya bersebelahan dengan totalnya.
-            $fee = (float) ($feePerTransaction[$transaction->id] ?? 0);
+            // Fee kerja dan komisi penjualan dipisah: menyatukannya membuat
+            // baris berbunyi Rp11.400 sementara tarif per pasien jelas
+            // Rp5.000, dan tidak ada yang bisa menjelaskan selisihnya.
+            $attributed = $feePerTransaction[$transaction->id] ?? [];
+            $fee = (float) ($attributed['fee'] ?? 0);
+            $commission = (float) ($attributed['commission'] ?? 0);
 
             return [
                 'issued_at' => $transaction->issued_at?->toDateString(),
@@ -209,7 +214,8 @@ class ReportService
                 'product_amount' => (float) $products->sum('subtotal'),
                 'total' => $total,
                 'fee_amount' => $fee,
-                'net_amount' => $total - $fee,
+                'commission_amount' => $commission,
+                'net_amount' => $total - $fee - $commission,
             ];
         })->values()->all();
 
@@ -262,6 +268,7 @@ class ReportService
                 'product' => (float) collect($rows)->sum('product_amount'),
                 'revenue' => $revenueTotal,
                 'fee' => (float) collect($rows)->sum('fee_amount'),
+                'commission' => (float) collect($rows)->sum('commission_amount'),
                 'net' => (float) collect($rows)->sum('net_amount'),
             ],
             // Angka pembuka laporan: berapa kali datang, berapa orang, berapa

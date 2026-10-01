@@ -33,7 +33,13 @@ class CommissionCalculator
     /**
      * Fee yang jatuh ke tiap transaksi, dikumpulkan sambil menghitung.
      *
-     * @var array<int, float>
+     * Dipisah dua: fee kerja (per pasien dan bonus pasien baru) dan komisi
+     * penjualan (persen omzet). Keduanya pernah menyatu jadi satu angka di
+     * laporan, dan admin tidak bisa menjelaskan kenapa satu baris berbunyi
+     * Rp11.400 sementara fee per pasien jelas Rp5.000 — selisihnya komisi,
+     * tapi tidak ada yang menyebutkannya.
+     *
+     * @var array<int, array{fee: float, commission: float}>
      */
     private array $byTransaction = [];
 
@@ -43,7 +49,7 @@ class CommissionCalculator
     ) {}
 
     /**
-     * @return array{rows: array<int, array<string, mixed>>, total: float, rules_used: array<int, string>, by_transaction: array<int, float>}
+     * @return array{rows: array<int, array<string, mixed>>, total: float, rules_used: array<int, string>, by_transaction: array<int, array{fee: float, commission: float}>}
      */
     public function run(): array
     {
@@ -114,11 +120,14 @@ class CommissionCalculator
     }
 
     /**
-     * Catat tiap fee ke nota asalnya.
+     * Catat tiap fee ke nota asalnya, terpisah antara fee kerja dan komisi
+     * penjualan.
      *
-     * Laporan bulanan klinik menaruh fee di kolom tersendiri pada baris
+     * Laporan bulanan klinik menaruh keduanya di kolom tersendiri pada baris
      * kunjungannya, bukan hanya sebagai total per orang di bawah — tanpa
-     * penempelan ini, kolom "total bersih" per baris tidak punya dasar hitung.
+     * penempelan ini, kolom "total bersih" per baris tidak punya dasar hitung,
+     * dan tanpa pemisahannya angka fee tidak bisa dicocokkan dengan tarif per
+     * pasien yang tertulis di menu.
      *
      * @param  Collection<int, array<string, mixed>>  $lines
      */
@@ -131,10 +140,14 @@ class CommissionCalculator
                 continue;
             }
 
-            $this->byTransaction[$transactionId] = round(
-                ($this->byTransaction[$transactionId] ?? 0) + (float) $line['amount'],
-                2,
-            );
+            $bucket = $line['rule']->type === CommissionRuleType::RevenuePercent
+                ? 'commission'
+                : 'fee';
+
+            $current = $this->byTransaction[$transactionId] ?? ['fee' => 0.0, 'commission' => 0.0];
+            $current[$bucket] = round($current[$bucket] + (float) $line['amount'], 2);
+
+            $this->byTransaction[$transactionId] = $current;
         }
     }
 
