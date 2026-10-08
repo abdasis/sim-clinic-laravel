@@ -22,7 +22,7 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
-import { useIsMobile } from "#/hooks/use-mobile.ts"
+import { useLayoutTier } from "#/hooks/use-mobile.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPost } from "#/lib/api.ts"
 import {
@@ -42,13 +42,6 @@ import { PosShortcutHelp } from "./components/pos-shortcut-help.tsx"
 import { ProductCatalog } from "./components/product-catalog.tsx"
 import { usePosCart } from "./hooks/use-pos-cart.ts"
 import { usePosShortcuts } from "./hooks/use-pos-shortcuts.ts"
-
-/**
- * Panel keranjang lebarnya tetap 380px, jadi dua kolom baru muat kalau
- * katalognya masih kebagian ruang layak — di bawah `lg` katalog tergencet
- * sampai nol dan produknya seolah hilang, karena itu panelnya pindah ke drawer.
- */
-const SPLIT_BREAKPOINT = 1024
 
 export const Route = createFileRoute("/$tenant/clinic/pos/")({
   component: PosPage,
@@ -73,7 +66,10 @@ function PosPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/pos/" })
   const { t } = useTrans()
   const qc = useQueryClient()
-  const isNarrow = useIsMobile(SPLIT_BREAKPOINT)
+  // Panel keranjang lebarnya tetap 380px, jadi dua kolom baru muat di tier
+  // desktop — di tablet katalognya tergencet sampai nol dan produknya seolah
+  // hilang, karena itu panelnya pindah ke drawer.
+  const isNarrow = useLayoutTier() !== "desktop"
 
   const searchRef = useRef<HTMLInputElement>(null)
   const patientFieldRef = useRef<HTMLDivElement>(null)

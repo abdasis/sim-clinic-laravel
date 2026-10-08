@@ -4,7 +4,7 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 
-import { useIsMobile } from "#/hooks/use-mobile.ts"
+import { useLayoutTier } from "#/hooks/use-mobile.ts"
 import { cn } from "#/lib/utils.ts"
 import { Button } from "#/components/ui/button.tsx"
 import { Input } from "#/components/ui/input.tsx"
@@ -31,6 +31,42 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+
+/**
+ * Keadaan sidebar sebagaimana tersimpan di cookie.
+ *
+ * Cookie-nya sudah lama ditulis tiap kali sidebar dibuka-tutup, tapi tidak
+ * pernah ada yang membacanya — jadi sidebar yang diciutkan terbuka lagi di
+ * tiap muat ulang. Nilai yang tidak dikenal dianggap "belum pernah disetel",
+ * bukan tertutup: lebih baik terbuka seperti bawaannya daripada menyembunyikan
+ * navigasi karena cookie rusak.
+ */
+export function readSidebarCookie(source?: string): boolean | null {
+  const cookie = source ?? (typeof document === "undefined" ? "" : document.cookie)
+
+  const match = cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+
+  if (match === undefined) return null
+
+  const value = match.slice(SIDEBAR_COOKIE_NAME.length + 1)
+
+  if (value === "true") return true
+  if (value === "false") return false
+
+  return null
+}
+
+/**
+ * Dijalankan sebelum browser melukis, jadi keadaan dari cookie sudah terpasang
+ * sebelum apa pun terlihat — tidak ada sidebar yang terbuka sekejap lalu
+ * menutup. Di server tidak ada yang dilukis, jadi turun ke useEffect supaya
+ * React tidak memperingatkan useLayoutEffect saat render di server.
+ */
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? React.useEffect : React.useLayoutEffect
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -66,7 +102,8 @@ function SidebarProvider({
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }) {
-  const isMobile = useIsMobile()
+  const tier = useLayoutTier()
+  const isMobile = tier === "mobile"
   const [openMobile, setOpenMobile] = React.useState(false)
 
   // This is the internal state of the sidebar.
@@ -92,6 +129,19 @@ function SidebarProvider({
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
   }, [isMobile, setOpen, setOpenMobile])
+
+  // Keadaan tersimpan baru dipasang setelah render pertama: render pertama
+  // harus sama persis dengan yang dikirim server, kalau tidak hidrasinya
+  // mengeluh. Karena ini layout effect, penyesuaiannya terjadi sebelum
+  // browser melukis — pengguna tidak pernah melihat keadaan yang salah.
+  useIsomorphicLayoutEffect(() => {
+    if (openProp !== undefined) return
+
+    // Pilihan pengguna menang; selebihnya tier yang memutuskan. Tablet mulai
+    // ciut karena sidebar 16rem di layar 768px menyisakan ~496px untuk konten
+    // — tabel berkolom enam tidak muat, dan tidak ada yang pernah memilih itu.
+    _setOpen(readSidebarCookie() ?? tier === "desktop")
+  }, [openProp, tier])
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -256,7 +306,13 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, isMobile, open, openMobile } = useSidebar()
+
+  // Tombol yang sama membuka dan menutup, jadi labelnya harus ikut keadaan —
+  // "Sembunyikan sidebar" pada tombol yang sedang membuka menyesatkan pembaca
+  // layar, dan di mobile itu justru keadaan bawaannya.
+  const showing = isMobile ? openMobile : open
+  const label = showing ? "Tutup menu" : "Buka menu"
 
   return (
     <Tooltip>
@@ -277,11 +333,11 @@ function SidebarTrigger({
           {...props}
         >
           <HugeiconsIcon icon={SidebarLeftIcon} strokeWidth={2} />
-          <span className="sr-only">Sembunyikan sidebar</span>
+          <span className="sr-only">{label}</span>
         </Button>
       </TooltipTrigger>
       <TooltipContent side="right" className="flex items-center gap-2">
-        Sembunyikan sidebar
+        {label}
         <kbd className="rounded-sm bg-background/20 px-1 font-mono text-[10px]">
           ⌘B
         </kbd>
@@ -302,7 +358,10 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        "absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] hover:after:bg-sidebar-border sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2",
+        // Lebar tampaknya tetap tipis; yang dilebarkan jadi 24px cuma bidang
+        // ketuknya. Bidang 4px tidak bisa dikenai jari di tablet, dan rel ini
+        // satu-satunya cara membuka sidebar selain tombol di header.
+        "absolute inset-y-0 z-20 hidden w-6 transition-all ease-linear group-data-[side=left]:-right-5 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] hover:after:bg-sidebar-border sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2",
         "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",
         "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
         "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full hover:group-data-[collapsible=offcanvas]:bg-sidebar",

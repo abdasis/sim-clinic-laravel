@@ -9,11 +9,20 @@ import {
   SidebarTrigger,
 } from "#/components/ui/sidebar.tsx"
 import { Separator } from "#/components/ui/separator.tsx"
+import { useLayoutTier } from "#/hooks/use-mobile.ts"
 
 export function ShellSkeleton({ navCount = 8 }: { navCount?: number }) {
+  const tier = useLayoutTier()
+
   return (
+    // Kerangka ini memakai SidebarProvider yang sama, jadi keadaan awalnya
+    // (cookie dan tier) ikut terbaca di sini — bentuk kerangkanya tidak
+    // berubah lagi begitu data tiba.
     <SidebarProvider>
-      <Sidebar variant="inset">
+      <Sidebar
+        variant="inset"
+        collapsible={tier === "tablet" ? "icon" : "offcanvas"}
+      >
         <SidebarHeader>
           <Skeleton className="h-12 w-full rounded-lg" />
         </SidebarHeader>

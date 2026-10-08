@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Link } from "@tanstack/react-router"
+import { Link, useRouterState } from "@tanstack/react-router"
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import { SourceCodeIcon } from "@hugeicons/core-free-icons"
 
@@ -14,7 +14,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "#/components/ui/sidebar.tsx"
+import { useLayoutTier } from "#/hooks/use-mobile.ts"
 
 export interface SidebarNavItem {
   title: string
@@ -66,8 +68,19 @@ export function AppSidebar({
   brandLogoUrl,
   ...props
 }: AppSidebarProps) {
+  const tier = useLayoutTier()
+
+  useCloseDrawerOnNavigate()
+
   return (
-    <Sidebar variant={variant} {...props}>
+    // Tablet menciut jadi rel ikon, bukan hilang sama sekali: di layar 768px
+    // sidebar penuh menyisakan konten terlalu sempit, tapi menyembunyikannya
+    // total membuat pindah menu butuh dua ketukan. Rel ikon tetap satu ketuk.
+    <Sidebar
+      variant={variant}
+      collapsible={tier === "tablet" ? "icon" : "offcanvas"}
+      {...props}
+    >
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -120,4 +133,22 @@ export function AppSidebar({
       </SidebarFooter>
     </Sidebar>
   )
+}
+
+/**
+ * Tutup drawer begitu halaman berpindah.
+ *
+ * Di mobile, mengetuk menu memindahkan halaman tapi drawernya tetap terbuka
+ * menutupi halaman yang baru — pengguna harus menutupnya sendiri, dan yang
+ * tidak menemukan caranya menyimpulkan aplikasinya nyangkut. Dipasang sekali
+ * di sini, bukan di tiap `Link`: yang ditulis ulang di tiap item pasti terlupa
+ * di item berikutnya.
+ */
+function useCloseDrawerOnNavigate(): void {
+  const { isMobile, setOpenMobile } = useSidebar()
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+
+  React.useEffect(() => {
+    if (isMobile) setOpenMobile(false)
+  }, [pathname, isMobile, setOpenMobile])
 }
