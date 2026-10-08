@@ -166,6 +166,87 @@ class ReceiptPdfLayoutTest extends TestCase
         $this->assertEqualsWithDelta(136.06, (float) $box[1], 0.5);
     }
 
+    /**
+     * Tinggi kertas mengikuti isi, bukan angka tetap untuk kemungkinan
+     * terburuk.
+     *
+     * Rumus lama memberi tiap item jatah setinggi nama dua baris, jadi nota
+     * sepuluh item bernama pendek mendapat kertas untuk sepuluh nama panjang —
+     * belasan sentimeter gulungan terbuang di tiap nota. Yang dikunci di sini
+     * perbandingannya: nota bernama pendek harus jauh lebih pendek daripada
+     * nota bernama panjang dengan jumlah item yang sama.
+     */
+    public function test_short_item_names_get_a_shorter_page_than_long_ones(): void
+    {
+        $this->actingAsClinicUser();
+
+        $short = $this->pageHeight($this->withNamedItems($this->makeTransaction(), 10, 'Facial'));
+
+        $long = $this->pageHeight($this->withNamedItems(
+            $this->makeTransaction(),
+            10,
+            'Perawatan Wajah Lengkap Plus Serum Tambahan',
+        ));
+
+        // Nama yang membungkus memakan dua kali tinggi barisnya; sepuluh di
+        // antaranya harus terlihat jelas selisihnya di kertas.
+        $this->assertGreaterThan($short + 200, $long);
+    }
+
+    /**
+     * Nota sederhana tidak boleh memakan kertas sepanjang nota penuh.
+     *
+     * Satu layanan bernama pendek, tanpa profil klinik: dulu tetap mendapat
+     * 406pt karena rumusnya tidak pernah menengok isinya.
+     */
+    public function test_a_simple_receipt_does_not_waste_paper(): void
+    {
+        $this->actingAsClinicUser();
+
+        $this->assertLessThan(
+            380,
+            $this->pageHeight($this->withNamedItems($this->makeTransaction(), 1, 'Facial')),
+        );
+    }
+
+    /** Tinggi halaman PDF dalam poin, dibaca dari MediaBox-nya. */
+    private function pageHeight(Transaction $transaction): float
+    {
+        $pdf = $this->get($this->tenantUrl("transactions/{$transaction->id}/invoice/pdf"))
+            ->assertOk()
+            ->getContent();
+
+        preg_match('~/MediaBox\s*\[\s*0(?:\.0+)?\s+0(?:\.0+)?\s+[0-9.]+\s+([0-9.]+)~', $pdf, $box);
+
+        return (float) ($box[1] ?? 0);
+    }
+
+    /** Tambahkan sejumlah layanan bernama sama persis. */
+    private function withNamedItems(Transaction $transaction, int $count, string $name): Transaction
+    {
+        foreach (range(1, $count) as $i) {
+            $service = Service::create([
+                'tenant_id' => $this->tenant->id,
+                'name' => $name.' '.$i,
+                'price' => 125000,
+                'duration_minutes' => 60,
+                'status' => 'active',
+            ]);
+
+            TransactionItem::create([
+                'tenant_id' => $this->tenant->id,
+                'transaction_id' => $transaction->id,
+                'service_id' => $service->id,
+                'name' => $name,
+                'qty' => 1,
+                'unit_price' => 125000,
+                'subtotal' => 125000,
+            ]);
+        }
+
+        return $transaction->fresh();
+    }
+
     /** @return array<string, array{int}> */
     public static function itemCounts(): array
     {
