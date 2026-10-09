@@ -34,6 +34,8 @@ return [
     'pagination_showing' => 'Menampilkan',
     'pagination_of' => 'dari',
     'rows_per_page' => 'Baris per halaman',
+    'previous_page' => 'Halaman sebelumnya',
+    'next_page' => 'Halaman berikutnya',
     'select' => 'Pilih',
     'load_failed' => 'Data gagal dimuat',
     'load_failed_desc' => 'Server sedang tidak bisa dihubungi atau menolak permintaannya. Coba muat ulang; kalau tetap begini, kabari admin.',

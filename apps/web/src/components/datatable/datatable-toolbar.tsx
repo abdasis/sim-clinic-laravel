@@ -34,13 +34,16 @@ export function DataTableToolbar<TData>({
 
   return (
     <div className="flex flex-wrap items-center gap-2 py-2">
-      <div className="relative">
+      {/* Di ponsel pencarian mengambil barisnya sendiri: 160px hanya memuat
+          belasan karakter, dan nama pasien yang dicari lebih panjang dari itu
+          — yang diketik langsung tergeser keluar dari pandangan. */}
+      <div className="relative w-full sm:w-auto">
         <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={searchPlaceholder}
-          className="h-8 w-40 pl-8 md:w-56"
+          className="h-8 w-full pl-8 sm:w-40 md:w-56"
         />
       </div>
       {faceted?.map((f) => (

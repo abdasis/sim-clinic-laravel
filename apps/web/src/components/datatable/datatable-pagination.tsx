@@ -35,7 +35,10 @@ export function DataTablePagination<TData>({
           : `${t("general.pagination_showing")} ${start}–${end} ${t("general.pagination_of")} ${total}`}
       </div>
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-sm">
+        {/* Pemilih jumlah baris disembunyikan di ponsel: barisnya cuma cukup
+            untuk nomor halaman dan dua tombolnya, dan mengubah jumlah baris
+            jauh lebih jarang dilakukan daripada berpindah halaman. */}
+        <div className="hidden items-center gap-2 text-sm sm:flex">
           <span className="hidden sm:inline">{t("general.rows_per_page")}</span>
           <Select
             value={String(pageSize)}
@@ -58,6 +61,7 @@ export function DataTablePagination<TData>({
             variant="outline"
             size="sm"
             className="h-8 w-8 p-0"
+            aria-label={t("general.previous_page")}
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
@@ -71,6 +75,7 @@ export function DataTablePagination<TData>({
             variant="outline"
             size="sm"
             className="h-8 w-8 p-0"
+            aria-label={t("general.next_page")}
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >

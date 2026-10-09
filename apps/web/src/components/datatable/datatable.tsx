@@ -13,8 +13,18 @@ import { Button } from "#/components/ui/button.tsx"
 import type { EmptyIllustrationName } from "#/components/ui/empty-illustration.tsx"
 import { DataTableToolbar } from "#/components/datatable/datatable-toolbar.tsx"
 import { DataTablePagination } from "#/components/datatable/datatable-pagination.tsx"
+import { DataTableCards } from "#/components/datatable/datatable-cards.tsx"
+import { useContainerWidth } from "#/hooks/use-container-width.ts"
+import { useLayoutTier } from "#/hooks/use-mobile.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import type { DataTableMeta, FacetedOption } from "#/types/data-table.ts"
+
+/**
+ * Lebar wadah paling sempit yang masih menampung tabel klinik berkolom
+ * banyak. Di bawah ini kolom-kolomnya saling menghimpit dan kolom aksi di
+ * ujung kanan tidak pernah terlihat tanpa menggulir dua arah.
+ */
+const CARD_MAX_WIDTH = 640
 
 interface DataTableProps<TData> {
   table: Table<TData>
@@ -64,16 +74,79 @@ export function DataTable<TData>({
   emptyAction,
 }: DataTableProps<TData>) {
   const { t } = useTrans()
+  const tier = useLayoutTier()
+  const [containerRef, containerWidth] = useContainerWidth<HTMLDivElement>()
   const rows = table.getRowModel().rows
   const columnCount = table.getAllColumns().length
 
+  // Tabel sempit masih terbaca sebagai tabel; yang tidak terbaca adalah tabel
+  // berkolom banyak di ruang sempit. Ambangnya jumlah kolom, bukan halamannya,
+  // supaya tabel baru ikut tanpa harus didaftarkan satu per satu.
+  //
+  // Yang diukur wadahnya, bukan layarnya: di tablet 800px ruang untuk tabel
+  // ikut berubah saat sidebar dibuka-tutup, dan tabel enam kolom di 510px
+  // butuh kartu sementara di 710px masih muat. Sebelum terukur — di server
+  // dan pada render pertama — tier layar yang menjawab, jadi ponsel langsung
+  // mendapat kartu alih-alih berkedip dari tabel dulu.
+  const asCards =
+    (containerWidth === null ? tier === "mobile" : containerWidth < CARD_MAX_WIDTH) &&
+    table.getVisibleLeafColumns().length > 4
+
+  const emptyState =
+    !emptyTitle && emptyMessage ? (
+      // Teks polos hanya bertahan untuk pemakai lama yang belum mengisi
+      // emptyTitle; sisanya dapat permukaan penuh.
+      <p className="text-center text-muted-foreground">{emptyMessage}</p>
+    ) : (
+      <EmptyState
+        className="p-0"
+        illustration={emptyIllustration}
+        title={emptyTitle ?? t("general.no_data")}
+        description={emptyDescription ?? t("general.no_data_desc")}
+        action={emptyAction}
+      />
+    )
+
+  // Gagal memuat bukan berarti datanya tidak ada — dua hal itu tidak boleh
+  // terlihat sama.
+  const errorState = (
+    <EmptyState
+      className="p-0"
+      illustration="default"
+      title={t("general.load_failed")}
+      description={serverMessage(error) ?? t("general.load_failed_desc")}
+      action={
+        onRetry ? (
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            {t("general.retry")}
+          </Button>
+        ) : undefined
+      }
+    />
+  )
+
   return (
-    <div className="space-y-2">
+    <div ref={containerRef} className="space-y-2">
       <DataTableToolbar
         table={table}
         searchPlaceholder={searchPlaceholder}
         faceted={faceted}
       />
+      {asCards ? (
+        isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={`card-skeleton-${i}`} className="h-20 w-full rounded-md" />
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="rounded-md border py-14">{errorState}</div>
+        ) : rows.length === 0 ? (
+          <div className="rounded-md border py-14">{emptyState}</div>
+        ) : (
+          <DataTableCards rows={rows} />
+        )
+      ) : (
       <div className="rounded-md border">
         <UiTable>
           <TableHeader>
@@ -103,41 +176,13 @@ export function DataTable<TData>({
             ) : isError ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={columnCount} className="py-14">
-                  {/* Gagal memuat bukan berarti datanya tidak ada — dua hal
-                      itu tidak boleh terlihat sama. */}
-                  <EmptyState
-                    className="p-0"
-                    illustration="default"
-                    title={t("general.load_failed")}
-                    description={serverMessage(error) ?? t("general.load_failed_desc")}
-                    action={
-                      onRetry ? (
-                        <Button variant="outline" size="sm" onClick={onRetry}>
-                          {t("general.retry")}
-                        </Button>
-                      ) : undefined
-                    }
-                  />
+                  {errorState}
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={columnCount} className="py-14">
-                  {/* Teks polos hanya bertahan untuk pemakai lama yang belum
-                      mengisi emptyTitle; sisanya dapat permukaan penuh. */}
-                  {!emptyTitle && emptyMessage ? (
-                    <p className="text-center text-muted-foreground">
-                      {emptyMessage}
-                    </p>
-                  ) : (
-                    <EmptyState
-                      className="p-0"
-                      illustration={emptyIllustration}
-                      title={emptyTitle ?? t("general.no_data")}
-                      description={emptyDescription ?? t("general.no_data_desc")}
-                      action={emptyAction}
-                    />
-                  )}
+                  {emptyState}
                 </TableCell>
               </TableRow>
             ) : (
@@ -154,6 +199,7 @@ export function DataTable<TData>({
           </TableBody>
         </UiTable>
       </div>
+      )}
       <DataTablePagination table={table} meta={meta} />
     </div>
   )
