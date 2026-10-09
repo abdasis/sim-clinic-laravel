@@ -4,7 +4,8 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 
-import { useLayoutTier } from "#/hooks/use-mobile.ts"
+import { useIsMobile } from "#/hooks/use-mobile.ts"
+import { useIsomorphicLayoutEffect } from "#/hooks/use-isomorphic-layout-effect.ts"
 import { cn } from "#/lib/utils.ts"
 import { Button } from "#/components/ui/button.tsx"
 import { Input } from "#/components/ui/input.tsx"
@@ -59,15 +60,6 @@ export function readSidebarCookie(source?: string): boolean | null {
   return null
 }
 
-/**
- * Dijalankan sebelum browser melukis, jadi keadaan dari cookie sudah terpasang
- * sebelum apa pun terlihat — tidak ada sidebar yang terbuka sekejap lalu
- * menutup. Di server tidak ada yang dilukis, jadi turun ke useEffect supaya
- * React tidak memperingatkan useLayoutEffect saat render di server.
- */
-const useIsomorphicLayoutEffect =
-  typeof window === "undefined" ? React.useEffect : React.useLayoutEffect
-
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
   open: boolean
@@ -102,8 +94,7 @@ function SidebarProvider({
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }) {
-  const tier = useLayoutTier()
-  const isMobile = tier === "mobile"
+  const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
   // This is the internal state of the sidebar.
@@ -137,11 +128,14 @@ function SidebarProvider({
   useIsomorphicLayoutEffect(() => {
     if (openProp !== undefined) return
 
-    // Pilihan pengguna menang; selebihnya tier yang memutuskan. Tablet mulai
-    // ciut karena sidebar 16rem di layar 768px menyisakan ~496px untuk konten
-    // — tabel berkolom enam tidak muat, dan tidak ada yang pernah memilih itu.
-    _setOpen(readSidebarCookie() ?? tier === "desktop")
-  }, [openProp, tier])
+    // Yang menentukan hanya pilihan pengguna, bukan ukuran layarnya. Tablet
+    // pernah dibuat mulai ciut supaya konten lebih lega, tapi di layar 800px
+    // (Galaxy Tab A) hasilnya dibaca sebagai "sidebar-nya hilang": yang
+    // tersisa rel ikon tanpa nama menu, padahal sebelumnya sidebar penuh.
+    // Kelegaan konten diurus komponennya sendiri — tabel beralih ke kartu
+    // saat wadahnya sempit — bukan dengan menyembunyikan navigasi.
+    _setOpen(readSidebarCookie() ?? defaultOpen)
+  }, [openProp, defaultOpen])
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
