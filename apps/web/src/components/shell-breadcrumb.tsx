@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu.tsx"
-import { useLayoutTier } from "#/hooks/use-mobile.ts"
+import { isNarrowTier, useLayoutTier } from "#/hooks/use-mobile.ts"
 import { cn } from "#/lib/utils.ts"
 
 export interface ShellCrumb {
@@ -60,7 +60,7 @@ export function ShellBreadcrumb({
   if (items.length === 0) return null
 
   const collapsed =
-    tier === "mobile" && items.length > MOBILE_VISIBLE
+    isNarrowTier(tier) && items.length > MOBILE_VISIBLE
       ? items.slice(0, items.length - MOBILE_VISIBLE)
       : []
 

@@ -21,6 +21,18 @@
    * staf yang dipandangi delapan jam sehari.
    */
   --font-brand: "Plus Jakarta Sans", "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+  /*
+   * Ambang munculnya sidebar permanen, dipakai sebagai varian `rail:`.
+   *
+   * Dulu dipakai `md:` (48rem/768px), dan itu membuang tablet kecil ke
+   * perlakuan ponsel: Galaxy Tab A potret melaporkan 600px — sebagian
+   * malah 533px — sehingga sidebarnya jadi laci yang baru muncul setelah
+   * tombolnya diketuk. 32rem (512px) masih di atas lebar potret semua
+   * ponsel (yang terlebar ~430px), jadi tablet dapat rel ikon permanen
+   * tanpa ponsel ikut kebagian.
+   */
+  --breakpoint-rail: 32rem;
 }
 
 :root {

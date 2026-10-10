@@ -15,7 +15,7 @@ import { DataTableToolbar } from "#/components/datatable/datatable-toolbar.tsx"
 import { DataTablePagination } from "#/components/datatable/datatable-pagination.tsx"
 import { DataTableCards } from "#/components/datatable/datatable-cards.tsx"
 import { useContainerWidth } from "#/hooks/use-container-width.ts"
-import { useLayoutTier } from "#/hooks/use-mobile.ts"
+import { isNarrowTier, useLayoutTier } from "#/hooks/use-mobile.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import type { DataTableMeta, FacetedOption } from "#/types/data-table.ts"
 
@@ -89,7 +89,7 @@ export function DataTable<TData>({
   // dan pada render pertama — tier layar yang menjawab, jadi ponsel langsung
   // mendapat kartu alih-alih berkedip dari tabel dulu.
   const asCards =
-    (containerWidth === null ? tier === "mobile" : containerWidth < CARD_MAX_WIDTH) &&
+    (containerWidth === null ? isNarrowTier(tier) : containerWidth < CARD_MAX_WIDTH) &&
     table.getVisibleLeafColumns().length > 4
 
   const emptyState =

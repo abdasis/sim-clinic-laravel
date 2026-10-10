@@ -4,7 +4,7 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 
-import { useIsMobile } from "#/hooks/use-mobile.ts"
+import { useLayoutTier } from "#/hooks/use-mobile.ts"
 import { useIsomorphicLayoutEffect } from "#/hooks/use-isomorphic-layout-effect.ts"
 import { cn } from "#/lib/utils.ts"
 import { Button } from "#/components/ui/button.tsx"
@@ -94,7 +94,8 @@ function SidebarProvider({
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }) {
-  const isMobile = useIsMobile()
+  const tier = useLayoutTier()
+  const isMobile = tier === "mobile"
   const [openMobile, setOpenMobile] = React.useState(false)
 
   // This is the internal state of the sidebar.
@@ -128,14 +129,17 @@ function SidebarProvider({
   useIsomorphicLayoutEffect(() => {
     if (openProp !== undefined) return
 
-    // Yang menentukan hanya pilihan pengguna, bukan ukuran layarnya. Tablet
-    // pernah dibuat mulai ciut supaya konten lebih lega, tapi di layar 800px
-    // (Galaxy Tab A) hasilnya dibaca sebagai "sidebar-nya hilang": yang
-    // tersisa rel ikon tanpa nama menu, padahal sebelumnya sidebar penuh.
-    // Kelegaan konten diurus komponennya sendiri — tabel beralih ke kartu
-    // saat wadahnya sempit — bukan dengan menyembunyikan navigasi.
-    _setOpen(readSidebarCookie() ?? defaultOpen)
-  }, [openProp, defaultOpen])
+    // Pilihan pengguna selalu menang. Tanpa pilihan, hanya satu tier yang
+    // mulai ciut: `rail` — tablet 512-767px, di mana sidebar bernama
+    // menyisakan kurang dari 350px untuk isi halaman. Yang ciut di situ
+    // tetap terlihat sebagai rel ikon, jadi menunya masih satu ketuk.
+    //
+    // Tier `tablet` ke atas mulai terbuka. Pernah dibuat ciut juga supaya
+    // konten lebih lega, dan hasilnya dibaca pengguna sebagai "sidebar-nya
+    // hilang". Kelegaan konten diurus komponennya sendiri — tabel beralih
+    // ke kartu saat wadahnya sempit — bukan dengan menyembunyikan navigasi.
+    _setOpen(readSidebarCookie() ?? (tier === "rail" ? false : defaultOpen))
+  }, [openProp, defaultOpen, tier])
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -251,7 +255,7 @@ function Sidebar({
 
   return (
     <div
-      className="group peer hidden text-sidebar-foreground md:block"
+      className="group peer hidden text-sidebar-foreground rail:block"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
@@ -274,7 +278,7 @@ function Sidebar({
         data-slot="sidebar-container"
         data-side={side}
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] rail:flex",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
@@ -373,7 +377,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
+        "relative flex w-full flex-1 flex-col bg-background rail:peer-data-[variant=inset]:m-2 rail:peer-data-[variant=inset]:ml-0 rail:peer-data-[variant=inset]:rounded-xl rail:peer-data-[variant=inset]:shadow-sm rail:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
         className
       )}
       {...props}
@@ -437,7 +441,11 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(
-        "no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+                // Rel ikon hanya menutup gulir mendatar, bukan menegak: menu klinik
+        // ada 21 dan di tablet pendek (Galaxy Tab A 8", 853px) lima yang
+        // terbawah — termasuk Laporan — jatuh di luar kotak. Dengan
+        // overflow-hidden keduanya, menu itu tidak bisa dicapai sama sekali.
+        "no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-x-hidden",
         className
       )}
       {...props}
@@ -533,7 +541,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm ring-sidebar-ring outline-hidden transition-[width,height,padding,background-color,color,transform] duration-200 ease-[var(--ease-out)] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate",
+  "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm ring-sidebar-ring outline-hidden transition-[width,height,padding,background-color,color,transform] duration-200 ease-[var(--ease-out)] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! pointer-coarse:group-data-[collapsible=icon]:size-11! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate",
   {
     variants: {
       variant: {

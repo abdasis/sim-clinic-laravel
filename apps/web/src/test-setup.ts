@@ -19,7 +19,7 @@ globalThis.ResizeObserver ??= ResizeObserverStub
 
 /**
  * jsdom juga tidak punya `matchMedia`, sementara hook tier layout
- * (`useLayoutTier`) memanggilnya untuk memisahkan mobile/tablet/desktop.
+ * (`useLayoutTier`) memanggilnya untuk memisahkan mobile/rail/tablet/desktop.
  * Tanpa ini, komponen apa pun yang memakai tier — shell, breadcrumb, tabel —
  * gagal dengan "matchMedia is not a function".
  *

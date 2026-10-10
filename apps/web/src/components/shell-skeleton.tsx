@@ -9,7 +9,7 @@ import {
   SidebarTrigger,
 } from "#/components/ui/sidebar.tsx"
 import { Separator } from "#/components/ui/separator.tsx"
-import { useLayoutTier } from "#/hooks/use-mobile.ts"
+import { hasRail, useLayoutTier } from "#/hooks/use-mobile.ts"
 
 export function ShellSkeleton({ navCount = 8 }: { navCount?: number }) {
   const tier = useLayoutTier()
@@ -21,7 +21,7 @@ export function ShellSkeleton({ navCount = 8 }: { navCount?: number }) {
     <SidebarProvider>
       <Sidebar
         variant="inset"
-        collapsible={tier === "tablet" ? "icon" : "offcanvas"}
+        collapsible={hasRail(tier) ? "icon" : "offcanvas"}
       >
         <SidebarHeader>
           <Skeleton className="h-12 w-full rounded-lg" />

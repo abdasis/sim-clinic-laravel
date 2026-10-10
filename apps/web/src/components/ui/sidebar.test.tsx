@@ -66,6 +66,16 @@ function renderSidebar() {
 }
 
 /**
+ * Sidebar yang berdiri di samping konten. Di tier mobile tidak ada: yang
+ * dipasang laci, dan isinya baru lahir ke DOM saat lacinya dibuka.
+ */
+function standingSidebar() {
+  const sidebar = document.querySelector('[data-slot="sidebar"]')
+
+  return sidebar?.getAttribute("data-mobile") === "true" ? null : sidebar
+}
+
+/**
  * "Sidebar tidak muncul di ukuran layar Galaxy Tab A" — tablet 800px pernah
  * dibuat mulai ciut supaya kontennya lega, dan yang tersisa rel ikon tanpa
  * nama menu. Ukuran layar tidak boleh ikut memutuskan: hanya pilihan pengguna
@@ -80,6 +90,41 @@ describe("keadaan awal sidebar", () => {
 
   it("terbuka di tablet, bukan ciut jadi rel ikon", () => {
     setViewport(800)
+
+    expect(renderSidebar()?.getAttribute("data-state")).toBe("expanded")
+  })
+
+  /**
+   * Galaxy Tab A potret (600px). Dulu ini jatuh ke tier mobile dan sidebarnya
+   * jadi laci — hilang sampai tombolnya diketuk. Sekarang relnya permanen:
+   * ciut, tapi berdiri di samping konten, bukan laci.
+   */
+  it("jadi rel ikon permanen di tablet kecil, bukan laci", () => {
+    setViewport(600)
+
+    renderSidebar()
+    const sidebar = standingSidebar()
+
+    expect(sidebar).not.toBeNull()
+    expect(sidebar?.getAttribute("data-state")).toBe("collapsed")
+    expect(sidebar?.getAttribute("data-collapsible")).toBe("icon")
+  })
+
+  /**
+   * Ponsel tetap laci: 390px tidak punya ruang untuk rel sekalipun. Lacinya
+   * tertutup, jadi tidak ada sidebar yang berdiri maupun isinya di DOM.
+   */
+  it("tetap laci di ponsel", () => {
+    setViewport(390)
+    renderSidebar()
+
+    expect(standingSidebar()).toBeNull()
+  })
+
+  /** Yang merentangkannya di tablet kecil tetap menemukannya terentang. */
+  it("menghormati pilihan merentangkan di tablet kecil", () => {
+    setViewport(600)
+    document.cookie = "sidebar_state=true; path=/"
 
     expect(renderSidebar()?.getAttribute("data-state")).toBe("expanded")
   })

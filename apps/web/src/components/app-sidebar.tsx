@@ -16,7 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "#/components/ui/sidebar.tsx"
-import { useLayoutTier } from "#/hooks/use-mobile.ts"
+import { hasRail, useLayoutTier } from "#/hooks/use-mobile.ts"
 
 export interface SidebarNavItem {
   title: string
@@ -73,12 +73,12 @@ export function AppSidebar({
   useCloseDrawerOnNavigate()
 
   return (
-    // Tablet menciut jadi rel ikon, bukan hilang sama sekali: di layar 768px
-    // sidebar penuh menyisakan konten terlalu sempit, tapi menyembunyikannya
-    // total membuat pindah menu butuh dua ketukan. Rel ikon tetap satu ketuk.
+    // Tablet menciut jadi rel ikon, bukan hilang sama sekali: sidebar penuh
+    // menyisakan konten terlalu sempit di situ, tapi menyembunyikannya total
+    // membuat pindah menu butuh dua ketukan. Rel ikon tetap satu ketuk.
     <Sidebar
       variant={variant}
-      collapsible={tier === "tablet" ? "icon" : "offcanvas"}
+      collapsible={hasRail(tier) ? "icon" : "offcanvas"}
       {...props}
     >
       <SidebarHeader>
