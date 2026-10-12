@@ -68,7 +68,8 @@ class MissingCommissionTiersBackfillTest extends TestCase
 
         $this->assertCount(2, $tiers);
         $this->assertEqualsWithDelta(5, (float) $tiers[0]->percent, 0.01);
-        $this->assertEqualsWithDelta(0, (float) $tiers[0]->min_revenue, 0.01);
+        // Tingkat pertama mulai di 3 juta, bukan sejak rupiah pertama.
+        $this->assertEqualsWithDelta(3_000_000, (float) $tiers[0]->min_revenue, 0.01);
         $this->assertEqualsWithDelta(6, (float) $tiers[1]->percent, 0.01);
         $this->assertEqualsWithDelta(10_000_000, (float) $tiers[1]->min_revenue, 0.01);
 

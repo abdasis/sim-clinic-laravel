@@ -70,4 +70,18 @@ return [
     'no_payment' => 'Belum ada pembayaran tercatat.',
     'no_expense' => 'Belum ada pengeluaran tercatat.',
     'no_fee' => 'Belum ada kunjungan atau penjualan bertanda staf.',
+
+    // Upselling: omzet yang ditawarkan staf sendiri, terpisah dari fee kerja.
+    'upsell_title' => 'Upselling Penjualan',
+    'upsell_note' => 'Omzet dihitung dari baris nota yang penawarnya tercatat. Komisi baru lahir setelah targetnya tercapai, lalu dihitung dari seluruh omzet.',
+    'upsell_staff' => 'Staf',
+    'upsell_revenue' => 'Omzet',
+    'upsell_progress' => 'Progres target',
+    'upsell_commission' => 'Komisi',
+    'upsell_reached' => 'Tercapai',
+    'upsell_short' => 'Kurang :amount',
+    'upsell_of_target' => 'dari :amount',
+    'upsell_no_target' => 'Belum ada target yang disetel.',
+    'total_upsell' => 'Total komisi upselling',
+    'no_upsell' => 'Belum ada penjualan yang ditawarkan staf bulan ini.',
 ];

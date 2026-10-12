@@ -46,6 +46,9 @@ class MonthlyReportExport
     /** Warna per blok: [isi kepala, isi baris]. Sama persis dengan versi PDF. */
     private const FUND = ['1F5FA8', 'EAF1FA'];
 
+    /** Blok upselling: ungu, supaya tidak tertukar dengan fee kerja. */
+    private const UPSELL = ['5B3A8E', 'F2EDF9'];
+
     private const EXPENSE = ['B34A22', 'FDF0EA'];
 
     private const FEE = ['8A6100', 'FBF4E3'];
@@ -74,6 +77,7 @@ class MonthlyReportExport
         [$row, $firstDataRow, $lastDataRow] = $this->visitTable($sheet, $row);
         $row = $this->breakdown($sheet, $row + 1, 'RINCIAN DANA MASUK (PER METODE BAYAR)', self::FUND, $this->fundRows(), 'TOTAL DANA MASUK');
         [$row, $expenseTotalCell] = $this->expenseBlock($sheet, $row + 1);
+        $row = $this->upsellBlock($sheet, $row + 1);
         $row = $this->breakdown($sheet, $row + 1, 'FEE & KOMISI STAF (PRATINJAU)', self::FEE, $this->feeRows(), 'TOTAL FEE', 'Fee di atas belum memotong keuntungan; ia baru jadi pengeluaran setelah dibukukan.');
         $row = $this->netProfit($sheet, $row + 1, $firstDataRow, $lastDataRow, $expenseTotalCell);
         $this->signatures($sheet, $row + 2);
@@ -342,6 +346,112 @@ class MonthlyReportExport
     }
 
     /** @return array<int, array{0: string, 1: float}> */
+    /**
+     * Blok upselling: omzet tiap orang, targetnya, dan komisi yang lahir
+     * darinya.
+     *
+     * Dipisah dari blok fee karena pertanyaannya berbeda. Blok fee menjawab
+     * "berapa yang dibayarkan"; blok ini menjawab "kenapa segitu" — dan untuk
+     * yang belum dapat komisi, "kurang berapa lagi". Tanpa itu laporan hanya
+     * bisa menampilkan Rp0 tanpa keterangan apa pun.
+     */
+    private function upsellBlock(Worksheet $sheet, int $row): int
+    {
+        [$ink, $tint] = self::UPSELL;
+
+        $sheet->mergeCells("B{$row}:H{$row}")->setCellValue("B{$row}", 'UPSELLING PENJUALAN (OMZET YANG DITAWARKAN STAF)');
+        $head = $sheet->getStyle("B{$row}:H{$row}");
+        $head->getFont()->setBold(true)->setSize(9)->getColor()->setRGB('FFFFFF');
+        $head->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($ink);
+        $head->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)->setIndent(1);
+        $sheet->getRowDimension($row)->setRowHeight(20);
+        $row++;
+
+        $columns = ['NAMA', 'OMZET', 'TARGET', 'STATUS', 'KOMISI', 'KOMISI (Rp)'];
+        $sheet->mergeCells("B{$row}:C{$row}")->setCellValue("B{$row}", $columns[0]);
+        foreach (['D', 'E', 'F', 'G', 'H'] as $index => $column) {
+            $sheet->setCellValue("{$column}{$row}", $columns[$index + 1]);
+        }
+
+        $columnHead = $sheet->getStyle("B{$row}:H{$row}");
+        $columnHead->getFont()->setBold(true)->setSize(8)->getColor()->setRGB($ink);
+        $columnHead->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($tint);
+        $row++;
+
+        $first = $row;
+
+        foreach ($this->upsellRows() as $line) {
+            $sheet->mergeCells("B{$row}:C{$row}")->setCellValue("B{$row}", $line['name']);
+            $sheet->setCellValue("D{$row}", $line['revenue']);
+            $sheet->setCellValue("E{$row}", $line['target']);
+            $sheet->setCellValue("F{$row}", $line['status']);
+            $sheet->setCellValue("G{$row}", $line['percent']);
+            $sheet->setCellValue("H{$row}", $line['commission']);
+            $row++;
+        }
+
+        if ($row === $first) {
+            $sheet->mergeCells("B{$row}:G{$row}")->setCellValue("B{$row}", 'Belum ada penjualan yang ditawarkan staf.');
+            $sheet->getStyle("B{$row}")->getFont()->setItalic(true)->getColor()->setRGB(self::MUTED);
+            $sheet->setCellValue("H{$row}", 0);
+            $row++;
+        }
+
+        $sheet->mergeCells("B{$row}:G{$row}")->setCellValue("B{$row}", 'TOTAL KOMISI UPSELLING');
+        $sheet->setCellValue("H{$row}", "=SUM(H{$first}:H".($row - 1).')');
+
+        $totalStyle = $sheet->getStyle("B{$row}:H{$row}");
+        $totalStyle->getFont()->setBold(true)->getColor()->setRGB($ink);
+        $totalStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($tint);
+
+        $this->moneyStyle($sheet, "D{$first}:E{$row}");
+        $this->moneyStyle($sheet, "H{$first}:H{$row}");
+        $sheet->getStyle("G{$first}:G{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('B'.($first - 1).":H{$row}")
+            ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB(self::GRID);
+        $sheet->getStyle("B{$first}:C{$row}")->getAlignment()->setIndent(1);
+
+        $row++;
+        $sheet->mergeCells("B{$row}:H{$row}")->setCellValue(
+            "B{$row}",
+            'Omzet dihitung dari baris nota yang penawarnya tercatat. Komisi baru lahir setelah targetnya tercapai, lalu dihitung dari seluruh omzet.',
+        );
+        $sheet->getStyle("B{$row}")->getFont()->setItalic(true)->setSize(8)->getColor()->setRGB(self::MUTED);
+
+        return $row + 1;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function upsellRows(): array
+    {
+        return collect($this->report['commission']['rows'])
+            ->filter(fn (array $line) => (float) ($line['revenue'] ?? 0) > 0)
+            ->sortByDesc(fn (array $line) => (float) $line['revenue'])
+            ->map(function (array $line) {
+                $revenue = (float) $line['revenue'];
+                $target = $line['upsell_target'] === null ? null : (float) $line['upsell_target'];
+                $reached = (bool) ($line['upsell_reached'] ?? false);
+                $short = $target === null ? 0.0 : max(0.0, $target - $revenue);
+
+                return [
+                    'name' => $line['therapist_name'],
+                    'revenue' => $revenue,
+                    'target' => $target ?? 0,
+                    'status' => $reached
+                        ? 'Tercapai'
+                        : 'Kurang Rp'.number_format($short, 0, ',', '.'),
+                    'percent' => $line['upsell_percent'] === null
+                        ? '-'
+                        : rtrim(rtrim(number_format((float) $line['upsell_percent'], 2, ',', '.'), '0'), ',').'%',
+                    'commission' => (float) ($line['commission_amount'] ?? 0),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
     private function feeRows(): array
     {
         return collect($this->report['commission']['rows'])

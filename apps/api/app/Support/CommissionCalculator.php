@@ -251,6 +251,16 @@ class CommissionCalculator
 
         $lines = $this->fold($raw->all());
 
+        // Komisi upselling dipisah dari fee kerja. Satu angka gabungan tidak
+        // bisa dijelaskan ke terapisnya: yang ia tanyakan bukan "berapa
+        // totalnya" melainkan "omzet saya sudah berapa, dan targetnya sudah
+        // kena belum".
+        $commission = (float) $lines
+            ->filter(fn (array $line) => $line['type'] === CommissionRuleType::RevenuePercent)
+            ->sum('amount');
+        $total = (float) $lines->sum('amount');
+        $upsell = $this->upsellStanding($rules, $userId, $revenue);
+
         return [
             'therapist_id' => $userId,
             'therapist_name' => $beneficiary->name,
@@ -258,7 +268,48 @@ class CommissionCalculator
             'visits' => $visits->count(),
             'new_patients' => $newPatientMoments->count(),
             'lines' => $lines->values()->all(),
-            'total' => (float) $lines->sum('amount'),
+            'fee_amount' => round($total - $commission, 2),
+            'commission_amount' => round($commission, 2),
+            'upsell_target' => $upsell['target'],
+            'upsell_percent' => $upsell['percent'],
+            'upsell_reached' => $upsell['reached'],
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * Posisi seseorang terhadap target penjualannya di akhir periode.
+     *
+     * Yang dibaca tarif yang berlaku pada hari terakhir periode, bukan
+     * tarif tiap transaksi: ini keterangan kebijakan yang sedang berlaku
+     * ("target 3 juta, komisi 5%"), sementara uangnya sendiri tetap dihitung
+     * per tanggal transaksi di revenueLines().
+     *
+     * Sudah melewati satu ambang → yang ditampilkan ambang tertinggi yang
+     * tercapai, karena itu yang sedang ia terima. Belum satu pun → ambang
+     * terdekat, karena itu yang sedang ia kejar.
+     *
+     * @param  Collection<int, CommissionRule>  $rules
+     * @return array{target: float|null, percent: float|null, reached: bool}
+     */
+    private function upsellStanding(Collection $rules, ?int $userId, float $revenue): array
+    {
+        $tiers = $this->rulesFor($rules, $userId, Carbon::parse($this->to.' 23:59:59'))
+            ->filter(fn (CommissionRule $rule) => $rule->type === CommissionRuleType::RevenuePercent)
+            ->sortBy(fn (CommissionRule $rule) => (float) $rule->min_revenue)
+            ->values();
+
+        if ($tiers->isEmpty()) {
+            return ['target' => null, 'percent' => null, 'reached' => false];
+        }
+
+        $reached = $tiers->last(fn (CommissionRule $rule) => $revenue >= (float) $rule->min_revenue);
+        $shown = $reached ?? $tiers->first();
+
+        return [
+            'target' => (float) $shown->min_revenue,
+            'percent' => (float) $shown->percent,
+            'reached' => $reached !== null,
         ];
     }
 

@@ -88,6 +88,13 @@
     .b-expense tr.sum td { background: #fdf0ea; color: #b34a22; }
     .h-fee { background: #8a6100; }
     .b-fee tr.sum td { background: #fbf4e3; color: #8a6100; }
+    /* Upselling: ungu, supaya tidak tertukar dengan blok fee kerja. */
+    .h-upsell { background: #5b3a8e; }
+    .b-upsell tr.sum td { background: #f2edf9; color: #5b3a8e; }
+    .b-upsell th { font-size: 6.5px; letter-spacing: 0.5px; color: #5b3a8e; background: #f2edf9;
+        padding: 4px 8px; text-align: left; border-bottom: 1px solid #e3d9f1; }
+    .b-upsell th.num, .b-upsell td.num { text-align: right; }
+    .upsell-block { margin-top: 12px; }
 
     /* Keuntungan bersih */
     .net { margin-top: 12px; background: #0b3b2e; color: #fff; padding: 10px 14px; }
@@ -287,6 +294,58 @@
         </td>
     </tr>
 </table>
+
+{{-- Upselling berdiri sendiri selebar halaman: blok tiga kolom di atas
+     hanya memuat nama dan nominal, sementara yang perlu dibaca di sini ada
+     lima kolom — omzet, target, statusnya, persentase, dan komisinya. --}}
+@php
+    $upsell = collect($report['commission']['rows'])
+        ->filter(fn ($line) => (float) ($line['revenue'] ?? 0) > 0)
+        ->sortByDesc(fn ($line) => (float) $line['revenue']);
+@endphp
+
+<div class="block upsell-block">
+    <h2 class="h-upsell">UPSELLING PENJUALAN (OMZET YANG DITAWARKAN STAF)</h2>
+    <table class="b-upsell">
+        <tr>
+            <th>STAF</th>
+            <th class="num">OMZET</th>
+            <th class="num">TARGET</th>
+            <th>STATUS</th>
+            <th class="num">KOMISI</th>
+            <th class="num">KOMISI (RP)</th>
+        </tr>
+        @forelse ($upsell as $line)
+            @php
+                $target = $line['upsell_target'] === null ? null : (float) $line['upsell_target'];
+                $short = $target === null ? 0 : max(0, $target - (float) $line['revenue']);
+            @endphp
+            <tr>
+                <td>{{ $line['therapist_name'] }}</td>
+                <td class="num">{{ $rp($line['revenue']) }}</td>
+                <td class="num">{{ $target === null ? '—' : $rp($target) }}</td>
+                <td>
+                    @if ($target === null)
+                        <span class="muted">Target belum disetel</span>
+                    @elseif ($line['upsell_reached'])
+                        Tercapai
+                    @else
+                        Kurang Rp{{ $rp($short) }}
+                    @endif
+                </td>
+                <td class="num">{{ $line['upsell_percent'] === null ? '—' : rtrim(rtrim(number_format((float) $line['upsell_percent'], 2, ',', '.'), '0'), ',').'%' }}</td>
+                <td class="num">{{ $line['commission_amount'] > 0 ? $rp($line['commission_amount']) : '—' }}</td>
+            </tr>
+        @empty
+            <tr><td colspan="6" class="muted">Belum ada penjualan yang ditawarkan staf.</td></tr>
+        @endforelse
+        <tr class="sum">
+            <td colspan="5">TOTAL KOMISI UPSELLING</td>
+            <td class="num">{{ $rp(collect($report['commission']['rows'])->sum('commission_amount')) }}</td>
+        </tr>
+    </table>
+    <div class="note">Omzet dihitung dari baris nota yang penawarnya tercatat. Komisi baru lahir setelah targetnya tercapai, lalu dihitung dari seluruh omzet.</div>
+</div>
 
 <div class="net">
     <table>
