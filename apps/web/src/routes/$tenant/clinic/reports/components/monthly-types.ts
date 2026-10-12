@@ -16,6 +16,27 @@ export interface MonthlyRow {
   net_amount: number
 }
 
+/**
+ * Satu staf dalam blok fee. Komisi upselling dipisah dari fee kerja: satu
+ * angka gabungan tidak bisa dijelaskan ke terapis yang menanyakannya, dan
+ * keterangan targetnya ikut dibawa supaya yang belum tercapai pun bisa
+ * menyebut kurang berapa lagi.
+ */
+export interface CommissionRow {
+  therapist_id: number
+  therapist_name: string
+  revenue: number
+  visits: number
+  new_patients: number
+  fee_amount: number
+  commission_amount: number
+  /** Ambang yang sedang berlaku untuknya; null bila klinik belum menyetelnya. */
+  upsell_target: number | null
+  upsell_percent: number | null
+  upsell_reached: boolean
+  total: number
+}
+
 export interface MonthlyTotals {
   treatment: number
   product: number
@@ -44,7 +65,7 @@ export interface MonthlyData {
     total: number
   }
   commission: {
-    rows: { therapist_id: number; therapist_name: string; total: number }[]
+    rows: CommissionRow[]
     total: number
   }
   net_profit: number

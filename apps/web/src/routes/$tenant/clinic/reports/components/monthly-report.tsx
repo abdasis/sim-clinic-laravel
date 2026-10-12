@@ -18,6 +18,7 @@ import type { ApiError } from "#/lib/api.ts"
 import { formatDate } from "#/lib/format.ts"
 import { MonthlyBreakdown, MonthlyNetProfit } from "./monthly-breakdown.tsx"
 import { MonthlySummary } from "./monthly-summary.tsx"
+import { MonthlyUpsell } from "./monthly-upsell.tsx"
 import { MonthlyVisitsTable } from "./monthly-visits-table.tsx"
 import type { MonthlyData } from "./monthly-types.ts"
 
@@ -207,6 +208,7 @@ export function MonthlyReport({ tenant, from, to }: MonthlyReportProps) {
 
       <MonthlySummary report={report} />
       <MonthlyVisitsTable rows={report.rows} totals={report.totals} />
+      <MonthlyUpsell rows={report.commission.rows} />
       <MonthlyBreakdown report={report} />
       <MonthlyNetProfit report={report} />
     </div>
