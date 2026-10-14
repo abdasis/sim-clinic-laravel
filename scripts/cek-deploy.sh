@@ -30,7 +30,9 @@ info()  { printf '      %s\n' "$1"; }
 # 32rem untuk rel ikon. Kalau CSS yang disajikan tidak memuatnya, container
 # itu menjalankan versi sebelum perbaikan — berapa kali pun kodenya diperbaiki
 # di repo.
-PENANDA="min-width:32rem"
+# Tailwind v4 menulis ambangnya sebagai `width>=32rem`, bukan `min-width:32rem`
+# — diambil dari CSS hasil build sungguhan, bukan dari dugaan.
+PENANDA="width>=32rem"
 
 judul "Repo di server"
 if git rev-parse --git-dir >/dev/null 2>&1; then

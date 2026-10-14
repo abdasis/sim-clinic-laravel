@@ -3,9 +3,9 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import {
   DESKTOP_MIN_WIDTH,
+  collapseModeFor,
   RAIL_MIN_WIDTH,
   TABLET_MIN_WIDTH,
-  hasRail,
   isNarrowTier,
   useIsMobile,
   useLayoutTier,
@@ -127,13 +127,21 @@ describe("useLayoutTier", () => {
   })
 })
 
-describe("hasRail", () => {
-  /** Hanya dua tier tengah yang sidebarnya berdiri di samping konten. */
-  it("benar untuk tier yang sidebarnya bisa jadi rel ikon", () => {
-    expect(hasRail("rail")).toBe(true)
-    expect(hasRail("tablet")).toBe(true)
-    expect(hasRail("mobile")).toBe(false)
-    expect(hasRail("desktop")).toBe(false)
+describe("collapseModeFor", () => {
+  /**
+   * Tiap tier yang merender sidebar berdiri sendiri harus menciut jadi rel,
+   * bukan lenyap. `offcanvas` menyisakan nol piksel navigasi, dan pilihan itu
+   * tersimpan di cookie — sekali kena, selamanya hilang di perangkat itu.
+   */
+  it("tidak pernah memilih offcanvas untuk layar yang punya ruang", () => {
+    expect(collapseModeFor("rail")).toBe("icon")
+    expect(collapseModeFor("tablet")).toBe("icon")
+    expect(collapseModeFor("desktop")).toBe("icon")
+  })
+
+  /** Di mobile navigasinya laci, jadi modenya tidak terpakai sama sekali. */
+  it("menyerahkan mobile ke laci", () => {
+    expect(collapseModeFor("mobile")).toBe("offcanvas")
   })
 })
 

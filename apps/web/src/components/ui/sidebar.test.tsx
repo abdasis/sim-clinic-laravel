@@ -135,6 +135,46 @@ describe("keadaan awal sidebar", () => {
     expect(renderSidebar()?.getAttribute("data-state")).toBe("expanded")
   })
 
+  /**
+   * Inti dari seluruh keluhan "sidebar tidak muncul": tidak boleh ada
+   * kombinasi lebar dan cookie yang membuat navigasi lenyap sama sekali.
+   * Diciutkan selalu berarti rel ikon, tidak pernah hilang ke luar layar.
+   */
+  it("tidak pernah hilang total di layar mana pun yang punya ruang", () => {
+    for (const width of [512, 600, 800, 1024, 1440]) {
+      setViewport(width)
+      document.cookie = "sidebar_state=false; path=/"
+
+      renderSidebar()
+      const sidebar = standingSidebar()
+
+      expect(sidebar, `lebar ${width}`).not.toBeNull()
+      expect(sidebar?.getAttribute("data-state"), `lebar ${width}`).toBe("collapsed")
+      // `icon` menyisakan rel selebar jari; `offcanvas` tidak menyisakan apa pun.
+      expect(sidebar?.getAttribute("data-collapsible"), `lebar ${width}`).toBe("icon")
+
+      cleanup()
+    }
+  })
+
+  /**
+   * Arah kelas CSS-nya: terlihat secara bawaan, disembunyikan oleh varian
+   * ambang. Kebalikannya membuat satu varian yang gagal lahir di CSS hasil
+   * build menghilangkan sidebar di semua lebar sekaligus — kegagalan yang
+   * tidak akan pernah terlihat di jsdom maupun di layar pengembang.
+   */
+  it("memakai terlihat sebagai keadaan bawaan, bukan tersembunyi", () => {
+    setViewport(1024)
+    renderSidebar()
+
+    const kelas = standingSidebar()?.className ?? ""
+
+    expect(kelas).toContain("block")
+    expect(kelas).toContain("max-rail:hidden")
+    // `hidden` polos berarti tersembunyi lebih dulu, lalu menunggu dimunculkan.
+    expect(kelas.split(/\s+/)).not.toContain("hidden")
+  })
+
   /** Yang pernah menutupnya sendiri tetap menemukannya tertutup. */
   it("menghormati pilihan pengguna yang tersimpan", () => {
     setViewport(800)

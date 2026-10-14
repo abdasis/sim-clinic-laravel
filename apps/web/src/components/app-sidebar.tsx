@@ -16,7 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "#/components/ui/sidebar.tsx"
-import { hasRail, useLayoutTier } from "#/hooks/use-mobile.ts"
+import { collapseModeFor, useLayoutTier } from "#/hooks/use-mobile.ts"
 
 export interface SidebarNavItem {
   title: string
@@ -73,12 +73,14 @@ export function AppSidebar({
   useCloseDrawerOnNavigate()
 
   return (
-    // Tablet menciut jadi rel ikon, bukan hilang sama sekali: sidebar penuh
-    // menyisakan konten terlalu sempit di situ, tapi menyembunyikannya total
-    // membuat pindah menu butuh dua ketukan. Rel ikon tetap satu ketuk.
+    // Menciut berarti jadi rel ikon — di layar mana pun yang punya ruang
+    // untuknya. Mode `offcanvas` (meluncur keluar layar) dibuang karena satu
+    // ketukan tidak sengaja pada tombolnya menyimpan cookie `sidebar_state`,
+    // dan sejak itu sidebarnya tidak pernah muncul lagi di perangkat itu —
+    // tanpa petunjuk apa pun bahwa ia cuma diciutkan, bukan rusak.
     <Sidebar
       variant={variant}
-      collapsible={hasRail(tier) ? "icon" : "offcanvas"}
+      collapsible={collapseModeFor(tier)}
       {...props}
     >
       <SidebarHeader>

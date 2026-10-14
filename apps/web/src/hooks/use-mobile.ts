@@ -78,12 +78,16 @@ export function useLayoutTier(): LayoutTier {
 }
 
 /**
- * Tier yang sidebarnya berdiri sendiri di samping konten, bukan laci yang
- * menimpanya. Dipakai shell untuk memutuskan bentuk ciutnya: rel ikon, bukan
- * menghilang ke luar layar.
+ * Bentuk sidebar saat diciutkan.
+ *
+ * Selalu rel ikon, kecuali di tier mobile — dan di sana pun tidak terpakai,
+ * karena navigasinya laci. `offcanvas` (meluncur keluar layar) tidak pernah
+ * dipilih untuk layar yang punya ruang: satu ketukan tidak sengaja pada
+ * tombolnya menyimpan cookie, dan sejak itu sidebarnya tidak pernah muncul
+ * lagi di perangkat itu tanpa petunjuk bahwa ia cuma diciutkan.
  */
-export function hasRail(tier: LayoutTier): boolean {
-  return tier === "rail" || tier === "tablet"
+export function collapseModeFor(tier: LayoutTier): "icon" | "offcanvas" {
+  return tier === "mobile" ? "offcanvas" : "icon"
 }
 
 /**

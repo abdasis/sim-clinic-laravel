@@ -255,7 +255,14 @@ function Sidebar({
 
   return (
     <div
-      className="group peer hidden text-sidebar-foreground rail:block"
+      // Terlihat secara bawaan, disembunyikan hanya di layar paling sempit.
+      //
+      // Arah sebaliknya — tersembunyi lebih dulu, lalu dimunculkan oleh varian
+      // ambang — membuat tidak-terlihat jadi keadaan bawaannya. Satu varian
+      // yang gagal lahir di CSS hasil build, karena alasan apa pun, lalu
+      // menghilangkan sidebar di semua lebar sekaligus. Dibalik supaya
+      // kegagalan apa pun berakhir dengan sidebar yang terlihat.
+      className="group peer block text-sidebar-foreground max-rail:hidden"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
@@ -278,7 +285,9 @@ function Sidebar({
         data-slot="sidebar-container"
         data-side={side}
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] rail:flex",
+          // Sama seperti pembungkusnya: `flex` dulu, baru disembunyikan di
+          // layar sempit. Bukan `hidden` yang menunggu dimunculkan.
+          "fixed inset-y-0 z-10 flex h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] max-rail:hidden",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
