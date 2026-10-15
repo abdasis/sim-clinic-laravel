@@ -14,6 +14,7 @@ import type { EmptyIllustrationName } from "#/components/ui/empty-illustration.t
 import { DataTableToolbar } from "#/components/datatable/datatable-toolbar.tsx"
 import { DataTablePagination } from "#/components/datatable/datatable-pagination.tsx"
 import { DataTableCards } from "#/components/datatable/datatable-cards.tsx"
+import { apiErrorMessage } from "#/lib/api.ts"
 import { useContainerWidth } from "#/hooks/use-container-width.ts"
 import { isNarrowTier, useLayoutTier } from "#/hooks/use-mobile.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
@@ -114,7 +115,7 @@ export function DataTable<TData>({
       className="p-0"
       illustration="default"
       title={t("general.load_failed")}
-      description={serverMessage(error) ?? t("general.load_failed_desc")}
+      description={apiErrorMessage(error) ?? t("general.load_failed_desc")}
       action={
         onRetry ? (
           <Button variant="outline" size="sm" onClick={onRetry}>
@@ -205,11 +206,3 @@ export function DataTable<TData>({
   )
 }
 
-/** Ambil `message` dari ApiError bila ada; bentuk lain diabaikan. */
-function serverMessage(error: unknown): string | undefined {
-  if (typeof error !== "object" || error === null) return undefined
-
-  const message = (error as { message?: unknown }).message
-
-  return typeof message === "string" && message.trim() !== "" ? message : undefined
-}

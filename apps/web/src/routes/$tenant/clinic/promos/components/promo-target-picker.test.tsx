@@ -36,6 +36,17 @@ const panggilan: Array<{ path: string; params: Record<string, unknown> }> = []
 let jawab: (path: string, params: Record<string, unknown>) => Promise<unknown>
 
 vi.mock("#/lib/api.ts", () => ({
+  // Dua pembaca galat ikut disediakan: mock yang hanya memuat apiGet membuat
+  // keduanya undefined, dan komponennya ambruk sebelum sempat merender apa pun.
+  apiErrorMessage: (e: unknown) =>
+    typeof (e as { message?: unknown })?.message === "string" &&
+    (e as { message: string }).message.trim() !== ""
+      ? (e as { message: string }).message
+      : undefined,
+  apiErrorStatus: (e: unknown) =>
+    typeof (e as { status?: unknown })?.status === "number"
+      ? (e as { status: number }).status
+      : undefined,
   apiGet: (path: string, params: Record<string, unknown> = {}) => {
     // useTrans memuat terjemahan lewat jalur yang sama; tanpa dipisah, ia
     // menimpa seluruh kamus dengan isi katalog.
@@ -144,12 +155,37 @@ describe("PromoTargetPicker", () => {
    * yang gagal terbaca sebagai layanannya memang tidak ada.
    */
   it("membedakan gagal memuat dari katalog kosong", async () => {
-    jawab = () => Promise.reject(new Error("500"))
+    jawab = () =>
+      Promise.reject({ status: 500, message: "Server sedang bermasalah." })
+    picker()
+
+    expect(await screen.findByText("Server sedang bermasalah.")).toBeTruthy()
+    // Kalimat "kosong" tidak boleh ikut muncul: itu yang dulu membuat
+    // kegagalan terbaca sebagai katalog yang memang tidak punya isi.
+    expect(screen.queryByText("Tidak ada yang cocok")).toBeNull()
+    expect(screen.getByRole("button", { name: "Muat ulang" })).toBeTruthy()
+  })
+
+  /**
+   * Pesan server ditampilkan apa adanya: "Anda tidak punya akses" dan
+   * "server bermasalah" menuntut tindakan yang sama sekali berbeda.
+   */
+  it("menyebut alasan dari server, bukan kalimat umum", async () => {
+    jawab = () =>
+      Promise.reject({ status: 403, message: "Anda tidak punya akses." })
+    picker()
+
+    expect(await screen.findByText("Anda tidak punya akses.")).toBeTruthy()
+    expect(screen.getByText("HTTP 403")).toBeTruthy()
+  })
+
+  /** Tanpa pesan dari server — mis. jaringan putus — tetap ada kalimatnya. */
+  it("jatuh ke kalimat umum saat server tidak sempat menjawab", async () => {
+    jawab = () => Promise.reject(new Error(""))
     picker()
 
     expect(await screen.findByText("Data gagal dimuat")).toBeTruthy()
-    expect(screen.queryByText("Tidak ada yang cocok")).toBeNull()
-    expect(screen.getByRole("button", { name: "Muat ulang" })).toBeTruthy()
+    expect(screen.queryByText(/^HTTP /)).toBeNull()
   })
 
   it("tetap mengatakan kosong saat katalognya memang kosong", async () => {

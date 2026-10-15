@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { apiGet } from "#/lib/api.ts"
+import { apiErrorMessage, apiErrorStatus, apiGet } from "#/lib/api.ts"
 import { formatCurrency } from "#/lib/format.ts"
 import { cn } from "#/lib/utils.ts"
 
@@ -193,9 +193,19 @@ export function PromoTargetPicker({
           // sebagai layanannya memang tidak ada — dan tidak ada yang tahu
           // ada tombol coba lagi.
           <div className="flex flex-col items-center gap-2 p-4 text-center">
+            {/* Pesan dari server ditampilkan apa adanya — ia sudah ditulis
+                untuk dibaca manusia, dan kalimat umum justru menyembunyikan
+                langkah yang perlu diambil. Kode HTTP-nya ikut, kecil: dengan
+                itu satu foto layar cukup untuk membedakan tidak-punya-akses
+                dari server-yang-bermasalah. */}
             <p className="text-xs text-muted-foreground">
-              {t("general.load_failed")}
+              {apiErrorMessage(query.error) ?? t("general.load_failed")}
             </p>
+            {apiErrorStatus(query.error) ? (
+              <p className="font-mono text-2xs text-muted-foreground/70">
+                HTTP {apiErrorStatus(query.error)}
+              </p>
+            ) : null}
             <Button
               type="button"
               variant="outline"

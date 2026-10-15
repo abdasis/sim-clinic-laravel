@@ -22,6 +22,36 @@ export interface ApiError {
   errors?: Record<string, string[]>
 }
 
+/**
+ * Pesan dari server untuk sebuah kegagalan, kalau ada.
+ *
+ * Backend sudah menulis pesannya untuk dibaca manusia — "Anda tidak punya
+ * akses", "jalankan php artisan migrate" — dan kalimat umum buatan frontend
+ * justru menyembunyikan langkah yang perlu diambil.
+ */
+export function apiErrorMessage(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined
+
+  const message = (error as { message?: unknown }).message
+
+  return typeof message === "string" && message.trim() !== "" ? message : undefined
+}
+
+/**
+ * Kode HTTP-nya, untuk ditempelkan kecil di bawah pesan.
+ *
+ * Bukan untuk dibaca staf klinik, melainkan supaya satu foto layar cukup
+ * untuk membedakan tidak-punya-akses dari server-yang-bermasalah — tanpa
+ * perlu membuka konsol browser di tablet.
+ */
+export function apiErrorStatus(error: unknown): number | undefined {
+  if (typeof error !== "object" || error === null) return undefined
+
+  const status = (error as { status?: unknown }).status
+
+  return typeof status === "number" && status > 0 ? status : undefined
+}
+
 function buildUrl(path: string, params?: Record<string, unknown>): URL {
   const url = new URL(baseUrl + path)
   if (params) {
