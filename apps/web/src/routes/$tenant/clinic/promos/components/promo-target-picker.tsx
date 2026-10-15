@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Cancel01Icon, Search01Icon } from "@hugeicons/core-free-icons"
 
 import { Badge } from "#/components/ui/badge.tsx"
+import { Button } from "#/components/ui/button.tsx"
 import { Checkbox } from "#/components/ui/checkbox.tsx"
 import { Input } from "#/components/ui/input.tsx"
 import { ScrollArea } from "#/components/ui/scroll-area.tsx"
@@ -43,6 +44,17 @@ const keyOf = (target: Pick<PromoTarget, "type" | "id">) =>
   `${target.type}:${target.id}`
 
 /**
+ * Sebanyak yang server mau berikan sekali minta.
+ *
+ * `dataTableParams` memangkas per_page ke 100, jadi meminta lebih banyak
+ * tidak menambah apa pun — dan dulu pemilih ini meminta 200 lalu menyaringnya
+ * sendiri di browser. Akibatnya layanan ke-101 dan seterusnya tidak pernah
+ * bisa dipilih: dicari pun jawabannya "tidak ada yang cocok", padahal ada.
+ * Karena itu pencariannya sekarang dikerjakan server.
+ */
+const CATALOG_PAGE = 100
+
+/**
  * Pemilih sasaran promo. Layanan dan produk dipisah lewat tab karena keduanya
  * bisa panjang, tapi pilihannya satu keranjang — promo memang boleh memuat
  * campuran keduanya.
@@ -56,24 +68,26 @@ export function PromoTargetPicker({
   const { t } = useTrans()
   const [tab, setTab] = useState<"service" | "product">("service")
   const [search, setSearch] = useState("")
+  const [keyword, setKeyword] = useState("")
+
+  // Diendapkan 300ms, sepola dengan pencarian di tabel: tiap huruf yang
+  // diketik tidak perlu jadi satu permintaan sendiri.
+  useEffect(() => {
+    const timer = setTimeout(() => setKeyword(search.trim()), 300)
+
+    return () => clearTimeout(timer)
+  }, [search])
 
   const query = useQuery({
-    queryKey: ["promo-targets", tenant, tab],
+    queryKey: ["promo-targets", tenant, tab, keyword],
     queryFn: () =>
       apiGet<{ data: CatalogRow[] }>(
         `/${tenant}/clinic/${tab === "service" ? "services" : "products"}`,
-        { per_page: 200 },
+        { per_page: CATALOG_PAGE, search: keyword === "" ? undefined : keyword },
       ),
   })
 
-  const rows = useMemo(() => {
-    const keyword = search.trim().toLowerCase()
-    const all = query.data?.data ?? []
-
-    return keyword === ""
-      ? all
-      : all.filter((row) => row.name.toLowerCase().includes(keyword))
-  }, [query.data, search])
+  const rows = query.data?.data ?? []
 
   const selected = useMemo(
     () => new Set(value.map((target) => keyOf(target))),
@@ -172,6 +186,24 @@ export function PromoTargetPicker({
             {Array.from({ length: 5 }, (_, index) => (
               <Skeleton key={index} className="h-8 w-full" />
             ))}
+          </div>
+        ) : query.isError ? (
+          // Gagal memuat dan katalog kosong adalah dua hal berbeda. Selama
+          // keduanya berbunyi "tidak ada yang cocok", yang gagal terbaca
+          // sebagai layanannya memang tidak ada — dan tidak ada yang tahu
+          // ada tombol coba lagi.
+          <div className="flex flex-col items-center gap-2 p-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              {t("general.load_failed")}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void query.refetch()}
+            >
+              {t("general.retry")}
+            </Button>
           </div>
         ) : rows.length === 0 ? (
           <p className="p-4 text-center text-xs text-muted-foreground">
