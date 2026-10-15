@@ -5,6 +5,15 @@ const baseUrl = rawBaseUrl.endsWith("/api")
 
 const TOKEN_KEY = "clinic_token"
 
+/**
+ * Kunci profil pengguna, disalin dari `auth.ts` dengan sengaja.
+ *
+ * Mengimpor `auth.ts` dari sini melahirkan lingkaran — `auth.ts` sudah
+ * mengambil `setToken` dari berkas ini — dan satu string yang digandakan
+ * lebih murah daripada memecah kedua modul demi satu nama.
+ */
+const USER_KEY = "clinic_user"
+
 export function getToken(): string | null {
   if (typeof window === "undefined") return null
   return window.localStorage.getItem(TOKEN_KEY)
@@ -116,10 +125,63 @@ function presentableMessage(message: unknown, status: number): string {
     : trimmed
 }
 
-async function handle<T>(res: Response): Promise<T> {
+/**
+ * Halaman masuk yang sesuai untuk sebuah alamat halaman.
+ *
+ * Tiap klinik punya halamannya sendiri (`/{tenant}/login`), dan admin platform
+ * punya `/central/login`. Alamat yang tidak dikenali dikembalikan ke beranda —
+ * menebak nama klinik dari alamat asing hanya melahirkan 404 kedua.
+ */
+export function loginPathFor(pathname: string): string {
+  const segmen = pathname.split("/").filter(Boolean)
+
+  if (segmen.length === 0) return "/"
+  if (segmen[0] === "central") return "/central/login"
+
+  return `/${segmen[0]}/login`
+}
+
+/** Satu pengalihan saja; 401 beruntun tidak boleh saling menimpa. */
+let sedangMengalihkan = false
+
+/**
+ * Sesi yang ditolak server: bersihkan dan antar kembali ke halaman masuk.
+ *
+ * Tanpa ini token yang sudah tidak sah — kedaluwarsa, dicabut, atau hilang
+ * karena database server disemai ulang — meninggalkan aplikasi dalam keadaan
+ * zombi. Halamannya tetap tampil karena nama pengguna dibaca dari
+ * localStorage, sementara tiap permintaan ditolak diam-diam. Yang terlihat
+ * oleh staf: fiturnya rusak, satu per satu, tanpa pernah disuruh masuk lagi.
+ */
+function sesiBerakhir(path: string): boolean {
+  // Salah kata sandi juga menjawab 401. Itu bukan sesi yang berakhir, dan
+  // mengalihkannya ke halaman masuk yang sedang dibuka hanya memuat ulang
+  // formulirnya tepat saat pesan galatnya hendak dibaca.
+  if (/\/login$/.test(path.split("?")[0])) return false
+
+  return getToken() !== null
+}
+
+function pulangKeHalamanMasuk(): void {
+  if (typeof window === "undefined" || sedangMengalihkan) return
+
+  sedangMengalihkan = true
+  window.localStorage.removeItem(TOKEN_KEY)
+  window.localStorage.removeItem(USER_KEY)
+
+  const tujuan = loginPathFor(window.location.pathname)
+
+  // Muat ulang penuh, bukan navigasi router: seluruh cache kueri dan state
+  // komponen ikut dibuang, jadi tidak ada sisa data milik sesi yang sudah mati.
+  window.location.replace(`${tujuan}?expired=1`)
+}
+
+async function handle<T>(res: Response, path: string): Promise<T> {
   if (res.status === 204) return undefined as T
   const body = await res.json().catch(() => ({}))
   if (!res.ok) {
+    if (res.status === 401 && sesiBerakhir(path)) pulangKeHalamanMasuk()
+
     const err: ApiError = {
       status: res.status,
       message: presentableMessage(body.message, res.status),
@@ -135,7 +197,7 @@ export async function apiGet<T>(
   params?: Record<string, unknown>,
 ): Promise<T> {
   const res = await fetch(buildUrl(path, params), { headers: headers(false) })
-  return handle<T>(res)
+  return handle<T>(res, path)
 }
 
 /**
@@ -176,7 +238,7 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
     headers: headers(),
     body: body === undefined ? undefined : JSON.stringify(body),
   })
-  return handle<T>(res)
+  return handle<T>(res, path)
 }
 
 export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
@@ -185,7 +247,7 @@ export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
     headers: headers(),
     body: body === undefined ? undefined : JSON.stringify(body),
   })
-  return handle<T>(res)
+  return handle<T>(res, path)
 }
 
 export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
@@ -194,7 +256,7 @@ export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
     headers: headers(),
     body: body === undefined ? undefined : JSON.stringify(body),
   })
-  return handle<T>(res)
+  return handle<T>(res, path)
 }
 
 export async function apiDelete<T>(path: string): Promise<T> {
@@ -202,7 +264,7 @@ export async function apiDelete<T>(path: string): Promise<T> {
     method: "DELETE",
     headers: headers(),
   })
-  return handle<T>(res)
+  return handle<T>(res, path)
 }
 
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
@@ -210,5 +272,5 @@ export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   const token = getToken()
   if (token) h["Authorization"] = `Bearer ${token}`
   const res = await fetch(buildUrl(path), { method: "POST", headers: h, body: form })
-  return handle<T>(res)
+  return handle<T>(res, path)
 }
