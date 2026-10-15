@@ -14,6 +14,9 @@ import { TooltipProvider } from '#/components/ui/tooltip.tsx'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import appCss from '../styles.css?url'
+// Dimuat SETELAH styles.css, bukan di-@import dari dalamnya: blok @supports
+// tidak menambah kekhususan, jadi yang menang adalah yang datang belakangan.
+import colorFallbackCss from '../color-fallbacks.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
 
@@ -50,6 +53,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       {
         rel: 'stylesheet',
         href: appCss,
+      },
+      {
+        rel: 'stylesheet',
+        href: colorFallbackCss,
       },
     ],
   }),
