@@ -82,6 +82,15 @@ return [
     'empty_title' => 'Belum ada transaksi',
     'empty_desc' => 'Transaksi yang dibuat lewat kasir akan langsung terdaftar di sini.',
     'back_to_clinic' => 'Kembali ke klinik',
+    // Promo yang terpasang di barang ini tapi sedang di luar periodenya.
+    // Tanpa keterangan ini kasir melihat harga penuh dan menyimpulkan
+    // hitungannya salah, padahal promonya memang sudah lewat tanggalnya.
+    // Status dan tanggalnya ditaruh di depan: di kartu katalog yang sempit
+    // teksnya terpotong, dan yang harus selamat adalah "promo ini sudah
+    // berakhir kapan", bukan nama promonya yang sering panjang.
+    'promo_ended' => 'Promo berakhir :date · :name',
+    'promo_upcoming' => 'Promo mulai :date · :name',
+
     'cart' => [
         'title' => 'Keranjang',
         'open' => 'Keranjang',

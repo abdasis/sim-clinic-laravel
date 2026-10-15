@@ -9,6 +9,13 @@ interface CatalogRow {
   name: string
   price: string
   promo?: { id: number; name: string; price: string } | null
+  promo_dormant?: {
+    id: number
+    name: string
+    state: "upcoming" | "ended"
+    starts_at: string | null
+    ends_at: string | null
+  } | null
   status?: string
   unit?: string
   stock_balance?: number | string
@@ -16,6 +23,19 @@ interface CatalogRow {
 }
 
 export type StockStatus = "available" | "low" | "out" | "n/a"
+
+/**
+ * Promo yang terpasang di barang ini tapi sedang di luar periodenya.
+ *
+ * Harganya tidak terpengaruh sama sekali — ini semata keterangan, supaya
+ * harga penuh tidak terbaca sebagai hitungan yang salah.
+ */
+export interface DormantPromo {
+  name: string
+  state: "upcoming" | "ended"
+  startsAt: string | null
+  endsAt: string | null
+}
 
 export interface CatalogEntry {
   kind: "service" | "product"
@@ -26,6 +46,8 @@ export interface CatalogEntry {
   /** Harga sebelum potongan; null berarti tidak sedang promo. */
   basePrice: number | null
   promoName: string | null
+  /** Hanya terisi saat tidak ada promo yang sedang berlaku. */
+  dormantPromo: DormantPromo | null
   unit: string | null
   stock: number | null
   minThreshold: number | null
@@ -72,7 +94,8 @@ export function stockStatusOf(entry: {
   return "available"
 }
 
-function toEntry(row: CatalogRow, kind: CatalogEntry["kind"]): CatalogEntry {
+/** Dibuka untuk diuji terpisah, sepola dengan applyFilters dan stockStatusOf. */
+export function toEntry(row: CatalogRow, kind: CatalogEntry["kind"]): CatalogEntry {
   const stock = kind === "product" ? toNumber(row.stock_balance) : null
   const minThreshold =
     kind === "product" && row.min_threshold !== undefined
@@ -91,6 +114,14 @@ function toEntry(row: CatalogRow, kind: CatalogEntry["kind"]): CatalogEntry {
     price: promoPrice ?? basePrice,
     basePrice: promoPrice === null ? null : basePrice,
     promoName: row.promo?.name ?? null,
+    dormantPromo: row.promo_dormant
+      ? {
+          name: row.promo_dormant.name,
+          state: row.promo_dormant.state,
+          startsAt: row.promo_dormant.starts_at,
+          endsAt: row.promo_dormant.ends_at,
+        }
+      : null,
     unit: row.unit ?? null,
     stock,
     minThreshold,

@@ -18,6 +18,7 @@ export interface LineItem {
    */
   basePrice: number | null
   promoName: string | null
+  dormantPromo: CatalogEntry["dormantPromo"]
   qty: number
   /** null untuk layanan — layanan tidak terbatas stok. */
   stock: number | null
@@ -59,6 +60,7 @@ export function usePosCart() {
           unitPrice: entry.price,
           basePrice: entry.basePrice,
           promoName: entry.promoName,
+          dormantPromo: entry.dormantPromo,
           qty: 1,
           stock: entry.stock,
           offeredBy: null,

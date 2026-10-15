@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { PromoDormantNote } from "./promo-dormant-note.tsx"
 import { formatCurrency } from "#/lib/format.ts"
 import { cn } from "#/lib/utils.ts"
 import type { LineItem } from "../hooks/use-pos-cart.ts"
@@ -186,6 +187,10 @@ function CartRow({
               />
               <span className="truncate">{item.promoName}</span>
             </Badge>
+          ) : null}
+
+          {item.dormantPromo ? (
+            <PromoDormantNote promo={item.dormantPromo} className="mt-1" />
           ) : null}
         </div>
 

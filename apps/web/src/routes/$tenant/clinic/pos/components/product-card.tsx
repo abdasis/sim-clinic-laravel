@@ -3,6 +3,7 @@ import { PackageIcon, StethoscopeIcon } from "@hugeicons/core-free-icons"
 
 import { Badge } from "#/components/ui/badge.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { PromoDormantNote } from "./promo-dormant-note.tsx"
 import { formatCurrency } from "#/lib/format.ts"
 import { cn } from "#/lib/utils.ts"
 import type { CatalogEntry, StockStatus } from "../hooks/use-pos-catalog.ts"
@@ -62,6 +63,13 @@ export function ProductCard({ entry, onAdd }: ProductCardProps) {
         >
           <span className="truncate">{entry.promoName}</span>
         </Badge>
+      ) : null}
+
+      {/* Hanya muncul saat tidak ada promo yang berlaku: harga penuh pada
+          barang yang "harusnya promo" jadi punya penjelasan, dan kasir bisa
+          menyebutkan tanggalnya ke pasien. */}
+      {entry.dormantPromo ? (
+        <PromoDormantNote promo={entry.dormantPromo} className="w-full" />
       ) : null}
 
       <span className="mt-auto flex w-full items-center justify-between gap-2">

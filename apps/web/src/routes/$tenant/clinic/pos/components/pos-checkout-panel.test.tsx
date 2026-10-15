@@ -54,6 +54,7 @@ function cartLine(unitPrice: number) {
     unitPrice,
     basePrice: null,
     promoName: null,
+    dormantPromo: null,
     qty: 1,
     stock: null,
     offeredBy: null,
