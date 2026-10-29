@@ -24,6 +24,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LoyaltySettingController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\MessageTemplateController;
+use App\Http\Controllers\MetaWhatsappWebhookController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PlatformTenantController;
@@ -73,6 +74,11 @@ Route::middleware('throttle:10,1')->group(function (): void {
 // slug klinik; kliniknya ditentukan dari nama sesi pada payload, dan token
 // ruas URL yang memisahkan panggilan sah dari panggilan sembarangan.
 Route::post('/whatsapp/webhook/{token}', [InboundMessageController::class, 'store']);
+
+// Pesan masuk WhatsApp Cloud API (Meta). Tanpa token di URL: yang membuktikan
+// kiriman itu benar dari Meta adalah tanda tangan HMAC pada isi permintaan.
+Route::get('/whatsapp/meta/webhook', [MetaWhatsappWebhookController::class, 'verify']);
+Route::post('/whatsapp/meta/webhook', [MetaWhatsappWebhookController::class, 'receive']);
 
 Route::get('/user', fn (Request $request) => $request->user())->middleware('auth:sanctum');
 
