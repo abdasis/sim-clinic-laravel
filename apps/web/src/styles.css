@@ -7,6 +7,16 @@
 @import "@fontsource-variable/inter";
 
 @custom-variant dark (&:is(.dark *));
+/*
+ * Perangkat yang tidak punya hover: tablet dan ponsel.
+ *
+ * Dipakai untuk kontrol yang di desktop sengaja disembunyikan sampai
+ * kursor mendekat. Di layar sentuh kursor itu tidak pernah ada, jadi
+ * kontrolnya tidak cuma samar - ia tidak bisa dicapai sama sekali.
+ * `pointer-coarse` menjawab pertanyaan lain (seberapa presisi penunjuknya)
+ * dan tidak selalu sejalan: laptop berlayar sentuh punya keduanya.
+ */
+@custom-variant touch (@media (hover: none));
 @plugin "@tailwindcss/typography";
 
 @theme {

@@ -330,7 +330,10 @@ function SidebarTrigger({
           variant="ghost"
           size="icon-sm"
           className={cn(
-            "transition-transform duration-200 ease-[var(--ease-out)] active:scale-[0.96]",
+            // 28px cukup untuk kursor, tidak untuk jari. Di layar sentuh
+            // tombolnya naik ke 44px - ini satu-satunya jalan membuka
+            // sidebar yang selalu ada di setiap halaman admin.
+            "transition-transform duration-200 ease-[var(--ease-out)] active:scale-[0.96] touch:size-11",
             className
           )}
           onClick={(event) => {
@@ -360,18 +363,25 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
     <button
       data-sidebar="rail"
       data-slot="sidebar-rail"
-      aria-label="Toggle Sidebar"
+      aria-label="Buka atau tutup sidebar"
       tabIndex={-1}
       onClick={toggleSidebar}
-      title="Toggle Sidebar"
+      title="Buka atau tutup sidebar (Mod+B)"
       className={cn(
-        // Lebar tampaknya tetap tipis; yang dilebarkan jadi 24px cuma bidang
-        // ketuknya. Bidang 4px tidak bisa dikenai jari di tablet, dan rel ini
-        // satu-satunya cara membuka sidebar selain tombol di header.
-        "absolute inset-y-0 z-20 hidden w-6 transition-all ease-linear group-data-[side=left]:-right-5 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] hover:after:bg-sidebar-border sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2",
+        // Garisnya tetap setipis 2px; yang dilebarkan cuma bidang ketuknya —
+        // 24px untuk kursor, 44px di layar sentuh. Bidang 4px bawaan tidak
+        // bisa dikenai jari, dan rel ini satu dari dua cara membuka sidebar.
+        //
+        // Penempatannya tidak lewat `translate`. Tailwind v4 mengompilasi
+        // `-translate-x-1/2` jadi properti `translate` yang berdiri sendiri
+        // (Chrome 104+); di tablet klinik yang lebih tua deklarasinya dibuang
+        // dan relnya tertinggal 12px dari tempatnya. Offsetnya dihitung
+        // langsung: pusat rel menempel 4px di dalam tepi sidebar, jadi
+        // right = lebar/2 - 4px pada tiap lebar.
+        "absolute inset-y-0 z-20 hidden w-6 transition-all ease-linear group-data-[side=left]:-right-2 group-data-[side=right]:-left-3 after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] hover:after:bg-sidebar-border rail:flex touch:w-11 touch:group-data-[side=left]:-right-[1.125rem] touch:group-data-[side=right]:-left-[1.375rem]",
         "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",
         "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
-        "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full hover:group-data-[collapsible=offcanvas]:bg-sidebar",
+        "group-data-[collapsible=offcanvas]:after:left-full hover:group-data-[collapsible=offcanvas]:bg-sidebar",
         "[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
         "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
         className
@@ -638,8 +648,11 @@ function SidebarMenuAction({
       data-sidebar="menu-action"
       className={cn(
         "absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground ring-sidebar-ring outline-hidden transition-transform group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0",
+        // Hanya penunjuk presisi yang boleh kehilangan aksi ini: `md:` saja
+        // berlaku sejak 768px, jadi tablet ikut kena padahal tidak punya
+        // hover untuk memunculkannya kembali - aksinya jadi tak tercapai.
         showOnHover &&
-          "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 peer-data-active/menu-button:text-sidebar-accent-foreground aria-expanded:opacity-100 md:opacity-0",
+          "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 peer-data-active/menu-button:text-sidebar-accent-foreground aria-expanded:opacity-100 pointer-fine:md:opacity-0",
         className
       )}
       {...props}

@@ -143,7 +143,15 @@ export function PhotoSlot({
               variant="destructive"
               disabled={removing}
               aria-label={deleteLabel}
-              className="absolute top-1.5 right-1.5 opacity-0 shadow-sm transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
+              /*
+                Di desktop tombol ini menepi sampai kursor mendekat supaya
+                fotonya tidak tertutup lencana merah. Di layar sentuh kursor
+                itu tidak pernah datang - tanpa `touch:` tombol hapusnya
+                bukan cuma samar, ia tidak bisa dicapai sama sekali. Bidang
+                ketuknya dilebarkan lewat pseudo-elemen transparan supaya
+                mencapai 44px tanpa tombolnya ikut membesar.
+              */
+              className="absolute top-1.5 right-1.5 opacity-0 shadow-sm transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 touch:opacity-100 touch:after:absolute touch:after:-inset-2.5"
               onClick={onDelete}
             >
               {removing ? <Spinner /> : <Trash2 />}
