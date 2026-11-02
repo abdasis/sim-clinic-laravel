@@ -19,7 +19,18 @@ COPY apps/web/ ./apps/web/
 WORKDIR /app/apps/web
 
 # API URL for production — full URL since API is on a different subdomain
-ENV VITE_API_URL=https://api.mebaclinic.com/api
+# VITE_* dibaca `import.meta.env` dan di-inline saat build, jadi nilainya harus
+# masuk sebagai build arg; `environment:` di compose tidak akan sampai ke bundel.
+ARG VITE_API_URL=https://api.mebaclinic.com/api
+ARG VITE_REVERB_APP_KEY=""
+ARG VITE_REVERB_HOST=""
+ARG VITE_REVERB_PORT=443
+ARG VITE_REVERB_SCHEME=https
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_REVERB_APP_KEY=$VITE_REVERB_APP_KEY \
+    VITE_REVERB_HOST=$VITE_REVERB_HOST \
+    VITE_REVERB_PORT=$VITE_REVERB_PORT \
+    VITE_REVERB_SCHEME=$VITE_REVERB_SCHEME
 RUN bun run build
 
 # bun workspaces use SYMLINKS into a global store at /app/node_modules/.bun,
