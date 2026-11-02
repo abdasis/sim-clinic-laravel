@@ -28,7 +28,7 @@ class InboxConversationController extends Controller
 
         $params = $this->dataTableParams($request);
 
-        $query = Conversation::query();
+        $query = Conversation::query()->with('latestMessage');
 
         $channel = ConversationChannel::tryFrom((string) ($params['filters']['channel'] ?? ''));
 

@@ -81,6 +81,22 @@ class InboxApiTest extends TestCase
             ->assertJsonPath('data.0.contact_name', 'Sari Wulandari');
     }
 
+    public function test_conversations_expose_the_latest_message_body(): void
+    {
+        $withMessages = $this->conversation(['contact_phone' => '628111111111', 'last_message_at' => now()]);
+        $this->message($withMessages, ['body' => 'Pesan lama', 'sent_at' => now()->subMinutes(5)]);
+        $this->message($withMessages, ['body' => 'Pesan terbaru', 'sent_at' => now()]);
+
+        $withoutMessages = $this->conversation(['contact_phone' => '628222222222', 'last_message_at' => now()->subHour()]);
+
+        $this->getJson($this->tenantUrl('inbox/conversations'))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $withMessages->id)
+            ->assertJsonPath('data.0.last_message_body', 'Pesan terbaru')
+            ->assertJsonPath('data.1.id', $withoutMessages->id)
+            ->assertJsonPath('data.1.last_message_body', null);
+    }
+
     public function test_a_conversation_shows_its_messages_paginated(): void
     {
         $conversation = $this->conversation();

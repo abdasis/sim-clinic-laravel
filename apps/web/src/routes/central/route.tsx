@@ -121,7 +121,7 @@ function CentralLayout() {
   if (!ready) return <ShellSkeleton navCount={4} />
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh min-h-0 overflow-hidden">
       {mounted ? (
         <AppSidebar
           brandTitle={t("general.central")}
@@ -133,13 +133,13 @@ function CentralLayout() {
         />
       ) : null}
       <BreadcrumbTailProvider>
-        <SidebarInset>
+        <SidebarInset className="min-h-0 overflow-hidden">
           <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
             {mounted ? <SidebarTrigger /> : null}
             <Separator orientation="vertical" className="mr-1 h-4" />
             <CentralCrumbs pathname={pathname} />
           </header>
-          <main className="flex-1 p-4">
+          <main className="min-h-0 flex-1 overflow-y-auto p-4">
             <Outlet />
           </main>
         </SidebarInset>

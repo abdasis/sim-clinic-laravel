@@ -56,6 +56,7 @@ import { normalizeAppearance } from "#/types/appearance.ts"
 import { useIsMounted } from "#/hooks/use-is-mounted.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { clearAuth, isAuthenticated } from "#/lib/auth.ts"
+import { cn } from "#/lib/utils.ts"
 import { ShellSkeleton } from "#/components/shell-skeleton.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic")({
@@ -131,6 +132,10 @@ function ClinicLayout() {
   const appearance = normalizeAppearance(user?.appearance)
 
   const base = `/${tenant}/clinic`
+
+  // Halaman yang mengatur scrollnya sendiri (kotak masuk) menempel penuh ke
+  // tepi area konten — tanpa padding shell, tanpa judul halaman.
+  const isFullBleed = pathname === `${base}/inbox`
 
   // POS punya kerangka full-screen sendiri (pos/route.tsx). Early return ini
   // sengaja diletakkan setelah semua hook di atas — memindahkannya ke atas
@@ -226,7 +231,7 @@ function ClinicLayout() {
   if (!ready) return <ShellSkeleton navCount={visible.length || 8} />
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh min-h-0 overflow-hidden">
       {mounted ? (
         <AppSidebar
           variant={appearance.sidebar_variant}
@@ -257,7 +262,7 @@ function ClinicLayout() {
         />
       ) : null}
       <BreadcrumbTailProvider>
-        <SidebarInset>
+        <SidebarInset className="min-h-0 overflow-hidden">
           <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
             {mounted ? <SidebarTrigger /> : null}
             <Separator orientation="vertical" className="mr-1 h-4" />
@@ -269,7 +274,12 @@ function ClinicLayout() {
               mounted={mounted}
             />
           </header>
-          <main className="flex-1 p-4">
+          <main
+            className={cn(
+              "min-h-0 flex-1 overflow-y-auto",
+              isFullBleed ? "overflow-hidden" : "p-4",
+            )}
+          >
             <Outlet />
           </main>
         </SidebarInset>

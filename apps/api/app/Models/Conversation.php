@@ -8,6 +8,7 @@ use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Satu utas percakapan WhatsApp dengan satu nomor kontak.
@@ -38,5 +39,14 @@ class Conversation extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
+    }
+
+    /**
+     * Pesan terbaru untuk preview daftar percakapan. `id` jadi tie-break
+     * ketika dua pesan punya `sent_at` sama.
+     */
+    public function latestMessage(): HasOne
+    {
+        return $this->hasOne(Message::class)->ofMany(['sent_at' => 'max', 'id' => 'max']);
     }
 }

@@ -116,6 +116,9 @@ function ConversationRow({
   const showPhone = Boolean(conversation.contact_name?.trim())
   const channel =
     conversation.channel_label ?? t(`inbox.channel.${conversation.channel}`)
+  const preview =
+    conversation.last_message_body?.trim() ||
+    (showPhone ? conversation.contact_phone : channel)
 
   return (
     <button
@@ -149,7 +152,7 @@ function ConversationRow({
 
         <span className="mt-0.5 flex items-center justify-between gap-2">
           <span className="truncate text-xs text-muted-foreground">
-            {showPhone ? conversation.contact_phone : channel}
+            {preview}
           </span>
 
           <span className="flex shrink-0 items-center gap-1.5">

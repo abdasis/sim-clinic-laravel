@@ -3,6 +3,7 @@
 namespace App\Actions\Inbox;
 
 use App\Actions\LogAuditAction;
+use App\Concerns\BroadcastsInboxMessage;
 use App\Enums\ConversationChannel;
 use App\Enums\MessageDirection;
 use App\Enums\MessageStatus;
@@ -21,6 +22,8 @@ use InvalidArgumentException;
  */
 class RecordInboundMessageAction
 {
+    use BroadcastsInboxMessage;
+
     public function handle(
         int $tenantId,
         string $phone,
@@ -35,7 +38,8 @@ class RecordInboundMessageAction
             throw new InvalidArgumentException('Nomor pengirim tidak valid: '.$phone);
         }
 
-        return DB::transaction(function () use ($tenantId, $contactPhone, $body, $channel, $providerMessageId, $contactName): Message {
+        /** @var array{0: Message, 1: bool} $result */
+        $result = DB::transaction(function () use ($tenantId, $contactPhone, $body, $channel, $providerMessageId, $contactName): array {
             $conversation = Conversation::query()->firstOrCreate(
                 ['tenant_id' => $tenantId, 'contact_phone' => $contactPhone],
                 ['channel' => $channel, 'last_message_at' => now()],
@@ -47,8 +51,10 @@ class RecordInboundMessageAction
                     ->where('provider_message_id', $providerMessageId)
                     ->first();
 
+                // Kiriman ulang gateway bukan pesan baru: tidak boleh menambah
+                // penghitung maupun menyiarkan notifikasi kedua kalinya.
                 if ($existing !== null) {
-                    return $existing;
+                    return [$existing, false];
                 }
             }
 
@@ -92,7 +98,15 @@ class RecordInboundMessageAction
                 ),
             );
 
-            return $message;
+            return [$message, true];
         });
+
+        [$message, $created] = $result;
+
+        if ($created) {
+            $this->broadcastInboxMessage($message, $tenantId);
+        }
+
+        return $message;
     }
 }

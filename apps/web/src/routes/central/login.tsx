@@ -12,6 +12,7 @@ import {
   AUTH_SUBMIT_CLASS,
   AuthLayout,
 } from "#/components/auth/auth-layout.tsx"
+import { DemoQuickLogin } from "#/components/auth/demo-quick-login.tsx"
 import { Form } from "#/components/ui/form.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
 import { FormPassword } from "#/components/forms/form-password.tsx"
@@ -79,6 +80,12 @@ function CentralLoginPage() {
         to: "/register",
       }}
     >
+      {import.meta.env.DEV ? (
+        <div className="mb-6">
+          <DemoQuickLogin kind="platform" showDivider />
+        </div>
+      ) : null}
+
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit((v) => mutation.mutate(v))}

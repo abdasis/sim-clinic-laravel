@@ -11,6 +11,7 @@ export interface Conversation {
   channel: ConversationChannel
   channel_label: string | null
   last_message_at: string | null
+  last_message_body: string | null
   unread_count: number
   created_at: string | null
 }

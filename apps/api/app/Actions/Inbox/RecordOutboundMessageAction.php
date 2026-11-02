@@ -3,6 +3,7 @@
 namespace App\Actions\Inbox;
 
 use App\Actions\LogAuditAction;
+use App\Concerns\BroadcastsInboxMessage;
 use App\Enums\ConversationChannel;
 use App\Enums\MessageDirection;
 use App\Enums\MessageStatus;
@@ -22,6 +23,8 @@ use InvalidArgumentException;
  */
 class RecordOutboundMessageAction
 {
+    use BroadcastsInboxMessage;
+
     public function handle(
         int $tenantId,
         string $phone,
@@ -35,7 +38,7 @@ class RecordOutboundMessageAction
             throw new InvalidArgumentException('Nomor tujuan tidak valid: '.$phone);
         }
 
-        return DB::transaction(function () use ($tenantId, $contactPhone, $body, $channel, $providerMessageId): Message {
+        $message = DB::transaction(function () use ($tenantId, $contactPhone, $body, $channel, $providerMessageId): Message {
             $conversation = Conversation::query()->firstOrCreate(
                 ['tenant_id' => $tenantId, 'contact_phone' => $contactPhone],
                 ['channel' => $channel],
@@ -70,5 +73,9 @@ class RecordOutboundMessageAction
 
             return $message;
         });
+
+        $this->broadcastInboxMessage($message, $tenantId);
+
+        return $message;
     }
 }

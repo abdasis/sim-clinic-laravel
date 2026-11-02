@@ -932,3 +932,37 @@ a {
     margin: 0;
   }
 }
+
+/*
+ * Scrollbar area aplikasi: trek transparan, thumb tipis membulat yang menguat
+ * saat kursor mendekat. Dibatasi ke dalam shell (sidebar inset) supaya halaman
+ * publik dan nota cetak tidak ikut berubah.
+ */
+[data-slot="sidebar-inset"],
+[data-slot="sidebar-inset"] * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent) transparent;
+}
+
+/* Peramban yang belum mengenal `scrollbar-color` (Chromium lama, Safari lama). */
+@supports not (scrollbar-color: auto) {
+  [data-slot="sidebar-inset"] *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  [data-slot="sidebar-inset"] *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  [data-slot="sidebar-inset"] *::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-clip: padding-box;
+    background-color: color-mix(in oklab, var(--foreground) 22%, transparent);
+  }
+
+  [data-slot="sidebar-inset"] *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklab, var(--foreground) 38%, transparent);
+  }
+}

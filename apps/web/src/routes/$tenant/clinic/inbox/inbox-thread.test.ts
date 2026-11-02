@@ -29,6 +29,7 @@ function page(messages: Message[], current = 1, last = 1): ThreadPage {
     channel: "waha",
     channel_label: "WAHA",
     last_message_at: messages[0]?.sent_at ?? null,
+    last_message_body: messages[0]?.body ?? null,
     unread_count: 0,
     created_at: null,
     messages,

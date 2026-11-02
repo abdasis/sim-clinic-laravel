@@ -16,6 +16,7 @@ class ConversationResource extends JsonResource
             'channel' => $this->channel,
             'channel_label' => $this->channel?->label(),
             'last_message_at' => $this->last_message_at?->toIso8601String(),
+            'last_message_body' => $this->latestMessage?->body,
             'unread_count' => $this->unread_count,
             'created_at' => $this->created_at?->toIso8601String(),
             'messages' => MessageResource::collection($this->whenLoaded('messages')),

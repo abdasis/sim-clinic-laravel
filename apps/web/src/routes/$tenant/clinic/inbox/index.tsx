@@ -1,7 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useDeferredValue, useEffect, useRef, useState } from "react"
 
-import { useTrans } from "#/hooks/use-trans.ts"
 import { cn } from "#/lib/utils.ts"
 import { ConversationList } from "./components/conversation-list.tsx"
 import {
@@ -10,6 +9,7 @@ import {
 } from "./components/message-thread.tsx"
 import { ReplyBox } from "./components/reply-box.tsx"
 import { useInboxConversations } from "./hooks/use-inbox-conversations.ts"
+import { useInboxRealtime } from "./hooks/use-inbox-realtime.ts"
 import { useInboxThread } from "./hooks/use-inbox-thread.ts"
 import { useMarkConversationRead } from "./hooks/use-mark-conversation-read.ts"
 
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/$tenant/clinic/inbox/")({
  */
 function InboxPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/inbox/" })
-  const { t } = useTrans()
+  useInboxRealtime(tenant)
   const [search, setSearch] = useState("")
   const deferredSearch = useDeferredValue(search)
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -85,16 +85,7 @@ function InboxPage() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-5rem)] min-h-96 flex-col">
-      <div className="mb-3 shrink-0">
-        <h1 className="text-balance text-xl font-semibold tracking-tight">
-          {t("inbox.title")}
-        </h1>
-        <p className="text-pretty text-sm text-muted-foreground">
-          {t("inbox.subtitle")}
-        </p>
-      </div>
-
+    <div className="flex h-full min-h-0 flex-col p-2">
       <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border border-border/50 bg-card lg:grid-cols-[20rem_minmax(0,1fr)]">
         <div
           className={cn(

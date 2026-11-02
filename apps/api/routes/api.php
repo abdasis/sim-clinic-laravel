@@ -45,6 +45,7 @@ use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 // =========================================================================
@@ -82,6 +83,12 @@ Route::get('/whatsapp/meta/webhook', [MetaWhatsappWebhookController::class, 'ver
 Route::post('/whatsapp/meta/webhook', [MetaWhatsappWebhookController::class, 'receive']);
 
 Route::get('/user', fn (Request $request) => $request->user())->middleware('auth:sanctum');
+
+// Otorisasi langganan WebSocket (Reverb). Kanal klinik bersifat privat, jadi
+// klien harus menukar token Sanctum-nya menjadi tanda tangan langganan di
+// sini sebelum boleh mendengar apa pun.
+Route::post('/broadcasting/auth', fn (Request $request) => Broadcast::auth($request))
+    ->middleware('auth:sanctum');
 
 // =========================================================================
 // Central platform (spec 001) — auth:sanctum, platform admin

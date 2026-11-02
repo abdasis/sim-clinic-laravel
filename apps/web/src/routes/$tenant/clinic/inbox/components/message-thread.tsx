@@ -1,15 +1,17 @@
 import type { ReactNode } from "react"
-import { useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowLeft02Icon,
   MessageMultiple01Icon,
+  Search01Icon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons"
 
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import { EmptyState } from "#/components/ui/empty-state.tsx"
+import { Kbd } from "#/components/ui/kbd.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { Spinner } from "#/components/ui/spinner.tsx"
 import {
@@ -218,25 +220,76 @@ export function MessageThread({
   )
 }
 
+function focusConversationSearch() {
+  document
+    .querySelector<HTMLInputElement>('[data-testid="conversation-search"]')
+    ?.focus()
+}
+
 /** Tampilan saat layar lebar belum memilih percakapan. */
 export function EmptySelection() {
   const { t } = useTrans()
 
+  // Pintasan "/" menyorot pencarian selama panel ini terbuka. Aman: tidak
+  // menangkap saat fokus sudah di kolom isian, dan tidak ada modifier.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) {
+        return
+      }
+
+      const target = event.target as HTMLElement | null
+      if (
+        target?.isContentEditable ||
+        target?.closest("input, textarea, select")
+      ) {
+        return
+      }
+
+      if (!document.querySelector('[data-testid="conversation-search"]')) return
+
+      event.preventDefault()
+      focusConversationSearch()
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
+
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
-      <span
-        aria-hidden
-        className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
-      >
-        <HugeiconsIcon
-          icon={MessageMultiple01Icon}
-          strokeWidth={2}
-          className="size-5"
-        />
-      </span>
-      <p className="max-w-64 text-sm text-pretty text-muted-foreground">
-        {t("inbox.select_conversation")}
-      </p>
+    <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
+      <div className="flex w-full max-w-xs flex-col items-center">
+        <span
+          aria-hidden
+          className="flex size-11 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground ring-1 ring-border/60 ring-inset"
+        >
+          <HugeiconsIcon
+            icon={MessageMultiple01Icon}
+            strokeWidth={1.75}
+            className="size-5"
+          />
+        </span>
+
+        <h2 className="mt-5 text-sm font-semibold tracking-tight text-balance">
+          {t("inbox.empty_selection_title")}
+        </h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-pretty text-muted-foreground">
+          {t("inbox.empty_selection_hint")}
+        </p>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-keyshortcuts="/"
+          onClick={focusConversationSearch}
+          className="mt-6"
+        >
+          <HugeiconsIcon icon={Search01Icon} strokeWidth={2} aria-hidden />
+          {t("inbox.empty_selection_cta")}
+          <Kbd className="ms-1">/</Kbd>
+        </Button>
+      </div>
     </div>
   )
 }
