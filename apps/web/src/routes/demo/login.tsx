@@ -1,4 +1,4 @@
-import { createFileRoute, notFound } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import {
   FlashIcon,
   Shield01Icon,
@@ -13,33 +13,35 @@ import {
 import { TenantLoginForm } from "#/components/auth/tenant-login-form.tsx"
 
 /**
- * Pintu masuk sekali klik untuk akun seed. Hanya hidup saat development:
- * di build produksi `beforeLoad` melempar 404 supaya kredensial seed yang
- * tertulis di berkas ini tidak pernah bisa dipakai dari internet.
+ * Pintu masuk sekali klik untuk akun tenant demo.
+ *
+ * Halaman ini SENGAJA hidup di produksi atas permintaan pemilik produk: tenant
+ * `demo` dipakai untuk memperlihatkan aplikasi ke calon klien. Konsekuensinya
+ * kredensial akun demo ikut terbaca siapa pun yang membuka halaman ini —
+ * jangan pernah menambahkan akun di luar tenant demo ke daftar di bawah.
  */
 export const Route = createFileRoute("/demo/login")({
-  beforeLoad: () => {
-    if (!import.meta.env.DEV) throw notFound()
-  },
   component: DemoLoginPage,
 })
 
 function DemoLoginPage() {
   return (
     <AuthLayout
-      kicker="Halaman pengembangan"
+      kicker="Akun demo"
       title="Masuk tanpa mengetik"
-      subtitle="Pilih akun seed di bawah untuk langsung masuk. Halaman ini hanya tersedia saat development."
+      subtitle="Pilih peran di bawah untuk langsung masuk ke data demo klinik."
       points={[
         { icon: FlashIcon, label: "Satu klik, langsung masuk" },
-        { icon: Shield01Icon, label: "Mati total di build produksi" },
-        { icon: UserMultiple02Icon, label: "Akun dari seeder lokal" },
+        { icon: Shield01Icon, label: "Hanya berisi akun tenant demo" },
+        { icon: UserMultiple02Icon, label: "Admin, dokter, dan terapis" },
       ]}
       formHeading="Pilih akun"
       formSubheading="Kredensial sudah terisi otomatis. Tidak perlu mengetik apa pun."
     >
       <div className="mb-6">
-        <DemoQuickLogin heading={null} showDivider />
+        {/* Hanya peran klinik: akun platform sengaja tidak dipajang di halaman
+            publik, cukup tersedia di dev lewat /central/login. */}
+        <DemoQuickLogin kind="clinic" heading={null} showDivider />
       </div>
       <TenantLoginForm tenant={DEMO_TENANT} />
     </AuthLayout>

@@ -9,10 +9,13 @@ import { setAuth } from "#/lib/auth.ts"
 import type { AuthUser } from "#/lib/auth.ts"
 
 /**
- * Pintu masuk sekali klik untuk akun seed. Hanya dipakai di halaman/dev guard;
- * pemanggil wajib menyembunyikannya dari build produksi (`import.meta.env.DEV`).
+ * Pintu masuk sekali klik untuk akun tenant demo.
+ *
+ * Daftar ini tampil di halaman publik `/demo/login`, jadi isinya HARUS akun
+ * tenant `demo` saja. Sandi yang dipakai adalah sandi bersama akun demo —
+ * perlakukan berkas ini sebagai kredensial publik, bukan rahasia.
  */
-export const DEMO_TENANT = "mebaclinic"
+export const DEMO_TENANT = "demo"
 
 const DEMO_PASSWORD = "password123"
 
@@ -44,16 +47,15 @@ const ACCOUNT_GROUPS: AccountGroup[] = [
     accounts: [
       {
         label: "Admin Klinik",
-        email: "admin@mebaclinic.test",
+        email: "admin@mebaclinic.com",
         role: "Akses penuh",
       },
-      { label: "Dokter", email: "dokter@mebaclinic.test", role: "Medis" },
+      { label: "Dokter", email: "dokter@mebaclinic.com", role: "Medis" },
       {
         label: "Terapis",
-        email: "terapis@mebaclinic.test",
+        email: "terapistmutia@mebaclinic.com",
         role: "Perawatan",
       },
-      { label: "Kasir", email: "kasir@mebaclinic.test", role: "Transaksi" },
     ],
   },
   {
