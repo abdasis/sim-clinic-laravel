@@ -35,7 +35,7 @@ export function RevenueSummary({ data }: { data: RevenueData }) {
   const average = count > 0 ? total / count : 0
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
       <ReportStatCard
         emphasis
         icon={Coins01Icon}

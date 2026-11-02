@@ -144,7 +144,7 @@ function BroadcastsPage() {
       </div>
 
       {dashboard.data ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <div className="rounded-lg border border-border/50 bg-card p-3">
             <p className="text-xs text-muted-foreground">{t("broadcast.today_messages")}</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">

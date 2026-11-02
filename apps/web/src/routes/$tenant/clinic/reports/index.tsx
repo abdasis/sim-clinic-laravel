@@ -222,7 +222,7 @@ function ReportsPage() {
 function ReportSkeleton({ tab }: { tab: ReportTab }) {
   if (tab === "revenue") {
     return (
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
         {[0, 1, 2].map((i) => (
           <Skeleton key={i} className="h-28 w-full rounded-lg" />
         ))}

@@ -102,7 +102,7 @@ function ExportButton({
 function MonthlySkeleton() {
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
         {[0, 1, 2, 3].map((index) => (
           <Skeleton key={index} className="h-[104px] w-full rounded-lg" />
         ))}

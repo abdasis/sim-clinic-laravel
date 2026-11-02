@@ -92,7 +92,7 @@ export function PatientClinicalSummary({
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
         <SummaryTile
           icon={Calendar03Icon}
           accent="bg-primary"

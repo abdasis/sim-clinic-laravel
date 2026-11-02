@@ -9,7 +9,7 @@ import {
 
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { formatCurrency } from "#/lib/format.ts"
+import { formatCurrency, formatCurrencyCompact } from "#/lib/format.ts"
 import type { DashboardKpis, RevenuePoint } from "#/hooks/use-dashboard.ts"
 import { cn } from "#/lib/utils.ts"
 
@@ -24,7 +24,7 @@ export function DashboardKpiRow({ kpis, trend, isLoading }: DashboardKpisProps) 
 
   if (isLoading || !kpis) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {Array.from({ length: 5 }, (_, index) => (
           <Skeleton key={index} className="h-24 w-full rounded-lg" />
         ))}
@@ -38,6 +38,7 @@ export function DashboardKpiRow({ kpis, trend, isLoading }: DashboardKpisProps) 
       icon: CoinsDollarIcon,
       label: t("dashboard.kpi.revenue_today"),
       value: formatCurrency(Number(kpis.revenue_today)),
+      compact: formatCurrencyCompact(Number(kpis.revenue_today)),
       delta: revenueDelta(trend),
     },
     {
@@ -57,6 +58,7 @@ export function DashboardKpiRow({ kpis, trend, isLoading }: DashboardKpisProps) 
       icon: WalletAdd01Icon,
       label: t("dashboard.kpi.outstanding"),
       value: formatCurrency(Number(kpis.outstanding_amount)),
+      compact: formatCurrencyCompact(Number(kpis.outstanding_amount)),
     },
     {
       key: "low_stock",
@@ -68,7 +70,7 @@ export function DashboardKpiRow({ kpis, trend, isLoading }: DashboardKpisProps) 
   ]
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
       {tiles.map((tile, index) => (
         <StatTile {...tile} key={tile.key} index={index} />
       ))}
@@ -80,6 +82,7 @@ function StatTile({
   icon,
   label,
   value,
+  compact,
   delta,
   alert,
   index,
@@ -87,13 +90,23 @@ function StatTile({
   icon: IconSvgElement
   label: string
   value: string
+  /** Bentuk pendek nominalnya, dipakai saat kartunya terlalu sempit. */
+  compact?: string
   delta?: number
   alert?: boolean
   index: number
 }) {
   return (
     <article
-      className="rise-in rounded-lg border border-border/50 bg-card p-4 shadow-sm transition-colors hover:border-border"
+      // `@container`: yang menentukan nominalnya dipendekkan atau tidak
+      // kartunya sendiri, bukan lebar layar. Lima kartu di 1440px (221px
+      // per kartu) lega, tiga kartu di 820px (169px) tidak - dan dua-duanya
+      // tidak bisa dibedakan dari ambang layar saja.
+      //
+      // Container query mengukur kotak isi, bukan kotak luarnya: ambang
+      // 10rem itu ruang teks di dalam kartu, yang berarti kartu ~194px ke
+      // bawah. Terukur: 820px memendekkan, 1024px (237px per kartu) tidak.
+      className="rise-in @container/tile rounded-lg border border-border/50 bg-card p-4 shadow-sm transition-colors hover:border-border"
       style={{ animationDelay: `${index * 45}ms` }}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -109,7 +122,22 @@ function StatTile({
           )}
         />
       </div>
-      <p className="text-xl font-semibold tabular-nums">{value}</p>
+      {/* Angka pastinya tetap bisa dibaca lewat `title` walau yang tampil
+          bentuk pendeknya — nominal yang dibulatkan tidak boleh jadi
+          satu-satunya yang tersedia. */}
+      <p
+        className="text-xl font-semibold tabular-nums"
+        title={compact ? value : undefined}
+      >
+        {compact ? (
+          <>
+            <span className="@max-[10rem]/tile:hidden">{value}</span>
+            <span className="hidden @max-[10rem]/tile:inline">{compact}</span>
+          </>
+        ) : (
+          value
+        )}
+      </p>
       {delta !== undefined ? <DeltaLabel delta={delta} /> : null}
     </article>
   )
