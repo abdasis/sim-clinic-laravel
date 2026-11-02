@@ -1,0 +1,15 @@
+# Konteks build tidak boleh membawa dependensi dan hasil build dari mesin
+# build. `apps/web/node_modules` di server berisi symlink ke store bun
+# (node_modules/.bun/...) yang tidak ada di dalam image, sehingga COPY
+# menimpa hasil `bun install` di image dan build gagal dengan
+# "Cannot find package '@tanstack/...'".
+**/node_modules
+
+# Hasil build lokal selalu dibangun ulang di dalam image.
+**/dist
+**/.vite
+**/.vite-temp
+
+# Riwayat dan berkas log tidak dibutuhkan di dalam image.
+.git
+**/*.log
