@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu.tsx"
+import { useContainerWidth } from "#/hooks/use-container-width.ts"
 import { isNarrowTier, useLayoutTier } from "#/hooks/use-mobile.ts"
 import { cn } from "#/lib/utils.ts"
 
@@ -32,6 +33,21 @@ export interface ShellCrumb {
  * "ke mana kembali". Sisanya tetap ada, tapi di balik menu.
  */
 const MOBILE_VISIBLE = 2
+
+/**
+ * Lebar wadah di bawah mana jenjang penuh dilipat, dalam piksel.
+ *
+ * Diukur, bukan ditebak: jenjang terdalam klinik dengan nama sungguhan —
+ * `Meba Clinic Yogyakarta > Pasien > Siti Nurhaliza Wijayakusuma > Rekam
+ * Medis` — menuntut ~450px untuk tampil utuh. Di iPad potret dengan sidebar
+ * terbuka, ruang yang tersisa untuk breadcrumb hanya ~435px, dan seluruh
+ * ruasnya ikut menyusut sampai "Kasir" pun jadi "Kas..".
+ *
+ * Yang diukur lebar wadahnya, bukan lebar layar. Di layar yang sama ruang itu
+ * berbeda jauh tergantung sidebarnya terbuka atau sedang jadi rel ikon — dan
+ * tier layar tidak bisa membedakan keduanya.
+ */
+const COLLAPSE_BELOW = 480
 
 /**
  * Breadcrumb di bar header shell. Berbeda dari versi lama yang tinggal di
@@ -56,18 +72,25 @@ export function ShellBreadcrumb({
   className?: string
 }) {
   const tier = useLayoutTier()
+  const [ref, width] = useContainerWidth<HTMLElement>()
 
   if (items.length === 0) return null
 
+  // Selama lebarnya belum terukur — di server dan pada render pertama —
+  // tier yang menjawab. `null` berarti "belum tahu", bukan "sangat sempit",
+  // dan melipat lalu membentang kembali lebih mengganggu daripada
+  // sebaliknya.
+  const sempit = width === null ? isNarrowTier(tier) : width < COLLAPSE_BELOW
+
   const collapsed =
-    isNarrowTier(tier) && items.length > MOBILE_VISIBLE
+    sempit && items.length > MOBILE_VISIBLE
       ? items.slice(0, items.length - MOBILE_VISIBLE)
       : []
 
   const visible = collapsed.length > 0 ? items.slice(-MOBILE_VISIBLE) : items
 
   return (
-    <Breadcrumb className={cn("min-w-0", className)}>
+    <Breadcrumb ref={ref} className={cn("min-w-0 flex-1", className)}>
       {/* `overflow-hidden`: kalau ruang benar-benar habis, breadcrumb-nya
           terpotong di ujung alih-alih mendorong isi header keluar. */}
       <BreadcrumbList className="flex-nowrap gap-1 overflow-hidden text-sm sm:gap-1.5">
@@ -110,23 +133,32 @@ export function ShellBreadcrumb({
                   tersisa terbaca justru bukan yang dicari pembaca. Yang
                   dipakai batas lebar, bukan larangan memotong, supaya satu
                   ruas bernama panjang tidak menghabiskan barisnya sendiri. */}
-              <BreadcrumbItem className={isLast ? "min-w-0" : "min-w-0 shrink"}>
+              {/* Prioritas penyusutan, bukan larangan menyusut. Kalau semua
+                  ruas menyusut rata — yang terjadi di 768px sebelum ini —
+                  "Kasir" jadi "Kas.." dan nomor notanya ikut terpotong,
+                  sehingga tidak ada satu pun ruas yang terbaca utuh. Ruas
+                  tengah yang mengalah: ia punya batas bawah supaya tidak
+                  habis jadi satu huruf, sementara halaman aktif menyusut
+                  seperempat kecepatannya dan praktis bertahan utuh. */}
+              <BreadcrumbItem
+                className={isLast ? "min-w-0 shrink-[0.25]" : "min-w-10 shrink"}
+              >
                 {isLast ? (
-                  <BreadcrumbPage className="truncate font-medium">
+                  <BreadcrumbPage className="block max-w-56 truncate font-medium">
                     {item.label}
                   </BreadcrumbPage>
                 ) : item.to ? (
                   <Link
                     to={item.to}
                     params={item.params}
-                    className="block max-w-32 truncate text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:max-w-none sm:whitespace-nowrap"
+                    className="block max-w-32 truncate text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:max-w-40 sm:whitespace-nowrap"
                   >
                     {item.label}
                   </Link>
                 ) : (
                   // Ruas tanpa tautan tetap diredupkan: yang menonjol hanya
                   // halaman aktif di ujung.
-                  <span className="block max-w-32 truncate text-muted-foreground sm:max-w-none sm:whitespace-nowrap">
+                  <span className="block max-w-32 truncate text-muted-foreground sm:max-w-40 sm:whitespace-nowrap">
                     {item.label}
                   </span>
                 )}
