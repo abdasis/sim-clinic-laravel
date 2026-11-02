@@ -14,6 +14,7 @@ import type { EmptyIllustrationName } from "#/components/ui/empty-illustration.t
 import { DataTableToolbar } from "#/components/datatable/datatable-toolbar.tsx"
 import { DataTablePagination } from "#/components/datatable/datatable-pagination.tsx"
 import { DataTableCards } from "#/components/datatable/datatable-cards.tsx"
+import { priorityClass } from "#/components/datatable/column-priority.ts"
 import { apiErrorMessage } from "#/lib/api.ts"
 import { useContainerWidth } from "#/hooks/use-container-width.ts"
 import { isNarrowTier, useLayoutTier } from "#/hooks/use-mobile.ts"
@@ -154,7 +155,11 @@ export function DataTable<TData>({
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id} className="bg-muted/30">
                 {group.headers.map((header) => (
-                  <TableHead key={header.id} colSpan={header.colSpan}>
+                  <TableHead
+                    key={header.id}
+                    colSpan={header.colSpan}
+                    className={priorityClass(header.column.columnDef.meta?.priority)}
+                  >
                     {header.isPlaceholder
                       ? null
                       : (flexRender(header.column.columnDef.header, header.getContext()))}
@@ -190,7 +195,10 @@ export function DataTable<TData>({
               rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={priorityClass(cell.column.columnDef.meta?.priority)}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

@@ -69,11 +69,13 @@ function TransactionsPage() {
       {
         accessorKey: "subtotal",
         header: t("pos.subtotal"),
+        meta: { priority: 3 },
         cell: ({ row }) => formatCurrency(Number(row.original.subtotal)),
       },
       {
         accessorKey: "paid_amount",
         header: t("pos.paid_amount"),
+        meta: { priority: 2 },
         cell: ({ row }) => (
           <span className="tabular-nums">
             {formatCurrency(Number(row.original.paid_amount))}

@@ -2,18 +2,106 @@ import * as React from "react"
 
 import { cn } from "#/lib/utils.ts"
 
+/**
+ * Apakah masih ada kolom di luar pandangan, di kiri atau di kanan.
+ *
+ * Tabel yang tergulir mendatar tanpa penanda terbaca seperti tabel yang
+ * memang hanya punya kolom sebanyak itu — kolom aksi di ujung kanan tidak
+ * pernah terlihat, dan tidak ada apa pun yang memberi tahu bahwa ia ada.
+ */
+function useOverflowEdges<T extends HTMLElement>() {
+  const ref = React.useRef<T>(null)
+  const [edges, setEdges] = React.useState({ start: false, end: false })
+
+  React.useEffect(() => {
+    const element = ref.current
+
+    if (!element) return
+
+    const read = () => {
+      // Toleransi 1px: pembulatan sub-piksel membuat tabel yang sudah
+      // tergulir habis tetap melaporkan sisa beberapa persepuluh piksel,
+      // dan bayangannya tidak pernah hilang.
+      const sisaKanan =
+        element.scrollWidth - element.clientWidth - element.scrollLeft
+
+      setEdges({ start: element.scrollLeft > 1, end: sisaKanan > 1 })
+    }
+
+    element.addEventListener("scroll", read, { passive: true })
+    read()
+
+    if (typeof ResizeObserver === "undefined") {
+      return () => element.removeEventListener("scroll", read)
+    }
+
+    const observer = new ResizeObserver(read)
+
+    observer.observe(element)
+
+    return () => {
+      element.removeEventListener("scroll", read)
+      observer.disconnect()
+    }
+  }, [])
+
+  return [ref, edges] as const
+}
+
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+  const [ref, edges] = useOverflowEdges<HTMLDivElement>()
+
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
-    >
-      <table
-        data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
+    // Bayangannya di luar elemen yang menggulir: anak dengan posisi absolut
+    // di dalam penggulir ikut tergeser bersama isinya, jadi penandanya justru
+    // hilang dari pandangan tepat saat dibutuhkan.
+    <div className="relative w-full">
+      <div
+        ref={ref}
+        data-slot="table-container"
+        data-overflow-start={edges.start || undefined}
+        data-overflow-end={edges.end || undefined}
+        className="w-full overflow-x-auto"
+      >
+        <table
+          data-slot="table"
+          className={cn("w-full caption-bottom text-sm", className)}
+          {...props}
+        />
+      </div>
+      <TableScrollHint side="start" active={edges.start} />
+      <TableScrollHint side="end" active={edges.end} />
     </div>
+  )
+}
+
+/**
+ * Bayangan tipis di tepi tabel yang masih menyimpan kolom di luar pandangan.
+ *
+ * Sengaja bayangan, bukan tombol panah: ia tidak merebut ruang, tidak perlu
+ * target sentuh, dan hilang sendiri begitu tergulir habis.
+ */
+function TableScrollHint({
+  side,
+  active,
+}: {
+  side: "start" | "end"
+  active: boolean
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      data-slot="table-scroll-hint"
+      data-side={side}
+      className={cn(
+        "pointer-events-none absolute inset-y-0 w-6 transition-opacity duration-200",
+        side === "start"
+          ? "start-0 bg-gradient-to-r"
+          : "end-0 bg-gradient-to-l",
+        "from-background to-transparent",
+        active ? "opacity-100" : "opacity-0",
+      )}
+    />
   )
 }
 

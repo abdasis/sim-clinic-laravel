@@ -44,7 +44,7 @@ export function DataTablePagination<TData>({
             value={String(pageSize)}
             onValueChange={(v) => table.setPageSize(Number(v))}
           >
-            <SelectTrigger size="sm" className="h-8 w-[70px]">
+            <SelectTrigger size="sm" className="h-8 w-[70px] touch:h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -60,7 +60,7 @@ export function DataTablePagination<TData>({
           <Button
             variant="outline"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 touch:size-11"
             aria-label={t("general.previous_page")}
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
@@ -74,7 +74,7 @@ export function DataTablePagination<TData>({
           <Button
             variant="outline"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 touch:size-11"
             aria-label={t("general.next_page")}
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}

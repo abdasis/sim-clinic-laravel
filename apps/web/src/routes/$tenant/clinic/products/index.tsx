@@ -62,6 +62,7 @@ function ProductsPage() {
       {
         accessorKey: "type",
         header: t("product.type"),
+        meta: { priority: 2 },
         cell: ({ row }) => (
           <Badge
             variant={row.original.is_sellable === false ? "outline" : "secondary"}
@@ -74,6 +75,7 @@ function ProductsPage() {
       {
         accessorKey: "category",
         header: t("product.category"),
+        meta: { priority: 3 },
         cell: ({ row }) =>
           row.original.category_label ? (
             <Badge variant="secondary" className="font-normal">
@@ -86,6 +88,7 @@ function ProductsPage() {
       {
         accessorKey: "unit_label",
         header: t("product.unit"),
+        meta: { priority: 3 },
         cell: ({ row }) => (
           <span className={row.original.unit_label ? "" : "text-muted-foreground"}>
             {row.original.unit_label ?? "-"}

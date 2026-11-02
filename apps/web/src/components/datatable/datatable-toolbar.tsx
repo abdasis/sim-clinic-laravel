@@ -43,7 +43,7 @@ export function DataTableToolbar<TData>({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={searchPlaceholder}
-          className="h-8 w-full pl-8 sm:w-40 md:w-56"
+          className="h-8 w-full pl-8 touch:h-10 sm:w-40 md:w-56"
         />
       </div>
       {faceted?.map((f) => (
