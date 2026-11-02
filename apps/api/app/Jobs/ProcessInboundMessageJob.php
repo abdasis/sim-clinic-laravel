@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Actions\Inbox\RecordOutboundMessageAction;
+use App\Enums\ConversationChannel;
 use App\Models\Tenant;
 use App\Services\ChatbotService;
 use App\Support\WahaClient;
@@ -189,6 +191,33 @@ class ProcessInboundMessageJob implements ShouldQueue
             $client->send($this->senderPhone, $answer);
         } catch (Throwable $e) {
             Log::error('Balasan chatbot gagal dikirim lewat gateway WhatsApp.', [
+                'exception' => $e,
+                'tenant_id' => $this->tenantId,
+                'sender_phone' => $this->senderPhone,
+            ]);
+
+            return;
+        }
+
+        $this->recordOutbound($answer);
+    }
+
+    /**
+     * Balasan yang sudah sampai juga dicatat ke kotak masuk, supaya utasnya
+     * tidak terbaca satu arah. Kegagalan mencatat tidak boleh membuat worker
+     * mengulang pengiriman yang sudah berhasil.
+     */
+    private function recordOutbound(string $answer): void
+    {
+        try {
+            app(RecordOutboundMessageAction::class)->handle(
+                $this->tenantId,
+                $this->senderPhone,
+                $answer,
+                ConversationChannel::Waha,
+            );
+        } catch (Throwable $e) {
+            Log::error('Balasan chatbot terkirim tetapi gagal dicatat ke kotak masuk.', [
                 'exception' => $e,
                 'tenant_id' => $this->tenantId,
                 'sender_phone' => $this->senderPhone,

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Inbox\RecordInboundMessageAction;
+use App\Enums\ConversationChannel;
 use App\Jobs\ProcessInboundMessageJob;
 use App\Models\WhatsappSetting;
 use App\Support\PhoneNumber;
@@ -128,6 +130,18 @@ class InboundMessageController extends Controller
             'from' => $phone,
             'body' => trim($body),
         ]);
+
+        $providerMessageId = data_get($payload, 'id');
+        $contactName = data_get($payload, 'pushName');
+
+        app(RecordInboundMessageAction::class)->handle(
+            $setting->tenant_id,
+            $phone,
+            trim($body),
+            ConversationChannel::Waha,
+            is_string($providerMessageId) && $providerMessageId !== '' ? $providerMessageId : null,
+            is_string($contactName) && $contactName !== '' ? $contactName : null,
+        );
 
         ProcessInboundMessageJob::dispatch($setting->tenant_id, $phone, trim($body));
 

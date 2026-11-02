@@ -35,6 +35,9 @@ class SyncTenantClinicRolesAction
             'transaction' => 'rw', 'invoice' => 'rw', 'report' => 'rw',
             'content' => 'rw', 'promo' => 'rw', 'expense' => 'rw', 'broadcast' => 'rw',
             'loyalty' => 'rw',
+            // Kotak masuk WhatsApp: admin dan kasir membalas, peran klinis lain
+            // cukup membaca utas yang sudah ada.
+            'inbox' => 'rw',
             'category' => 'rw',
             // Satuan hanya dipakai formulir produk, dan produk hanya admin.
             'unit' => 'rw',
@@ -45,16 +48,19 @@ class SyncTenantClinicRolesAction
             'patient' => 'rw', 'booking' => 'rw', 'medical_record' => 'rw', 'service' => 'r',
             // Perlu membaca kategori layanan saat menelusuri katalog.
             'category' => 'r',
+            'inbox' => 'r',
         ],
         'therapist' => [
             'patient' => 'r', 'booking' => 'rw', 'medical_record' => 'rw', 'service' => 'r',
             'category' => 'r',
+            'inbox' => 'r',
         ],
         'cashier' => [
             'patient' => 'rw', 'transaction' => 'rw', 'invoice' => 'rw',
             // Kasir hanya perlu menelusuri asal potongan harga, bukan mengubahnya.
             // Tarif poin dibaca untuk perkiraan di layar bayar, tidak diubah.
             'promo' => 'r', 'loyalty' => 'r',
+            'inbox' => 'rw',
         ],
     ];
 

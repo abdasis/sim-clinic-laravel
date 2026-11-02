@@ -21,6 +21,7 @@ use App\Models\CompanyPromo;
 use App\Models\CompanyTestimonial;
 use App\Models\CompanyTreatment;
 use App\Models\CompanyValueProp;
+use App\Models\Conversation;
 use App\Models\Expense;
 use App\Models\Invitation;
 use App\Models\LoyaltySetting;
@@ -43,6 +44,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
+use App\Support\CloudApiClient;
 use App\Support\DeepSeekClient;
 use App\Support\WahaClient;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -101,6 +103,7 @@ class AppServiceProvider extends ServiceProvider
         'company_promo' => CompanyPromo::class,
         'company_testimonial' => CompanyTestimonial::class,
         'company_content_section' => CompanyContentSection::class,
+        'conversation' => Conversation::class,
     ];
 
     /**
@@ -125,6 +128,29 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return new WahaClient($server->base_url, $server->api_key, $tenant->session);
+        });
+
+        // Cloud API Meta: token milik platform, nomor pengirim milik klinik.
+        // Salah satunya belum diisi berarti jalur ini belum bisa dipakai.
+        $this->app->bind(CloudApiClient::class, function (): ?CloudApiClient {
+            $token = (string) config('meta_whatsapp.access_token');
+
+            if ($token === '') {
+                return null;
+            }
+
+            $phoneNumberId = (string) (WhatsappSetting::query()->first()?->phone_number_id ?? '');
+
+            if ($phoneNumberId === '') {
+                return null;
+            }
+
+            return new CloudApiClient(
+                (string) config('meta_whatsapp.base_url'),
+                (string) config('meta_whatsapp.api_version'),
+                $token,
+                $phoneNumberId,
+            );
         });
 
         // Sama seperti WahaClient: belum disetel bukan galat, cuma "belum bisa

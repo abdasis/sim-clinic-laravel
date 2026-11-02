@@ -24,13 +24,20 @@ import type { ApiError } from "#/lib/api.ts"
  * Pesannya diterjemahkan saat schema dibuat, bukan saat dirender: zod
  * menyimpan string jadi, bukan kunci.
  */
-function buildSchema(formatMessage: string) {
+function buildSchema(formatMessage: string, phoneFormatMessage: string) {
   return z.object({
     // Boleh kosong: klinik yang belum pakai WAHA tetap bisa kirim manual.
     session: z
       .string()
       .max(100)
       .regex(/^[a-z0-9-]*$/, formatMessage)
+      .optional(),
+    // Angka saja dan boleh kosong: nomor Cloud API hanya dipakai klinik yang
+    // membalas lewat jalur Meta.
+    phone_number_id: z
+      .string()
+      .max(32)
+      .regex(/^\d*$/, phoneFormatMessage)
       .optional(),
   })
 }
@@ -61,6 +68,7 @@ export function BroadcastSettingsDialog({
       apiGet<{
         data: {
           session?: string | null
+          phone_number_id?: string | null
           waha_available: boolean
         }
       }>(`/${tenant}/clinic/broadcasts/settings`),
@@ -69,22 +77,32 @@ export function BroadcastSettingsDialog({
 
   // Dibangun ulang tiap render: `t` baru bisa menjawab setelah terjemahan
   // termuat, dan react-hook-form membaca resolver terbaru saat memvalidasi.
-  const form = useForm(buildSchema(t("broadcast.session_format")), {
-    defaultValues: { session: "" },
-  })
+  const form = useForm(
+    buildSchema(
+      t("broadcast.session_format"),
+      t("broadcast.phone_number_id_format"),
+    ),
+    {
+      defaultValues: { session: "", phone_number_id: "" },
+    },
+  )
 
   const current = settings.data?.data
 
   useEffect(() => {
     if (!open || !current) return
 
-    form.reset({ session: current.session ?? "" })
+    form.reset({
+      session: current.session ?? "",
+      phone_number_id: current.phone_number_id ?? "",
+    })
   }, [open, current, form])
 
   const mutation = useMutation({
     mutationFn: (values: Values) =>
       apiPut(`/${tenant}/clinic/broadcasts/settings`, {
         session: values.session?.trim() || null,
+        phone_number_id: values.phone_number_id?.trim() || null,
       }),
     onSuccess: () => {
       toast.success(t("broadcast.settings_saved"))
@@ -130,6 +148,15 @@ export function BroadcastSettingsDialog({
                 placeholder="klinik-satu"
                 description={t("broadcast.session_empty")}
                 inputClassName="font-mono"
+              />
+
+              <FormInput
+                control={form.control}
+                name="phone_number_id"
+                label={t("broadcast.phone_number_id_label")}
+                description={t("broadcast.phone_number_id_hint")}
+                placeholder="109900000000000"
+                inputClassName="font-mono tabular-nums"
               />
 
               <DialogFooter>

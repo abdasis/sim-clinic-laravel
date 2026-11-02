@@ -17,9 +17,12 @@ import { Route as TenantIndexRouteImport } from './routes/$tenant/index'
 import { Route as TenantClinicRouteRouteImport } from './routes/$tenant/clinic/route'
 import { Route as TenantLoginRouteImport } from './routes/$tenant/login'
 import { Route as MarketingIndexRouteImport } from './routes/_marketing/index'
+import { Route as MarketingPrivacyRouteImport } from './routes/_marketing/privacy'
+import { Route as MarketingTermsRouteImport } from './routes/_marketing/terms'
 import { Route as CentralIndexRouteImport } from './routes/central/index'
 import { Route as CentralLoginRouteImport } from './routes/central/login'
 import { Route as DemoDataTableRouteImport } from './routes/demo/data-table'
+import { Route as DemoLoginRouteImport } from './routes/demo/login'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as InvitationsTokenRouteImport } from './routes/invitations/$token'
 import { Route as TenantClinicIndexRouteImport } from './routes/$tenant/clinic/index'
@@ -45,6 +48,7 @@ import { Route as TenantClinicChatbotSettingsRouteImport } from './routes/$tenan
 import { Route as TenantClinicCompanyProfileIndexRouteImport } from './routes/$tenant/clinic/company-profile/index'
 import { Route as TenantClinicCompanyProfileSettingsRouteImport } from './routes/$tenant/clinic/company-profile/settings'
 import { Route as TenantClinicExpensesIndexRouteImport } from './routes/$tenant/clinic/expenses/index'
+import { Route as TenantClinicInboxIndexRouteImport } from './routes/$tenant/clinic/inbox/index'
 import { Route as TenantClinicInventoryIndexRouteImport } from './routes/$tenant/clinic/inventory/index'
 import { Route as TenantClinicLoyaltyIndexRouteImport } from './routes/$tenant/clinic/loyalty/index'
 import { Route as TenantClinicMedicalRecordsIndexRouteImport } from './routes/$tenant/clinic/medical-records/index'
@@ -115,6 +119,16 @@ const MarketingIndexRoute = MarketingIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MarketingRoute,
 } as any)
+const MarketingPrivacyRoute = MarketingPrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingTermsRoute = MarketingTermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => MarketingRoute,
+} as any)
 const CentralIndexRoute = CentralIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -128,6 +142,11 @@ const CentralLoginRoute = CentralLoginRouteImport.update({
 const DemoDataTableRoute = DemoDataTableRouteImport.update({
   id: '/demo/data-table',
   path: '/demo/data-table',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoLoginRoute = DemoLoginRouteImport.update({
+  id: '/demo/login',
+  path: '/demo/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
@@ -266,6 +285,11 @@ const TenantClinicExpensesIndexRoute =
     path: '/expenses/',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
+const TenantClinicInboxIndexRoute = TenantClinicInboxIndexRouteImport.update({
+  id: '/inbox/',
+  path: '/inbox/',
+  getParentRoute: () => TenantClinicRouteRoute,
+} as any)
 const TenantClinicInventoryIndexRoute =
   TenantClinicInventoryIndexRouteImport.update({
     id: '/inventory/',
@@ -446,8 +470,11 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/$tenant/clinic': typeof TenantClinicRouteRouteWithChildren
   '/$tenant/login': typeof TenantLoginRoute
+  '/privacy': typeof MarketingPrivacyRoute
+  '/terms': typeof MarketingTermsRoute
   '/central/login': typeof CentralLoginRoute
   '/demo/data-table': typeof DemoDataTableRoute
+  '/demo/login': typeof DemoLoginRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
   '/$tenant/': typeof TenantIndexRoute
@@ -480,6 +507,7 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/categories/': typeof TenantClinicCategoriesIndexRoute
   '/$tenant/clinic/company-profile/': typeof TenantClinicCompanyProfileIndexRoute
   '/$tenant/clinic/expenses/': typeof TenantClinicExpensesIndexRoute
+  '/$tenant/clinic/inbox/': typeof TenantClinicInboxIndexRoute
   '/$tenant/clinic/inventory/': typeof TenantClinicInventoryIndexRoute
   '/$tenant/clinic/loyalty/': typeof TenantClinicLoyaltyIndexRoute
   '/$tenant/clinic/medical-records/': typeof TenantClinicMedicalRecordsIndexRoute
@@ -510,8 +538,11 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/register': typeof RegisterRoute
   '/$tenant/login': typeof TenantLoginRoute
+  '/privacy': typeof MarketingPrivacyRoute
+  '/terms': typeof MarketingTermsRoute
   '/central/login': typeof CentralLoginRoute
   '/demo/data-table': typeof DemoDataTableRoute
+  '/demo/login': typeof DemoLoginRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
   '/$tenant': typeof TenantIndexRoute
@@ -544,6 +575,7 @@ export interface FileRoutesByTo {
   '/$tenant/clinic/categories': typeof TenantClinicCategoriesIndexRoute
   '/$tenant/clinic/company-profile': typeof TenantClinicCompanyProfileIndexRoute
   '/$tenant/clinic/expenses': typeof TenantClinicExpensesIndexRoute
+  '/$tenant/clinic/inbox': typeof TenantClinicInboxIndexRoute
   '/$tenant/clinic/inventory': typeof TenantClinicInventoryIndexRoute
   '/$tenant/clinic/loyalty': typeof TenantClinicLoyaltyIndexRoute
   '/$tenant/clinic/medical-records': typeof TenantClinicMedicalRecordsIndexRoute
@@ -578,8 +610,11 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/$tenant/clinic': typeof TenantClinicRouteRouteWithChildren
   '/$tenant/login': typeof TenantLoginRoute
+  '/_marketing/privacy': typeof MarketingPrivacyRoute
+  '/_marketing/terms': typeof MarketingTermsRoute
   '/central/login': typeof CentralLoginRoute
   '/demo/data-table': typeof DemoDataTableRoute
+  '/demo/login': typeof DemoLoginRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/invitations/$token': typeof InvitationsTokenRoute
   '/$tenant/': typeof TenantIndexRoute
@@ -613,6 +648,7 @@ export interface FileRoutesById {
   '/$tenant/clinic/categories/': typeof TenantClinicCategoriesIndexRoute
   '/$tenant/clinic/company-profile/': typeof TenantClinicCompanyProfileIndexRoute
   '/$tenant/clinic/expenses/': typeof TenantClinicExpensesIndexRoute
+  '/$tenant/clinic/inbox/': typeof TenantClinicInboxIndexRoute
   '/$tenant/clinic/inventory/': typeof TenantClinicInventoryIndexRoute
   '/$tenant/clinic/loyalty/': typeof TenantClinicLoyaltyIndexRoute
   '/$tenant/clinic/medical-records/': typeof TenantClinicMedicalRecordsIndexRoute
@@ -648,8 +684,11 @@ export interface FileRouteTypes {
     | '/register'
     | '/$tenant/clinic'
     | '/$tenant/login'
+    | '/privacy'
+    | '/terms'
     | '/central/login'
     | '/demo/data-table'
+    | '/demo/login'
     | '/demo/tanstack-query'
     | '/invitations/$token'
     | '/$tenant/'
@@ -682,6 +721,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/categories/'
     | '/$tenant/clinic/company-profile/'
     | '/$tenant/clinic/expenses/'
+    | '/$tenant/clinic/inbox/'
     | '/$tenant/clinic/inventory/'
     | '/$tenant/clinic/loyalty/'
     | '/$tenant/clinic/medical-records/'
@@ -712,8 +752,11 @@ export interface FileRouteTypes {
     | '/about'
     | '/register'
     | '/$tenant/login'
+    | '/privacy'
+    | '/terms'
     | '/central/login'
     | '/demo/data-table'
+    | '/demo/login'
     | '/demo/tanstack-query'
     | '/invitations/$token'
     | '/$tenant'
@@ -746,6 +789,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/categories'
     | '/$tenant/clinic/company-profile'
     | '/$tenant/clinic/expenses'
+    | '/$tenant/clinic/inbox'
     | '/$tenant/clinic/inventory'
     | '/$tenant/clinic/loyalty'
     | '/$tenant/clinic/medical-records'
@@ -779,8 +823,11 @@ export interface FileRouteTypes {
     | '/register'
     | '/$tenant/clinic'
     | '/$tenant/login'
+    | '/_marketing/privacy'
+    | '/_marketing/terms'
     | '/central/login'
     | '/demo/data-table'
+    | '/demo/login'
     | '/demo/tanstack-query'
     | '/invitations/$token'
     | '/$tenant/'
@@ -814,6 +861,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/categories/'
     | '/$tenant/clinic/company-profile/'
     | '/$tenant/clinic/expenses/'
+    | '/$tenant/clinic/inbox/'
     | '/$tenant/clinic/inventory/'
     | '/$tenant/clinic/loyalty/'
     | '/$tenant/clinic/medical-records/'
@@ -849,6 +897,7 @@ export interface RootRouteChildren {
   TenantClinicRouteRoute: typeof TenantClinicRouteRouteWithChildren
   TenantLoginRoute: typeof TenantLoginRoute
   DemoDataTableRoute: typeof DemoDataTableRoute
+  DemoLoginRoute: typeof DemoLoginRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   InvitationsTokenRoute: typeof InvitationsTokenRoute
   TenantIndexRoute: typeof TenantIndexRoute
@@ -913,6 +962,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketingIndexRouteImport
       parentRoute: typeof MarketingRoute
     }
+    '/_marketing/privacy': {
+      id: '/_marketing/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof MarketingPrivacyRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/terms': {
+      id: '/_marketing/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof MarketingTermsRouteImport
+      parentRoute: typeof MarketingRoute
+    }
     '/central/': {
       id: '/central/'
       path: '/'
@@ -932,6 +995,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/data-table'
       fullPath: '/demo/data-table'
       preLoaderRoute: typeof DemoDataTableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/login': {
+      id: '/demo/login'
+      path: '/demo/login'
+      fullPath: '/demo/login'
+      preLoaderRoute: typeof DemoLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/tanstack-query': {
@@ -1107,6 +1177,13 @@ declare module '@tanstack/react-router' {
       path: '/expenses'
       fullPath: '/$tenant/clinic/expenses/'
       preLoaderRoute: typeof TenantClinicExpensesIndexRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/inbox/': {
+      id: '/$tenant/clinic/inbox/'
+      path: '/inbox'
+      fullPath: '/$tenant/clinic/inbox/'
+      preLoaderRoute: typeof TenantClinicInboxIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
     '/$tenant/clinic/inventory/': {
@@ -1343,6 +1420,8 @@ const CentralRouteRouteWithChildren = CentralRouteRoute._addFileChildren(
 )
 
 interface MarketingRouteChildren {
+  MarketingPrivacyRoute: typeof MarketingPrivacyRoute
+  MarketingTermsRoute: typeof MarketingTermsRoute
   MarketingIndexRoute: typeof MarketingIndexRoute
   MarketingTreatmentSlugRoute: typeof MarketingTreatmentSlugRoute
   MarketingArtikelIndexRoute: typeof MarketingArtikelIndexRoute
@@ -1355,6 +1434,8 @@ interface MarketingRouteChildren {
 }
 
 const MarketingRouteChildren: MarketingRouteChildren = {
+  MarketingPrivacyRoute: MarketingPrivacyRoute,
+  MarketingTermsRoute: MarketingTermsRoute,
   MarketingIndexRoute: MarketingIndexRoute,
   MarketingTreatmentSlugRoute: MarketingTreatmentSlugRoute,
   MarketingArtikelIndexRoute: MarketingArtikelIndexRoute,
@@ -1404,6 +1485,7 @@ interface TenantClinicRouteRouteChildren {
   TenantClinicCategoriesIndexRoute: typeof TenantClinicCategoriesIndexRoute
   TenantClinicCompanyProfileIndexRoute: typeof TenantClinicCompanyProfileIndexRoute
   TenantClinicExpensesIndexRoute: typeof TenantClinicExpensesIndexRoute
+  TenantClinicInboxIndexRoute: typeof TenantClinicInboxIndexRoute
   TenantClinicInventoryIndexRoute: typeof TenantClinicInventoryIndexRoute
   TenantClinicLoyaltyIndexRoute: typeof TenantClinicLoyaltyIndexRoute
   TenantClinicMedicalRecordsIndexRoute: typeof TenantClinicMedicalRecordsIndexRoute
@@ -1446,6 +1528,7 @@ const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
   TenantClinicCategoriesIndexRoute: TenantClinicCategoriesIndexRoute,
   TenantClinicCompanyProfileIndexRoute: TenantClinicCompanyProfileIndexRoute,
   TenantClinicExpensesIndexRoute: TenantClinicExpensesIndexRoute,
+  TenantClinicInboxIndexRoute: TenantClinicInboxIndexRoute,
   TenantClinicInventoryIndexRoute: TenantClinicInventoryIndexRoute,
   TenantClinicLoyaltyIndexRoute: TenantClinicLoyaltyIndexRoute,
   TenantClinicMedicalRecordsIndexRoute: TenantClinicMedicalRecordsIndexRoute,
@@ -1484,6 +1567,7 @@ const rootRouteChildren: RootRouteChildren = {
   TenantClinicRouteRoute: TenantClinicRouteRouteWithChildren,
   TenantLoginRoute: TenantLoginRoute,
   DemoDataTableRoute: DemoDataTableRoute,
+  DemoLoginRoute: DemoLoginRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   InvitationsTokenRoute: InvitationsTokenRoute,
   TenantIndexRoute: TenantIndexRoute,
@@ -1492,12 +1576,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

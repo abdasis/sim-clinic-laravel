@@ -72,6 +72,8 @@ const MARKETING_SEGMENTS = new Set([
   'locations',
   'artikel',
   'cart',
+  'privacy',
+  'terms',
 ])
 
 /**

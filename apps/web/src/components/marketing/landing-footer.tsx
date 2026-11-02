@@ -60,8 +60,7 @@ export function LandingFooter({ settings, items, locale }: LandingFooterProps) {
                 className="mt-0.5 size-4 shrink-0 text-muted-foreground"
               />
               <span className="text-sm leading-relaxed text-muted-foreground">
-                Komp. Pusat Bisnis Ringroad, Jl. Ring Road No.A10, Tj. Sari,
-                Kec. Medan Selayang, Kota Medan, Sumatera Utara 20133
+                {settings?.address}
               </span>
             </li>
             <li className="flex items-start gap-2">
@@ -106,7 +105,7 @@ export function LandingFooter({ settings, items, locale }: LandingFooterProps) {
                   {...(item.link_type === "external"
                     ? { target: "_blank", rel: "noreferrer noopener" }
                     : {})}
-                  className="text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
+                  className="rounded-sm text-sm text-muted-foreground no-underline transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 >
                   {text(item.label)}
                 </a>
@@ -194,7 +193,7 @@ function IconLink({
       href={href}
       target="_blank"
       rel="noreferrer noopener"
-      className="flex items-center gap-2 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
+      className="flex items-center gap-2 rounded-sm text-sm text-muted-foreground no-underline transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     >
       <HugeiconsIcon icon={icon} strokeWidth={2} className="size-4" />
       {label}

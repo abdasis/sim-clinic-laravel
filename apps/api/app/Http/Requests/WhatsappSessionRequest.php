@@ -36,6 +36,17 @@ class WhatsappSessionRequest extends FormRequest
                 Rule::unique('whatsapp_settings', 'session')
                     ->ignore(WhatsappSetting::query()->first()?->id),
             ],
+            // Nomor pengirim Cloud API Meta. Angka saja karena Meta memakai
+            // id numerik, dan id itu satu-satunya petunjuk klinik mana yang
+            // harus menerima pesan masuk dari webhooknya.
+            'phone_number_id' => [
+                'nullable',
+                'string',
+                'max:32',
+                'regex:/^\d+$/',
+                Rule::unique('whatsapp_settings', 'phone_number_id')
+                    ->ignore(WhatsappSetting::query()->first()?->id),
+            ],
         ];
     }
 
@@ -43,6 +54,7 @@ class WhatsappSessionRequest extends FormRequest
     {
         return [
             'session' => __('broadcast.session_label'),
+            'phone_number_id' => __('broadcast.phone_number_id_label'),
         ];
     }
 
@@ -51,6 +63,8 @@ class WhatsappSessionRequest extends FormRequest
         return [
             'session.regex' => __('broadcast.session_format'),
             'session.unique' => __('broadcast.session_taken'),
+            'phone_number_id.regex' => __('broadcast.phone_number_id_format'),
+            'phone_number_id.unique' => __('broadcast.phone_number_id_taken'),
         ];
     }
 }

@@ -23,6 +23,7 @@ import {
   Globe02Icon,
   HeartPulseIcon,
   Layers01Icon,
+  MessageMultiple01Icon,
   PackageIcon,
   RulerIcon,
   PaintBoardIcon,
@@ -172,6 +173,7 @@ function ClinicLayout() {
     { key: "loyalty", label: t("loyalty.title"), permission: "loyalty.view", roles: ["admin", "cashier"], icon: CrownIcon, group: "finance" },
     { key: "expenses", label: t("expense.title"), permission: "expense.view", roles: ["admin"], icon: MoneyBag02Icon, group: "finance" },
     // Komunikasi & Pengaturan.
+    { key: "inbox", label: t("inbox.title"), permission: "inbox.view", roles: ["admin", "cashier", "doctor", "therapist"], icon: MessageMultiple01Icon, group: "system" },
     { key: "broadcasts", label: t("broadcast.title"), permission: "broadcast.view", roles: ["admin"], icon: BubbleChatIcon, group: "system" },
     { key: "chatbot/settings", label: t("chatbot.title"), permission: "content.view", roles: ["admin"], icon: AiChat01Icon, group: "system" },
     { key: "company-profile", label: t("company_profile.title"), permission: "content.view", roles: ["admin"], icon: Globe02Icon, group: "system" },

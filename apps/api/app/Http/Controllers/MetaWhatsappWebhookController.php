@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Inbox\RecordInboundMessageAction;
+use App\Enums\ConversationChannel;
 use App\Jobs\ProcessInboundMessageJob;
 use App\Models\WhatsappSetting;
 use App\Support\PhoneNumber;
@@ -21,10 +23,9 @@ use Illuminate\Support\Facades\Log;
  * mengirim token saat pesan masuk. Yang membuktikan kiriman itu benar dari
  * Meta adalah tanda tangan HMAC atas isi mentah permintaan.
  *
- * ponytail: hanya pesan masuk yang ditangani. Balasan chatbot tetap dikirim
- * lewat gateway WAHA (WahaClient), jadi pesan yang masuk lewat Cloud API
- * dibalas lewat jalur lain dan nomor Meta-nya harus terhubung ke sesi WAHA
- * yang sama. Pengiriman keluar lewat Cloud API = pekerjaan terpisah.
+ * Pesan masuk dicatat ke kotak masuk; balasan manual dikirim lewat
+ * CloudApiClient. Balasan chatbot tetap lewat sesi WAHA, jadi klinik yang
+ * memakai jalur Meta sekaligus perlu sesi WAHA untuk chatbot menjawab.
  */
 class MetaWhatsappWebhookController extends Controller
 {
@@ -159,6 +160,18 @@ class MetaWhatsappWebhookController extends Controller
             'from' => $phone,
             'body' => trim($body),
         ]);
+
+        $providerMessageId = $message['id'] ?? null;
+        $contactName = data_get($message, 'profile.name');
+
+        app(RecordInboundMessageAction::class)->handle(
+            $setting->tenant_id,
+            $phone,
+            trim($body),
+            ConversationChannel::CloudApi,
+            is_string($providerMessageId) && $providerMessageId !== '' ? $providerMessageId : null,
+            is_string($contactName) && $contactName !== '' ? $contactName : null,
+        );
 
         ProcessInboundMessageJob::dispatch($setting->tenant_id, $phone, trim($body));
     }

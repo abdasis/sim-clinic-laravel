@@ -3,8 +3,10 @@
 namespace App\Jobs;
 
 use App\Actions\Broadcast\PauseStalledBroadcastAction;
+use App\Actions\Inbox\RecordOutboundMessageAction;
 use App\Enums\BroadcastRecipientStatus;
 use App\Enums\BroadcastStatus;
+use App\Enums\ConversationChannel;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\Tenant;
@@ -181,7 +183,34 @@ class SendBroadcastRecipientJob implements ShouldQueue
             'error' => null,
         ]);
 
+        $this->recordOutbound($recipient);
+
         $this->finishIfDrained($broadcast);
+    }
+
+    /**
+     * Catat pesan ke kotak masuk setelah benar-benar terkirim.
+     *
+     * Kegagalan mencatat tidak boleh mengubah penerima yang sudah terkirim
+     * menjadi gagal — pesannya sudah sampai ke pasien, dan mengirim ulang
+     * hanya akan membuat pasien menerimanya dua kali.
+     */
+    private function recordOutbound(BroadcastRecipient $recipient): void
+    {
+        try {
+            app(RecordOutboundMessageAction::class)->handle(
+                $this->tenantId,
+                $recipient->phone,
+                $recipient->message,
+                ConversationChannel::Waha,
+            );
+        } catch (Throwable $e) {
+            Log::error('Pesan broadcast terkirim tetapi gagal dicatat ke kotak masuk.', [
+                'exception' => $e,
+                'broadcast_id' => $recipient->broadcast_id,
+                'recipient_id' => $recipient->id,
+            ]);
+        }
     }
 
     /**

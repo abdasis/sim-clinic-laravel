@@ -405,6 +405,22 @@ const FOOTER_NAV: CompanyNavItem[] = [
     position: "footer",
     is_cta: false,
   },
+  {
+    id: 10,
+    label: { id: "Kebijakan Privasi", en: "Privacy Policy" },
+    url: "/privacy",
+    link_type: "route_root",
+    position: "footer",
+    is_cta: false,
+  },
+  {
+    id: 11,
+    label: { id: "Ketentuan Layanan", en: "Terms of Service" },
+    url: "/terms",
+    link_type: "route_root",
+    position: "footer",
+    is_cta: false,
+  },
 ]
 
 export const LANDING_CONTENT: CompanyLanding = {
@@ -413,6 +429,10 @@ export const LANDING_CONTENT: CompanyLanding = {
     site_name: { id: "Meba Clinic Aesthetic", en: "Meba Clinic Aesthetic" },
     logo_path: null,
     logo_url: null,
+    // Satu sumber identitas klinik: footer dan halaman legal membacanya dari sini.
+    address:
+      "Komp. Pusat Bisnis Ringroad, Jl. Ring Road No.A10, Tj. Sari, Kec. Medan Selayang, Kota Medan, Sumatera Utara 20133",
+    phone: "0822-7309-7656",
     copyright_text: "Copyright © 2026 Meba Clinic Aesthetic. All Right Reserved",
     chat_channels: [
       {

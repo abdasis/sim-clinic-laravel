@@ -19,6 +19,7 @@ use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InboundMessageController;
+use App\Http\Controllers\InboxConversationController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LoyaltySettingController;
@@ -225,6 +226,12 @@ Route::prefix('{tenant}/clinic')
             ->only(['index', 'store', 'update', 'destroy']);
         Route::patch('broadcasts/{broadcast}/recipients/{recipient}', [BroadcastController::class, 'updateRecipient']);
         Route::apiResource('broadcasts', BroadcastController::class)->only(['index', 'store', 'show', 'destroy']);
+
+        // Kotak masuk WhatsApp — utas percakapan, balasan manual, tanda dibaca
+        Route::get('inbox/conversations', [InboxConversationController::class, 'index']);
+        Route::get('inbox/conversations/{conversation}', [InboxConversationController::class, 'show']);
+        Route::post('inbox/conversations/{conversation}/messages', [InboxConversationController::class, 'storeMessage']);
+        Route::patch('inbox/conversations/{conversation}/read', [InboxConversationController::class, 'markRead']);
 
         // Promo — potongan harga layanan/produk dalam rentang tanggal
         Route::apiResource('promos', PromoController::class);

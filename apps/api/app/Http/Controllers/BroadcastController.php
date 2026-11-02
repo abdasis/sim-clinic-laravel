@@ -292,9 +292,13 @@ class BroadcastController extends Controller
     {
         $this->authorize('viewAny', Broadcast::class);
 
+        $setting = WhatsappSetting::query()->first();
+
         return response()->json([
             'data' => [
-                'session' => WhatsappSetting::query()->first()?->session,
+                'session' => $setting?->session,
+                // Nomor Cloud API Meta yang dipakai membalas lewat jalur itu.
+                'phone_number_id' => $setting?->phone_number_id,
                 // Klinik tidak bisa berbuat apa-apa sampai pengelola platform
                 // mengisi alamat servernya, jadi keadaannya ikut disebut.
                 'waha_available' => WahaSetting::query()->first()?->isConfigured() ?? false,
@@ -315,10 +319,20 @@ class BroadcastController extends Controller
 
         $setting = WhatsappSetting::query()->firstOrNew([]);
         $setting->session = $validated['session'] ?? null;
+
+        // Hanya ditimpa bila dikirim: menyimpan sesi saja tidak boleh
+        // menghapus nomor Cloud API yang sudah diisi sebelumnya.
+        if (array_key_exists('phone_number_id', $validated)) {
+            $setting->phone_number_id = $validated['phone_number_id'];
+        }
+
         $setting->save();
 
         return response()->json([
-            'data' => ['session' => $setting->session],
+            'data' => [
+                'session' => $setting->session,
+                'phone_number_id' => $setting->phone_number_id,
+            ],
             'meta' => ['message' => __('broadcast.settings_saved')],
         ]);
     }
