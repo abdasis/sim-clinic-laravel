@@ -83,7 +83,11 @@ async function createClient(
     wsPort: port,
     wssPort: port,
     forceTLS,
-    enabledTransports: forceTLS ? ["wss"] : ["ws"],
+    // `pusher-js` menamai transportnya "ws" untuk kedua skema: ws:// maupun
+    // wss://. Menyebut hanya "wss" di sini menyisakan nol transport, sehingga
+    // koneksi langsung berhenti di status `failed` tanpa satu pun percobaan
+    // WebSocket — dan kotak masuk tidak pernah tersegarkan sendiri.
+    enabledTransports: ["ws", "wss"],
     authEndpoint,
     authorizer: (channel) => ({
       authorize: async (socketId, callback) => {
