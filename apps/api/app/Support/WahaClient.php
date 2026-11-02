@@ -42,7 +42,7 @@ class WahaClient
      * Kirim satu pesan. Melempar bila gagal — pemanggil yang memutuskan
      * pengulangan dan pencatatan statusnya.
      */
-    public function send(string $phone, string $message): void
+    public function send(string $phone, string $message, ?string $replyTo = null): void
     {
         $chatId = $this->chatId($phone);
 
@@ -50,14 +50,44 @@ class WahaClient
             throw new RuntimeException('Nomor tujuan tidak valid: '.$phone);
         }
 
-        $response = $this->request()->post($this->url('/api/sendText'), [
+        $payload = [
             'session' => $this->session,
             'chatId' => $chatId,
             'text' => $message,
-        ]);
+        ];
+
+        if ($replyTo !== null && $replyTo !== '') {
+            $payload['replyTo'] = $replyTo;
+        }
+
+        $response = $this->request()->post($this->url('/api/sendText'), $payload);
 
         if (! $response->successful()) {
             throw WahaException::rejected('WAHA menolak pengiriman', $response);
+        }
+    }
+
+    /**
+     * Beri atau cabut reaksi pada pesan yang sudah ada. Reaksi kosong
+     * mencabut reaksi sebelumnya.
+     */
+    public function sendReaction(string $phone, string $messageId, string $reaction): void
+    {
+        $chatId = $this->chatId($phone);
+
+        if ($chatId === null) {
+            throw new RuntimeException('Nomor tujuan tidak valid: '.$phone);
+        }
+
+        $response = $this->request()->post($this->url('/api/sendReaction'), [
+            'session' => $this->session,
+            'chatId' => $chatId,
+            'messageId' => $messageId,
+            'reaction' => $reaction,
+        ]);
+
+        if (! $response->successful()) {
+            throw WahaException::rejected('WAHA menolak reaksi', $response);
         }
     }
 
@@ -78,13 +108,34 @@ class WahaClient
      */
     public function sendImage(string $phone, string $binary, string $mimeType, string $filename, string $caption = ''): void
     {
+        $this->sendBinary('/api/sendImage', 'WAHA menolak pengiriman gambar', $phone, $binary, $mimeType, $filename, $caption);
+    }
+
+    /**
+     * Kirim berkas apa pun (dokumen, video, audio) lewat endpoint sendFile.
+     * Beban dan bentuk payload-nya sama dengan sendImage.
+     */
+    public function sendFile(string $phone, string $binary, string $mimeType, string $filename, ?string $caption = null): void
+    {
+        $this->sendBinary('/api/sendFile', 'WAHA menolak pengiriman berkas', $phone, $binary, $mimeType, $filename, $caption ?? '');
+    }
+
+    private function sendBinary(
+        string $path,
+        string $rejection,
+        string $phone,
+        string $binary,
+        string $mimeType,
+        string $filename,
+        string $caption,
+    ): void {
         $chatId = $this->chatId($phone);
 
         if ($chatId === null) {
             throw new RuntimeException('Nomor tujuan tidak valid: '.$phone);
         }
 
-        $response = $this->request()->post($this->url('/api/sendImage'), [
+        $response = $this->request()->post($this->url($path), [
             'session' => $this->session,
             'chatId' => $chatId,
             'file' => [
@@ -96,7 +147,7 @@ class WahaClient
         ]);
 
         if (! $response->successful()) {
-            throw WahaException::rejected('WAHA menolak pengiriman gambar', $response);
+            throw WahaException::rejected($rejection, $response);
         }
     }
 

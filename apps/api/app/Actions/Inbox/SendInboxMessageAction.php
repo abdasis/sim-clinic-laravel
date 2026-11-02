@@ -2,8 +2,8 @@
 
 namespace App\Actions\Inbox;
 
+use App\Concerns\EnsuresReplyWindow;
 use App\Enums\ConversationChannel;
-use App\Enums\MessageDirection;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Support\CloudApiClient;
@@ -22,12 +22,22 @@ use Illuminate\Validation\ValidationException;
  */
 class SendInboxMessageAction
 {
-    public function handle(Conversation $conversation, string $body): Message
+    use EnsuresReplyWindow;
+
+    public function handle(Conversation $conversation, string $body, ?int $replyToMessageId = null): Message
     {
         $this->ensureReplyWindowOpen($conversation);
 
+        $replyTo = $replyToMessageId === null
+            ? null
+            : $conversation->messages()->whereKey($replyToMessageId)->first();
+
+        if ($replyToMessageId !== null && $replyTo === null) {
+            throw ValidationException::withMessages(['reply_to_message_id' => __('inbox.reply_not_found')]);
+        }
+
         try {
-            $providerMessageId = $this->deliver($conversation, $body);
+            $providerMessageId = $this->deliver($conversation, $body, $replyTo?->provider_message_id);
         } catch (CloudApiException|WahaException $e) {
             Log::error('Gagal mengirim balasan kotak masuk WhatsApp.', [
                 'exception' => $e,
@@ -44,32 +54,13 @@ class SendInboxMessageAction
             $body,
             $conversation->channel,
             $providerMessageId,
+            [],
+            $replyTo,
         ));
     }
 
-    /**
-     * Balasan bebas Cloud API hanya berlaku 24 jam sejak pesan terakhir
-     * kontak. Lewat dari itu Meta menolak, dan penolakannya baru terlihat
-     * setelah pesannya disusun — jadi diperiksa lebih dulu.
-     */
-    private function ensureReplyWindowOpen(Conversation $conversation): void
-    {
-        if ($conversation->channel !== ConversationChannel::CloudApi) {
-            return;
-        }
-
-        $lastInbound = $conversation->messages()
-            ->where('direction', MessageDirection::In)
-            ->orderByDesc('sent_at')
-            ->first();
-
-        if ($lastInbound?->sent_at === null || $lastInbound->sent_at->lt(now()->subDay())) {
-            throw ValidationException::withMessages(['body' => __('inbox.window_expired')]);
-        }
-    }
-
     /** @return string|null id pesan dari penyedia, bila ia memberikannya */
-    private function deliver(Conversation $conversation, string $body): ?string
+    private function deliver(Conversation $conversation, string $body, ?string $replyToMessageId): ?string
     {
         if ($conversation->channel === ConversationChannel::CloudApi) {
             $client = app(CloudApiClient::class);
@@ -78,7 +69,7 @@ class SendInboxMessageAction
                 throw ValidationException::withMessages(['body' => __('inbox.cloud_api_not_ready')]);
             }
 
-            return $client->sendText($conversation->contact_phone, $body);
+            return $client->sendText($conversation->contact_phone, $body, $replyToMessageId);
         }
 
         $client = app(WahaClient::class);
@@ -87,7 +78,7 @@ class SendInboxMessageAction
             throw ValidationException::withMessages(['body' => __('inbox.waha_not_ready')]);
         }
 
-        $client->send($conversation->contact_phone, $body);
+        $client->send($conversation->contact_phone, $body, $replyToMessageId);
 
         return null;
     }

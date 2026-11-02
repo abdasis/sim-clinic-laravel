@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Inbox\RecordInboundMessageAction;
+use App\Actions\Inbox\UpdateMessageStatusAction;
 use App\Enums\ConversationChannel;
+use App\Enums\MessageStatus;
 use App\Jobs\ProcessInboundMessageJob;
 use App\Models\WhatsappSetting;
 use App\Support\PhoneNumber;
@@ -84,9 +86,9 @@ class MetaWhatsappWebhookController extends Controller
     }
 
     /**
-     * Satu perubahan pada satu nomor. `statuses`, media, reaksi, dan kontak
-     * tiba pada jalur yang sama tapi tidak punya `messages`, jadi dibiarkan
-     * lewat tanpa jawaban.
+     * Satu perubahan pada satu nomor: pesan masuk dan status kirim tiba di
+     * jalur yang sama. Media, reaksi, dan kontak tidak punya keduanya, jadi
+     * dibiarkan lewat tanpa jawaban.
      *
      * @param  array<string, mixed>  $value
      */
@@ -94,8 +96,12 @@ class MetaWhatsappWebhookController extends Controller
     {
         $phoneNumberId = (string) (data_get($value, 'metadata.phone_number_id') ?? '');
         $messages = data_get($value, 'messages');
+        $statuses = data_get($value, 'statuses');
 
-        if ($phoneNumberId === '' || ! is_array($messages) || $messages === []) {
+        $hasMessages = is_array($messages) && $messages !== [];
+        $hasStatuses = is_array($statuses) && $statuses !== [];
+
+        if ($phoneNumberId === '' || (! $hasMessages && ! $hasStatuses)) {
             return;
         }
 
@@ -104,16 +110,58 @@ class MetaWhatsappWebhookController extends Controller
             ->first();
 
         if ($setting === null) {
-            Log::channel('chatbot')->warning('Pesan masuk ditolak: nomor Meta tidak dikenal', [
+            Log::channel('chatbot')->warning('Webhook Meta ditolak: nomor tidak dikenal', [
                 'phone_number_id' => $phoneNumberId,
             ]);
 
             return;
         }
 
-        foreach ($messages as $message) {
-            $this->queueIfText($setting, (array) $message);
+        if ($hasMessages) {
+            foreach ($messages as $message) {
+                $this->queueIfText($setting, (array) $message);
+            }
         }
+
+        if ($hasStatuses) {
+            foreach ($statuses as $status) {
+                $this->updateStatus($setting, (array) $status);
+            }
+        }
+    }
+
+    /**
+     * Status kirim satu pesan keluar. Nilai yang tidak dikenal dilewati satu
+     * per satu, bukan menolak seluruh payload.
+     *
+     * @param  array<string, mixed>  $status
+     */
+    private function updateStatus(WhatsappSetting $setting, array $status): void
+    {
+        $value = $status['status'] ?? null;
+        $providerMessageId = $status['id'] ?? null;
+
+        $statusEnum = is_string($value) ? MessageStatus::tryFrom($value) : null;
+
+        if (
+            $statusEnum === null
+            || ! is_string($providerMessageId)
+            || $providerMessageId === ''
+        ) {
+            Log::channel('chatbot')->debug('Status Meta dilewati: bentuk tidak dikenal', [
+                'phone_number_id' => $setting->phone_number_id,
+                'status' => $value,
+                'id' => $providerMessageId,
+            ]);
+
+            return;
+        }
+
+        app(UpdateMessageStatusAction::class)->handle(
+            $setting->tenant_id,
+            $providerMessageId,
+            $statusEnum,
+        );
     }
 
     /**

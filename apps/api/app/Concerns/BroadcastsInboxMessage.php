@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Events\InboxMessageCreated;
+use App\Events\InboxMessageStatusUpdated;
 use App\Models\Message;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -27,6 +28,25 @@ trait BroadcastsInboxMessage
             ));
         } catch (Throwable $e) {
             Log::error('Gagal menyiarkan pesan kotak masuk baru.', [
+                'exception' => $e,
+                'tenant_id' => $tenantId,
+                'message_id' => $message->id,
+            ]);
+        }
+    }
+
+    protected function broadcastInboxMessageStatus(Message $message, int $tenantId): void
+    {
+        try {
+            event(new InboxMessageStatusUpdated(
+                tenantId: $tenantId,
+                conversationId: (int) $message->conversation_id,
+                messageId: (int) $message->id,
+                direction: $message->direction,
+                status: $message->status,
+            ));
+        } catch (Throwable $e) {
+            Log::error('Gagal menyiarkan status pesan kotak masuk.', [
                 'exception' => $e,
                 'tenant_id' => $tenantId,
                 'message_id' => $message->id,

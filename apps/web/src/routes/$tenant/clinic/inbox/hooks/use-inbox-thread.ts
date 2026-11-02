@@ -20,6 +20,11 @@ export function threadKey(tenant: string, conversationId: number | null) {
   return ["inbox-thread", tenant, conversationId] as const
 }
 
+export interface SendMessagePayload {
+  body: string
+  replyTo?: Message
+}
+
 /**
  * Utas satu percakapan beserta pengiriman balasan.
  *
@@ -54,12 +59,14 @@ export function useInboxThread(tenant: string, conversationId: number | null) {
   )
 
   const send = useMutation({
-    mutationFn: (body: string) =>
+    mutationFn: ({ body, replyTo }: SendMessagePayload) =>
       apiPost<{ data: Message; meta: { message: string } }>(
         `/${tenant}/clinic/inbox/conversations/${conversationId}/messages`,
-        { body },
+        replyTo
+          ? { body, reply_to_message_id: replyTo.id }
+          : { body },
       ),
-    onMutate: async (body) => {
+    onMutate: async ({ body, replyTo }) => {
       await qc.cancelQueries({ queryKey: key })
 
       const previous = qc.getQueryData<InfiniteData<ThreadPage, number>>(key)
@@ -71,7 +78,19 @@ export function useInboxThread(tenant: string, conversationId: number | null) {
         status: "sent",
         status_label: t("inbox.status.sent"),
         provider_message_id: null,
+        media_type: null,
+        media_url: null,
+        media_name: null,
         sent_at: new Date().toISOString(),
+        reaction: null,
+        reply_to: replyTo
+          ? {
+              id: replyTo.id,
+              body: replyTo.body,
+              direction: replyTo.direction,
+              media_type: replyTo.media_type,
+            }
+          : null,
       }
 
       qc.setQueryData<InfiniteData<ThreadPage, number>>(key, (old) =>

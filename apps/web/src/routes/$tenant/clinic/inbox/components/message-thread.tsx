@@ -27,6 +27,7 @@ import type { Conversation, Message } from "../types.ts"
 import { MessageBubble } from "./message-bubble.tsx"
 
 interface MessageThreadProps {
+  tenant: string
   conversation: Conversation
   messages: Message[]
   isLoading: boolean
@@ -39,10 +40,12 @@ interface MessageThreadProps {
   onLoadOlder: () => Promise<unknown>
   onMarkRead: () => void
   onBack: () => void
+  onReply: (message: Message) => void
   footer: ReactNode
 }
 
 export function MessageThread({
+  tenant,
   conversation,
   messages,
   isLoading,
@@ -55,6 +58,7 @@ export function MessageThread({
   onLoadOlder,
   onMarkRead,
   onBack,
+  onReply,
   footer,
 }: MessageThreadProps) {
   const { t } = useTrans()
@@ -151,7 +155,7 @@ export function MessageThread({
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto scrollbar-thin"
+        className="inbox-wallpaper min-h-0 flex-1 overflow-y-auto scrollbar-thin"
       >
         {isLoading ? (
           <div className="space-y-3 p-4">
@@ -174,8 +178,8 @@ export function MessageThread({
           <div data-testid="thread-empty">
             <EmptyState
               className="px-4 py-10"
-              title="Belum ada pesan di percakapan ini"
-              description="Pesan muncul begitu pasien mengirim lewat WhatsApp."
+              title={t("inbox.thread_empty_title")}
+              description={t("inbox.thread_empty_hint")}
             />
           </div>
         ) : (
@@ -189,7 +193,7 @@ export function MessageThread({
                   data-testid="load-older"
                   onClick={loadOlder}
                 >
-                  {isLoadingOlder ? t("general.loading") : "Muat pesan lebih lama"}
+                  {isLoadingOlder ? t("general.loading") : t("inbox.load_older")}
                 </Button>
               </div>
             ) : null}
@@ -206,7 +210,13 @@ export function MessageThread({
 
                 <div className="space-y-2">
                   {day.messages.map((message) => (
-                    <MessageBubble key={message.id} message={message} />
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      tenant={tenant}
+                      conversationId={conversation.id}
+                      onReply={onReply}
+                    />
                   ))}
                 </div>
               </div>

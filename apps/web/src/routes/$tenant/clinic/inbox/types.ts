@@ -2,7 +2,8 @@ import type { DataTableMeta } from "#/types/data-table.ts"
 
 export type ConversationChannel = "waha" | "cloud_api"
 export type MessageDirection = "in" | "out"
-export type MessageStatus = "sent" | "failed"
+export type MessageStatus = "sent" | "delivered" | "read" | "failed"
+export type MessageMediaType = "document" | "image" | "video" | "audio" | "sticker"
 
 export interface Conversation {
   id: number
@@ -16,6 +17,13 @@ export interface Conversation {
   created_at: string | null
 }
 
+export interface MessageReply {
+  id: number
+  body: string
+  direction: MessageDirection
+  media_type: MessageMediaType | null
+}
+
 export interface Message {
   id: number
   direction: MessageDirection
@@ -24,7 +32,12 @@ export interface Message {
   status: MessageStatus | null
   status_label: string | null
   provider_message_id: string | null
+  media_type: MessageMediaType | null
+  media_url: string | null
+  media_name: string | null
   sent_at: string | null
+  reaction: string | null
+  reply_to: MessageReply | null
 }
 
 export interface ConversationThread extends Conversation {

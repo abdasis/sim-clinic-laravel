@@ -25,12 +25,17 @@ class RecordOutboundMessageAction
 {
     use BroadcastsInboxMessage;
 
+    /**
+     * @param  array<string, mixed>  $media  kolom lampiran (media_type, media_path, …)
+     */
     public function handle(
         int $tenantId,
         string $phone,
         string $body,
         ConversationChannel $channel,
         ?string $providerMessageId = null,
+        array $media = [],
+        ?Message $replyTo = null,
     ): Message {
         $contactPhone = PhoneNumber::normalize($phone);
 
@@ -38,7 +43,7 @@ class RecordOutboundMessageAction
             throw new InvalidArgumentException('Nomor tujuan tidak valid: '.$phone);
         }
 
-        $message = DB::transaction(function () use ($tenantId, $contactPhone, $body, $channel, $providerMessageId): Message {
+        $message = DB::transaction(function () use ($tenantId, $contactPhone, $body, $channel, $providerMessageId, $media, $replyTo): Message {
             $conversation = Conversation::query()->firstOrCreate(
                 ['tenant_id' => $tenantId, 'contact_phone' => $contactPhone],
                 ['channel' => $channel],
@@ -55,8 +60,10 @@ class RecordOutboundMessageAction
                 'direction' => MessageDirection::Out,
                 'body' => trim($body),
                 'provider_message_id' => $providerMessageId,
+                'reply_to_message_id' => $replyTo?->id,
                 'status' => MessageStatus::Sent,
                 'sent_at' => $now,
+                ...$media,
             ]);
 
             app(LogAuditAction::class)->handle(
@@ -73,6 +80,12 @@ class RecordOutboundMessageAction
 
             return $message;
         });
+
+        // Relasi disisipkan supaya balasan membawa konteks kutipannya di
+        // response tanpa kueri tambahan.
+        if ($replyTo !== null) {
+            $message->setRelation('replyTo', $replyTo);
+        }
 
         $this->broadcastInboxMessage($message, $tenantId);
 

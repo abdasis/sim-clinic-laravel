@@ -4,10 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Enums\ConversationChannel;
 use App\Http\Concerns\InteractsWithDataTable;
+use App\Http\Requests\SendInboxContactRequest;
+use App\Http\Requests\SendInboxMediaRequest;
 use App\Http\Requests\SendInboxMessageRequest;
+use App\Http\Requests\SendInboxReactionRequest;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
 use App\Models\Conversation;
+use App\Models\Message;
 use App\Services\InboxService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -70,6 +74,7 @@ class InboxConversationController extends Controller
         $pageNumber = max(1, (int) $request->integer('page', 1));
 
         $messages = $conversation->messages()
+            ->with('replyTo')
             ->orderByDesc('sent_at')
             ->orderByDesc('id')
             ->paginate($perPage, ['*'], 'page', $pageNumber);
@@ -96,11 +101,70 @@ class InboxConversationController extends Controller
     ): JsonResponse {
         $this->authorize('update', $conversation);
 
-        $message = $inbox->send($conversation, $request->validated('body'));
+        $message = $inbox->send(
+            $conversation,
+            $request->validated('body'),
+            $request->validated('reply_to_message_id'),
+        );
 
         return response()->json([
             'data' => new MessageResource($message),
             'meta' => ['message' => __('inbox.sent')],
+        ], 201);
+    }
+
+    public function storeReaction(
+        SendInboxReactionRequest $request,
+        Conversation $conversation,
+        Message $message,
+        InboxService $inbox,
+    ): JsonResponse {
+        $this->authorize('update', $conversation);
+
+        $message = $inbox->react($conversation, $message, $request->validated('emoji'));
+
+        return response()->json([
+            'data' => new MessageResource($message),
+            'meta' => [],
+        ]);
+    }
+
+    public function storeMedia(
+        SendInboxMediaRequest $request,
+        Conversation $conversation,
+        InboxService $inbox,
+    ): JsonResponse {
+        $this->authorize('update', $conversation);
+
+        $message = $inbox->sendMedia(
+            $conversation,
+            $request->validated('type'),
+            $request->file('file'),
+            $request->validated('caption'),
+        );
+
+        return response()->json([
+            'data' => new MessageResource($message),
+            'meta' => [],
+        ], 201);
+    }
+
+    public function storeContact(
+        SendInboxContactRequest $request,
+        Conversation $conversation,
+        InboxService $inbox,
+    ): JsonResponse {
+        $this->authorize('update', $conversation);
+
+        $message = $inbox->sendContact(
+            $conversation,
+            $request->validated('name'),
+            $request->validated('phone'),
+        );
+
+        return response()->json([
+            'data' => new MessageResource($message),
+            'meta' => [],
         ], 201);
     }
 

@@ -878,6 +878,30 @@ a {
   }
 }
 
+/* Wallpaper utas kotak masuk: pola doodle diredupkan lapisan warna latar agar
+   teks dan gelembung tetap jadi fokus. Persentase lapisan pertama satu-satunya
+   tombol visibilitas pola. */
+.inbox-wallpaper {
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--background) 92%, transparent),
+      color-mix(in oklab, var(--background) 92%, transparent)
+    ),
+    url("/inbox/chat-doodle-light.jpg");
+  background-position: 0 0, center top;
+  background-repeat: repeat;
+  background-size: auto, 560px auto;
+}
+
+.dark .inbox-wallpaper {
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--background) 90%, transparent),
+      color-mix(in oklab, var(--background) 90%, transparent)
+    ),
+    url("/inbox/chat-doodle-dark.jpg");
+}
+
 /* Blok cetak sengaja paling akhir: spesifisitasnya sama dengan aturan layar
    di atas, jadi urutannya yang menentukan siapa yang menang. */
 @media print {

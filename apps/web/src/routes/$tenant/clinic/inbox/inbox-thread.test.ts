@@ -17,7 +17,12 @@ function message(id: number, sentAt: string): Message {
     status: "sent",
     status_label: "Terkirim",
     provider_message_id: null,
+    media_type: null,
+    media_url: null,
+    media_name: null,
     sent_at: sentAt,
+    reaction: null,
+    reply_to: null,
   }
 }
 

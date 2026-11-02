@@ -17,6 +17,12 @@ class Message extends Model
         'conversation_id',
         'direction',
         'body',
+        'reply_to_message_id',
+        'reaction',
+        'media_type',
+        'media_path',
+        'media_mime',
+        'media_name',
         'provider_message_id',
         'status',
         'sent_at',
@@ -34,5 +40,10 @@ class Message extends Model
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(Conversation::class);
+    }
+
+    public function replyTo(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reply_to_message_id');
     }
 }
