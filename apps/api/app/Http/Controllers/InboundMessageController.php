@@ -143,7 +143,12 @@ class InboundMessageController extends Controller
             is_string($contactName) && $contactName !== '' ? $contactName : null,
         );
 
-        ProcessInboundMessageJob::dispatch($setting->tenant_id, $phone, trim($body));
+        ProcessInboundMessageJob::dispatch(
+            $setting->tenant_id,
+            $phone,
+            trim($body),
+            ConversationChannel::Waha,
+        );
 
         return $this->accepted('diterima');
     }

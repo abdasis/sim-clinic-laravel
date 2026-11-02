@@ -6,6 +6,7 @@ use App\Actions\Inbox\RecordOutboundMessageAction;
 use App\Enums\ConversationChannel;
 use App\Models\Tenant;
 use App\Services\ChatbotService;
+use App\Support\CloudApiClient;
 use App\Support\WahaClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -27,6 +28,11 @@ use Throwable;
  * menit kemudian karena percobaan ulang lebih membingungkan pasien daripada
  * tidak dibalas sama sekali, dan pesan yang sudah terlanjur terkirim tidak bisa
  * ditarik saat percobaan kedua ikut jalan.
+ *
+ * Jalur balasnya mengikuti kanal pesan masuk: pesan Cloud API Meta hanya bisa
+ * dibalas lewat Cloud API, pesan WAHA lewat sesi WAHA. Menyalurkan semuanya ke
+ * satu gateway membuat balasan untuk kanal lain hilang tanpa jejak di layar
+ * pasien.
  */
 class ProcessInboundMessageJob implements ShouldQueue
 {
@@ -41,6 +47,7 @@ class ProcessInboundMessageJob implements ShouldQueue
         public readonly int $tenantId,
         public readonly string $senderPhone,
         public readonly string $body,
+        public readonly ConversationChannel $channel = ConversationChannel::Waha,
     ) {}
 
     public function handle(): void
@@ -81,34 +88,43 @@ class ProcessInboundMessageJob implements ShouldQueue
         // Chatbot yang mati harus benar-benar diam: memunculkan "sedang
         // mengetik" untuk balasan yang tidak akan pernah datang justru
         // menjanjikan sesuatu yang tidak ditepati.
-        $client = app(ChatbotService::class)->isActive() ? $this->client() : null;
+        $gateway = app(ChatbotService::class)->isActive() ? $this->gateway() : null;
 
         // Tidak ada gateway berarti balasannya tidak akan pernah sampai ke
         // mana pun. Menyusunnya tetap berarti membayar penyedia AI untuk
         // kalimat yang langsung dibuang, dan itu terjadi pada setiap pesan
         // masuk selama gatewaynya putus — justru saat tidak ada seorang pun
         // yang menyadarinya.
-        if ($client === null) {
+        if ($gateway === null) {
             Log::channel('chatbot')->warning('Job: dihentikan sebelum menyusun balasan', [
                 'tenant_id' => $this->tenantId,
                 'from' => $this->senderPhone,
+                'channel' => $this->channel->value,
                 'alasan' => 'chatbot mati atau gateway WhatsApp belum siap',
             ]);
 
             return;
         }
 
-        $client->startTyping($this->senderPhone);
+        // Indikator mengetik hanya ada di WAHA. Cloud API Meta tidak punya
+        // endpoint untuk itu, jadi jalur Cloud API langsung menyusun balasan.
+        $showsTyping = $gateway instanceof WahaClient;
+
+        if ($showsTyping) {
+            $gateway->startTyping($this->senderPhone);
+        }
 
         try {
-            $this->respond($client);
+            $this->respond($gateway);
         } finally {
-            $client->stopTyping($this->senderPhone);
+            if ($showsTyping) {
+                $gateway->stopTyping($this->senderPhone);
+            }
         }
     }
 
     /** Susun balasan lalu kirim; dipanggil di antara start/stop typing. */
-    private function respond(WahaClient $client): void
+    private function respond(WahaClient|CloudApiClient $gateway): void
     {
         try {
             $answer = app(ChatbotService::class)->reply($this->senderPhone, $this->body);
@@ -144,15 +160,31 @@ class ProcessInboundMessageJob implements ShouldQueue
             'answer' => $answer,
         ]);
 
-        $this->send($answer, $client);
+        $this->send($answer, $gateway);
     }
 
     /**
-     * Gateway WhatsApp klinik ini, atau null bila belum disetel. Diambil
-     * sekali supaya indikator mengetik dan pengiriman memakai sesi yang sama.
+     * Gateway yang sesuai kanal pesan masuk, atau null bila belum disetel.
+     * Diambil sekali supaya indikator mengetik dan pengiriman memakai sesi
+     * yang sama.
      */
-    private function client(): ?WahaClient
+    private function gateway(): WahaClient|CloudApiClient|null
     {
+        if ($this->channel === ConversationChannel::CloudApi) {
+            $client = app(CloudApiClient::class);
+
+            if ($client instanceof CloudApiClient) {
+                return $client;
+            }
+
+            Log::error('Balasan chatbot tidak terkirim: Cloud API Meta belum siap.', [
+                'tenant_id' => $this->tenantId,
+                'sender_phone' => $this->senderPhone,
+            ]);
+
+            return null;
+        }
+
         $client = app(WahaClient::class);
 
         if (! $client instanceof WahaClient) {
@@ -185,21 +217,30 @@ class ProcessInboundMessageJob implements ShouldQueue
         return true;
     }
 
-    private function send(string $answer, WahaClient $client): void
+    private function send(string $answer, WahaClient|CloudApiClient $gateway): void
     {
+        $providerMessageId = null;
+
         try {
-            $client->send($this->senderPhone, $answer);
+            if ($gateway instanceof CloudApiClient) {
+                // Cloud API mengembalikan id pesan; disimpan supaya status
+                // terkirim/terbaca dari webhook Meta bisa dicocokkan nanti.
+                $providerMessageId = $gateway->sendText($this->senderPhone, $answer);
+            } else {
+                $gateway->send($this->senderPhone, $answer);
+            }
         } catch (Throwable $e) {
             Log::error('Balasan chatbot gagal dikirim lewat gateway WhatsApp.', [
                 'exception' => $e,
                 'tenant_id' => $this->tenantId,
                 'sender_phone' => $this->senderPhone,
+                'channel' => $this->channel->value,
             ]);
 
             return;
         }
 
-        $this->recordOutbound($answer);
+        $this->recordOutbound($answer, $providerMessageId);
     }
 
     /**
@@ -207,20 +248,22 @@ class ProcessInboundMessageJob implements ShouldQueue
      * tidak terbaca satu arah. Kegagalan mencatat tidak boleh membuat worker
      * mengulang pengiriman yang sudah berhasil.
      */
-    private function recordOutbound(string $answer): void
+    private function recordOutbound(string $answer, ?string $providerMessageId = null): void
     {
         try {
             app(RecordOutboundMessageAction::class)->handle(
                 $this->tenantId,
                 $this->senderPhone,
                 $answer,
-                ConversationChannel::Waha,
+                $this->channel,
+                $providerMessageId,
             );
         } catch (Throwable $e) {
             Log::error('Balasan chatbot terkirim tetapi gagal dicatat ke kotak masuk.', [
                 'exception' => $e,
                 'tenant_id' => $this->tenantId,
                 'sender_phone' => $this->senderPhone,
+                'channel' => $this->channel->value,
             ]);
         }
     }
