@@ -1,9 +1,13 @@
 # API Dockerfile — Laravel 13 PHP-FPM (sim-clinic)
 FROM php:8.4-fpm-alpine
 
+# Klien PostgreSQL DIPIN ke versi 16 supaya sama dengan server (postgres:16-alpine).
+# `postgresql-client` tanpa versi kini menarik 18.x, dan pg_dump 18 menulis
+# `SET transaction_timeout = 0;` — parameter yang tidak dikenal server 16 sehingga
+# pemulihan berhenti di baris ke-13. Dump jadi tidak bisa dipulihkan tanpa disunting.
 RUN apk add --no-cache \
-    postgresql-dev \
-    postgresql-client \
+    postgresql16-dev \
+    postgresql16-client \
     libzip-dev \
     zip \
     unzip \
