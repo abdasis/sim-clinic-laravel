@@ -6,7 +6,10 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { AuthLayout } from "#/components/auth/auth-layout.tsx"
-import { DemoQuickLogin } from "#/components/auth/demo-quick-login.tsx"
+import {
+  DemoQuickLogin,
+  isDemoLoginEnabled,
+} from "#/components/auth/demo-quick-login.tsx"
 import { TenantLoginForm } from "#/components/auth/tenant-login-form.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 
@@ -36,7 +39,7 @@ function TenantLoginPage() {
         to: "/register",
       }}
     >
-      {import.meta.env.DEV ? (
+      {isDemoLoginEnabled() ? (
         <div className="mb-6">
           <DemoQuickLogin kind="clinic" showDivider />
         </div>

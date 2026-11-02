@@ -14,6 +14,15 @@ import type { AuthUser } from "#/lib/auth.ts"
  */
 export const DEMO_TENANT = "mebaclinic"
 
+/**
+ * Halaman masuk cepat hidup saat development, atau di production bila tenant
+ * demo memang disediakan dan flag-nya dinyalakan saat build. Default mati:
+ * kredensial seed tidak boleh terbuka tanpa keputusan sadar.
+ */
+export function isDemoLoginEnabled(): boolean {
+  return import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO_LOGIN === "true"
+}
+
 const DEMO_PASSWORD = "password123"
 
 export type DemoAccountKind = "clinic" | "platform"

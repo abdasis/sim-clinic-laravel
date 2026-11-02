@@ -9,17 +9,18 @@ import { AuthLayout } from "#/components/auth/auth-layout.tsx"
 import {
   DEMO_TENANT,
   DemoQuickLogin,
+  isDemoLoginEnabled,
 } from "#/components/auth/demo-quick-login.tsx"
 import { TenantLoginForm } from "#/components/auth/tenant-login-form.tsx"
 
 /**
- * Pintu masuk sekali klik untuk akun seed. Hanya hidup saat development:
- * di build produksi `beforeLoad` melempar 404 supaya kredensial seed yang
- * tertulis di berkas ini tidak pernah bisa dipakai dari internet.
+ * Pintu masuk sekali klik untuk akun seed. Hidup saat development, atau di
+ * production hanya bila `VITE_ENABLE_DEMO_LOGIN=true` saat build — keputusan
+ * sadar untuk menyediakan tenant demo.
  */
 export const Route = createFileRoute("/demo/login")({
   beforeLoad: () => {
-    if (!import.meta.env.DEV) throw notFound()
+    if (!isDemoLoginEnabled()) throw notFound()
   },
   component: DemoLoginPage,
 })
