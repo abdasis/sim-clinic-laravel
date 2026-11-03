@@ -46,6 +46,19 @@ interface CachedTranslations {
  * peramban yang memblokir penyimpanan situs sama-sama melempar di sini, dan
  * tidak satu pun layak menjatuhkan seluruh halaman hanya karena pemercepat.
  */
+/**
+ * Versi salinan yang sekarang tersimpan untuk locale ini, atau `null` bila
+ * belum ada salinannya.
+ *
+ * Dipakai untuk memutuskan apakah jawaban yang baru datang perlu ditulis
+ * ulang. Menulis 71KB JSON ke localStorage itu sinkron dan memblokir utas
+ * utama — murah di laptop, terasa di tablet klinik — dan tiap kali halaman
+ * dimuat ulang ia dilakukan lagi untuk isi yang sama persis.
+ */
+export function cachedTranslationVersion(locale: string): string | null {
+  return readCachedTranslations(locale)?.version ?? null
+}
+
 export function readCachedTranslations(locale: string): CachedTranslations | null {
   if (typeof window === "undefined") return null
 

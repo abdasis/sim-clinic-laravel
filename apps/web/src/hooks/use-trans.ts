@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { apiGet } from "#/lib/api.ts"
 import {
   cacheTranslations,
+  cachedTranslationVersion,
   readCachedTranslations,
   setTranslations,
   translate,
@@ -46,8 +47,17 @@ export function useTrans(locale?: ContentLocale) {
         meta?: { version?: string }
       }>("/translations", locale ? { locale } : undefined)
 
+      const version = res.meta?.version ?? ""
+
       setTranslations(res.data)
-      cacheTranslations(key, res.meta?.version ?? "", res.data)
+
+      // Versinya sidik isi terjemahan dari server. Sama berarti salinan yang
+      // sudah ada identik, dan menulisnya ulang cuma memblokir utas utama
+      // untuk hasil yang sama persis. Versi kosong berarti server tidak
+      // memberi penanda apa pun, jadi tidak ada dasar untuk melewatinya.
+      if (version === "" || version !== cachedTranslationVersion(key)) {
+        cacheTranslations(key, version, res.data)
+      }
 
       return res.data
     },

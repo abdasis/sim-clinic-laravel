@@ -34,9 +34,15 @@ class TranslationController extends Controller
 
         return response()->json([
             'data' => $translations,
-            // Sidik isi terjemahan, dipakai frontend untuk tahu apakah salinan
-            // yang disimpannya masih sama. Tanpa penanda ini, salinan lokal
-            // yang basi tidak akan pernah ketahuan basinya.
+            // Sidik isi terjemahan. Frontend membandingkannya dengan versi
+            // salinan yang sudah dipegangnya, dan melewatkan penulisan ulang
+            // 71KB JSON ke localStorage kalau ternyata sama.
+            //
+            // ponytail: yang dihemat baru penulisannya, bukan pengirimannya —
+            // 71KB tetap melintas tiap kali halaman dimuat. Penghematannya ada
+            // di permintaan bersyarat: terima versi yang dipegang klien (ETag
+            // atau ?version=) dan jawab 304 kalau sidiknya sama. Itu perlu
+            // tesnya sendiri, jadi dikerjakan terpisah.
             'meta' => ['locale' => $locale, 'version' => $this->version($translations)],
         ]);
     }
