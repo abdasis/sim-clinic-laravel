@@ -10,6 +10,7 @@ use App\Http\Requests\BroadcastRecipientStatusRequest;
 use App\Http\Requests\BroadcastRequest;
 use App\Http\Requests\BroadcastStatusRequest;
 use App\Http\Requests\BroadcastTestRequest;
+use App\Http\Requests\BroadcastUpdateRequest;
 use App\Http\Requests\WhatsappSessionRequest;
 use App\Http\Requests\WhatsappTemplateRequest;
 use App\Http\Resources\BroadcastRecipientResource;
@@ -97,6 +98,21 @@ class BroadcastController extends Controller
             ),
             'meta' => ['message' => __('broadcast.created')],
         ], 201);
+    }
+
+    /** Sunting broadcast selama belum mulai dikirim. */
+    public function update(BroadcastUpdateRequest $request, Broadcast $broadcast, BroadcastService $broadcasts): JsonResponse
+    {
+        $this->authorize('update', $broadcast);
+
+        $broadcast = $broadcasts->update($broadcast, $request->validated());
+
+        return response()->json([
+            'data' => new BroadcastResource(
+                $broadcast->loadCount(['recipients', 'sentRecipients', 'pendingRecipients', 'failedRecipients']),
+            ),
+            'meta' => ['message' => __('broadcast.edit_saved')],
+        ]);
     }
 
     public function show(Broadcast $broadcast): JsonResponse

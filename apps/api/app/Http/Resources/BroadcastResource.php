@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\BroadcastStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,6 +27,8 @@ class BroadcastResource extends JsonResource
             'audience' => $this->audience,
             'audience_label' => $this->audience?->label(),
             'audience_params' => $this->audience_params,
+            // Isi broadcast masih boleh diubah sampai pengiriman dimulai.
+            'can_edit' => $this->status === BroadcastStatus::Ready,
             'created_by_name' => $this->creator?->name,
             'created_at' => $this->created_at?->toIso8601String(),
             // Progres dihitung dari agregat withCount supaya daftar broadcast

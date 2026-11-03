@@ -48,6 +48,11 @@ interface BroadcastFormFieldsProps {
   previewLoading: boolean
   serviceOptions: SelectOption[]
   disabled?: boolean
+  /** Gambar header yang sudah tersimpan (halaman ubah). */
+  existingImageUrl?: string | null
+  removeExistingImage?: boolean
+  onRemoveExistingImage?: () => void
+  onResetExistingImage?: () => void
 }
 
 /**
@@ -68,6 +73,10 @@ export function BroadcastFormFields({
   previewLoading,
   serviceOptions,
   disabled = false,
+  existingImageUrl = null,
+  removeExistingImage = false,
+  onRemoveExistingImage,
+  onResetExistingImage,
 }: BroadcastFormFieldsProps) {
   const { t } = useTrans()
   const audience = form.watch("audience")
@@ -78,7 +87,10 @@ export function BroadcastFormFields({
     const identityChanged =
       next?.name !== template?.name || next?.language !== template?.language
     setTemplate(next)
-    if (identityChanged) setImage(null)
+    if (identityChanged) {
+      setImage(null)
+      onResetExistingImage?.()
+    }
   }
 
   return (
@@ -179,6 +191,9 @@ export function BroadcastFormFields({
             <TemplateImageField
               file={image}
               onChange={setImage}
+              existingUrl={existingImageUrl}
+              removeExisting={removeExistingImage}
+              onRemoveExisting={onRemoveExistingImage}
               hint={
                 image
                   ? t("broadcast.image_hint")

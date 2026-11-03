@@ -1,6 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Delete02Icon, ImageUpload01Icon } from "@hugeicons/core-free-icons"
+import {
+  Delete02Icon,
+  ImageUpload01Icon,
+  PencilEdit01Icon,
+} from "@hugeicons/core-free-icons"
 
 import { Button } from "#/components/ui/button.tsx"
 import {
@@ -14,6 +18,11 @@ interface TemplateImageFieldProps {
   file: File | null
   onChange: (file: File | null) => void
   hint?: string
+  /** Gambar yang sudah tersimpan di broadcast; tetap dipakai bila tidak diganti. */
+  existingUrl?: string | null
+  /** Gambar lama ditandai untuk dihapus saat disimpan. */
+  removeExisting?: boolean
+  onRemoveExisting?: () => void
 }
 
 /**
@@ -25,11 +34,16 @@ export function TemplateImageField({
   file,
   onChange,
   hint,
+  existingUrl = null,
+  removeExisting = false,
+  onRemoveExisting,
 }: TemplateImageFieldProps) {
   const { t } = useTrans()
   const id = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const showExisting = Boolean(existingUrl) && !removeExisting && !file
+  const replaceLabel = `${t("general.edit")} ${t("broadcast.image")}`
 
   // Object URL menahan berkasnya di memori sampai dilepas. Mengosongkan nilai
   // input juga penting: memilih berkas yang sama dua kali tidak memicu
@@ -85,6 +99,59 @@ export function TemplateImageField({
             </TooltipTrigger>
             <TooltipContent>{t("broadcast.image_remove")}</TooltipContent>
           </Tooltip>
+        </div>
+      ) : showExisting ? (
+        <div className="flex items-center gap-3 rounded-md border border-border/60 bg-muted/30 p-2">
+          <img
+            src={existingUrl ?? undefined}
+            alt={t("broadcast.image")}
+            className="size-14 shrink-0 rounded object-cover"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{t("broadcast.image")}</p>
+          </div>
+          <div className="flex shrink-0 items-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-11 text-muted-foreground hover:text-foreground sm:size-10"
+                  aria-label={replaceLabel}
+                  onClick={() => inputRef.current?.click()}
+                >
+                  <HugeiconsIcon
+                    icon={PencilEdit01Icon}
+                    strokeWidth={2}
+                    className="size-4"
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{replaceLabel}</TooltipContent>
+            </Tooltip>
+            {onRemoveExisting ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="size-11 text-muted-foreground hover:text-destructive sm:size-10"
+                    aria-label={t("broadcast.image_remove")}
+                    onClick={onRemoveExisting}
+                  >
+                    <HugeiconsIcon
+                      icon={Delete02Icon}
+                      strokeWidth={2}
+                      className="size-4"
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t("broadcast.image_remove")}</TooltipContent>
+              </Tooltip>
+            ) : null}
+          </div>
         </div>
       ) : (
         <button

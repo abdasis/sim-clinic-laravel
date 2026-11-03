@@ -1,3 +1,13 @@
+import type { BroadcastTemplate } from "./template-picker.tsx"
+
+export type BroadcastAudience = "all" | "inactive" | "service" | "selected"
+
+export interface BroadcastAudienceParams {
+  days?: number | null
+  service_id?: number | null
+  patient_ids?: number[] | null
+}
+
 /** Satu template resmi Meta dari endpoint kelola (status apa pun). */
 export interface ManagedTemplate {
   id: string | null
@@ -34,8 +44,11 @@ export interface BroadcastDetail {
   kind_label?: string | null
   template_name?: string | null
   template_language?: string | null
-  template?: { name: string; language?: string | null } | null
+  template?: BroadcastTemplate | null
+  audience?: BroadcastAudience | null
   audience_label: string
+  audience_params?: BroadcastAudienceParams | null
+  can_edit?: boolean
   recipients_total: number
   recipients_sent: number
   recipients_pending: number

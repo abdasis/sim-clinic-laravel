@@ -1,5 +1,10 @@
+import { Link } from "@tanstack/react-router"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Delete02Icon, SentIcon } from "@hugeicons/core-free-icons"
+import {
+  Delete02Icon,
+  PencilEdit01Icon,
+  SentIcon,
+} from "@hugeicons/core-free-icons"
 
 import { Button } from "#/components/ui/button.tsx"
 import {
@@ -11,6 +16,7 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import type { BroadcastDetail } from "./broadcast-types.ts"
 
 interface BroadcastDetailHeaderProps {
+  tenant: string
   broadcast: BroadcastDetail
   cloudReady: boolean
   templateInfo: string | null
@@ -24,6 +30,7 @@ interface BroadcastDetailHeaderProps {
 }
 
 export function BroadcastDetailHeader({
+  tenant,
   broadcast,
   cloudReady,
   templateInfo,
@@ -105,6 +112,26 @@ export function BroadcastDetailHeader({
               <HugeiconsIcon icon={SentIcon} strokeWidth={2} className="size-4" />
               {sendAllPending ? t("general.loading") : t("broadcast.send_all")}
             </Button>
+          ) : null}
+          {broadcast.can_edit ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" asChild>
+                  <Link
+                    to="/$tenant/clinic/broadcasts/$id/edit"
+                    params={{ tenant, id: String(broadcast.id) }}
+                    aria-label={t("broadcast.edit_title")}
+                  >
+                    <HugeiconsIcon
+                      icon={PencilEdit01Icon}
+                      strokeWidth={2}
+                      className="size-4"
+                    />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("broadcast.edit_title")}</TooltipContent>
+            </Tooltip>
           ) : null}
           <Tooltip>
             <TooltipTrigger asChild>

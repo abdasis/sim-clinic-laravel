@@ -6,6 +6,7 @@ use App\Actions\Broadcast\CreateBroadcastAction;
 use App\Actions\Broadcast\DeleteBroadcastAction;
 use App\Actions\Broadcast\RequeueFailedRecipientsAction;
 use App\Actions\Broadcast\SaveAutoReminderSettingAction;
+use App\Actions\Broadcast\UpdateBroadcastAction;
 use App\Actions\Broadcast\UpdateRecipientStatusAction;
 use App\Actions\LogAuditAction;
 use App\Enums\BroadcastRecipientStatus;
@@ -56,6 +57,14 @@ class BroadcastService
     public function delete(Broadcast $broadcast): void
     {
         DB::transaction(fn () => app(DeleteBroadcastAction::class)->handle($broadcast));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function update(Broadcast $broadcast, array $data): Broadcast
+    {
+        return DB::transaction(fn () => app(UpdateBroadcastAction::class)->handle($broadcast, $data));
     }
 
     /**

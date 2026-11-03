@@ -236,7 +236,7 @@ Route::prefix('{tenant}/clinic')
         Route::apiResource('reminder-rules', ReminderRuleController::class)
             ->only(['index', 'store', 'update', 'destroy']);
         Route::patch('broadcasts/{broadcast}/recipients/{recipient}', [BroadcastController::class, 'updateRecipient']);
-        Route::apiResource('broadcasts', BroadcastController::class)->only(['index', 'store', 'show', 'destroy']);
+        Route::apiResource('broadcasts', BroadcastController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 
         // Kotak masuk WhatsApp — utas percakapan, balasan manual, tanda dibaca
         Route::get('inbox/conversations', [InboxConversationController::class, 'index']);

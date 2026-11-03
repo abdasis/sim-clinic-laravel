@@ -156,6 +156,7 @@ function BroadcastDetailPage() {
       ) : null}
 
       <BroadcastDetailHeader
+        tenant={tenant}
         broadcast={broadcast}
         cloudReady={cloudReady}
         templateInfo={templateInfo}

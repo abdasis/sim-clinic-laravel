@@ -69,6 +69,7 @@ import { Route as TenantClinicServicesNewRouteImport } from './routes/$tenant/cl
 import { Route as TenantClinicSettingsIndexRouteImport } from './routes/$tenant/clinic/settings/index'
 import { Route as TenantClinicStaffIndexRouteImport } from './routes/$tenant/clinic/staff/index'
 import { Route as TenantClinicUnitsIndexRouteImport } from './routes/$tenant/clinic/units/index'
+import { Route as TenantClinicBroadcastsIdEditRouteImport } from './routes/$tenant/clinic/broadcasts/$id_.edit'
 import { Route as TenantClinicBroadcastsTemplatesNewRouteImport } from './routes/$tenant/clinic/broadcasts/templates/new'
 import { Route as TenantClinicCompanyProfileEntityIndexRouteImport } from './routes/$tenant/clinic/company-profile/$entity/index'
 import { Route as TenantClinicCompanyProfileEntityIdRouteImport } from './routes/$tenant/clinic/company-profile/$entity/$id'
@@ -404,6 +405,12 @@ const TenantClinicUnitsIndexRoute = TenantClinicUnitsIndexRouteImport.update({
   path: '/units/',
   getParentRoute: () => TenantClinicRouteRoute,
 } as any)
+const TenantClinicBroadcastsIdEditRoute =
+  TenantClinicBroadcastsIdEditRouteImport.update({
+    id: '/broadcasts/$id_/edit',
+    path: '/broadcasts/$id/edit',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
 const TenantClinicBroadcastsTemplatesNewRoute =
   TenantClinicBroadcastsTemplatesNewRouteImport.update({
     id: '/broadcasts/templates/new',
@@ -537,6 +544,7 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/settings/': typeof TenantClinicSettingsIndexRoute
   '/$tenant/clinic/staff/': typeof TenantClinicStaffIndexRoute
   '/$tenant/clinic/units/': typeof TenantClinicUnitsIndexRoute
+  '/$tenant/clinic/broadcasts/$id/edit': typeof TenantClinicBroadcastsIdEditRoute
   '/$tenant/clinic/broadcasts/templates/new': typeof TenantClinicBroadcastsTemplatesNewRoute
   '/$tenant/clinic/company-profile/$entity/$id': typeof TenantClinicCompanyProfileEntityIdRoute
   '/$tenant/clinic/company-profile/$entity/new': typeof TenantClinicCompanyProfileEntityNewRoute
@@ -607,6 +615,7 @@ export interface FileRoutesByTo {
   '/$tenant/clinic/settings': typeof TenantClinicSettingsIndexRoute
   '/$tenant/clinic/staff': typeof TenantClinicStaffIndexRoute
   '/$tenant/clinic/units': typeof TenantClinicUnitsIndexRoute
+  '/$tenant/clinic/broadcasts/$id/edit': typeof TenantClinicBroadcastsIdEditRoute
   '/$tenant/clinic/broadcasts/templates/new': typeof TenantClinicBroadcastsTemplatesNewRoute
   '/$tenant/clinic/company-profile/$entity/$id': typeof TenantClinicCompanyProfileEntityIdRoute
   '/$tenant/clinic/company-profile/$entity/new': typeof TenantClinicCompanyProfileEntityNewRoute
@@ -682,6 +691,7 @@ export interface FileRoutesById {
   '/$tenant/clinic/settings/': typeof TenantClinicSettingsIndexRoute
   '/$tenant/clinic/staff/': typeof TenantClinicStaffIndexRoute
   '/$tenant/clinic/units/': typeof TenantClinicUnitsIndexRoute
+  '/$tenant/clinic/broadcasts/$id_/edit': typeof TenantClinicBroadcastsIdEditRoute
   '/$tenant/clinic/broadcasts/templates/new': typeof TenantClinicBroadcastsTemplatesNewRoute
   '/$tenant/clinic/company-profile/$entity/$id': typeof TenantClinicCompanyProfileEntityIdRoute
   '/$tenant/clinic/company-profile/$entity/new': typeof TenantClinicCompanyProfileEntityNewRoute
@@ -757,6 +767,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/settings/'
     | '/$tenant/clinic/staff/'
     | '/$tenant/clinic/units/'
+    | '/$tenant/clinic/broadcasts/$id/edit'
     | '/$tenant/clinic/broadcasts/templates/new'
     | '/$tenant/clinic/company-profile/$entity/$id'
     | '/$tenant/clinic/company-profile/$entity/new'
@@ -827,6 +838,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/settings'
     | '/$tenant/clinic/staff'
     | '/$tenant/clinic/units'
+    | '/$tenant/clinic/broadcasts/$id/edit'
     | '/$tenant/clinic/broadcasts/templates/new'
     | '/$tenant/clinic/company-profile/$entity/$id'
     | '/$tenant/clinic/company-profile/$entity/new'
@@ -901,6 +913,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/settings/'
     | '/$tenant/clinic/staff/'
     | '/$tenant/clinic/units/'
+    | '/$tenant/clinic/broadcasts/$id_/edit'
     | '/$tenant/clinic/broadcasts/templates/new'
     | '/$tenant/clinic/company-profile/$entity/$id'
     | '/$tenant/clinic/company-profile/$entity/new'
@@ -1352,6 +1365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicUnitsIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
+    '/$tenant/clinic/broadcasts/$id_/edit': {
+      id: '/$tenant/clinic/broadcasts/$id_/edit'
+      path: '/broadcasts/$id/edit'
+      fullPath: '/$tenant/clinic/broadcasts/$id/edit'
+      preLoaderRoute: typeof TenantClinicBroadcastsIdEditRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
     '/$tenant/clinic/broadcasts/templates/new': {
       id: '/$tenant/clinic/broadcasts/templates/new'
       path: '/broadcasts/templates/new'
@@ -1540,6 +1560,7 @@ interface TenantClinicRouteRouteChildren {
   TenantClinicSettingsIndexRoute: typeof TenantClinicSettingsIndexRoute
   TenantClinicStaffIndexRoute: typeof TenantClinicStaffIndexRoute
   TenantClinicUnitsIndexRoute: typeof TenantClinicUnitsIndexRoute
+  TenantClinicBroadcastsIdEditRoute: typeof TenantClinicBroadcastsIdEditRoute
   TenantClinicBroadcastsTemplatesNewRoute: typeof TenantClinicBroadcastsTemplatesNewRoute
   TenantClinicCompanyProfileEntityIdRoute: typeof TenantClinicCompanyProfileEntityIdRoute
   TenantClinicCompanyProfileEntityNewRoute: typeof TenantClinicCompanyProfileEntityNewRoute
@@ -1585,6 +1606,7 @@ const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
   TenantClinicSettingsIndexRoute: TenantClinicSettingsIndexRoute,
   TenantClinicStaffIndexRoute: TenantClinicStaffIndexRoute,
   TenantClinicUnitsIndexRoute: TenantClinicUnitsIndexRoute,
+  TenantClinicBroadcastsIdEditRoute: TenantClinicBroadcastsIdEditRoute,
   TenantClinicBroadcastsTemplatesNewRoute:
     TenantClinicBroadcastsTemplatesNewRoute,
   TenantClinicCompanyProfileEntityIdRoute:
@@ -1621,12 +1643,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

@@ -75,7 +75,7 @@ class BroadcastRequest extends FormRequest
      * template yang parameternya kurang atau berlebih, dan penolakannya baru
      * terlihat setelah seluruh antrean terbentuk.
      */
-    private function validateTemplate(Validator $validator): void
+    protected function validateTemplate(Validator $validator): void
     {
         $template = $this->input('template');
 
@@ -97,9 +97,18 @@ class BroadcastRequest extends FormRequest
             );
         }
 
-        if (($template['header_type'] ?? null) === 'IMAGE' && ! $this->hasFile('image')) {
+        if (($template['header_type'] ?? null) === 'IMAGE' && $this->imageMissing()) {
             $validator->errors()->add('image', __('broadcast.template_image_required'));
         }
+    }
+
+    /**
+     * Template bergambar butuh berkas. Saat menyunting, poster lama yang
+     * masih menempel juga dihitung — lihat BroadcastUpdateRequest.
+     */
+    protected function imageMissing(): bool
+    {
+        return ! $this->hasFile('image');
     }
 
     public function attributes(): array
