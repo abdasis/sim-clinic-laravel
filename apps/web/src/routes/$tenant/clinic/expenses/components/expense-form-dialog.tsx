@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -135,7 +136,7 @@ export function ExpenseFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent layout="form">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("expense.edit") : t("expense.add")}
@@ -145,46 +146,49 @@ export function ExpenseFormDialog({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-            className="space-y-4"
+            className="flex min-h-0 flex-1 flex-col gap-4"
           >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormDatePicker
+            <DialogBody className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormDatePicker
+                  control={form.control}
+                  name="spent_at"
+                  label={t("expense.spent_at")}
+                  required
+                />
+                <FormSelect
+                  control={form.control}
+                  name="category_id"
+                  label={t("expense.category_label")}
+                  required
+                  options={categories.options}
+                />
+              </div>
+
+              <FormInput
                 control={form.control}
-                name="spent_at"
-                label={t("expense.spent_at")}
+                name="description"
+                label={t("expense.description")}
                 required
               />
-              <FormSelect
+
+              <FormInput
                 control={form.control}
-                name="category_id"
-                label={t("expense.category_label")}
+                name="amount"
+                label={t("expense.amount")}
+                type="number"
+                min={1}
                 required
-                options={categories.options}
+                inputClassName="tabular-nums"
               />
-            </div>
 
-            <FormInput
-              control={form.control}
-              name="description"
-              label={t("expense.description")}
-              required
-            />
+              <FormTextarea
+                control={form.control}
+                name="note"
+                label={t("expense.note")}
+              />
+            </DialogBody>
 
-            <FormInput
-              control={form.control}
-              name="amount"
-              label={t("expense.amount")}
-              type="number"
-              min={1}
-              required
-              inputClassName="tabular-nums"
-            />
-
-            <FormTextarea
-              control={form.control}
-              name="note"
-              label={t("expense.note")}
-            />
 
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>

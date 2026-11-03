@@ -95,6 +95,10 @@ function RegisterPage() {
             control={form.control}
             name="phone"
             label={t("tenant.phone")}
+            // Disimpan sebagai teks supaya nol di depan tidak hilang; `tel`
+            // yang memunculkan papan angka di ponsel.
+            type="tel"
+            autoComplete="tel"
           />
           <FormInput
             control={form.control}

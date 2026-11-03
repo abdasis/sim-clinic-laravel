@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -141,7 +142,7 @@ export function CommissionRuleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent layout="form">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("commission.edit") : t("commission.add")}
@@ -152,86 +153,89 @@ export function CommissionRuleDialog({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-            className="space-y-4"
+            className="flex min-h-0 flex-1 flex-col gap-4"
           >
-            {isEdit ? (
-              <p className="rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-                {t("commission.rate_change_note")}
-              </p>
-            ) : null}
+            <DialogBody className="space-y-4">
+              {isEdit ? (
+                <p className="rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+                  {t("commission.rate_change_note")}
+                </p>
+              ) : null}
 
-            <FormInput
-              control={form.control}
-              name="name"
-              label={t("commission.name")}
-              required
-            />
+              <FormInput
+                control={form.control}
+                name="name"
+                label={t("commission.name")}
+                required
+              />
 
-            <FormSelect
-              control={form.control}
-              name="therapist_id"
-              label={t("commission.therapist_scope")}
-              description={t("commission.scope_note")}
-              options={[
-                { label: t("commission.all_therapists"), value: "" },
-                ...(staff.data?.data ?? [])
-                  .filter((member) =>
-                    (setting.data?.data.eligible_roles ?? []).includes(
-                      member.clinic_role,
-                    ),
-                  )
-                  .map((member) => ({
-                    label: member.name,
-                    value: String(member.id),
-                  })),
-              ]}
-            />
+              <FormSelect
+                control={form.control}
+                name="therapist_id"
+                label={t("commission.therapist_scope")}
+                description={t("commission.scope_note")}
+                options={[
+                  { label: t("commission.all_therapists"), value: "" },
+                  ...(staff.data?.data ?? [])
+                    .filter((member) =>
+                      (setting.data?.data.eligible_roles ?? []).includes(
+                        member.clinic_role,
+                      ),
+                    )
+                    .map((member) => ({
+                      label: member.name,
+                      value: String(member.id),
+                    })),
+                ]}
+              />
 
-            <FormSelect
-              control={form.control}
-              name="type"
-              label={t("commission.type_label")}
-              options={[
-                { label: t("commission.type.per_patient"), value: "per_patient" },
-                { label: t("commission.type.per_new_patient"), value: "per_new_patient" },
-                { label: t("commission.type.revenue_percent"), value: "revenue_percent" },
-              ]}
-            />
+              <FormSelect
+                control={form.control}
+                name="type"
+                label={t("commission.type_label")}
+                options={[
+                  { label: t("commission.type.per_patient"), value: "per_patient" },
+                  { label: t("commission.type.per_new_patient"), value: "per_new_patient" },
+                  { label: t("commission.type.revenue_percent"), value: "revenue_percent" },
+                ]}
+              />
 
-            {/* Hanya field yang relevan dengan jenisnya yang ditampilkan —
-                kolom nominal pada aturan persentase cuma jadi jebakan isi. */}
-            {isPercent ? (
-              <div className="grid gap-4 sm:grid-cols-2">
+              {/* Hanya field yang relevan dengan jenisnya yang ditampilkan —
+                  kolom nominal pada aturan persentase cuma jadi jebakan isi. */}
+              {isPercent ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormInput
+                    control={form.control}
+                    name="percent"
+                    label={t("commission.percent")}
+                    type="number"
+                    min={0}
+                    max={100}
+                    required
+                    inputClassName="tabular-nums"
+                  />
+                  <FormInput
+                    control={form.control}
+                    name="min_revenue"
+                    label={t("commission.min_revenue")}
+                    type="number"
+                    min={0}
+                    inputClassName="tabular-nums"
+                  />
+                </div>
+              ) : (
                 <FormInput
                   control={form.control}
-                  name="percent"
-                  label={t("commission.percent")}
+                  name="amount"
+                  label={t("commission.amount")}
                   type="number"
                   min={0}
-                  max={100}
                   required
                   inputClassName="tabular-nums"
                 />
-                <FormInput
-                  control={form.control}
-                  name="min_revenue"
-                  label={t("commission.min_revenue")}
-                  type="number"
-                  min={0}
-                  inputClassName="tabular-nums"
-                />
-              </div>
-            ) : (
-              <FormInput
-                control={form.control}
-                name="amount"
-                label={t("commission.amount")}
-                type="number"
-                min={0}
-                required
-                inputClassName="tabular-nums"
-              />
-            )}
+              )}
+            </DialogBody>
+
 
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>

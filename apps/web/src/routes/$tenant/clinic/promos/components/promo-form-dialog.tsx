@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -146,7 +147,7 @@ export function PromoFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] gap-0 overflow-hidden p-0 sm:max-w-lg">
+      <DialogContent layout="form" className="gap-0 p-0 sm:max-w-lg">
         <DialogHeader className="border-b border-border/50 p-4">
           <DialogTitle>{isEdit ? t("promo.edit") : t("promo.add")}</DialogTitle>
         </DialogHeader>
@@ -156,7 +157,7 @@ export function PromoFormDialog({
             onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
             className="flex min-h-0 flex-col"
           >
-            <div className="max-h-[62dvh] min-h-0 flex-1 overflow-y-auto">
+            <DialogBody className="mx-0 px-0">
               <div className="space-y-4 p-4">
                 <FormInput
                   control={form.control}
@@ -236,7 +237,7 @@ export function PromoFormDialog({
                   error={targetError}
                 />
               </div>
-            </div>
+            </DialogBody>
 
             <DialogFooter className="border-t border-border/50 p-4">
               <FormSubmit loading={mutation.isPending}>

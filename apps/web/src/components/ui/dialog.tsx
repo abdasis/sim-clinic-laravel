@@ -54,13 +54,35 @@ function DialogOverlay({
   )
 }
 
+/**
+ * Bentuk dialog. `form` untuk dialog berisi formulir; sisanya tetap seperti
+ * semula supaya dialog konfirmasi tidak ikut berubah.
+ *
+ * Yang dijawab `form` tiga hal yang semuanya menggigit di ponsel:
+ *
+ * - **Tinggi.** Bentuk bawaan `h-fit` tanpa batas atas, jadi formulir panjang
+ *   tumbuh melewati layar dan tombol simpannya terdorong keluar — tidak
+ *   tergulir, hilang. `form` memberi batas setinggi layar dan memindahkan
+ *   gulirnya ke isi formulirnya (`DialogBody`), sehingga kepala dan kaki
+ *   dialog tetap di tempatnya.
+ * - **Papan ketik.** Batasnya memakai `dvh`, bukan `vh`: papan ketik ponsel
+ *   mengecilkan viewport dinamis tapi tidak mengubah `vh`, jadi dengan `vh`
+ *   field yang sedang diisi justru tertutup papan ketiknya sendiri.
+ * - **Ruang.** Di bawah 768px dialognya memenuhi layar — formulir tujuh field
+ *   di dalam kotak mengambang selebar 390px cuma menyisakan dua baris yang
+ *   terlihat sekaligus.
+ */
+type DialogLayout = "default" | "form"
+
 function DialogContent({
   className,
   children,
   showCloseButton = true,
+  layout = "default",
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  layout?: DialogLayout
 }) {
   return (
     <DialogPortal>
@@ -73,8 +95,16 @@ function DialogContent({
         // lebih tua deklarasinya dibuang, dan sudut kiri-atas dialog
         // tertinggal tepat di titik tengah layar lalu menjulur ke kanan bawah.
         // Pemusatan lewat kotak tidak butuh transform sama sekali.
+        data-layout={layout}
         className={cn(
-          "fixed inset-0 z-50 m-auto grid h-fit w-full max-w-[calc(100%-2rem)] gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed inset-0 z-50 m-auto w-full max-w-[calc(100%-2rem)] gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // Kolom lentur, bukan grid berbaris tetap: jumlah anak dialog
+          // berbeda-beda — sebagian membungkus isi dan kakinya dalam satu
+          // <form>, sebagian tidak — jadi baris grid yang dipatok akan
+          // menempatkan kakinya di baris yang salah pada separuh dialog.
+          layout === "form"
+            ? "flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden max-md:h-dvh max-md:max-h-dvh max-md:max-w-none max-md:rounded-none"
+            : "grid h-fit",
           className
         )}
         {...props}
@@ -94,6 +124,26 @@ function DialogContent({
         )}
       </DialogPrimitive.Content>
     </DialogPortal>
+  )
+}
+
+/**
+ * Isi formulir di dalam dialog — satu-satunya bagian yang menggulir.
+ *
+ * `min-h-0` wajib: baris grid `1fr` tetap melebar mengikuti isinya kalau
+ * tinggi minimumnya tidak dinolkan, dan `overflow-y-auto` pada elemen yang
+ * tidak pernah lebih pendek dari isinya tidak menggulir apa pun.
+ *
+ * Padding mendatarnya dibatalkan lalu dipasang ulang di dalam supaya bayangan
+ * fokus field tidak terpotong tepi area gulirnya.
+ */
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-body"
+      className={cn("-mx-4 min-h-0 flex-1 overflow-y-auto px-4", className)}
+      {...props}
+    />
   )
 }
 
@@ -168,6 +218,7 @@ function DialogDescription({
 
 export {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,

@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -94,7 +95,7 @@ export function UnitFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent layout="form">
         <DialogHeader>
           <DialogTitle>{isEdit ? t("unit.edit") : t("unit.add")}</DialogTitle>
           <DialogDescription className="text-pretty">
@@ -104,26 +105,29 @@ export function UnitFormDialog({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-            className="space-y-4"
+            className="flex min-h-0 flex-1 flex-col gap-4"
           >
-            <FormAlert message={failure} />
+            <DialogBody className="space-y-4">
+              <FormAlert message={failure} />
 
-            <FormInput
-              control={form.control}
-              name="name"
-              label={t("unit.name")}
-              required
-            />
+              <FormInput
+                control={form.control}
+                name="name"
+                label={t("unit.name")}
+                required
+              />
 
-            <FormSelect
-              control={form.control}
-              name="status"
-              label={t("unit.status")}
-              options={[
-                { value: "active", label: t("unit.status_active") },
-                { value: "archived", label: t("unit.status_archived") },
-              ]}
-            />
+              <FormSelect
+                control={form.control}
+                name="status"
+                label={t("unit.status")}
+                options={[
+                  { value: "active", label: t("unit.status_active") },
+                  { value: "archived", label: t("unit.status_archived") },
+                ]}
+              />
+            </DialogBody>
+
 
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>

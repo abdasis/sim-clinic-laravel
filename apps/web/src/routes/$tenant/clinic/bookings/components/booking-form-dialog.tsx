@@ -4,6 +4,7 @@ import { z } from "zod"
 import { toast } from "sonner"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -214,66 +215,69 @@ export function BookingFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent layout="form">
         <DialogHeader>
           <DialogTitle>{isEdit ? t("booking.edit") : t("booking.add")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
-            className="space-y-4"
+            className="flex min-h-0 flex-1 flex-col gap-4"
           >
-            <FormSelect
-              control={form.control}
-              name="patient_id"
-              label={t("booking.patient")}
-              placeholder={t("general.search")}
-              options={toOptions(patients.data?.data ?? [])}
-              disabled={patientLocked}
-              description={patientLocked ? t("booking.patient_locked_note") : undefined}
-            />
-            <FormSelect
-              control={form.control}
-              name="service_id"
-              label={t("booking.service")}
-              placeholder={t("general.search")}
-              options={toOptions(services.data?.data ?? [])}
-            />
-            <FormSelect
-              control={form.control}
-              name="assignee_id"
-              label={t("booking.assignee")}
-              placeholder={t("general.search")}
-              options={toOptions(assignees)}
-            />
-            <FormDatePicker
-              control={form.control}
-              name="start_at"
-              label={t("booking.start_at")}
-              withTime
-            />
-            <FormDatePicker
-              control={form.control}
-              name="end_at"
-              label={t("booking.end_at")}
-              withTime
-            />
-            <FormTextarea
-              control={form.control}
-              name="notes"
-              label={t("booking.notes")}
-            />
-            <FormSwitch
-              control={form.control}
-              name="remind_booking"
-              label={t("booking.remind_booking")}
-              description={
-                reminderActive
-                  ? `${t("booking.remind_booking_hint")} ${reminderOffset}.`
-                  : t("booking.remind_booking_inactive")
-              }
-              disabled={!reminderActive}
-            />
+            <DialogBody className="space-y-4">
+              <FormSelect
+                control={form.control}
+                name="patient_id"
+                label={t("booking.patient")}
+                placeholder={t("general.search")}
+                options={toOptions(patients.data?.data ?? [])}
+                disabled={patientLocked}
+                description={patientLocked ? t("booking.patient_locked_note") : undefined}
+              />
+              <FormSelect
+                control={form.control}
+                name="service_id"
+                label={t("booking.service")}
+                placeholder={t("general.search")}
+                options={toOptions(services.data?.data ?? [])}
+              />
+              <FormSelect
+                control={form.control}
+                name="assignee_id"
+                label={t("booking.assignee")}
+                placeholder={t("general.search")}
+                options={toOptions(assignees)}
+              />
+              <FormDatePicker
+                control={form.control}
+                name="start_at"
+                label={t("booking.start_at")}
+                withTime
+              />
+              <FormDatePicker
+                control={form.control}
+                name="end_at"
+                label={t("booking.end_at")}
+                withTime
+              />
+              <FormTextarea
+                control={form.control}
+                name="notes"
+                label={t("booking.notes")}
+              />
+              <FormSwitch
+                control={form.control}
+                name="remind_booking"
+                label={t("booking.remind_booking")}
+                description={
+                  reminderActive
+                    ? `${t("booking.remind_booking_hint")} ${reminderOffset}.`
+                    : t("booking.remind_booking_inactive")
+                }
+                disabled={!reminderActive}
+              />
+            </DialogBody>
+
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>
                 {t("general.save")}

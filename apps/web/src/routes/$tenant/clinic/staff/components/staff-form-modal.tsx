@@ -4,6 +4,7 @@ import { z } from "zod"
 import { toast } from "sonner"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -71,36 +72,39 @@ export function StaffFormModal({
       <DialogTrigger asChild>
         <Button>{t("staff.add")}</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent layout="form">
         <DialogHeader>
           <DialogTitle>{t("staff.add")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
-            className="space-y-4"
+            className="flex min-h-0 flex-1 flex-col gap-4"
           >
-            <FormInput control={form.control} name="name" label={t("staff.name")} />
-            <FormInput
-              control={form.control}
-              name="email"
-              label={t("staff.email")}
-              type="email"
-            />
-            <FormSelect
-              control={form.control}
-              name="clinic_role"
-              label={t("staff.clinic_role")}
-              options={clinicRoleOptions(t)}
-            />
-            <FormPassword
-              control={form.control}
-              name="password"
-              label={t("staff.password")}
-              description={t("auth.password_hint")}
-              showLabel={t("auth.show_password")}
-              hideLabel={t("auth.hide_password")}
-            />
+            <DialogBody className="space-y-4">
+              <FormInput control={form.control} name="name" label={t("staff.name")} />
+              <FormInput
+                control={form.control}
+                name="email"
+                label={t("staff.email")}
+                type="email"
+              />
+              <FormSelect
+                control={form.control}
+                name="clinic_role"
+                label={t("staff.clinic_role")}
+                options={clinicRoleOptions(t)}
+              />
+              <FormPassword
+                control={form.control}
+                name="password"
+                label={t("staff.password")}
+                description={t("auth.password_hint")}
+                showLabel={t("auth.show_password")}
+                hideLabel={t("auth.hide_password")}
+              />
+            </DialogBody>
+
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>{t("general.save")}</FormSubmit>
             </DialogFooter>

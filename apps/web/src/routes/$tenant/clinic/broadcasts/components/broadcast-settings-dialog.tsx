@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -143,7 +144,7 @@ export function BroadcastSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto">
+      <DialogContent layout="form">
         <DialogHeader>
           <DialogTitle>{t("broadcast.settings")}</DialogTitle>
           <DialogDescription className="text-pretty">
@@ -160,51 +161,54 @@ export function BroadcastSettingsDialog({
                 if (!reminderReady) return
                 mutation.mutate(values)
               })}
-              className="space-y-4"
+              className="flex min-h-0 flex-1 flex-col gap-4"
             >
-              {current && !current.waha_available ? (
-                <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-pretty text-amber-700 dark:text-amber-400">
-                  {t("broadcast.waha_not_configured")}
-                </p>
-              ) : null}
+              <DialogBody className="space-y-4">
+                {current && !current.waha_available ? (
+                  <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-pretty text-amber-700 dark:text-amber-400">
+                    {t("broadcast.waha_not_configured")}
+                  </p>
+                ) : null}
 
-              <FormInput
-                control={form.control}
-                name="session"
-                label={t("broadcast.session_label")}
-                placeholder="klinik-satu"
-                description={t("broadcast.session_empty")}
-                inputClassName="font-mono"
-              />
+                <FormInput
+                  control={form.control}
+                  name="session"
+                  label={t("broadcast.session_label")}
+                  placeholder="klinik-satu"
+                  description={t("broadcast.session_empty")}
+                  inputClassName="font-mono"
+                />
 
-              <FormInput
-                control={form.control}
-                name="phone_number_id"
-                label={t("broadcast.phone_number_id_label")}
-                description={t("broadcast.phone_number_id_hint")}
-                placeholder="109900000000000"
-                inputClassName="font-mono tabular-nums"
-              />
+                <FormInput
+                  control={form.control}
+                  name="phone_number_id"
+                  label={t("broadcast.phone_number_id_label")}
+                  description={t("broadcast.phone_number_id_hint")}
+                  placeholder="109900000000000"
+                  inputClassName="font-mono tabular-nums"
+                />
 
-              <FormInput
-                control={form.control}
-                name="waba_id"
-                label={t("broadcast.waba_id_label")}
-                description={t("broadcast.waba_id_hint")}
-                placeholder="109900000000000"
-                inputClassName="font-mono tabular-nums"
-              />
+                <FormInput
+                  control={form.control}
+                  name="waba_id"
+                  label={t("broadcast.waba_id_label")}
+                  description={t("broadcast.waba_id_hint")}
+                  placeholder="109900000000000"
+                  inputClassName="font-mono tabular-nums"
+                />
 
-              <TemplatePicker
-                tenant={tenant}
-                value={reminderTemplate}
-                onChange={setReminderTemplate}
-                enabled={open}
-                idPrefix="reminder-template"
-                label={t("broadcast.reminder_template_label")}
-                hint={t("broadcast.reminder_template_hint")}
-                showImageHint
-              />
+                <TemplatePicker
+                  tenant={tenant}
+                  value={reminderTemplate}
+                  onChange={setReminderTemplate}
+                  enabled={open}
+                  idPrefix="reminder-template"
+                  label={t("broadcast.reminder_template_label")}
+                  hint={t("broadcast.reminder_template_hint")}
+                  showImageHint
+                />
+              </DialogBody>
+
 
               <DialogFooter>
                 <FormSubmit loading={mutation.isPending} disabled={!reminderReady}>

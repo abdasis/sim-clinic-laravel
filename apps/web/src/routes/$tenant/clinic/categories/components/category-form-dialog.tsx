@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -115,7 +116,7 @@ export function CategoryFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent layout="form">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("category.edit") : t("category.add")}
@@ -127,48 +128,51 @@ export function CategoryFormDialog({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-            className="space-y-4"
+            className="flex min-h-0 flex-1 flex-col gap-4"
           >
-            <FormAlert message={failure} />
+            <DialogBody className="space-y-4">
+              <FormAlert message={failure} />
 
-            <FormInput
-              control={form.control}
-              name="name"
-              label={t("category.name")}
-              required
-            />
+              <FormInput
+                control={form.control}
+                name="name"
+                label={t("category.name")}
+                required
+              />
 
-            <FormSelect
-              control={form.control}
-              name="type"
-              label={t("category.type")}
-              required
-              // Memindahkan kategori antar jenis akan melepasnya dari item
-              // yang sudah memakainya, jadi jenisnya dikunci setelah dibuat.
-              disabled={isEdit}
-              description={isEdit ? t("category.type_locked") : undefined}
-              options={[
-                { value: "service", label: t("category.type_service") },
-                { value: "product", label: t("category.type_product") },
-                { value: "expense", label: t("category.type_expense") },
-              ]}
-            />
+              <FormSelect
+                control={form.control}
+                name="type"
+                label={t("category.type")}
+                required
+                // Memindahkan kategori antar jenis akan melepasnya dari item
+                // yang sudah memakainya, jadi jenisnya dikunci setelah dibuat.
+                disabled={isEdit}
+                description={isEdit ? t("category.type_locked") : undefined}
+                options={[
+                  { value: "service", label: t("category.type_service") },
+                  { value: "product", label: t("category.type_product") },
+                  { value: "expense", label: t("category.type_expense") },
+                ]}
+              />
 
-            <FormTextarea
-              control={form.control}
-              name="description"
-              label={t("category.description")}
-            />
+              <FormTextarea
+                control={form.control}
+                name="description"
+                label={t("category.description")}
+              />
 
-            <FormSelect
-              control={form.control}
-              name="status"
-              label={t("category.status")}
-              options={[
-                { value: "active", label: t("service.status_active") },
-                { value: "archived", label: t("service.status_archived") },
-              ]}
-            />
+              <FormSelect
+                control={form.control}
+                name="status"
+                label={t("category.status")}
+                options={[
+                  { value: "active", label: t("service.status_active") },
+                  { value: "archived", label: t("service.status_archived") },
+                ]}
+              />
+            </DialogBody>
+
 
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>

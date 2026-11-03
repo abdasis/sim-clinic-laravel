@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -129,7 +130,7 @@ export function ReminderSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent layout="form">
         <DialogHeader>
           <DialogTitle>{t("booking.message_settings")}</DialogTitle>
           <DialogDescription>
@@ -139,96 +140,99 @@ export function ReminderSettingsDialog({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
-            className="space-y-4"
+            className="flex min-h-0 flex-1 flex-col gap-4"
           >
-            <p className="text-sm font-medium">
-              {t("booking.reminder_section")}
-            </p>
-
-            <FormSwitch
-              control={form.control}
-              name="is_active"
-              label={t("booking.reminder_active")}
-              description={t("booking.reminder_active_hint")}
-            />
-
-            <div className="space-y-2">
-              <FormInput
-                control={form.control}
-                name="offset_minutes"
-                type="number"
-                min={1}
-                max={10080}
-                label={t("booking.reminder_offset")}
-                description={t("booking.reminder_offset_hint")}
-                disabled={!isActive}
-                inputClassName="w-28 tabular-nums"
-              />
-              <div className="flex flex-wrap gap-1.5">
-                {PRESETS.map((minutes) => {
-                  const selected = offset === minutes
-
-                  return (
-                    <button
-                      key={minutes}
-                      type="button"
-                      disabled={!isActive}
-                      onClick={() =>
-                        form.setValue("offset_minutes", minutes, {
-                          shouldDirty: true,
-                        })
-                      }
-                      className={[
-                        "rounded-md border px-2 py-1 text-xs transition-colors",
-                        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                        "disabled:pointer-events-none disabled:opacity-50",
-                        selected
-                          ? "border-border bg-muted font-medium text-foreground"
-                          : "border-border/50 text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                      ].join(" ")}
-                    >
-                      {offsetLabel(minutes).replace(" sebelum jadwal", "")}
-                    </button>
-                  )
-                })}
-              </div>
-              {isActive && Number.isFinite(offset) && offset > 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  {t("booking.reminder_preview")} {offsetLabel(offset)}.
-                </p>
-              ) : null}
-            </div>
-
-            <FormSelect
-              control={form.control}
-              name="message_template_id"
-              label={t("booking.reminder_template")}
-              placeholder={t("booking.reminder_template_default")}
-              description={t("booking.reminder_template_hint")}
-              disabled={!isActive}
-              options={templateOptions}
-            />
-
-            <Separator />
-
-            {/*
-              Sengaja di luar saklar pengingat: konfirmasi berangkat begitu
-              staf menekan tombolnya, dan tidak ikut mati saat pengingat
-              dimatikan.
-            */}
-            <div className="space-y-2">
+            <DialogBody className="space-y-4">
               <p className="text-sm font-medium">
-                {t("booking.confirmation_section")}
+                {t("booking.reminder_section")}
               </p>
+
+              <FormSwitch
+                control={form.control}
+                name="is_active"
+                label={t("booking.reminder_active")}
+                description={t("booking.reminder_active_hint")}
+              />
+
+              <div className="space-y-2">
+                <FormInput
+                  control={form.control}
+                  name="offset_minutes"
+                  type="number"
+                  min={1}
+                  max={10080}
+                  label={t("booking.reminder_offset")}
+                  description={t("booking.reminder_offset_hint")}
+                  disabled={!isActive}
+                  inputClassName="w-28 tabular-nums"
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {PRESETS.map((minutes) => {
+                    const selected = offset === minutes
+
+                    return (
+                      <button
+                        key={minutes}
+                        type="button"
+                        disabled={!isActive}
+                        onClick={() =>
+                          form.setValue("offset_minutes", minutes, {
+                            shouldDirty: true,
+                          })
+                        }
+                        className={[
+                          "rounded-md border px-2 py-1 text-xs transition-colors",
+                          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                          "disabled:pointer-events-none disabled:opacity-50",
+                          selected
+                            ? "border-border bg-muted font-medium text-foreground"
+                            : "border-border/50 text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                        ].join(" ")}
+                      >
+                        {offsetLabel(minutes).replace(" sebelum jadwal", "")}
+                      </button>
+                    )
+                  })}
+                </div>
+                {isActive && Number.isFinite(offset) && offset > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("booking.reminder_preview")} {offsetLabel(offset)}.
+                  </p>
+                ) : null}
+              </div>
+
               <FormSelect
                 control={form.control}
-                name="confirmation_template_id"
-                label={t("booking.confirmation_template")}
+                name="message_template_id"
+                label={t("booking.reminder_template")}
                 placeholder={t("booking.reminder_template_default")}
-                description={t("booking.confirmation_template_hint")}
+                description={t("booking.reminder_template_hint")}
+                disabled={!isActive}
                 options={templateOptions}
               />
-            </div>
+
+              <Separator />
+
+              {/*
+                Sengaja di luar saklar pengingat: konfirmasi berangkat begitu
+                staf menekan tombolnya, dan tidak ikut mati saat pengingat
+                dimatikan.
+              */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {t("booking.confirmation_section")}
+                </p>
+                <FormSelect
+                  control={form.control}
+                  name="confirmation_template_id"
+                  label={t("booking.confirmation_template")}
+                  placeholder={t("booking.reminder_template_default")}
+                  description={t("booking.confirmation_template_hint")}
+                  options={templateOptions}
+                />
+              </div>
+            </DialogBody>
+
 
             <DialogFooter>
               <FormSubmit loading={mutation.isPending}>

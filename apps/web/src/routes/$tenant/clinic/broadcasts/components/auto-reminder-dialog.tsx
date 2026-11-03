@@ -5,6 +5,7 @@ import { z } from "zod"
 
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -123,7 +124,7 @@ export function AutoReminderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent layout="form">
         <DialogHeader>
           <DialogTitle>{t("broadcast.auto_reminder_title")}</DialogTitle>
           <DialogDescription className="text-pretty">
@@ -141,32 +142,35 @@ export function AutoReminderDialog({
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-              className="space-y-4"
+              className="flex min-h-0 flex-1 flex-col gap-4"
             >
-              <FormSwitch
-                control={form.control}
-                name="is_active"
-                label={t("broadcast.auto_reminder_active")}
-                description={t("broadcast.auto_reminder_days_hint")}
-              />
+              <DialogBody className="space-y-4">
+                <FormSwitch
+                  control={form.control}
+                  name="is_active"
+                  label={t("broadcast.auto_reminder_active")}
+                  description={t("broadcast.auto_reminder_days_hint")}
+                />
 
-              <FormInput
-                control={form.control}
-                name="days"
-                type="number"
-                min={1}
-                max={730}
-                label={t("broadcast.auto_reminder_days")}
-                required
-                inputClassName="tabular-nums"
-              />
+                <FormInput
+                  control={form.control}
+                  name="days"
+                  type="number"
+                  min={1}
+                  max={730}
+                  label={t("broadcast.auto_reminder_days")}
+                  required
+                  inputClassName="tabular-nums"
+                />
 
-              <FormSelect
-                control={form.control}
-                name="message_template_id"
-                label={t("broadcast.auto_reminder_template")}
-                options={templateOptions}
-              />
+                <FormSelect
+                  control={form.control}
+                  name="message_template_id"
+                  label={t("broadcast.auto_reminder_template")}
+                  options={templateOptions}
+                />
+              </DialogBody>
+
 
               <DialogFooter>
                 <FormSubmit loading={mutation.isPending}>
