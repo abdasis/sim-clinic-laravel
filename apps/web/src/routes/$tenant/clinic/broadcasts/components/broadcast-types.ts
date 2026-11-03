@@ -1,3 +1,17 @@
+/** Satu template resmi Meta dari endpoint kelola (status apa pun). */
+export interface ManagedTemplate {
+  id: string | null
+  name: string
+  language: string
+  category: string
+  status: string
+  rejected_reason: string | null
+  body: string
+  header_type: "TEXT" | "IMAGE" | null
+  header_text: string | null
+  body_params_count: number
+}
+
 export interface Recipient {
   id: number
   name: string

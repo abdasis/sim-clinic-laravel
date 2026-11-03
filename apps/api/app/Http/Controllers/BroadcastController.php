@@ -11,6 +11,7 @@ use App\Http\Requests\BroadcastRequest;
 use App\Http\Requests\BroadcastStatusRequest;
 use App\Http\Requests\BroadcastTestRequest;
 use App\Http\Requests\WhatsappSessionRequest;
+use App\Http\Requests\WhatsappTemplateRequest;
 use App\Http\Resources\BroadcastRecipientResource;
 use App\Http\Resources\BroadcastResource;
 use App\Models\Broadcast;
@@ -19,6 +20,7 @@ use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use App\Services\BroadcastService;
 use App\Services\WhatsappConnectionService;
+use App\Services\WhatsappTemplateService;
 use App\Support\BroadcastAudienceBuilder;
 use App\Support\CloudApiClient;
 use App\Support\DailyMessageQuota;
@@ -227,6 +229,54 @@ class BroadcastController extends Controller
         }
 
         return response()->json(['data' => $templates, 'meta' => ['ready' => true]]);
+    }
+
+    /**
+     * Semua template klinik beserta status peninjauannya — layar kelola
+     * template, bukan pemilih template.
+     */
+    public function manageTemplates(WhatsappTemplateService $templates): JsonResponse
+    {
+        $this->authorize('viewAny', Broadcast::class);
+
+        $result = $templates->all();
+
+        return response()->json([
+            'data' => $result['templates'],
+            'meta' => ['ready' => $result['ready']],
+        ]);
+    }
+
+    /** Daftarkan template baru; Meta meninjaunya sebelum bisa dipakai. */
+    public function storeTemplate(WhatsappTemplateRequest $request, WhatsappTemplateService $templates): JsonResponse
+    {
+        $this->authorize('update', Broadcast::class);
+
+        $template = $templates->create($request->validated());
+
+        return response()->json([
+            'data' => $template,
+            'meta' => ['message' => __('broadcast.template_created')],
+        ], 201);
+    }
+
+    /** Hapus template; `hsm_id` memilih versi bahasa tertentu bila ada. */
+    public function destroyTemplate(
+        Request $request,
+        string $name,
+        WhatsappTemplateService $templates,
+    ): JsonResponse {
+        $this->authorize('update', Broadcast::class);
+
+        $hsmId = $request->query('hsm_id');
+        $hsmId = is_string($hsmId) && $hsmId !== '' ? $hsmId : null;
+
+        $templates->delete($name, $hsmId);
+
+        return response()->json([
+            'data' => null,
+            'meta' => ['message' => __('broadcast.template_deleted')],
+        ]);
     }
 
     /**

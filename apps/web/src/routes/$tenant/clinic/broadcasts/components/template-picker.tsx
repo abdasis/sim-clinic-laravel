@@ -7,6 +7,7 @@ import { NativeSelect, NativeSelectOption } from "#/components/ui/native-select.
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiErrorMessage, apiGet } from "#/lib/api.ts"
+import { WhatsappTemplateManageButton } from "./whatsapp-template-manager.tsx"
 
 export type TemplateHeaderType = "IMAGE" | "TEXT" | "DOCUMENT" | "VIDEO"
 
@@ -145,24 +146,30 @@ export function TemplatePicker({
         <p className="text-xs text-destructive">
           {apiErrorMessage(query.error) ?? t("general.error")}
         </p>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => void query.refetch()}
-          disabled={query.isFetching}
-        >
-          {t("general.retry")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void query.refetch()}
+            disabled={query.isFetching}
+          >
+            {t("general.retry")}
+          </Button>
+          <WhatsappTemplateManageButton tenant={tenant} />
+        </div>
       </div>
     )
   }
 
   if (!ready) {
     return (
-      <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-pretty text-amber-700 dark:text-amber-400">
-        {t("broadcast.template_not_ready")}
-      </p>
+      <div className="space-y-2">
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-pretty text-amber-700 dark:text-amber-400">
+          {t("broadcast.template_not_ready")}
+        </p>
+        <WhatsappTemplateManageButton tenant={tenant} />
+      </div>
     )
   }
 
@@ -194,6 +201,10 @@ export function TemplatePicker({
         <p className="text-xs text-muted-foreground">
           {hint ?? t("broadcast.template_hint")}
         </p>
+        <WhatsappTemplateManageButton
+          tenant={tenant}
+          className="h-auto px-0 text-xs"
+        />
         {templates.length === 0 ? (
           <p className="text-xs text-muted-foreground">{t("broadcast.no_templates")}</p>
         ) : null}

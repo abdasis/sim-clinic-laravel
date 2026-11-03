@@ -22,10 +22,11 @@ import {
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import { formatDateTime } from "#/lib/format.ts"
-import { cn } from "#/lib/utils.ts"
 import { BroadcastFormDialog } from "./components/broadcast-form-dialog.tsx"
 import { AutoReminderDialog } from "./components/auto-reminder-dialog.tsx"
 import { BroadcastSettingsDialog } from "./components/broadcast-settings-dialog.tsx"
+import { QuotaCard } from "./components/quota-card.tsx"
+import { WhatsappTemplateManageButton } from "./components/whatsapp-template-manager.tsx"
 import {
   ConnectionDialog,
   RemindersDialog,
@@ -97,6 +98,11 @@ function BroadcastsPage() {
           <Button variant="outline" size="sm" onClick={() => setTemplatesOpen(true)}>
             {t("broadcast.templates")}
           </Button>
+          <WhatsappTemplateManageButton
+            tenant={tenant}
+            variant="outline"
+            className="min-h-11 sm:min-h-7"
+          />
           <Button variant="outline" size="sm" onClick={() => setRemindersOpen(true)}>
             {t("broadcast.reminders")}
           </Button>
@@ -278,51 +284,6 @@ function BroadcastsPage() {
       <ConnectionDialog tenant={tenant} open={connectionOpen} onOpenChange={setConnectionOpen} />
       <TemplatesDialog tenant={tenant} open={templatesOpen} onOpenChange={setTemplatesOpen} />
       <RemindersDialog tenant={tenant} open={remindersOpen} onOpenChange={setRemindersOpen} />
-    </div>
-  )
-}
-
-/** Sisa jatah kirim hari ini, dengan tanda saat sudah mepet. */
-function QuotaCard({
-  quota,
-}: {
-  quota: { limit: number; used: number; remaining: number }
-}) {
-  const { t } = useTrans()
-  const share = quota.limit > 0 ? quota.used / quota.limit : 0
-  const spent = quota.remaining === 0
-  const tight = !spent && share >= 0.8
-
-  return (
-    <div
-      className={cn(
-        "rounded-lg border border-border/50 bg-card p-3 transition-colors",
-        tight && "border-amber-500/50",
-        spent && "border-destructive/50",
-      )}
-    >
-      <p className="text-xs text-muted-foreground">{t("broadcast.quota_today")}</p>
-      <p
-        className={cn(
-          "mt-1 text-lg font-semibold tabular-nums",
-          tight && "text-amber-600",
-          spent && "text-destructive",
-        )}
-      >
-        {quota.remaining}
-        <span className="ml-1 text-xs font-normal text-muted-foreground">
-          / {quota.limit}
-        </span>
-      </p>
-      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn(
-            "h-full rounded-full transition-all",
-            spent ? "bg-destructive" : tight ? "bg-amber-500" : "bg-primary",
-          )}
-          style={{ width: `${Math.min(100, Math.round(share * 100))}%` }}
-        />
-      </div>
     </div>
   )
 }

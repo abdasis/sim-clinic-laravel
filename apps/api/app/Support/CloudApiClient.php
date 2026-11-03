@@ -107,28 +107,139 @@ class CloudApiClient
      * Ditahan lima menit: daftarnya hanya berubah saat admin mengurus
      * persetujuan di aplikasi Meta, sementara layar pemilih dibuka berkali-kali.
      *
-     * @return array<int, array{name: string, language: string, category: string, body: string, header_type: string|null, body_params_count: int}>
+     * @return array<int, array<string, mixed>>
      */
     public function approvedTemplates(): array
     {
-        if ($this->wabaId === null || $this->wabaId === '') {
-            throw new CloudApiException(0, null, 'WABA ID belum diisi; daftar template tidak bisa diambil.');
-        }
+        $this->ensureWabaConfigured();
 
         return Cache::remember(
-            'cloud-api:templates:'.$this->wabaId,
+            $this->templateCacheKey('approved'),
             now()->addMinutes(self::TEMPLATE_CACHE_MINUTES),
-            fn (): array => $this->fetchApprovedTemplates(),
+            fn (): array => $this->fetchTemplates('APPROVED'),
         );
     }
 
     /**
-     * @return array<int, array{name: string, language: string, category: string, body: string, header_type: string|null, body_params_count: int}>
+     * Semua template klinik apa pun statusnya — layar kelola template butuh
+     * yang masih menunggu peninjauan dan yang ditolak, bukan hanya yang lolos.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    private function fetchApprovedTemplates(): array
+    public function allTemplates(): array
     {
-        if ($this->accessToken === '') {
-            throw new CloudApiException(0, null, 'Cloud API Meta belum dikonfigurasi.');
+        $this->ensureWabaConfigured();
+
+        return Cache::remember(
+            $this->templateCacheKey('all'),
+            now()->addMinutes(self::TEMPLATE_CACHE_MINUTES),
+            fn (): array => $this->fetchTemplates(),
+        );
+    }
+
+    /**
+     * Daftarkan template baru ke Meta. Hasilnya biasanya PENDING sampai
+     * ditinjau; peninjauan tetap diurus di aplikasi Meta.
+     *
+     * @return array<string, mixed> template hasil normalisasi
+     */
+    public function createTemplate(
+        string $name,
+        string $language,
+        string $category,
+        string $body,
+        ?string $headerType = null,
+        ?string $headerText = null,
+    ): array {
+        $this->ensureWabaConfigured();
+
+        $components = [];
+
+        if ($headerType === 'TEXT') {
+            $components[] = [
+                'type' => 'HEADER',
+                'format' => 'TEXT',
+                'text' => (string) $headerText,
+            ];
+        } elseif ($headerType === 'IMAGE') {
+            // Header gambar tidak menerima parameter: gambarnya baru dikirim
+            // per pesan, bukan bagian dari definisi template.
+            $components[] = ['type' => 'HEADER', 'format' => 'IMAGE'];
+        }
+
+        $components[] = $this->bodyComponent($body);
+
+        $payload = [
+            'name' => $name,
+            'language' => $language,
+            'category' => $category,
+            'components' => $components,
+        ];
+
+        $response = Http::withToken($this->accessToken)
+            ->acceptJson()
+            ->timeout(20)
+            ->connectTimeout(10)
+            ->retry(2, 300, throw: false)
+            ->post($this->templatesUrl(), $payload);
+
+        if (! $response->successful()) {
+            $this->fail('Cloud API Meta menolak pembuatan template', $response);
+        }
+
+        $this->forgetTemplateCache();
+
+        return $this->normalizeTemplate([
+            ...$payload,
+            'id' => (string) ($response->json('id') ?? ''),
+            'status' => (string) ($response->json('status') ?? ''),
+        ]);
+    }
+
+    /**
+     * Hapus template berdasarkan nama; `hsm_id` ikut dikirim bila ada karena
+     * satu nama bisa punya beberapa versi bahasa.
+     */
+    public function deleteTemplate(string $name, ?string $hsmId = null): void
+    {
+        $this->ensureWabaConfigured();
+
+        $query = ['name' => $name];
+
+        if ($hsmId !== null && $hsmId !== '') {
+            $query['hsm_id'] = $hsmId;
+        }
+
+        // Http::delete mengirim data sebagai body, sedangkan Meta membaca
+        // keduanya dari query string.
+        $response = Http::withToken($this->accessToken)
+            ->acceptJson()
+            ->timeout(20)
+            ->connectTimeout(10)
+            ->retry(2, 300, throw: false)
+            ->delete($this->templatesUrl().'?'.http_build_query($query));
+
+        if (! $response->successful()) {
+            $this->fail('Cloud API Meta menolak penghapusan template', $response);
+        }
+
+        $this->forgetTemplateCache();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchTemplates(?string $status = null): array
+    {
+        $this->ensureWabaConfigured();
+
+        $query = [
+            'fields' => 'name,id,status,language,category,components,rejected_reason',
+            'limit' => 200,
+        ];
+
+        if ($status !== null) {
+            $query['status'] = $status;
         }
 
         $response = Http::withToken($this->accessToken)
@@ -136,11 +247,7 @@ class CloudApiClient
             ->timeout(20)
             ->connectTimeout(10)
             ->retry(2, 300, throw: false)
-            ->get($this->templatesUrl(), [
-                'fields' => 'name,status,language,category,components',
-                'status' => 'APPROVED',
-                'limit' => 200,
-            ]);
+            ->get($this->templatesUrl(), $query);
 
         if (! $response->successful()) {
             $exception = CloudApiException::rejected('Cloud API Meta menolak daftar template', $response);
@@ -161,8 +268,35 @@ class CloudApiClient
     }
 
     /**
+     * Body wajib, dan setiap placeholder {{n}} wajib disertai satu set contoh.
+     * Contohnya diambil dari resolver variabel yang sama dengan pengiriman
+     * sungguhan supaya bentuknya tidak berbeda dari isian nanti.
+     *
+     * @return array<string, mixed>
+     */
+    private function bodyComponent(string $body): array
+    {
+        $component = ['type' => 'BODY', 'text' => $body];
+        $count = TemplateVariables::placeholderCount($body);
+
+        if ($count > 0) {
+            // ponytail: contoh mengikuti urutan KEYS dan mengasumsikan
+            // placeholder berurutan; template dengan nomor melompat memang
+            // ditolak Meta.
+            $component['example'] = [
+                'body_text' => [TemplateVariables::resolve(
+                    array_slice(TemplateVariables::KEYS, 0, $count),
+                    TemplateVariables::examples(),
+                )],
+            ];
+        }
+
+        return $component;
+    }
+
+    /**
      * @param  array<string, mixed>  $template
-     * @return array{name: string, language: string, category: string, body: string, header_type: string|null, body_params_count: int}
+     * @return array<string, mixed>
      */
     private function normalizeTemplate(array $template): array
     {
@@ -175,17 +309,50 @@ class CloudApiClient
                 'type' => strtolower((string) ($component['type'] ?? '')),
             ]);
 
+        $header = $components->firstWhere('type', 'header');
         $body = (string) data_get($components->firstWhere('type', 'body'), 'text', '');
-        $headerType = data_get($components->firstWhere('type', 'header'), 'format');
+        $headerType = data_get($header, 'format');
+        $headerText = data_get($header, 'text');
+
+        $rejectedReason = $template['rejected_reason'] ?? null;
+        $rejectedReason = is_string($rejectedReason) && trim($rejectedReason) !== ''
+            ? $rejectedReason
+            : null;
 
         return [
+            'id' => (string) ($template['id'] ?? ''),
             'name' => (string) ($template['name'] ?? ''),
             'language' => (string) ($template['language'] ?? ''),
             'category' => (string) ($template['category'] ?? ''),
+            'status' => (string) ($template['status'] ?? ''),
+            'rejected_reason' => $rejectedReason,
             'body' => $body,
             'header_type' => is_string($headerType) ? strtoupper($headerType) : null,
+            'header_text' => is_string($headerText) ? $headerText : null,
             'body_params_count' => TemplateVariables::placeholderCount($body),
         ];
+    }
+
+    private function ensureWabaConfigured(): void
+    {
+        if ($this->wabaId === null || $this->wabaId === '') {
+            throw new CloudApiException(0, null, 'WABA ID belum diisi; template tidak bisa dikelola.');
+        }
+
+        if ($this->accessToken === '') {
+            throw new CloudApiException(0, null, 'Cloud API Meta belum dikonfigurasi.');
+        }
+    }
+
+    private function templateCacheKey(string $scope): string
+    {
+        return 'cloud-api:templates:'.$scope.':'.$this->wabaId;
+    }
+
+    private function forgetTemplateCache(): void
+    {
+        Cache::forget($this->templateCacheKey('approved'));
+        Cache::forget($this->templateCacheKey('all'));
     }
 
     /**
