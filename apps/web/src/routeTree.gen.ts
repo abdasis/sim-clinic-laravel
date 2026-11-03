@@ -69,6 +69,7 @@ import { Route as TenantClinicServicesNewRouteImport } from './routes/$tenant/cl
 import { Route as TenantClinicSettingsIndexRouteImport } from './routes/$tenant/clinic/settings/index'
 import { Route as TenantClinicStaffIndexRouteImport } from './routes/$tenant/clinic/staff/index'
 import { Route as TenantClinicUnitsIndexRouteImport } from './routes/$tenant/clinic/units/index'
+import { Route as TenantClinicBroadcastsTemplatesNewRouteImport } from './routes/$tenant/clinic/broadcasts/templates/new'
 import { Route as TenantClinicCompanyProfileEntityIndexRouteImport } from './routes/$tenant/clinic/company-profile/$entity/index'
 import { Route as TenantClinicCompanyProfileEntityIdRouteImport } from './routes/$tenant/clinic/company-profile/$entity/$id'
 import { Route as TenantClinicCompanyProfileEntityNewRouteImport } from './routes/$tenant/clinic/company-profile/$entity/new'
@@ -403,6 +404,12 @@ const TenantClinicUnitsIndexRoute = TenantClinicUnitsIndexRouteImport.update({
   path: '/units/',
   getParentRoute: () => TenantClinicRouteRoute,
 } as any)
+const TenantClinicBroadcastsTemplatesNewRoute =
+  TenantClinicBroadcastsTemplatesNewRouteImport.update({
+    id: '/broadcasts/templates/new',
+    path: '/broadcasts/templates/new',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
 const TenantClinicCompanyProfileEntityIndexRoute =
   TenantClinicCompanyProfileEntityIndexRouteImport.update({
     id: '/company-profile/$entity/',
@@ -530,6 +537,7 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/settings/': typeof TenantClinicSettingsIndexRoute
   '/$tenant/clinic/staff/': typeof TenantClinicStaffIndexRoute
   '/$tenant/clinic/units/': typeof TenantClinicUnitsIndexRoute
+  '/$tenant/clinic/broadcasts/templates/new': typeof TenantClinicBroadcastsTemplatesNewRoute
   '/$tenant/clinic/company-profile/$entity/$id': typeof TenantClinicCompanyProfileEntityIdRoute
   '/$tenant/clinic/company-profile/$entity/new': typeof TenantClinicCompanyProfileEntityNewRoute
   '/$tenant/clinic/patients/$id/edit': typeof TenantClinicPatientsIdEditRoute
@@ -599,6 +607,7 @@ export interface FileRoutesByTo {
   '/$tenant/clinic/settings': typeof TenantClinicSettingsIndexRoute
   '/$tenant/clinic/staff': typeof TenantClinicStaffIndexRoute
   '/$tenant/clinic/units': typeof TenantClinicUnitsIndexRoute
+  '/$tenant/clinic/broadcasts/templates/new': typeof TenantClinicBroadcastsTemplatesNewRoute
   '/$tenant/clinic/company-profile/$entity/$id': typeof TenantClinicCompanyProfileEntityIdRoute
   '/$tenant/clinic/company-profile/$entity/new': typeof TenantClinicCompanyProfileEntityNewRoute
   '/$tenant/clinic/patients/$id/edit': typeof TenantClinicPatientsIdEditRoute
@@ -673,6 +682,7 @@ export interface FileRoutesById {
   '/$tenant/clinic/settings/': typeof TenantClinicSettingsIndexRoute
   '/$tenant/clinic/staff/': typeof TenantClinicStaffIndexRoute
   '/$tenant/clinic/units/': typeof TenantClinicUnitsIndexRoute
+  '/$tenant/clinic/broadcasts/templates/new': typeof TenantClinicBroadcastsTemplatesNewRoute
   '/$tenant/clinic/company-profile/$entity/$id': typeof TenantClinicCompanyProfileEntityIdRoute
   '/$tenant/clinic/company-profile/$entity/new': typeof TenantClinicCompanyProfileEntityNewRoute
   '/$tenant/clinic/patients/$id/edit': typeof TenantClinicPatientsIdEditRoute
@@ -747,6 +757,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/settings/'
     | '/$tenant/clinic/staff/'
     | '/$tenant/clinic/units/'
+    | '/$tenant/clinic/broadcasts/templates/new'
     | '/$tenant/clinic/company-profile/$entity/$id'
     | '/$tenant/clinic/company-profile/$entity/new'
     | '/$tenant/clinic/patients/$id/edit'
@@ -816,6 +827,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/settings'
     | '/$tenant/clinic/staff'
     | '/$tenant/clinic/units'
+    | '/$tenant/clinic/broadcasts/templates/new'
     | '/$tenant/clinic/company-profile/$entity/$id'
     | '/$tenant/clinic/company-profile/$entity/new'
     | '/$tenant/clinic/patients/$id/edit'
@@ -889,6 +901,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/settings/'
     | '/$tenant/clinic/staff/'
     | '/$tenant/clinic/units/'
+    | '/$tenant/clinic/broadcasts/templates/new'
     | '/$tenant/clinic/company-profile/$entity/$id'
     | '/$tenant/clinic/company-profile/$entity/new'
     | '/$tenant/clinic/patients/$id/edit'
@@ -1339,6 +1352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicUnitsIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
+    '/$tenant/clinic/broadcasts/templates/new': {
+      id: '/$tenant/clinic/broadcasts/templates/new'
+      path: '/broadcasts/templates/new'
+      fullPath: '/$tenant/clinic/broadcasts/templates/new'
+      preLoaderRoute: typeof TenantClinicBroadcastsTemplatesNewRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
     '/$tenant/clinic/company-profile/$entity/': {
       id: '/$tenant/clinic/company-profile/$entity/'
       path: '/company-profile/$entity'
@@ -1520,6 +1540,7 @@ interface TenantClinicRouteRouteChildren {
   TenantClinicSettingsIndexRoute: typeof TenantClinicSettingsIndexRoute
   TenantClinicStaffIndexRoute: typeof TenantClinicStaffIndexRoute
   TenantClinicUnitsIndexRoute: typeof TenantClinicUnitsIndexRoute
+  TenantClinicBroadcastsTemplatesNewRoute: typeof TenantClinicBroadcastsTemplatesNewRoute
   TenantClinicCompanyProfileEntityIdRoute: typeof TenantClinicCompanyProfileEntityIdRoute
   TenantClinicCompanyProfileEntityNewRoute: typeof TenantClinicCompanyProfileEntityNewRoute
   TenantClinicPatientsIdEditRoute: typeof TenantClinicPatientsIdEditRoute
@@ -1564,6 +1585,8 @@ const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
   TenantClinicSettingsIndexRoute: TenantClinicSettingsIndexRoute,
   TenantClinicStaffIndexRoute: TenantClinicStaffIndexRoute,
   TenantClinicUnitsIndexRoute: TenantClinicUnitsIndexRoute,
+  TenantClinicBroadcastsTemplatesNewRoute:
+    TenantClinicBroadcastsTemplatesNewRoute,
   TenantClinicCompanyProfileEntityIdRoute:
     TenantClinicCompanyProfileEntityIdRoute,
   TenantClinicCompanyProfileEntityNewRoute:

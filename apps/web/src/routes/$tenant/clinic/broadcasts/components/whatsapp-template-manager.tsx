@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -34,7 +35,6 @@ import { apiDelete, apiErrorMessage, apiGet } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 import { cn } from "#/lib/utils.ts"
 import type { ManagedTemplate } from "./broadcast-types.ts"
-import { WhatsappTemplateForm } from "./whatsapp-template-form.tsx"
 import { WhatsappTemplateRow } from "./whatsapp-template-row.tsx"
 
 interface ManagerProps {
@@ -51,7 +51,6 @@ export function WhatsappTemplateManager({
 }: ManagerProps) {
   const { t } = useTrans()
   const qc = useQueryClient()
-  const [formOpen, setFormOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<ManagedTemplate | null>(null)
 
   const templates = useQuery({
@@ -168,21 +167,23 @@ export function WhatsappTemplateManager({
           </Tooltip>
 
           <Button
-            type="button"
+            asChild
             size="sm"
             className="min-h-11 gap-1.5 sm:min-h-8"
-            onClick={() => setFormOpen(true)}
           >
-            <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-3.5" />
-            {t("broadcast.template_new")}
+            <Link
+              to="/$tenant/clinic/broadcasts/templates/new"
+              params={{ tenant }}
+            >
+              <HugeiconsIcon
+                icon={Add01Icon}
+                strokeWidth={2}
+                className="size-3.5"
+              />
+              {t("broadcast.template_new")}
+            </Link>
           </Button>
         </div>
-
-        <WhatsappTemplateForm
-          tenant={tenant}
-          open={formOpen}
-          onOpenChange={setFormOpen}
-        />
 
         <AlertDialog
           open={pendingDelete !== null}
