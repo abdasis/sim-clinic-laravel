@@ -13,36 +13,51 @@ import {
 import { TenantLoginForm } from "#/components/auth/tenant-login-form.tsx"
 
 /**
- * Pintu masuk sekali klik untuk akun tenant demo.
+ * Pintu masuk tenant demo.
  *
- * Halaman ini SENGAJA hidup di produksi atas permintaan pemilik produk: tenant
- * `demo` dipakai untuk memperlihatkan aplikasi ke calon klien. Konsekuensinya
- * kredensial akun demo ikut terbaca siapa pun yang membuka halaman ini —
- * jangan pernah menambahkan akun di luar tenant demo ke daftar di bawah.
+ * Halaman ini hidup di produksi atas permintaan pemilik produk: tenant `demo`
+ * dipakai untuk memperlihatkan aplikasi ke calon klien. Tombol masuk sekali
+ * klik hanya dirender di build pengembangan; di server produksi halaman ini
+ * cuma menampilkan formulir biasa, sehingga sandi akun demo tidak lagi ikut
+ * terkirim ke browser pengunjung.
  */
 export const Route = createFileRoute("/demo/login")({
   component: DemoLoginPage,
 })
 
 function DemoLoginPage() {
+  // Di-inline saat build: `false` di produksi, jadi cabang masuk cepat ikut
+  // terbuang dari bundel, bukan sekadar disembunyikan lewat CSS.
+  const quickLogin = import.meta.env.DEV
+
   return (
     <AuthLayout
       kicker="Akun demo"
-      title="Masuk tanpa mengetik"
-      subtitle="Pilih peran di bawah untuk langsung masuk ke data demo klinik."
+      title={quickLogin ? "Masuk tanpa mengetik" : "Masuk ke akun demo"}
+      subtitle={
+        quickLogin
+          ? "Pilih peran di bawah untuk langsung masuk ke data demo klinik."
+          : "Gunakan akun demo untuk melihat data klinik. Kredensial diberikan oleh tim kami."
+      }
       points={[
-        { icon: FlashIcon, label: "Satu klik, langsung masuk" },
+        { icon: FlashIcon, label: "Alur kerja klinik dari pendaftaran sampai kasir" },
         { icon: Shield01Icon, label: "Hanya berisi akun tenant demo" },
         { icon: UserMultiple02Icon, label: "Admin, dokter, dan terapis" },
       ]}
-      formHeading="Pilih akun"
-      formSubheading="Kredensial sudah terisi otomatis. Tidak perlu mengetik apa pun."
+      formHeading={quickLogin ? "Pilih akun" : "Masuk"}
+      formSubheading={
+        quickLogin
+          ? "Kredensial sudah terisi otomatis. Tidak perlu mengetik apa pun."
+          : "Masukkan email dan sandi akun demo Anda."
+      }
     >
-      <div className="mb-6">
-        {/* Hanya peran klinik: akun platform sengaja tidak dipajang di halaman
-            publik, cukup tersedia di dev lewat /central/login. */}
-        <DemoQuickLogin kind="clinic" heading={null} showDivider />
-      </div>
+      {quickLogin ? (
+        <div className="mb-6">
+          {/* Hanya peran klinik: akun platform sengaja tidak dipajang di halaman
+              publik, cukup tersedia di dev lewat /central/login. */}
+          <DemoQuickLogin kind="clinic" heading={null} showDivider />
+        </div>
+      ) : null}
       <TenantLoginForm tenant={DEMO_TENANT} />
     </AuthLayout>
   )
