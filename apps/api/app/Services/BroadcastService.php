@@ -79,10 +79,12 @@ class BroadcastService
      */
     public function queueSend(Broadcast $broadcast, bool $automatic = false): array
     {
-        // Cloud API yang belum disetel atau template yang belum dipilih
+        // Cloud API yang belum bisa mengirim atau template yang belum dipilih
         // membuat seluruh antrean gugur satu per satu di worker. Ditolak di
         // depan supaya admin tahu sebelum menekan kirim.
-        if (! app(CloudApiClient::class) instanceof CloudApiClient) {
+        $client = app(CloudApiClient::class);
+
+        if (! $client instanceof CloudApiClient || ! $client->canSend()) {
             abort(422, __('broadcast.cloud_not_ready'));
         }
 
@@ -185,7 +187,7 @@ class BroadcastService
     {
         $client = app(CloudApiClient::class);
 
-        if (! $client instanceof CloudApiClient) {
+        if (! $client instanceof CloudApiClient || ! $client->canSend()) {
             abort(422, __('broadcast.cloud_not_ready'));
         }
 

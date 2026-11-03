@@ -467,6 +467,14 @@ class CloudApiClient
         return is_string($id) && $id !== '' ? $id : null;
     }
 
+    /**
+     * Siap mengirim pesan? Nomor pengirim wajib ada; mengelola template tidak.
+     */
+    public function canSend(): bool
+    {
+        return $this->accessToken !== '' && $this->phoneNumberId !== '';
+    }
+
     private function ensureConfigured(): void
     {
         if ($this->accessToken === '' || $this->phoneNumberId === '') {

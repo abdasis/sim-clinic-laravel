@@ -20,8 +20,10 @@ class BroadcastTemplateManageTest extends TestCase
 
     private const WABA_ID = '112233445566';
 
-    private function cloudConfigured(?string $wabaId = self::WABA_ID): void
-    {
+    private function cloudConfigured(
+        ?string $wabaId = self::WABA_ID,
+        ?string $phoneNumberId = '109876543210',
+    ): void {
         config([
             'meta_whatsapp.access_token' => 'token-uji',
             'meta_whatsapp.api_version' => 'v21.0',
@@ -30,7 +32,7 @@ class BroadcastTemplateManageTest extends TestCase
 
         WhatsappSetting::create([
             'tenant_id' => $this->tenant->id,
-            'phone_number_id' => '109876543210',
+            'phone_number_id' => $phoneNumberId,
             'waba_id' => $wabaId,
         ]);
     }
@@ -239,6 +241,50 @@ class BroadcastTemplateManageTest extends TestCase
 
         $this->getJson($this->tenantUrl('broadcasts/templates/manage'))
             ->assertJsonPath('data.0.name', 'template_3');
+    }
+
+    public function test_templates_still_work_when_the_sender_number_is_missing(): void
+    {
+        $this->actingAsClinicUser();
+        $this->cloudConfigured(phoneNumberId: null);
+
+        Http::fake([
+            'graph.test/*' => Http::response(['data' => [[
+                'id' => 'hsm-1',
+                'name' => 'promo_bulanan',
+                'status' => 'APPROVED',
+                'language' => 'id',
+                'category' => 'MARKETING',
+                'components' => [['type' => 'BODY', 'text' => 'Halo']],
+            ]]], 200),
+        ]);
+
+        $this->getJson($this->tenantUrl('broadcasts/templates/manage'))
+            ->assertOk()
+            ->assertJsonPath('meta.ready', true)
+            ->assertJsonPath('data.0.name', 'promo_bulanan');
+    }
+
+    public function test_sending_is_refused_when_the_sender_number_is_missing(): void
+    {
+        $this->actingAsClinicUser();
+        $this->cloudConfigured(phoneNumberId: null);
+
+        Http::fake();
+
+        $this->postJson($this->tenantUrl('broadcasts/test-message'), [
+            'phone' => '081234567890',
+            'template' => [
+                'name' => 'promo_bulanan',
+                'language' => 'id',
+                'body' => 'Halo {{1}}',
+                'params' => ['nama'],
+            ],
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', __('broadcast.cloud_not_ready'));
+
+        Http::assertNothingSent();
     }
 
     public function test_a_cashier_cannot_manage_templates(): void

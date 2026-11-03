@@ -238,19 +238,16 @@ export function WhatsappTemplateForm({
               </div>
             </div>
 
-            <DialogFooter className="border-t border-border/50 p-4">
+            <DialogFooter className="mx-0 mb-0 border-t border-border/50 p-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="min-h-11 sm:min-h-10"
+                className="min-h-11 sm:min-h-8"
               >
                 {t("general.cancel")}
               </Button>
-              <FormSubmit
-                loading={mutation.isPending}
-                className="min-h-11 sm:min-h-10"
-              >
+              <FormSubmit loading={mutation.isPending} className="min-h-11 sm:min-h-8">
                 {t("general.save")}
               </FormSubmit>
             </DialogFooter>

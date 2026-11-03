@@ -130,8 +130,9 @@ class AppServiceProvider extends ServiceProvider
             return new WahaClient($server->base_url, $server->api_key, $tenant->session);
         });
 
-        // Cloud API Meta: token milik platform, nomor pengirim milik klinik.
-        // Salah satunya belum diisi berarti jalur ini belum bisa dipakai.
+        // Cloud API Meta: token milik platform; nomor pengirim dan WABA milik
+        // klinik. Tanpa nomor, template tetap bisa dikelola — hanya kirim yang
+        // belum mungkin, dan itu diputuskan lewat canSend().
         $this->app->bind(CloudApiClient::class, function (): ?CloudApiClient {
             $token = (string) config('meta_whatsapp.access_token');
 
@@ -140,17 +141,12 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $setting = WhatsappSetting::query()->first();
-            $phoneNumberId = (string) ($setting?->phone_number_id ?? '');
-
-            if ($phoneNumberId === '') {
-                return null;
-            }
 
             return new CloudApiClient(
                 (string) config('meta_whatsapp.base_url'),
                 (string) config('meta_whatsapp.api_version'),
                 $token,
-                $phoneNumberId,
+                (string) ($setting?->phone_number_id ?? ''),
                 $setting?->waba_id,
             );
         });

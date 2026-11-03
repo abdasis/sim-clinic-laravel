@@ -114,7 +114,7 @@ export function WhatsappTemplateManager({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-11 sm:min-h-10"
+                className="min-h-11 sm:min-h-8"
                 disabled={templates.isFetching}
                 onClick={() => void templates.refetch()}
               >
@@ -152,7 +152,7 @@ export function WhatsappTemplateManager({
                 type="button"
                 variant="outline"
                 size="icon"
-                className="size-11 sm:size-10"
+                className="size-11 sm:size-8"
                 aria-label={t("broadcast.template_refresh")}
                 disabled={templates.isFetching}
                 onClick={() => void templates.refetch()}
@@ -170,7 +170,7 @@ export function WhatsappTemplateManager({
           <Button
             type="button"
             size="sm"
-            className="min-h-11 gap-1.5 sm:min-h-10"
+            className="min-h-11 gap-1.5 sm:min-h-8"
             onClick={() => setFormOpen(true)}
           >
             <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-3.5" />

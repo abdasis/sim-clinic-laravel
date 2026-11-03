@@ -22,7 +22,6 @@ import {
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet } from "#/lib/api.ts"
 import { formatDateTime } from "#/lib/format.ts"
-import { BroadcastFormDialog } from "./components/broadcast-form-dialog.tsx"
 import { AutoReminderDialog } from "./components/auto-reminder-dialog.tsx"
 import { BroadcastSettingsDialog } from "./components/broadcast-settings-dialog.tsx"
 import { QuotaCard } from "./components/quota-card.tsx"
@@ -30,7 +29,6 @@ import { WhatsappTemplateManageButton } from "./components/whatsapp-template-man
 import {
   ConnectionDialog,
   RemindersDialog,
-  TemplatesDialog,
 } from "./components/whatsapp-tools.tsx"
 
 export const Route = createFileRoute("/$tenant/clinic/broadcasts/")({
@@ -55,10 +53,8 @@ interface BroadcastRow {
 function BroadcastsPage() {
   const { tenant } = useParams({ from: "/$tenant/clinic/broadcasts/" })
   const { t } = useTrans()
-  const [createOpen, setCreateOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [connectionOpen, setConnectionOpen] = useState(false)
-  const [templatesOpen, setTemplatesOpen] = useState(false)
   const [remindersOpen, setRemindersOpen] = useState(false)
   const [autoReminderOpen, setAutoReminderOpen] = useState(false)
 
@@ -94,9 +90,6 @@ function BroadcastsPage() {
           <Button variant="outline" size="sm" onClick={() => setConnectionOpen(true)} className="gap-1.5">
             <HugeiconsIcon icon={Link01Icon} strokeWidth={2} className="size-3.5" />
             {t("broadcast.connection")}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setTemplatesOpen(true)}>
-            {t("broadcast.templates")}
           </Button>
           <WhatsappTemplateManageButton
             tenant={tenant}
@@ -143,8 +136,10 @@ function BroadcastsPage() {
             </TooltipTrigger>
             <TooltipContent>{t("broadcast.settings")}</TooltipContent>
           </Tooltip>
-          <Button onClick={() => setCreateOpen(true)}>
-            {t("broadcast.add")}
+          <Button asChild>
+            <Link to="/$tenant/clinic/broadcasts/new" params={{ tenant }}>
+              {t("broadcast.add")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -198,8 +193,10 @@ function BroadcastsPage() {
           title={t("broadcast.empty_title")}
           description={t("broadcast.empty_desc")}
           action={
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              {t("broadcast.add")}
+            <Button size="sm" asChild>
+              <Link to="/$tenant/clinic/broadcasts/new" params={{ tenant }}>
+                {t("broadcast.add")}
+              </Link>
             </Button>
           }
         />
@@ -266,11 +263,6 @@ function BroadcastsPage() {
         </ul>
       )}
 
-      <BroadcastFormDialog
-        tenant={tenant}
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-      />
       <BroadcastSettingsDialog
         tenant={tenant}
         open={settingsOpen}
@@ -282,7 +274,6 @@ function BroadcastsPage() {
         onOpenChange={setAutoReminderOpen}
       />
       <ConnectionDialog tenant={tenant} open={connectionOpen} onOpenChange={setConnectionOpen} />
-      <TemplatesDialog tenant={tenant} open={templatesOpen} onOpenChange={setTemplatesOpen} />
       <RemindersDialog tenant={tenant} open={remindersOpen} onOpenChange={setRemindersOpen} />
     </div>
   )

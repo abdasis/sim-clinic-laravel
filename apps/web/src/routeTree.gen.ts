@@ -43,6 +43,7 @@ import { Route as TenantClinicActivityLogsIndexRouteImport } from './routes/$ten
 import { Route as TenantClinicBookingsIndexRouteImport } from './routes/$tenant/clinic/bookings/index'
 import { Route as TenantClinicBroadcastsIndexRouteImport } from './routes/$tenant/clinic/broadcasts/index'
 import { Route as TenantClinicBroadcastsIdRouteImport } from './routes/$tenant/clinic/broadcasts/$id'
+import { Route as TenantClinicBroadcastsNewRouteImport } from './routes/$tenant/clinic/broadcasts/new'
 import { Route as TenantClinicCategoriesIndexRouteImport } from './routes/$tenant/clinic/categories/index'
 import { Route as TenantClinicChatbotSettingsRouteImport } from './routes/$tenant/clinic/chatbot/settings'
 import { Route as TenantClinicCompanyProfileIndexRouteImport } from './routes/$tenant/clinic/company-profile/index'
@@ -253,6 +254,12 @@ const TenantClinicBroadcastsIdRoute =
   TenantClinicBroadcastsIdRouteImport.update({
     id: '/broadcasts/$id',
     path: '/broadcasts/$id',
+    getParentRoute: () => TenantClinicRouteRoute,
+  } as any)
+const TenantClinicBroadcastsNewRoute =
+  TenantClinicBroadcastsNewRouteImport.update({
+    id: '/broadcasts/new',
+    path: '/broadcasts/new',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
 const TenantClinicCategoriesIndexRoute =
@@ -494,6 +501,7 @@ export interface FileRoutesByFullPath {
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/central/waha/': typeof CentralWahaIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
+  '/$tenant/clinic/broadcasts/new': typeof TenantClinicBroadcastsNewRoute
   '/$tenant/clinic/chatbot/settings': typeof TenantClinicChatbotSettingsRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -562,6 +570,7 @@ export interface FileRoutesByTo {
   '/central/tenants': typeof CentralTenantsIndexRoute
   '/central/waha': typeof CentralWahaIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
+  '/$tenant/clinic/broadcasts/new': typeof TenantClinicBroadcastsNewRoute
   '/$tenant/clinic/chatbot/settings': typeof TenantClinicChatbotSettingsRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -635,6 +644,7 @@ export interface FileRoutesById {
   '/central/tenants/': typeof CentralTenantsIndexRoute
   '/central/waha/': typeof CentralWahaIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
+  '/$tenant/clinic/broadcasts/new': typeof TenantClinicBroadcastsNewRoute
   '/$tenant/clinic/chatbot/settings': typeof TenantClinicChatbotSettingsRoute
   '/$tenant/clinic/company-profile/settings': typeof TenantClinicCompanyProfileSettingsRoute
   '/$tenant/clinic/medical-records/$recordId': typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -708,6 +718,7 @@ export interface FileRouteTypes {
     | '/central/tenants/'
     | '/central/waha/'
     | '/$tenant/clinic/broadcasts/$id'
+    | '/$tenant/clinic/broadcasts/new'
     | '/$tenant/clinic/chatbot/settings'
     | '/$tenant/clinic/company-profile/settings'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -776,6 +787,7 @@ export interface FileRouteTypes {
     | '/central/tenants'
     | '/central/waha'
     | '/$tenant/clinic/broadcasts/$id'
+    | '/$tenant/clinic/broadcasts/new'
     | '/$tenant/clinic/chatbot/settings'
     | '/$tenant/clinic/company-profile/settings'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -848,6 +860,7 @@ export interface FileRouteTypes {
     | '/central/tenants/'
     | '/central/waha/'
     | '/$tenant/clinic/broadcasts/$id'
+    | '/$tenant/clinic/broadcasts/new'
     | '/$tenant/clinic/chatbot/settings'
     | '/$tenant/clinic/company-profile/settings'
     | '/$tenant/clinic/medical-records/$recordId'
@@ -1142,6 +1155,13 @@ declare module '@tanstack/react-router' {
       path: '/broadcasts/$id'
       fullPath: '/$tenant/clinic/broadcasts/$id'
       preLoaderRoute: typeof TenantClinicBroadcastsIdRouteImport
+      parentRoute: typeof TenantClinicRouteRoute
+    }
+    '/$tenant/clinic/broadcasts/new': {
+      id: '/$tenant/clinic/broadcasts/new'
+      path: '/broadcasts/new'
+      fullPath: '/$tenant/clinic/broadcasts/new'
+      preLoaderRoute: typeof TenantClinicBroadcastsNewRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
     '/$tenant/clinic/categories/': {
@@ -1472,6 +1492,7 @@ interface TenantClinicRouteRouteChildren {
   TenantClinicPosRouteRoute: typeof TenantClinicPosRouteRouteWithChildren
   TenantClinicIndexRoute: typeof TenantClinicIndexRoute
   TenantClinicBroadcastsIdRoute: typeof TenantClinicBroadcastsIdRoute
+  TenantClinicBroadcastsNewRoute: typeof TenantClinicBroadcastsNewRoute
   TenantClinicChatbotSettingsRoute: typeof TenantClinicChatbotSettingsRoute
   TenantClinicCompanyProfileSettingsRoute: typeof TenantClinicCompanyProfileSettingsRoute
   TenantClinicMedicalRecordsRecordIdRoute: typeof TenantClinicMedicalRecordsRecordIdRoute
@@ -1513,6 +1534,7 @@ const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
   TenantClinicPosRouteRoute: TenantClinicPosRouteRouteWithChildren,
   TenantClinicIndexRoute: TenantClinicIndexRoute,
   TenantClinicBroadcastsIdRoute: TenantClinicBroadcastsIdRoute,
+  TenantClinicBroadcastsNewRoute: TenantClinicBroadcastsNewRoute,
   TenantClinicChatbotSettingsRoute: TenantClinicChatbotSettingsRoute,
   TenantClinicCompanyProfileSettingsRoute:
     TenantClinicCompanyProfileSettingsRoute,

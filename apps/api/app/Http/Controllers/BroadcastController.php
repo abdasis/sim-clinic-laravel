@@ -106,9 +106,12 @@ class BroadcastController extends Controller
         $broadcast->load(['creator', 'recipients' => fn ($q) => $q->orderBy('name')])
             ->loadCount(['recipients', 'sentRecipients', 'pendingRecipients', 'failedRecipients']);
 
+        $client = app(CloudApiClient::class);
+
         return response()->json([
             'data' => new BroadcastResource($broadcast),
-            'meta' => ['cloud_api_ready' => app(CloudApiClient::class) instanceof CloudApiClient],
+            // Template bisa dikelola tanpa nomor pengirim, tapi kirim tidak.
+            'meta' => ['cloud_api_ready' => $client instanceof CloudApiClient && $client->canSend()],
         ]);
     }
 
