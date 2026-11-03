@@ -20,12 +20,14 @@ use App\Models\WhatsappSetting;
 use App\Services\BroadcastService;
 use App\Services\WhatsappConnectionService;
 use App\Support\BroadcastAudienceBuilder;
+use App\Support\CloudApiClient;
 use App\Support\DailyMessageQuota;
 use App\Support\PhoneNumber;
 use App\Support\TenantCache;
-use App\Support\WahaClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class BroadcastController extends Controller
 {
@@ -104,7 +106,7 @@ class BroadcastController extends Controller
 
         return response()->json([
             'data' => new BroadcastResource($broadcast),
-            'meta' => ['waha_ready' => app(WahaClient::class) !== null],
+            'meta' => ['cloud_api_ready' => app(CloudApiClient::class) instanceof CloudApiClient],
         ]);
     }
 
@@ -190,12 +192,41 @@ class BroadcastController extends Controller
 
         abort_if($phone === null, 422, __('broadcast.invalid_phone'));
 
-        $broadcasts->sendTest($phone, $validated['message']);
+        $broadcasts->sendTest($phone, $validated['template']);
 
         return response()->json([
             'data' => null,
             'meta' => ['message' => __('broadcast.test_sent')],
         ]);
+    }
+
+    /**
+     * Template resmi yang sudah disetujui Meta untuk klinik ini.
+     *
+     * Hanya template APPROVED yang bisa dipakai mengirim; daftar ini yang
+     * mengisi pemilih template di layar broadcast.
+     */
+    public function templates(): JsonResponse
+    {
+        $this->authorize('viewAny', Broadcast::class);
+
+        $client = app(CloudApiClient::class);
+
+        if (! $client instanceof CloudApiClient) {
+            return response()->json(['data' => [], 'meta' => ['ready' => false]]);
+        }
+
+        try {
+            $templates = $client->approvedTemplates();
+        } catch (Throwable $e) {
+            Log::error('Gagal mengambil daftar template WhatsApp Cloud API.', [
+                'exception' => $e,
+            ]);
+
+            return response()->json(['data' => [], 'meta' => ['ready' => false]]);
+        }
+
+        return response()->json(['data' => $templates, 'meta' => ['ready' => true]]);
     }
 
     /**
@@ -299,6 +330,11 @@ class BroadcastController extends Controller
                 'session' => $setting?->session,
                 // Nomor Cloud API Meta yang dipakai membalas lewat jalur itu.
                 'phone_number_id' => $setting?->phone_number_id,
+                // Akun WhatsApp Business tempat template resmi klinik
+                // bernaung; kosong berarti pemilih template belum bisa diisi.
+                'waba_id' => $setting?->waba_id,
+                // Template yang dipakai pengingat otomatis.
+                'reminder_template' => $setting?->reminder_template,
                 // Klinik tidak bisa berbuat apa-apa sampai pengelola platform
                 // mengisi alamat servernya, jadi keadaannya ikut disebut.
                 'waha_available' => WahaSetting::query()->first()?->isConfigured() ?? false,
@@ -318,12 +354,13 @@ class BroadcastController extends Controller
         $validated = $request->validated();
 
         $setting = WhatsappSetting::query()->firstOrNew([]);
-        $setting->session = $validated['session'] ?? null;
 
-        // Hanya ditimpa bila dikirim: menyimpan sesi saja tidak boleh
-        // menghapus nomor Cloud API yang sudah diisi sebelumnya.
-        if (array_key_exists('phone_number_id', $validated)) {
-            $setting->phone_number_id = $validated['phone_number_id'];
+        // Hanya ditimpa bila dikirim: menyimpan satu bagian tidak boleh
+        // menghapus bagian lain yang sudah diisi sebelumnya.
+        foreach (['session', 'phone_number_id', 'waba_id', 'reminder_template'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $setting->{$field} = $validated[$field];
+            }
         }
 
         $setting->save();
@@ -332,6 +369,8 @@ class BroadcastController extends Controller
             'data' => [
                 'session' => $setting->session,
                 'phone_number_id' => $setting->phone_number_id,
+                'waba_id' => $setting->waba_id,
+                'reminder_template' => $setting->reminder_template,
             ],
             'meta' => ['message' => __('broadcast.settings_saved')],
         ]);

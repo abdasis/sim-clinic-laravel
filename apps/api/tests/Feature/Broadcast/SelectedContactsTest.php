@@ -31,6 +31,17 @@ class SelectedContactsTest extends TestCase
         $this->actingAsClinicUser();
     }
 
+    /** @return array<string, mixed> */
+    private function template(): array
+    {
+        return [
+            'name' => 'promo_bulanan',
+            'language' => 'id',
+            'body' => 'Halo {{1}}',
+            'params' => ['nama'],
+        ];
+    }
+
     private function makePatient(string $name, string $phone = '081234567890', bool $optIn = true): Patient
     {
         return Patient::factory()->create([
@@ -143,7 +154,7 @@ class SelectedContactsTest extends TestCase
 
         $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Promo Agustus',
-            'message' => 'Halo {nama}',
+            'template' => $this->template(),
             'audience' => 'selected',
             'audience_params' => ['patient_ids' => [$ani->id]],
         ])->assertCreated();
@@ -159,7 +170,7 @@ class SelectedContactsTest extends TestCase
     {
         $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Promo Agustus',
-            'message' => 'Halo {nama}',
+            'template' => $this->template(),
             'audience' => 'selected',
             'audience_params' => ['patient_ids' => []],
         ])->assertStatus(422)->assertJsonValidationErrors('audience_params.patient_ids');
@@ -176,7 +187,7 @@ class SelectedContactsTest extends TestCase
 
         $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Promo Agustus',
-            'message' => 'Halo {nama}',
+            'template' => $this->template(),
             'audience' => 'selected',
             'audience_params' => ['patient_ids' => [$foreign->id]],
         ])->assertStatus(422);

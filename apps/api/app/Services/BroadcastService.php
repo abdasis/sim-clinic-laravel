@@ -14,12 +14,11 @@ use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\BroadcastReminderSetting;
+use App\Support\CloudApiClient;
 use App\Support\DailyMessageQuota;
-use App\Support\WahaClient;
+use App\Support\TemplateVariables;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Throwable;
 
 /**
  * Orkestrasi broadcast WhatsApp: snapshot penerima, penandaan manual, dan
@@ -80,13 +79,14 @@ class BroadcastService
      */
     public function queueSend(Broadcast $broadcast, bool $automatic = false): array
     {
-        $client = app(WahaClient::class);
-
-        if ($client === null) {
-            abort(422, __('broadcast.waha_not_ready'));
+        // Cloud API yang belum disetel atau template yang belum dipilih
+        // membuat seluruh antrean gugur satu per satu di worker. Ditolak di
+        // depan supaya admin tahu sebelum menekan kirim.
+        if (! app(CloudApiClient::class) instanceof CloudApiClient) {
+            abort(422, __('broadcast.cloud_not_ready'));
         }
 
-        $this->guardConnected($client);
+        abort_if($broadcast->template === null, 422, __('broadcast.template_required'));
 
         // Jatah yang sudah habis ditolak di depan, bukan setelah ratusan job
         // diantrekan untuk gugur satu per satu. Sisa jatah yang cuma menutup
@@ -100,8 +100,8 @@ class BroadcastService
             __('broadcast.daily_limit_reached', ['limit' => $quota->limit]),
         );
 
-        // Yang gagal ikut diantrekan lagi: menekan kirim setelah sesi pulih
-        // memang bermaksud mengulang yang tidak sampai, dan tanpa ini
+        // Yang gagal ikut diantrekan lagi: menekan kirim setelah gateway
+        // pulih memang bermaksud mengulang yang tidak sampai, dan tanpa ini
         // campaign yang seluruhnya gagal jadi jalan buntu — satu-satunya
         // jalan keluar menandai ulang penerimanya satu per satu.
         $pendingIds = $broadcast->recipients()
@@ -150,27 +150,6 @@ class BroadcastService
         return ['queued' => $pendingIds->count()];
     }
 
-    /**
-     * Tolak pengiriman saat WhatsApp klinik tidak tersambung.
-     *
-     * Pengaturan yang terisi hanya berarti aplikasi tahu ke mana harus
-     * menembak — bukan bahwa nomornya masih tertaut. Sesi yang terputus
-     * membuat gateway menolak tiap pesan satu per satu sampai seluruh
-     * campaign hangus, dan admin baru tahu setelah semuanya habis.
-     */
-    private function guardConnected(WahaClient $client): void
-    {
-        try {
-            $connected = $client->isConnected();
-        } catch (Throwable $e) {
-            Log::error('Gagal memeriksa koneksi WhatsApp sebelum broadcast.', ['exception' => $e]);
-
-            abort(422, __('broadcast.waha_check_failed'));
-        }
-
-        abort_unless($connected, 422, __('broadcast.waha_not_connected'));
-    }
-
     public function changeStatus(Broadcast $broadcast, BroadcastStatus $status): Broadcast
     {
         $old = $broadcast->status;
@@ -197,17 +176,34 @@ class BroadcastService
     }
 
     /**
-     * Kirim pesan uji ke satu nomor — memastikan koneksi hidup sebelum
-     * ratusan pasien dikirimi.
+     * Kirim template uji ke satu nomor — memastikan template yang dipilih
+     * benar-benar diterima Meta sebelum ratusan pasien dikirimi.
+     *
+     * @param  array<string, mixed>  $template
      */
-    public function sendTest(string $phone, string $message): void
+    public function sendTest(string $phone, array $template): void
     {
-        $client = app(WahaClient::class);
+        $client = app(CloudApiClient::class);
 
-        if ($client === null) {
-            abort(422, __('broadcast.waha_not_ready'));
+        if (! $client instanceof CloudApiClient) {
+            abort(422, __('broadcast.cloud_not_ready'));
         }
 
-        $client->send($phone, $message);
+        // Header gambar butuh berkas yang benar-benar bisa diakses Meta.
+        // Pesan uji belum punya poster tersimpan, jadi lebih jujur ditolak
+        // daripada mengirim template yang pasti gagal.
+        if (($template['header_type'] ?? null) === 'IMAGE') {
+            abort(422, __('broadcast.template_test_image_unsupported'));
+        }
+
+        $client->sendTemplate(
+            $phone,
+            (string) $template['name'],
+            (string) $template['language'],
+            TemplateVariables::resolve(
+                (array) ($template['params'] ?? []),
+                TemplateVariables::examples(),
+            ),
+        );
     }
 }

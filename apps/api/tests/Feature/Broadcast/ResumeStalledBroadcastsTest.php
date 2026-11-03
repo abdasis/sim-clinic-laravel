@@ -6,22 +6,20 @@ use App\Enums\BroadcastStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\Patient;
-use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
 /**
- * Blast yang berhenti karena gatewaynya tersendat dilanjutkan sendiri.
+ * Blast yang berhenti karena Cloud API Meta tersendat dilanjutkan sendiri.
  *
- * Halaman WhatsApp Web milik gateway kerap dimuat ulang di tengah kiriman
- * ratusan pesan lalu pulih semenit kemudian. Tanpa penjadwal ini, tiap
- * kedipan berarti seseorang harus menunggui layar dan menekan Lanjutkan —
- * blast 130 pasien jadi pekerjaan menjaga, bukan pekerjaan mengirim.
+ * Meta bisa menahan laju atau tersandung sesaat di tengah kiriman ratusan
+ * pesan lalu pulih semenit kemudian. Tanpa penjadwal ini, tiap kedipan
+ * berarti seseorang harus menunggui layar dan menekan Lanjutkan — blast 130
+ * pasien jadi pekerjaan menjaga, bukan pekerjaan mengirim.
  */
 class ResumeStalledBroadcastsTest extends TestCase
 {
@@ -29,15 +27,15 @@ class ResumeStalledBroadcastsTest extends TestCase
 
     private function configured(): void
     {
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
-    }
+        config([
+            'meta_whatsapp.access_token' => 'token-uji',
+            'meta_whatsapp.api_version' => 'v21.0',
+            'meta_whatsapp.base_url' => 'https://graph.test',
+        ]);
 
-    private function sessionIs(string $status): void
-    {
-        Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => $status], 200),
-            'waha.test/*' => Http::response(['id' => 'true_628@c.us'], 201),
+        WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'phone_number_id' => '109876543210',
         ]);
     }
 
@@ -53,28 +51,32 @@ class ResumeStalledBroadcastsTest extends TestCase
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'PROMO SEPTEMBER',
-            'message' => 'Halo {nama}',
+            'template' => [
+                'name' => 'promo_bulanan',
+                'language' => 'id',
+                'body' => 'Halo {{1}}',
+                'params' => ['nama'],
+            ],
             'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
         $broadcast = Broadcast::find($id);
         $broadcast->update([
             'status' => BroadcastStatus::Paused,
-            'paused_reason' => 'WAHA menolak pengiriman gambar: HTTP 500 — ProtocolError',
+            'paused_reason' => 'Cloud API Meta menolak pengiriman: HTTP 503 — Upstream unavailable',
             ...$overrides,
         ]);
 
         return $broadcast;
     }
 
-    public function test_a_gateway_paused_campaign_resumes_once_the_session_is_back(): void
+    public function test_a_gateway_paused_campaign_resumes_once_cloud_api_is_ready(): void
     {
         $this->actingAsClinicUser();
         $this->configured();
 
         $broadcast = $this->stalled(2);
 
-        $this->sessionIs('WORKING');
         Queue::fake();
 
         $this->artisan('clinic:resume-broadcasts')->assertSuccessful();
@@ -87,15 +89,13 @@ class ResumeStalledBroadcastsTest extends TestCase
         Queue::assertPushed(SendBroadcastRecipientJob::class, 2);
     }
 
-    /** Sesi yang belum pulih tidak disentuh — kirim sekarang cuma gagal lagi. */
-    public function test_it_waits_while_the_session_is_still_down(): void
+    /** Cloud API yang belum disetel tidak disentuh — kirim sekarang cuma gagal lagi. */
+    public function test_it_waits_while_cloud_api_is_not_configured(): void
     {
         $this->actingAsClinicUser();
-        $this->configured();
 
         $broadcast = $this->stalled(2);
 
-        $this->sessionIs('SCAN_QR_CODE');
         Queue::fake();
 
         $this->artisan('clinic:resume-broadcasts')->assertSuccessful();
@@ -118,7 +118,6 @@ class ResumeStalledBroadcastsTest extends TestCase
 
         $broadcast = $this->stalled(2, ['paused_reason' => null]);
 
-        $this->sessionIs('WORKING');
         Queue::fake();
 
         $this->artisan('clinic:resume-broadcasts')->assertSuccessful();
@@ -141,7 +140,6 @@ class ResumeStalledBroadcastsTest extends TestCase
 
         $broadcast = $this->stalled(2, ['auto_resumes' => 5]);
 
-        $this->sessionIs('WORKING');
         Queue::fake();
 
         $this->artisan('clinic:resume-broadcasts')->assertSuccessful();
@@ -153,9 +151,9 @@ class ResumeStalledBroadcastsTest extends TestCase
     /**
      * Campaign yang berhenti karena laju ditahan menunggu masa diamnya habis.
      *
-     * Melanjutkan lima menit kemudian, seperti gangguan gateway biasa, sama
-     * saja dengan mengabaikan peringatan yang baru saja diberikan WhatsApp —
-     * dan itu yang berujung nomor klinik diblokir.
+     * Melanjutkan lima menit kemudian, seperti gangguan biasa, sama saja
+     * dengan mengabaikan peringatan yang baru saja diberikan Meta — dan itu
+     * yang berujung nomor klinik diblokir.
      */
     public function test_a_cooling_off_campaign_is_not_resumed_early(): void
     {
@@ -163,11 +161,10 @@ class ResumeStalledBroadcastsTest extends TestCase
         $this->configured();
 
         $broadcast = $this->stalled(2, [
-            'paused_reason' => 'WAHA menolak pengiriman: HTTP 429 — Too many requests',
+            'paused_reason' => 'Cloud API Meta menolak pengiriman: HTTP 429 — Too many requests',
             'resume_after' => now()->addMinutes(25),
         ]);
 
-        $this->sessionIs('WORKING');
         Queue::fake();
 
         $this->artisan('clinic:resume-broadcasts')->assertSuccessful();
@@ -183,11 +180,10 @@ class ResumeStalledBroadcastsTest extends TestCase
         $this->configured();
 
         $broadcast = $this->stalled(2, [
-            'paused_reason' => 'WAHA menolak pengiriman: HTTP 429 — Too many requests',
+            'paused_reason' => 'Cloud API Meta menolak pengiriman: HTTP 429 — Too many requests',
             'resume_after' => now()->subMinute(),
         ]);
 
-        $this->sessionIs('WORKING');
         Queue::fake();
 
         $this->artisan('clinic:resume-broadcasts')->assertSuccessful();
@@ -224,7 +220,6 @@ class ResumeStalledBroadcastsTest extends TestCase
 
         $broadcast = $this->stalled(2, ['auto_resumes' => 4]);
 
-        $this->sessionIs('WORKING');
         Queue::fake();
 
         $this->patchJson($this->tenantUrl("broadcasts/{$broadcast->id}/status"), ['status' => 'sending'])

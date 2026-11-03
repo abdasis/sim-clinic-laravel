@@ -3,26 +3,31 @@
 namespace App\Support;
 
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Klien WhatsApp Cloud API (Meta) untuk mengirim teks, media, dan kontak.
+ * Klien WhatsApp Cloud API (Meta) untuk mengirim teks, media, kontak, dan
+ * template resmi.
  *
- * Nomor pengirim (`phone_number_id`) milik tiap klinik, sedangkan token akses
- * milik aplikasi Meta platform. Token tidak pernah dicatat ke log atau
- * disimpan di basis data.
+ * Nomor pengirim (`phone_number_id`) dan akun WhatsApp Business (`waba_id`)
+ * milik tiap klinik, sedangkan token akses milik aplikasi Meta platform.
+ * Token tidak pernah dicatat ke log atau disimpan di basis data.
  */
 class CloudApiClient
 {
     /** Jenis media yang tidak menerima caption menurut Cloud API. */
     private const NO_CAPTION_TYPES = ['audio', 'sticker'];
 
+    private const TEMPLATE_CACHE_MINUTES = 5;
+
     public function __construct(
         private readonly string $baseUrl,
         private readonly string $apiVersion,
         private readonly string $accessToken,
         private readonly string $phoneNumberId,
+        private readonly ?string $wabaId = null,
     ) {}
 
     /**
@@ -45,6 +50,142 @@ class CloudApiClient
         }
 
         return $this->sendMessage($phone, 'text', $payload);
+    }
+
+    /**
+     * Kirim pesan memakai template resmi yang sudah disetujui Meta.
+     *
+     * @param  array<int, string>  $bodyParams  nilai untuk {{1}}, {{2}}, ...
+     * @param  string|null  $headerImageLink  tautan publik gambar header;
+     *                                        hanya untuk template IMAGE
+     */
+    public function sendTemplate(
+        string $phone,
+        string $templateName,
+        string $language,
+        array $bodyParams = [],
+        ?string $headerImageLink = null,
+    ): ?string {
+        $template = [
+            'name' => $templateName,
+            'language' => ['code' => $language],
+        ];
+
+        $components = [];
+
+        if ($headerImageLink !== null && $headerImageLink !== '') {
+            $components[] = [
+                'type' => 'header',
+                'parameters' => [[
+                    'type' => 'image',
+                    'image' => ['link' => $headerImageLink],
+                ]],
+            ];
+        }
+
+        if ($bodyParams !== []) {
+            $components[] = [
+                'type' => 'body',
+                'parameters' => array_map(
+                    fn ($value): array => ['type' => 'text', 'text' => (string) $value],
+                    array_values($bodyParams),
+                ),
+            ];
+        }
+
+        if ($components !== []) {
+            $template['components'] = $components;
+        }
+
+        return $this->sendMessage($phone, 'template', ['template' => $template]);
+    }
+
+    /**
+     * Template yang sudah disetujui untuk klinik ini, dinormalisasi ke bentuk
+     * yang dipakai layar pemilih template.
+     *
+     * Ditahan lima menit: daftarnya hanya berubah saat admin mengurus
+     * persetujuan di aplikasi Meta, sementara layar pemilih dibuka berkali-kali.
+     *
+     * @return array<int, array{name: string, language: string, category: string, body: string, header_type: string|null, body_params_count: int}>
+     */
+    public function approvedTemplates(): array
+    {
+        if ($this->wabaId === null || $this->wabaId === '') {
+            throw new CloudApiException(0, null, 'WABA ID belum diisi; daftar template tidak bisa diambil.');
+        }
+
+        return Cache::remember(
+            'cloud-api:templates:'.$this->wabaId,
+            now()->addMinutes(self::TEMPLATE_CACHE_MINUTES),
+            fn (): array => $this->fetchApprovedTemplates(),
+        );
+    }
+
+    /**
+     * @return array<int, array{name: string, language: string, category: string, body: string, header_type: string|null, body_params_count: int}>
+     */
+    private function fetchApprovedTemplates(): array
+    {
+        if ($this->accessToken === '') {
+            throw new CloudApiException(0, null, 'Cloud API Meta belum dikonfigurasi.');
+        }
+
+        $response = Http::withToken($this->accessToken)
+            ->acceptJson()
+            ->timeout(20)
+            ->connectTimeout(10)
+            ->retry(2, 300, throw: false)
+            ->get($this->templatesUrl(), [
+                'fields' => 'name,status,language,category,components',
+                'status' => 'APPROVED',
+                'limit' => 200,
+            ]);
+
+        if (! $response->successful()) {
+            $exception = CloudApiException::rejected('Cloud API Meta menolak daftar template', $response);
+
+            Log::error('Cloud API Meta menolak permintaan daftar template.', [
+                'waba_id' => $this->wabaId,
+                'status' => $response->status(),
+                'reason' => $exception->reason,
+            ]);
+
+            throw $exception;
+        }
+
+        return collect(data_get($response->json(), 'data', []))
+            ->map(fn (array $template): array => $this->normalizeTemplate($template))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $template
+     * @return array{name: string, language: string, category: string, body: string, header_type: string|null, body_params_count: int}
+     */
+    private function normalizeTemplate(array $template): array
+    {
+        // Meta mengirim tipe komponen dalam huruf besar (HEADER/BODY);
+        // disamakan dulu supaya pembacaannya tidak bergantung pada casing.
+        $components = collect($template['components'] ?? [])
+            ->filter(fn ($component) => is_array($component))
+            ->map(fn (array $component): array => [
+                ...$component,
+                'type' => strtolower((string) ($component['type'] ?? '')),
+            ]);
+
+        $body = (string) data_get($components->firstWhere('type', 'body'), 'text', '');
+        $headerType = data_get($components->firstWhere('type', 'header'), 'format');
+
+        return [
+            'name' => (string) ($template['name'] ?? ''),
+            'language' => (string) ($template['language'] ?? ''),
+            'category' => (string) ($template['category'] ?? ''),
+            'body' => $body,
+            'header_type' => is_string($headerType) ? strtoupper($headerType) : null,
+            'body_params_count' => TemplateVariables::placeholderCount($body),
+        ];
     }
 
     /**
@@ -187,5 +328,13 @@ class CloudApiClient
             .'/'.trim($this->apiVersion, '/')
             .'/'.$this->phoneNumberId
             .'/'.$path;
+    }
+
+    private function templatesUrl(): string
+    {
+        return rtrim($this->baseUrl, '/')
+            .'/'.trim($this->apiVersion, '/')
+            .'/'.$this->wabaId
+            .'/message_templates';
     }
 }

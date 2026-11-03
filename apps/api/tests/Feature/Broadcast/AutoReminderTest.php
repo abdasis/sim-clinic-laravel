@@ -11,6 +11,7 @@ use App\Models\MedicalRecord;
 use App\Models\MessageTemplate;
 use App\Models\Patient;
 use App\Models\TreatmentRecord;
+use App\Models\WhatsappSetting;
 use App\Support\AutoReminderEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\InteractsWithTenant;
@@ -277,6 +278,37 @@ class AutoReminderTest extends TestCase
      * Pasien klinik lain tidak boleh ikut terjaring — nomornya milik klinik
      * lain, dan pesannya akan datang atas nama klinik yang salah.
      */
+    public function test_the_cloud_template_is_used_when_configured(): void
+    {
+        $this->actingAsClinicUser();
+        $this->activateSetting(30);
+
+        WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'reminder_template' => [
+                'name' => 'pengingat_perawatan',
+                'language' => 'id',
+                'body' => 'Halo {{1}}, sudah {{2}} hari sejak {{3}}.',
+                'params' => ['nama', 'hari_sejak_kunjungan', 'layanan_terakhir'],
+            ],
+        ]);
+
+        $patient = $this->patientTreated(now()->subDays(45)->toDateTimeString(), 'Peeling');
+
+        (new AutoReminderEngine)->run();
+
+        $broadcast = Broadcast::query()->first();
+        $this->assertSame('pengingat_perawatan', $broadcast->template['name']);
+
+        $recipient = $broadcast->recipients()->first();
+        $this->assertSame($patient->id, $recipient->patient_id);
+        $this->assertSame(
+            [$patient->name, '45', 'Peeling'],
+            $recipient->template_values,
+        );
+        $this->assertSame('Halo '.$patient->name.', sudah 45 hari sejak Peeling.', $recipient->message);
+    }
+
     public function test_other_clinics_patients_are_never_included(): void
     {
         $lain = $this->createTenant('klinik-tetangga');

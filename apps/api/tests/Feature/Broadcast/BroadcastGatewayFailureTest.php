@@ -7,9 +7,8 @@ use App\Enums\BroadcastStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\Patient;
-use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
-use App\Support\WahaException;
+use App\Support\CloudApiException;
 use Illuminate\Contracts\Queue\Job as JobContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -33,8 +32,16 @@ class BroadcastGatewayFailureTest extends TestCase
 
     private function configured(): void
     {
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
+        config([
+            'meta_whatsapp.access_token' => 'token-uji',
+            'meta_whatsapp.api_version' => 'v21.0',
+            'meta_whatsapp.base_url' => 'https://graph.test',
+        ]);
+
+        WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'phone_number_id' => '109876543210',
+        ]);
     }
 
     private function makeBroadcast(int $patients = 3): Broadcast
@@ -48,7 +55,12 @@ class BroadcastGatewayFailureTest extends TestCase
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'PROMO SEPTEMBER',
-            'message' => 'Halo {nama}',
+            'template' => [
+                'name' => 'promo_bulanan',
+                'language' => 'id',
+                'body' => 'Halo {{1}}',
+                'params' => ['nama'],
+            ],
             'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
@@ -75,21 +87,18 @@ class BroadcastGatewayFailureTest extends TestCase
     }
 
     /**
-     * Gangguan sesaat yang sungguhan terjadi di lapangan: halaman WhatsApp
-     * Web milik gateway dimuat ulang di tengah blast. WAHA membalas 500
-     * dengan ProtocolError, dan sesinya sebentar berstatus STARTING.
+     * Gangguan sesaat yang sungguhan terjadi di lapangan: Meta tersandung
+     * saat blast berjalan dan membalas 5xx, lalu pulih sendiri.
      *
      * @return array<string, mixed>
      */
-    private function browserCrash(string $session = 'STARTING'): array
+    private function gatewayCrash(): array
     {
         return [
-            'waha.test/api/sessions/*' => Http::response(['status' => $session], 200),
-            'waha.test/api/sendText' => Http::response([
-                'statusCode' => 500,
-                'exception' => [
-                    'name' => 'ProtocolError',
-                    'message' => 'Protocol error (Runtime.callFunctionOn): Execution context was destroyed.',
+            'graph.test/*' => Http::response([
+                'error' => [
+                    'message' => 'An unexpected error occurred while processing the request.',
+                    'code' => 1,
                 ],
             ], 500),
         ];
@@ -109,7 +118,6 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        Http::fake(['waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200)]);
         Queue::fake();
 
         $broadcast = $this->makeBroadcast(30);
@@ -154,11 +162,9 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->actingAsClinicUser();
         $this->configured();
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/api/sendText' => Http::response(
-                ['message' => "Session status is not as expected. Expected 'WORKING', got 'STOPPED'"],
-                422,
-            ),
+            'graph.test/*' => Http::response([
+                'error' => ['message' => 'Template parameter mismatch for body component.', 'code' => 132000],
+            ], 400),
         ]);
 
         $broadcast = $this->makeBroadcast(1);
@@ -168,7 +174,7 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->runExhausted($recipient->id);
 
         $this->assertStringContainsString(
-            'STOPPED',
+            'Template parameter mismatch',
             (string) $recipient->fresh()->error,
             'alasan penolakan gateway tidak tersimpan; yang tersisa cuma kode status',
         );
@@ -186,10 +192,7 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'STOPPED'], 200),
-            'waha.test/api/sendText' => Http::response(['message' => 'Session status is not as expected'], 422),
-        ]);
+        Http::fake($this->gatewayCrash());
 
         $broadcast = $this->makeBroadcast(3);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -201,14 +204,14 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->assertSame(
             BroadcastStatus::Paused,
             $broadcast->status,
-            'campaign tidak dijeda saat sesi putus',
+            'campaign tidak dijeda saat Cloud API tersendat',
         );
         // Termasuk nomor yang barusan ditolak: pesannya tidak berangkat ke
         // mana pun, jadi ia tetap menunggu dan ikut terkirim saat dilanjutkan.
         $this->assertSame(
             3,
             $broadcast->recipients()->where('status', BroadcastRecipientStatus::Pending)->count(),
-            'penerima ikut hangus padahal sesinya yang putus',
+            'penerima ikut hangus padahal gateway-nya yang tersendat',
         );
     }
 
@@ -224,11 +227,9 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->actingAsClinicUser();
         $this->configured();
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'STOPPED'], 200),
-            'waha.test/api/sendText' => Http::response(
-                ['message' => "Session status is not as expected. Expected 'WORKING', got 'STOPPED'"],
-                422,
-            ),
+            'graph.test/*' => Http::response([
+                'error' => ['message' => 'Upstream service temporarily unavailable.', 'code' => 2],
+            ], 503),
         ]);
 
         $broadcast = $this->makeBroadcast(2);
@@ -236,7 +237,10 @@ class BroadcastGatewayFailureTest extends TestCase
 
         $this->runExhausted($broadcast->recipients()->orderBy('id')->first()->id);
 
-        $this->assertStringContainsString('STOPPED', (string) $broadcast->fresh()->paused_reason);
+        $this->assertStringContainsString(
+            'temporarily unavailable',
+            (string) $broadcast->fresh()->paused_reason,
+        );
     }
 
     /**
@@ -250,18 +254,14 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->actingAsClinicUser();
         $this->configured();
 
-        // Satu fake untuk dua babak: sesinya putus, lalu tersambung lagi.
+        // Satu fake untuk dua babak: Meta tersendat, lalu pulih.
         // Http::fake() yang dipanggil dua kali menumpuk stub, bukan
         // menggantinya — babak pertama akan menang terus.
-        $session = 'STOPPED';
-        Http::fake(function ($request) use (&$session) {
-            if (str_contains($request->url(), '/api/sessions')) {
-                return Http::response(['status' => $session], 200);
-            }
-
-            return $session === 'WORKING'
-                ? Http::response(['id' => 'true_628@c.us'], 201)
-                : Http::response(['message' => 'Session status is not as expected'], 422);
+        $healthy = false;
+        Http::fake(function () use (&$healthy) {
+            return $healthy
+                ? Http::response(['messages' => [['id' => 'wamid.ok']]], 200)
+                : Http::response(['error' => ['message' => 'Try again later.', 'code' => 2]], 503);
         });
 
         $broadcast = $this->makeBroadcast(3);
@@ -275,7 +275,7 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->assertSame(BroadcastStatus::Paused, $broadcast->fresh()->status);
 
         // WhatsApp tersambung lagi, admin menekan "Lanjutkan".
-        $session = 'WORKING';
+        $healthy = true;
         Queue::fake();
 
         $this->patchJson($this->tenantUrl("broadcasts/{$broadcast->id}/status"), ['status' => 'sending'])
@@ -301,7 +301,7 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        Http::fake($this->browserCrash());
+        Http::fake($this->gatewayCrash());
 
         $broadcast = $this->makeBroadcast(3);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -311,7 +311,7 @@ class BroadcastGatewayFailureTest extends TestCase
         try {
             $this->runAttempt($recipient->id, 1);
             $this->fail('job tidak melempar, jadi antrean tidak akan mengulangnya');
-        } catch (WahaException $e) {
+        } catch (CloudApiException $e) {
             $this->assertSame(500, $e->status);
         }
 
@@ -329,7 +329,7 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        Http::fake($this->browserCrash());
+        Http::fake($this->gatewayCrash());
 
         $broadcast = $this->makeBroadcast(3);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -353,8 +353,9 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->actingAsClinicUser();
         $this->configured();
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/api/sendText' => Http::response(['message' => 'Number not registered on WhatsApp'], 422),
+            'graph.test/*' => Http::response([
+                'error' => ['message' => 'Recipient not registered', 'code' => 131026],
+            ], 400),
         ]);
 
         $broadcast = $this->makeBroadcast(3);
@@ -366,7 +367,7 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->runAttempt($recipient->id, 1);
 
         $this->assertSame(BroadcastRecipientStatus::Failed, $recipient->fresh()->status);
-        $this->assertStringContainsString('Number not registered', (string) $recipient->fresh()->error);
+        $this->assertStringContainsString('Recipient not registered', (string) $recipient->fresh()->error);
         $this->assertSame(BroadcastStatus::Sending, $broadcast->fresh()->status, 'satu nomor mati menghentikan seluruh blast');
     }
 
@@ -384,8 +385,9 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->actingAsClinicUser();
         $this->configured();
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/api/sendText' => Http::response(['message' => 'Too many requests'], 429),
+            'graph.test/*' => Http::response([
+                'error' => ['message' => 'Too many requests', 'code' => 130429],
+            ], 429),
         ]);
 
         $broadcast = $this->makeBroadcast(3);
@@ -407,8 +409,9 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->actingAsClinicUser();
         $this->configured();
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/api/sendText' => Http::response(['message' => 'Too many requests'], 429),
+            'graph.test/*' => Http::response([
+                'error' => ['message' => 'Too many requests', 'code' => 130429],
+            ], 429),
         ]);
 
         $broadcast = $this->makeBroadcast(3);
@@ -434,8 +437,6 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        Http::fake(['waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200)]);
-
         $broadcast = $this->makeBroadcast(1);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
         $recipient = $broadcast->recipients()->first();

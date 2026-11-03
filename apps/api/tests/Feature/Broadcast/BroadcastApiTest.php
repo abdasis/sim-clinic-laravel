@@ -10,7 +10,6 @@ use App\Models\Broadcast;
 use App\Models\Patient;
 use App\Models\Service;
 use App\Models\Transaction;
-use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use App\Support\PhoneNumber;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +25,30 @@ use Tests\TestCase;
 class BroadcastApiTest extends TestCase
 {
     use InteractsWithTenant, RefreshDatabase;
+
+    private function template(array $overrides = []): array
+    {
+        return array_replace([
+            'name' => 'promo_bulanan',
+            'language' => 'id',
+            'body' => 'Halo {{1}}, kabar dari {{2}}.',
+            'params' => ['nama', 'klinik'],
+        ], $overrides);
+    }
+
+    private function cloudConfigured(): void
+    {
+        config([
+            'meta_whatsapp.access_token' => 'token-uji',
+            'meta_whatsapp.api_version' => 'v21.0',
+            'meta_whatsapp.base_url' => 'https://graph.test',
+        ]);
+
+        WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'phone_number_id' => '109876543210',
+        ]);
+    }
 
     private function patient(string $name, ?string $whatsapp = '081234567890'): Patient
     {
@@ -82,7 +105,10 @@ class BroadcastApiTest extends TestCase
 
         $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Pengingat Facial',
-            'message' => 'Halo {nama}, sudah {hari_sejak_kunjungan} hari sejak {layanan_terakhir}. Salam, {klinik}!',
+            'template' => $this->template([
+                'body' => 'Halo {{1}}, sudah {{2}} hari sejak {{3}}. Salam, {{4}}!',
+                'params' => ['nama', 'hari_sejak_kunjungan', 'layanan_terakhir', 'klinik'],
+            ]),
             'audience' => 'inactive',
             'audience_params' => ['days' => 30],
         ])->assertCreated()->assertJsonPath('data.recipients_total', 1);
@@ -92,7 +118,11 @@ class BroadcastApiTest extends TestCase
         $this->assertSame('6281234567890', $recipient->phone);
         $this->assertStringContainsString('Halo Dessy Natalia, sudah 40 hari', $recipient->message);
         $this->assertStringContainsString('Salam, '.$this->tenant->name.'!', $recipient->message);
-        $this->assertStringNotContainsString('{', $recipient->message);
+        $this->assertStringNotContainsString('{{', $recipient->message);
+        $this->assertCount(4, $recipient->template_values);
+        $this->assertSame('Dessy Natalia', $recipient->template_values[0]);
+        $this->assertSame('40', $recipient->template_values[1]);
+        $this->assertSame($this->tenant->name, $recipient->template_values[3]);
     }
 
     /**
@@ -113,7 +143,10 @@ class BroadcastApiTest extends TestCase
 
             $this->postJson($this->tenantUrl('broadcasts'), [
                 'title' => 'Pengingat '.$sendTime,
-                'message' => 'Sudah {hari_sejak_kunjungan} hari.',
+                'template' => $this->template([
+                    'body' => 'Sudah {{1}} hari.',
+                    'params' => ['hari_sejak_kunjungan'],
+                ]),
                 'audience' => 'inactive',
                 'audience_params' => ['days' => 30],
             ])->assertCreated();
@@ -186,7 +219,7 @@ class BroadcastApiTest extends TestCase
         $this->patient('Dessy', '081111111111');
 
         $broadcast = $this->postJson($this->tenantUrl('broadcasts'), [
-            'title' => 'Promo', 'message' => 'Halo {nama}', 'audience' => 'all',
+            'title' => 'Promo', 'template' => $this->template(), 'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
         $recipient = Broadcast::find($broadcast)->recipients()->first();
@@ -202,22 +235,12 @@ class BroadcastApiTest extends TestCase
     {
         $this->actingAsClinicUser();
 
-        // Server WAHA milik platform, nama sesi milik klinik. Keduanya harus
-        // terisi supaya klien terbentuk.
-        WahaSetting::create([
-            'base_url' => 'https://waha.test',
-            'api_key' => 'secret-token',
-        ]);
-
-        WhatsappSetting::create([
-            'tenant_id' => $this->tenant->id,
-            'session' => 'klinik-uji',
-        ]);
+        $this->cloudConfigured();
 
         $this->patient('Gagal', '082222222222');
 
         $broadcast = $this->postJson($this->tenantUrl('broadcasts'), [
-            'title' => 'Promo', 'message' => 'Halo {nama}', 'audience' => 'all',
+            'title' => 'Promo', 'template' => $this->template(), 'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
         Broadcast::find($broadcast)->update(['status' => BroadcastStatus::Sending]);
@@ -228,8 +251,9 @@ class BroadcastApiTest extends TestCase
         // dijeda, penerimanya dibiarkan menunggu); lihat
         // BroadcastGatewayFailureTest.
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/api/sendText' => Http::response(['message' => 'Number not registered on WhatsApp'], 422),
+            'graph.test/*' => Http::response([
+                'error' => ['message' => 'Recipient not registered', 'code' => 131026],
+            ], 400),
         ]);
 
         // Jalankan percobaan terakhir langsung: job harus menandai gagal
@@ -242,12 +266,13 @@ class BroadcastApiTest extends TestCase
 
         $fresh = $recipient->fresh();
         $this->assertSame('failed', $fresh->status->value);
-        $this->assertStringContainsString('Number not registered', (string) $fresh->error);
+        $this->assertStringContainsString('Recipient not registered', (string) $fresh->error);
 
-        Http::assertSent(fn ($request) => str_contains($request->url(), '/api/sendText')
-            && $request->hasHeader('X-Api-Key', 'secret-token')
-            && $request['chatId'] === '6282222222222@c.us'
-            && $request['session'] === 'klinik-uji');
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'graph.test/v21.0/109876543210/messages')
+            && $request['to'] === '6282222222222'
+            && $request['type'] === 'template'
+            && $request['template']['name'] === 'promo_bulanan'
+            && $request['template']['language']['code'] === 'id');
     }
 
     public function test_gateway_send_rejected_when_not_configured(): void
@@ -256,10 +281,12 @@ class BroadcastApiTest extends TestCase
         $this->patient('Dessy', '081111111111');
 
         $broadcast = $this->postJson($this->tenantUrl('broadcasts'), [
-            'title' => 'Promo', 'message' => 'Halo', 'audience' => 'all',
+            'title' => 'Promo', 'template' => $this->template(), 'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
-        $this->postJson($this->tenantUrl("broadcasts/{$broadcast}/send"))->assertStatus(422);
+        $this->postJson($this->tenantUrl("broadcasts/{$broadcast}/send"))
+            ->assertStatus(422)
+            ->assertJsonPath('message', __('broadcast.cloud_not_ready'));
     }
 
     public function test_settings_store_the_session_name(): void
@@ -289,7 +316,7 @@ class BroadcastApiTest extends TestCase
 
         $this->getJson($this->tenantUrl('broadcasts'))->assertForbidden();
         $this->postJson($this->tenantUrl('broadcasts'), [
-            'title' => 'x', 'message' => 'y', 'audience' => 'all',
+            'title' => 'x', 'template' => $this->template(), 'audience' => 'all',
         ])->assertForbidden();
     }
 }

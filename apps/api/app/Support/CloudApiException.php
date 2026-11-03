@@ -18,6 +18,7 @@ class CloudApiException extends RuntimeException
         public readonly int $status,
         public readonly ?string $reason,
         string $message,
+        public readonly ?int $errorCode = null,
     ) {
         parent::__construct($message);
     }
@@ -30,7 +31,21 @@ class CloudApiException extends RuntimeException
             $response->status(),
             $reason,
             $what.': HTTP '.$response->status().($reason === null ? '' : ' — '.$reason),
+            self::codeFrom($response),
         );
+    }
+
+    /**
+     * Meta sedang menahan laju kiriman, bukan menolak nomornya.
+     *
+     * 429 berbagi kelas 4xx dengan penolakan nomor, jadi kode galatnya yang
+     * memisahkan: tanpa ini penerima dihanguskan permanen padahal yang perlu
+     * justru berhenti menembak sebentar.
+     */
+    public function isThrottle(): bool
+    {
+        return $this->status === 429
+            || in_array($this->errorCode, [130429, 131056, 80007], true);
     }
 
     private static function reasonFrom(Response $response): ?string
@@ -48,5 +63,12 @@ class CloudApiException extends RuntimeException
         }
 
         return $reason === '' ? null : mb_substr($reason, 0, 300);
+    }
+
+    private static function codeFrom(Response $response): ?int
+    {
+        $code = $response->json('error.code');
+
+        return is_numeric($code) ? (int) $code : null;
     }
 }

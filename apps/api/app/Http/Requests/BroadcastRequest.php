@@ -5,7 +5,9 @@ namespace App\Http\Requests;
 use App\Enums\BroadcastAudience;
 use App\Enums\BroadcastKind;
 use App\Rules\TenantRule;
+use App\Support\TemplateVariables;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
 
@@ -20,11 +22,18 @@ class BroadcastRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
+            // Template resmi Meta yang dipakai saat pengiriman. Body-nya juga
+            // menjadi snapshot pesan yang disimpan per penerima.
+            'template' => ['required', 'array'],
+            'template.name' => ['required', 'string', 'max:255'],
+            'template.language' => ['required', 'string', 'max:20'],
             // WhatsApp memutus pesan sangat panjang; 4000 aman untuk semua gateway.
-            'message' => ['required', 'string', 'max:4000'],
+            'template.body' => ['required', 'string', 'max:4000'],
+            'template.header_type' => ['nullable', Rule::in(TemplateVariables::HEADER_TYPES)],
+            'template.params' => ['nullable', 'array', 'max:10'],
+            'template.params.*' => ['string', Rule::in(TemplateVariables::KEYS)],
             // Poster promo; batasnya sama dengan foto rekam medis, dan
-            // gambarnya disandikan base64 saat dikirim ke gateway sehingga
-            // berkas besar menggandakan lalu lintas tiap penerima.
+            // gambarnya dikirim sebagai tautan header template.
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'audience' => ['required', new Enum(BroadcastAudience::class)],
             'kind' => ['nullable', new Enum(BroadcastKind::class)],
@@ -56,14 +65,53 @@ class BroadcastRequest extends FormRequest
             if ($audience === BroadcastAudience::Selected->value && empty($params['patient_ids'])) {
                 $validator->errors()->add('audience_params.patient_ids', __('broadcast.patients_required'));
             }
+
+            $this->validateTemplate($validator);
         });
+    }
+
+    /**
+     * Jumlah placeholder harus sama dengan jumlah parameter: Meta menolak
+     * template yang parameternya kurang atau berlebih, dan penolakannya baru
+     * terlihat setelah seluruh antrean terbentuk.
+     */
+    private function validateTemplate(Validator $validator): void
+    {
+        $template = $this->input('template');
+
+        if (! is_array($template)) {
+            return;
+        }
+
+        $body = (string) ($template['body'] ?? '');
+        $params = (array) ($template['params'] ?? []);
+        $placeholders = TemplateVariables::placeholderCount($body);
+
+        if ($placeholders !== count($params)) {
+            $validator->errors()->add(
+                'template.params',
+                __('broadcast.template_params_mismatch', [
+                    'placeholders' => $placeholders,
+                    'params' => count($params),
+                ]),
+            );
+        }
+
+        if (($template['header_type'] ?? null) === 'IMAGE' && ! $this->hasFile('image')) {
+            $validator->errors()->add('image', __('broadcast.template_image_required'));
+        }
     }
 
     public function attributes(): array
     {
         return [
             'title' => __('broadcast.title_field'),
-            'message' => __('broadcast.message'),
+            'template' => __('broadcast.template_label'),
+            'template.name' => __('broadcast.template_name'),
+            'template.language' => __('broadcast.template_language'),
+            'template.body' => __('broadcast.template_body'),
+            'template.params' => __('broadcast.template_params'),
+            'template.header_type' => __('broadcast.template_header_type'),
             'image' => __('broadcast.image'),
             'audience' => __('broadcast.audience_label'),
             'audience_params.days' => __('broadcast.days'),

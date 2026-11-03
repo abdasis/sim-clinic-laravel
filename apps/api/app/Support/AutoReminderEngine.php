@@ -9,6 +9,7 @@ use App\Enums\BroadcastRecipientStatus;
 use App\Enums\BroadcastStatus;
 use App\Models\Broadcast;
 use App\Models\BroadcastReminderSetting;
+use App\Models\WhatsappSetting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -110,7 +111,15 @@ class AutoReminderEngine
         $built = (new BroadcastAudienceBuilder)->build(BroadcastAudience::All, [], marketing: true);
         $byPatient = $built['recipients']->keyBy('patient_id');
 
-        $template = $setting->template?->body ?? self::DEFAULT_TEMPLATE;
+        // Template Cloud API klinik menang atas templat teks bebas; Meta
+        // hanya menerima template resmi untuk pengiriman keluar.
+        //
+        // ponytail: satu reminder_template per klinik, belum per tingkat
+        // follow-up. Kalau butuh bunyi berbeda per ambang hari, simpan di
+        // BroadcastReminderSetting saat itu juga.
+        $cloudTemplate = WhatsappSetting::query()->first()?->reminder_template;
+        $body = $cloudTemplate['body'] ?? ($setting->template?->body ?? self::DEFAULT_TEMPLATE);
+        $templateParams = (array) ($cloudTemplate['params'] ?? []);
         $tenant = app('tenant');
         $now = now();
         $rows = [];
@@ -122,26 +131,37 @@ class AutoReminderEngine
                 continue;
             }
 
-            $rows[] = [
+            $variables = [
+                'nama' => $recipient['name'],
+                'layanan_terakhir' => $record->last_service ?: '-',
+                'tanggal_terakhir' => Carbon::parse($record->last_at)->translatedFormat('d F Y'),
+                // Per hari kalender, bukan per 24 jam: tindakan pukul
+                // 15.00 yang diingatkan pukul 08.30 tetap terhitung penuh.
+                'hari_sejak_kunjungan' => (string) Carbon::parse($record->last_at)
+                    ->startOfDay()
+                    ->diffInDays($today->copy()->startOfDay()),
+                'klinik' => ClinicIdentity::displayName($tenant),
+                'klinik_telepon' => $tenant->phone ?? '',
+            ];
+
+            $row = [
                 'patient_id' => $recipient['patient_id'],
                 'name' => $recipient['name'],
                 'phone' => $recipient['phone'],
-                'message' => strtr($template, $this->replacements([
-                    'nama' => $recipient['name'],
-                    'layanan_terakhir' => $record->last_service ?: '-',
-                    'tanggal_terakhir' => Carbon::parse($record->last_at)->translatedFormat('d F Y'),
-                    // Per hari kalender, bukan per 24 jam: tindakan pukul
-                    // 15.00 yang diingatkan pukul 08.30 tetap terhitung penuh.
-                    'hari_sejak_kunjungan' => (string) Carbon::parse($record->last_at)
-                        ->startOfDay()
-                        ->diffInDays($today->copy()->startOfDay()),
-                    'klinik' => ClinicIdentity::displayName($tenant),
-                    'klinik_telepon' => $tenant->phone ?? '',
-                ])),
+                'message' => strtr($body, $this->replacements($variables)),
                 'status' => BroadcastRecipientStatus::Pending->value,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
+
+            if ($cloudTemplate !== null) {
+                $values = TemplateVariables::resolve($templateParams, $variables);
+                $row['message'] = TemplateVariables::render($body, $values);
+                // insert() massal tidak melewati cast, jadi dienkode sendiri.
+                $row['template_values'] = json_encode($values);
+            }
+
+            $rows[] = $row;
         }
 
         if ($rows === []) {
@@ -152,7 +172,8 @@ class AutoReminderEngine
             'title' => 'Follow-up otomatis — '.$today->translatedFormat('d F Y'),
             'kind' => BroadcastKind::Reminder,
             'status' => BroadcastStatus::Ready,
-            'message' => $template,
+            'message' => $body,
+            'template' => $cloudTemplate,
             'audience' => BroadcastAudience::All,
             // Penanda `auto` inilah yang membedakan broadcast ini dari
             // pengingat per-layanan, baik untuk anti-duplikat maupun untuk

@@ -21,6 +21,7 @@ class BroadcastResource extends JsonResource
             // Kapan boleh dicoba lagi, kalau memang ada masa diamnya.
             'resume_after' => $this->resume_after?->toIso8601String(),
             'message' => $this->message,
+            'template' => $this->template,
             'image_url' => $this->image_url,
             'audience' => $this->audience,
             'audience_label' => $this->audience?->label(),

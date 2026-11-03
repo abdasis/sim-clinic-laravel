@@ -8,6 +8,7 @@ use App\Enums\BroadcastKind;
 use App\Models\Broadcast;
 use App\Support\BroadcastAudienceBuilder;
 use App\Support\ClinicIdentity;
+use App\Support\TemplateVariables;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,6 +27,7 @@ class CreateBroadcastAction
         $audience = BroadcastAudience::from($data['audience']);
         $params = $data['audience_params'] ?? [];
         $kind = BroadcastKind::from($data['kind'] ?? 'promo');
+        $template = (array) $data['template'];
 
         $built = app(BroadcastAudienceBuilder::class)->build(
             $audience,
@@ -36,29 +38,48 @@ class CreateBroadcastAction
         $broadcast = Broadcast::create([
             'title' => $data['title'],
             'kind' => $kind,
-            'message' => $data['message'],
+            // Snapshot pesan dirender dari body template supaya layar
+            // campaign bisa menampilkan bunyi pesannya tanpa memanggil Meta.
+            'message' => TemplateVariables::render(
+                (string) $template['body'],
+                TemplateVariables::resolve(
+                    (array) ($template['params'] ?? []),
+                    $this->clinicVariables(),
+                ),
+            ),
+            'template' => $template,
             'image_path' => $this->storeImage($data['image'] ?? null),
             'audience' => $audience,
             'audience_params' => $params,
             'created_by' => Auth::id(),
         ]);
 
-        $clinicName = ClinicIdentity::displayName();
-        $clinicPhone = app('tenant')->phone ?? '';
+        $clinic = $this->clinicVariables();
+        $templateParams = (array) ($template['params'] ?? []);
+        $templateBody = (string) $template['body'];
         $now = now();
 
-        $rows = $built['recipients']->map(fn (array $recipient) => [
-            'tenant_id' => $broadcast->tenant_id,
-            'broadcast_id' => $broadcast->id,
-            'patient_id' => $recipient['patient_id'],
-            'reminder_rule_id' => $data['reminder_rule_id'] ?? null,
-            'name' => $recipient['name'],
-            'phone' => $recipient['phone'],
-            'message' => $this->render($data['message'], $recipient['variables'] + ['klinik' => $clinicName, 'klinik_telepon' => $clinicPhone]),
-            'status' => 'pending',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ])->all();
+        $rows = $built['recipients']->map(function (array $recipient) use ($broadcast, $data, $templateParams, $templateBody, $clinic, $now): array {
+            $values = TemplateVariables::resolve(
+                $templateParams,
+                $recipient['variables'] + $clinic,
+            );
+
+            return [
+                'tenant_id' => $broadcast->tenant_id,
+                'broadcast_id' => $broadcast->id,
+                'patient_id' => $recipient['patient_id'],
+                'reminder_rule_id' => $data['reminder_rule_id'] ?? null,
+                'name' => $recipient['name'],
+                'phone' => $recipient['phone'],
+                'message' => TemplateVariables::render($templateBody, $values),
+                // insert() massal tidak melewati cast, jadi dienkode sendiri.
+                'template_values' => json_encode($values),
+                'status' => 'pending',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        })->all();
 
         // Satu insert massal; broadcast klinik bisa ratusan baris.
         $broadcast->recipients()->insert($rows);
@@ -79,6 +100,17 @@ class CreateBroadcastAction
     }
 
     /**
+     * @return array<string, string>
+     */
+    private function clinicVariables(): array
+    {
+        return [
+            'klinik' => ClinicIdentity::displayName(),
+            'klinik_telepon' => app('tenant')->phone ?? '',
+        ];
+    }
+
+    /**
      * Simpan poster broadcast di folder milik kliniknya sendiri.
      *
      * Disk `public` sama dengan foto rekam medis: layar campaign perlu
@@ -91,36 +123,5 @@ class CreateBroadcastAction
         }
 
         return $file->store('broadcast-images/'.app('tenant')->id, 'public');
-    }
-
-    /**
-     * @param  array<string, string>  $variables
-     */
-    private function render(string $template, array $variables): string
-    {
-        // Nama panjang gaya {{nama_pasien}} diterima sebagai alias supaya
-        // templat yang ditulis dengan gaya itu tetap terisi.
-        $aliases = [
-            'nama_pasien' => 'nama',
-            'nama_treatment' => 'layanan_terakhir',
-            'tanggal_treatment' => 'tanggal_terakhir',
-            'nomor_clinic' => 'klinik_telepon',
-        ];
-
-        $replacements = [];
-
-        foreach ($variables as $key => $value) {
-            $replacements['{'.$key.'}'] = $value;
-            $replacements['{{'.$key.'}}'] = $value;
-        }
-
-        foreach ($aliases as $alias => $key) {
-            if (isset($variables[$key])) {
-                $replacements['{{'.$alias.'}}'] = $variables[$key];
-                $replacements['{'.$alias.'}'] = $variables[$key];
-            }
-        }
-
-        return strtr($template, $replacements);
     }
 }

@@ -6,7 +6,6 @@ use App\Enums\BroadcastStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\Patient;
-use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -20,8 +19,8 @@ use Tests\TestCase;
  *
  * Promo klinik hampir selalu berupa gambar, jadi satu broadcast boleh
  * membawanya. Yang dijaga: berkasnya mendarat di folder milik kliniknya
- * sendiri, pesannya berangkat sebagai keterangan gambar (bukan kiriman
- * kedua), dan poster yang hilang dari disk tidak menggagalkan pesannya.
+ * sendiri, tautannya ikut sebagai header template, dan template tanpa header
+ * tidak mengirim komponen header sama sekali.
  */
 class BroadcastImageTest extends TestCase
 {
@@ -34,18 +33,28 @@ class BroadcastImageTest extends TestCase
         Storage::fake('public');
     }
 
-    private function wahaConnected(): void
+    private function cloudConnected(): void
     {
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
+        config([
+            'meta_whatsapp.access_token' => 'token-uji',
+            'meta_whatsapp.api_version' => 'v21.0',
+            'meta_whatsapp.base_url' => 'https://graph.test',
+        ]);
+
+        WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'phone_number_id' => '109876543210',
+        ]);
 
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/*' => Http::response(['id' => 'true_628@c.us'], 201),
+            'graph.test/*' => Http::response(['messages' => [['id' => 'wamid.ok']]], 200),
         ]);
     }
 
-    private function createWithImage(?UploadedFile $image = null): Broadcast
+    /**
+     * @param  array<string, mixed>  $templateOverrides
+     */
+    private function createWithImage(?UploadedFile $image = null, array $templateOverrides = []): Broadcast
     {
         Patient::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -55,7 +64,13 @@ class BroadcastImageTest extends TestCase
 
         $id = $this->post($this->tenantUrl('broadcasts'), [
             'title' => 'Promo Agustus',
-            'message' => 'Halo {nama}, ada promo bulan ini.',
+            'template' => array_replace([
+                'name' => 'promo_bergambar',
+                'language' => 'id',
+                'body' => 'Halo {{1}}, ada promo bulan ini.',
+                'header_type' => 'IMAGE',
+                'params' => ['nama'],
+            ], $templateOverrides),
             'audience' => 'all',
             'image' => $image ?? UploadedFile::fake()->image('poster.jpg'),
         ], ['Accept' => 'application/json'])->assertCreated()->json('data.id');
@@ -96,16 +111,23 @@ class BroadcastImageTest extends TestCase
             ->assertJsonPath('data.image_url', Storage::disk('public')->url($broadcast->image_path));
     }
 
-    /** Tanpa gambar, jalur lama tetap dipakai. */
-    public function test_a_broadcast_without_an_image_still_sends_plain_text(): void
+    /** Tanpa gambar header, template tetap terkirim sebagai template biasa. */
+    public function test_a_template_without_an_image_still_sends(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->cloudConnected();
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
-            'title' => 'Tanpa poster', 'message' => 'Halo', 'audience' => 'all',
+            'title' => 'Tanpa poster',
+            'template' => [
+                'name' => 'promo_teks',
+                'language' => 'id',
+                'body' => 'Halo {{1}}',
+                'params' => ['nama'],
+            ],
+            'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
         $broadcast = Broadcast::find($id);
@@ -113,17 +135,22 @@ class BroadcastImageTest extends TestCase
 
         (new SendBroadcastRecipientJob($broadcast->recipients()->first()->id, $this->tenant->id))->handle();
 
-        Http::assertSent(fn ($request) => str_contains($request->url(), '/api/sendText'));
+        $this->assertSame('sent', $broadcast->recipients()->first()->fresh()->status->value);
+
+        Http::assertSent(fn ($request) => $request['type'] === 'template'
+            && collect($request['template']['components'] ?? [])
+                ->pluck('type')
+                ->doesntContain('header'));
     }
 
     /**
-     * Pesannya jadi keterangan gambar, bukan kiriman kedua: dua kiriman
-     * berurutan sampai sebagai dua notifikasi terpisah.
+     * Posternya jadi komponen header template, bukan kiriman terpisah: dua
+     * kiriman berurutan sampai sebagai dua notifikasi terpisah.
      */
-    public function test_the_message_travels_as_the_image_caption(): void
+    public function test_the_poster_travels_as_the_template_header(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->cloudConnected();
 
         $broadcast = $this->createWithImage();
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -133,40 +160,51 @@ class BroadcastImageTest extends TestCase
 
         $this->assertSame('sent', $recipient->fresh()->status->value);
 
-        Http::assertSent(function ($request) {
-            if (! str_contains($request->url(), '/api/sendImage')) {
+        Http::assertSent(function ($request) use ($broadcast) {
+            if ($request['type'] !== 'template') {
                 return false;
             }
 
-            return $request['caption'] === 'Halo Ani, ada promo bulan ini.'
-                && $request['chatId'] === '6281111111111@c.us'
-                && ! empty($request['file']['data'])
-                && $request['file']['mimetype'] === 'image/jpeg';
-        });
+            $components = $request['template']['components'] ?? [];
+            $header = collect($components)->firstWhere('type', 'header');
 
-        // Hanya satu kiriman isi; tidak ada teks susulan.
-        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api/sendText'));
+            return $request['to'] === '6281111111111'
+                && $request['template']['name'] === 'promo_bergambar'
+                && ($header['parameters'][0]['image']['link'] ?? null) === $broadcast->image_url;
+        });
     }
 
     /**
-     * Poster yang hilang dari disk tidak boleh menggagalkan kabarnya —
-     * kehilangan gambar lebih ringan daripada pasien tidak menerima apa pun.
+     * Template tanpa header gambar tidak mengirim komponen header kosong:
+     * Meta menolaknya sebagai parameter yang tidak dikenal.
      */
-    public function test_a_missing_poster_falls_back_to_plain_text(): void
+    public function test_a_template_without_an_image_header_sends_no_header_component(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->cloudConnected();
 
-        $broadcast = $this->createWithImage();
-        Storage::disk('public')->delete($broadcast->image_path);
+        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
 
+        $id = $this->postJson($this->tenantUrl('broadcasts'), [
+            'title' => 'Tanpa poster',
+            'template' => [
+                'name' => 'promo_teks',
+                'language' => 'id',
+                'body' => 'Halo {{1}}',
+                'params' => ['nama'],
+            ],
+            'audience' => 'all',
+        ])->assertCreated()->json('data.id');
+
+        $broadcast = Broadcast::find($id);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
         $recipient = $broadcast->recipients()->first();
 
         (new SendBroadcastRecipientJob($recipient->id, $this->tenant->id))->handle();
 
-        $this->assertSame('sent', $recipient->fresh()->status->value);
-        Http::assertSent(fn ($request) => str_contains($request->url(), '/api/sendText'));
+        Http::assertSent(fn ($request) => collect($request['template']['components'] ?? [])
+            ->pluck('type')
+            ->doesntContain('header'));
     }
 
     public function test_a_non_image_file_is_rejected(): void
@@ -175,7 +213,12 @@ class BroadcastImageTest extends TestCase
 
         $this->post($this->tenantUrl('broadcasts'), [
             'title' => 'Promo',
-            'message' => 'Halo',
+            'template' => [
+                'name' => 'promo_teks',
+                'language' => 'id',
+                'body' => 'Halo',
+                'params' => [],
+            ],
             'audience' => 'all',
             'image' => UploadedFile::fake()->create('brosur.pdf', 100, 'application/pdf'),
         ], ['Accept' => 'application/json'])
@@ -189,7 +232,12 @@ class BroadcastImageTest extends TestCase
 
         $this->post($this->tenantUrl('broadcasts'), [
             'title' => 'Promo',
-            'message' => 'Halo',
+            'template' => [
+                'name' => 'promo_teks',
+                'language' => 'id',
+                'body' => 'Halo',
+                'params' => [],
+            ],
             'audience' => 'all',
             'image' => UploadedFile::fake()->image('besar.jpg')->size(3000),
         ], ['Accept' => 'application/json'])

@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -18,31 +18,41 @@ import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPut } from "#/lib/api.ts"
+import {
+  TemplatePicker,
+  isTemplateComplete,
+} from "./template-picker.tsx"
+import type { BroadcastTemplate } from "./template-picker.tsx"
 import type { ApiError } from "#/lib/api.ts"
 
 /**
  * Pesannya diterjemahkan saat schema dibuat, bukan saat dirender: zod
  * menyimpan string jadi, bukan kunci.
  */
-function buildSchema(formatMessage: string, phoneFormatMessage: string) {
+function buildSchema(
+  sessionFormat: string,
+  phoneFormat: string,
+  wabaFormat: string,
+) {
   return z.object({
     // Boleh kosong: klinik yang belum pakai WAHA tetap bisa kirim manual.
-    session: z
-      .string()
-      .max(100)
-      .regex(/^[a-z0-9-]*$/, formatMessage)
-      .optional(),
+    session: z.string().max(100).regex(/^[a-z0-9-]*$/, sessionFormat).optional(),
     // Angka saja dan boleh kosong: nomor Cloud API hanya dipakai klinik yang
     // membalas lewat jalur Meta.
-    phone_number_id: z
-      .string()
-      .max(32)
-      .regex(/^\d*$/, phoneFormatMessage)
-      .optional(),
+    phone_number_id: z.string().max(32).regex(/^\d*$/, phoneFormat).optional(),
+    waba_id: z.string().max(32).regex(/^\d*$/, wabaFormat).optional(),
   })
 }
 
 type Values = z.infer<ReturnType<typeof buildSchema>>
+
+interface Settings {
+  session?: string | null
+  phone_number_id?: string | null
+  waba_id?: string | null
+  reminder_template?: BroadcastTemplate | null
+  waha_available: boolean
+}
 
 interface BroadcastSettingsDialogProps {
   tenant: string
@@ -51,8 +61,8 @@ interface BroadcastSettingsDialogProps {
 }
 
 /**
- * Satu-satunya yang diatur klinik: nama sesi WAHA miliknya. Alamat server dan
- * API key-nya milik pengelola platform, diisi di halaman central.
+ * Yang diatur klinik: sesi WAHA, nomor Cloud API, dan template pengingat.
+ * Alamat server dan API key milik pengelola platform, diisi di halaman central.
  */
 export function BroadcastSettingsDialog({
   tenant,
@@ -65,13 +75,7 @@ export function BroadcastSettingsDialog({
   const settings = useQuery({
     queryKey: ["broadcast-settings", tenant],
     queryFn: () =>
-      apiGet<{
-        data: {
-          session?: string | null
-          phone_number_id?: string | null
-          waha_available: boolean
-        }
-      }>(`/${tenant}/clinic/broadcasts/settings`),
+      apiGet<{ data: Settings }>(`/${tenant}/clinic/broadcasts/settings`),
     enabled: open,
   })
 
@@ -81,12 +85,13 @@ export function BroadcastSettingsDialog({
     buildSchema(
       t("broadcast.session_format"),
       t("broadcast.phone_number_id_format"),
+      t("broadcast.waba_id_format"),
     ),
-    {
-      defaultValues: { session: "", phone_number_id: "" },
-    },
+    { defaultValues: { session: "", phone_number_id: "", waba_id: "" } },
   )
 
+  const [reminderTemplate, setReminderTemplate] =
+    useState<BroadcastTemplate | null>(null)
   const current = settings.data?.data
 
   useEffect(() => {
@@ -95,7 +100,13 @@ export function BroadcastSettingsDialog({
     form.reset({
       session: current.session ?? "",
       phone_number_id: current.phone_number_id ?? "",
+      waba_id: current.waba_id ?? "",
     })
+    setReminderTemplate(
+      current.reminder_template
+        ? { ...current.reminder_template, params: current.reminder_template.params ?? [] }
+        : null,
+    )
   }, [open, current, form])
 
   const mutation = useMutation({
@@ -103,6 +114,16 @@ export function BroadcastSettingsDialog({
       apiPut(`/${tenant}/clinic/broadcasts/settings`, {
         session: values.session?.trim() || null,
         phone_number_id: values.phone_number_id?.trim() || null,
+        waba_id: values.waba_id?.trim() || null,
+        reminder_template: reminderTemplate
+          ? {
+              name: reminderTemplate.name,
+              language: reminderTemplate.language,
+              body: reminderTemplate.body,
+              header_type: reminderTemplate.header_type,
+              params: reminderTemplate.params,
+            }
+          : null,
       }),
     onSuccess: () => {
       toast.success(t("broadcast.settings_saved"))
@@ -117,9 +138,12 @@ export function BroadcastSettingsDialog({
     },
   })
 
+  const reminderReady =
+    reminderTemplate === null || isTemplateComplete(reminderTemplate)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("broadcast.settings")}</DialogTitle>
           <DialogDescription className="text-pretty">
@@ -132,7 +156,10 @@ export function BroadcastSettingsDialog({
         ) : (
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+              onSubmit={form.handleSubmit((values) => {
+                if (!reminderReady) return
+                mutation.mutate(values)
+              })}
               className="space-y-4"
             >
               {current && !current.waha_available ? (
@@ -159,8 +186,28 @@ export function BroadcastSettingsDialog({
                 inputClassName="font-mono tabular-nums"
               />
 
+              <FormInput
+                control={form.control}
+                name="waba_id"
+                label={t("broadcast.waba_id_label")}
+                description={t("broadcast.waba_id_hint")}
+                placeholder="109900000000000"
+                inputClassName="font-mono tabular-nums"
+              />
+
+              <TemplatePicker
+                tenant={tenant}
+                value={reminderTemplate}
+                onChange={setReminderTemplate}
+                enabled={open}
+                idPrefix="reminder-template"
+                label={t("broadcast.reminder_template_label")}
+                hint={t("broadcast.reminder_template_hint")}
+                showImageHint
+              />
+
               <DialogFooter>
-                <FormSubmit loading={mutation.isPending}>
+                <FormSubmit loading={mutation.isPending} disabled={!reminderReady}>
                   {t("general.save")}
                 </FormSubmit>
               </DialogFooter>

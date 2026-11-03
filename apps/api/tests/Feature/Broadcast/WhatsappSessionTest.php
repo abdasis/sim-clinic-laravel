@@ -91,11 +91,65 @@ class WhatsappSessionTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.session', null);
 
-        // Tanpa sesi tidak ada yang bisa dikirimi, dan itu ditolak dengan pesan
-        // yang jelas alih-alih gagal diam-diam di worker.
+        // Broadcast tidak lagi bergantung pada sesi WAHA: jalurnya Cloud API.
+        // Tanpa kredensial Cloud API, pesan uji ditolak dengan pesan yang jelas
+        // alih-alih gagal diam-diam di worker.
         $this->postJson($this->tenantUrl('broadcasts/test-message'), [
             'phone' => '081234567890',
-            'message' => 'Halo',
-        ])->assertStatus(422);
+            'template' => [
+                'name' => 'promo_bulanan',
+                'language' => 'id',
+                'body' => 'Halo {{1}}',
+                'params' => ['nama'],
+            ],
+        ])->assertStatus(422)
+            ->assertJsonPath('message', __('broadcast.cloud_not_ready'));
+    }
+
+    public function test_clinic_saves_waba_id_and_reminder_template(): void
+    {
+        $this->actingAsClinicUser();
+
+        $template = [
+            'name' => 'pengingat_perawatan',
+            'language' => 'id',
+            'body' => 'Halo {{1}}, sudah {{2}} hari.',
+            'params' => ['nama', 'hari_sejak_kunjungan'],
+        ];
+
+        $this->putJson($this->tenantUrl('broadcasts/settings'), [
+            'phone_number_id' => '109876543210',
+            'waba_id' => '112233445566',
+            'reminder_template' => $template,
+        ])->assertOk()
+            ->assertJsonPath('data.waba_id', '112233445566')
+            ->assertJsonPath('data.reminder_template.name', 'pengingat_perawatan');
+
+        $this->getJson($this->tenantUrl('broadcasts/settings'))
+            ->assertOk()
+            ->assertJsonPath('data.waba_id', '112233445566')
+            ->assertJsonPath('data.reminder_template.body', 'Halo {{1}}, sudah {{2}} hari.');
+    }
+
+    public function test_waba_id_only_accepts_digits(): void
+    {
+        $this->actingAsClinicUser();
+
+        $this->putJson($this->tenantUrl('broadcasts/settings'), ['waba_id' => 'WABA-123'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('waba_id');
+    }
+
+    public function test_waba_id_used_by_another_clinic_is_rejected(): void
+    {
+        $other = $this->createTenant('klinik-tetangga');
+        WhatsappSetting::create(['tenant_id' => $other->id, 'waba_id' => '112233445566']);
+
+        $this->tenant = $this->createTenant('klinik-kita');
+        $this->actingAsClinicUser();
+
+        $this->putJson($this->tenantUrl('broadcasts/settings'), ['waba_id' => '112233445566'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('waba_id');
     }
 }

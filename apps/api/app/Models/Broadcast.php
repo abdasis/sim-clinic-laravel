@@ -28,6 +28,7 @@ class Broadcast extends Model
         'auto_resumes',
         'resume_after',
         'message',
+        'template',
         'image_path',
         'audience',
         'audience_params',
@@ -41,6 +42,7 @@ class Broadcast extends Model
             'kind' => BroadcastKind::class,
             'status' => BroadcastStatus::class,
             'audience_params' => 'array',
+            'template' => 'array',
             'resume_after' => 'datetime',
         ];
     }

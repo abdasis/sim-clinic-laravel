@@ -7,7 +7,6 @@ use App\Enums\BroadcastStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\Patient;
-use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Contracts\Queue\Job as JobContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,39 +22,44 @@ use Tests\TestCase;
  * Lahir dari laporan sungguhan: campaign terbaca "Selesai" padahal tidak
  * satu pun pesan sampai. Dua sebab yang dijaga di sini — campaign yang
  * seluruhnya gagal dulu ditutup sebagai selesai, dan pengiriman massal boleh
- * berjalan walau WhatsApp klinik sedang terputus sehingga tiap pesan hangus
- * satu per satu.
+ * berjalan walau Cloud API belum siap sehingga tiap pesan hangus satu per satu.
  */
 class BroadcastDeliveryTruthTest extends TestCase
 {
     use InteractsWithTenant, RefreshDatabase;
 
-    private function wahaConfigured(): void
+    private function cloudConfigured(): void
     {
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
+        config([
+            'meta_whatsapp.access_token' => 'token-uji',
+            'meta_whatsapp.api_version' => 'v21.0',
+            'meta_whatsapp.base_url' => 'https://graph.test',
+        ]);
+
+        WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'phone_number_id' => '109876543210',
+        ]);
     }
 
     /** @param array<string, mixed> $fakes */
-    private function waha(array $fakes): void
+    private function cloud(array $fakes): void
     {
-        $this->wahaConfigured();
+        $this->cloudConfigured();
         Http::fake($fakes);
     }
 
     private function connectedAndSending(): array
     {
-        return [
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/*' => Http::response(['id' => 'true_628@c.us'], 201),
-        ];
+        return ['graph.test/*' => Http::response(['messages' => [['id' => 'wamid.ok']]], 200)];
     }
 
     private function connectedButRejecting(): array
     {
         return [
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/api/sendText' => Http::response(['error' => 'not working'], 422),
+            'graph.test/*' => Http::response([
+                'error' => ['message' => 'Recipient not registered', 'code' => 131026],
+            ], 400),
         ];
     }
 
@@ -70,7 +74,12 @@ class BroadcastDeliveryTruthTest extends TestCase
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Promo Agustus',
-            'message' => 'Halo {nama}',
+            'template' => [
+                'name' => 'promo_bulanan',
+                'language' => 'id',
+                'body' => 'Halo {{1}}',
+                'params' => ['nama'],
+            ],
             'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
@@ -97,7 +106,7 @@ class BroadcastDeliveryTruthTest extends TestCase
     public function test_a_campaign_where_nothing_was_delivered_is_marked_failed(): void
     {
         $this->actingAsClinicUser();
-        $this->waha($this->connectedButRejecting());
+        $this->cloud($this->connectedButRejecting());
 
         $broadcast = $this->makeBroadcast();
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -118,18 +127,14 @@ class BroadcastDeliveryTruthTest extends TestCase
     public function test_a_campaign_with_at_least_one_delivery_is_marked_done(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConfigured();
+        $this->cloudConfigured();
 
         $calls = 0;
-        Http::fake(function ($request) use (&$calls) {
-            if (str_contains($request->url(), '/api/sessions/')) {
-                return Http::response(['status' => 'WORKING'], 200);
-            }
-
+        Http::fake(function () use (&$calls) {
             // Nomor pertama lolos, sisanya ditolak.
             return ++$calls === 1
-                ? Http::response(['id' => 'true_628@c.us'], 201)
-                : Http::response(['error' => 'nope'], 422);
+                ? Http::response(['messages' => [['id' => 'wamid.ok']]], 200)
+                : Http::response(['error' => ['message' => 'Recipient not registered']], 400);
         });
 
         $broadcast = $this->makeBroadcast();
@@ -147,54 +152,50 @@ class BroadcastDeliveryTruthTest extends TestCase
     }
 
     /**
-     * Penjagaan yang mencegah seluruh kejadian di atas: WhatsApp yang
-     * terputus tidak boleh menghanguskan ratusan pesan satu per satu.
+     * Penjagaan yang mencegah seluruh kejadian di atas: Cloud API yang belum
+     * siap tidak boleh menghanguskan ratusan pesan satu per satu.
      */
-    public function test_sending_is_refused_while_whatsapp_is_disconnected(): void
+    public function test_sending_is_refused_while_cloud_api_is_not_configured(): void
     {
         Queue::fake();
         $this->actingAsClinicUser();
-        $this->waha([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'SCAN_QR_CODE'], 200),
-        ]);
 
         $broadcast = $this->makeBroadcast();
 
         $this->postJson($this->tenantUrl("broadcasts/{$broadcast->id}/send"))
             ->assertStatus(422)
-            ->assertJsonPath('message', __('broadcast.waha_not_connected'));
+            ->assertJsonPath('message', __('broadcast.cloud_not_ready'));
 
         Queue::assertNothingPushed();
         $this->assertSame(BroadcastStatus::Ready, $broadcast->fresh()->status);
         $this->assertSame(2, $broadcast->pendingRecipients()->count());
     }
 
-    /** Gateway yang tidak menjawab juga menahan antrean, bukan meloloskannya. */
-    public function test_sending_is_refused_when_the_connection_cannot_be_checked(): void
+    /** Broadcast tanpa template juga ditolak di depan, bukan di worker. */
+    public function test_sending_is_refused_when_no_template_is_chosen(): void
     {
         Queue::fake();
         $this->actingAsClinicUser();
-        $this->waha([
-            'waha.test/api/sessions/*' => Http::response(['error' => 'boom'], 500),
-        ]);
+        $this->cloudConfigured();
 
         $broadcast = $this->makeBroadcast();
+        $broadcast->update(['template' => null]);
 
         $this->postJson($this->tenantUrl("broadcasts/{$broadcast->id}/send"))
             ->assertStatus(422)
-            ->assertJsonPath('message', __('broadcast.waha_check_failed'));
+            ->assertJsonPath('message', __('broadcast.template_required'));
 
         Queue::assertNothingPushed();
     }
 
     /**
-     * Setelah sesi pulih, menekan kirim lagi harus mengulang yang gagal.
+     * Setelah gateway pulih, menekan kirim lagi harus mengulang yang gagal.
      * Tanpa ini campaign yang seluruhnya gagal jadi jalan buntu.
      */
     public function test_pressing_send_again_retries_the_failed_recipients(): void
     {
         $this->actingAsClinicUser();
-        $this->waha($this->connectedButRejecting());
+        $this->cloud($this->connectedButRejecting());
 
         $broadcast = $this->makeBroadcast();
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -205,7 +206,7 @@ class BroadcastDeliveryTruthTest extends TestCase
 
         $this->assertSame(BroadcastStatus::Failed, $broadcast->fresh()->status);
 
-        // Sesi pulih, admin menekan kirim lagi.
+        // Gateway pulih, admin menekan kirim lagi.
         Queue::fake();
         Http::fake($this->connectedAndSending());
 
@@ -222,7 +223,7 @@ class BroadcastDeliveryTruthTest extends TestCase
     public function test_the_failed_count_reaches_the_client(): void
     {
         $this->actingAsClinicUser();
-        $this->waha($this->connectedButRejecting());
+        $this->cloud($this->connectedButRejecting());
 
         $broadcast = $this->makeBroadcast();
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -239,7 +240,7 @@ class BroadcastDeliveryTruthTest extends TestCase
     public function test_failed_is_not_a_status_an_admin_can_set(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConfigured();
+        $this->cloudConfigured();
 
         $broadcast = $this->makeBroadcast();
 
@@ -255,7 +256,7 @@ class BroadcastDeliveryTruthTest extends TestCase
     {
         Queue::fake();
         $this->actingAsClinicUser();
-        $this->waha($this->connectedAndSending());
+        $this->cloud($this->connectedAndSending());
 
         $broadcast = $this->makeBroadcast();
         $first = $broadcast->recipients()->first();

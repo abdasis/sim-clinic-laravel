@@ -40,18 +40,33 @@ class BroadcastPlatformTest extends TestCase
     }
 
     /**
-     * Sesi WAHA yang benar-benar tersambung. Pengiriman massal sekarang
-     * memeriksanya lebih dulu, jadi test yang menekan kirim harus menyatakan
-     * keadaan itu — sama seperti klinik sungguhan yang QR-nya sudah dipindai.
+     * Cloud API siap: token platform, nomor pengirim klinik. Pengiriman
+     * massal sekarang memeriksanya lebih dulu, jadi test yang menekan kirim
+     * harus menyatakan keadaan itu.
      */
-    private function wahaConnected(): void
+    private function cloudConfigured(): void
     {
-        $this->wahaReady();
-
-        Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/*' => Http::response(['id' => 'true_628@c.us'], 201),
+        config([
+            'meta_whatsapp.access_token' => 'token-uji',
+            'meta_whatsapp.api_version' => 'v21.0',
+            'meta_whatsapp.base_url' => 'https://graph.test',
         ]);
+
+        WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'phone_number_id' => '109876543210',
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function template(array $overrides = []): array
+    {
+        return array_replace([
+            'name' => 'promo_bulanan',
+            'language' => 'id',
+            'body' => 'Halo {{1}}',
+            'params' => ['nama'],
+        ], $overrides);
     }
 
     private function paidVisit(Patient $patient, Service $service, string $date): Transaction
@@ -82,13 +97,13 @@ class BroadcastPlatformTest extends TestCase
     {
         Queue::fake();
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->cloudConfigured();
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '082222222222']);
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
-            'title' => 'Promo', 'message' => 'Halo {nama}', 'audience' => 'all',
+            'title' => 'Promo', 'template' => $this->template(), 'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
         $this->postJson($this->tenantUrl("broadcasts/{$id}/send"))
@@ -102,13 +117,13 @@ class BroadcastPlatformTest extends TestCase
     public function test_paused_campaign_job_does_not_send(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaReady();
+        $this->cloudConfigured();
         Http::fake();
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
-            'title' => 'Promo', 'message' => 'Halo', 'audience' => 'all',
+            'title' => 'Promo', 'template' => $this->template(), 'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
         $broadcast = Broadcast::find($id);
@@ -124,13 +139,13 @@ class BroadcastPlatformTest extends TestCase
     public function test_job_sends_and_closes_campaign_when_drained(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaReady();
-        Http::fake(['waha.test/*' => Http::response(['id' => 'true_628@c.us'])]);
+        $this->cloudConfigured();
+        Http::fake(['graph.test/*' => Http::response(['messages' => [['id' => 'wamid.ok']]], 200)]);
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
-            'title' => 'Promo', 'message' => 'Halo', 'audience' => 'all',
+            'title' => 'Promo', 'template' => $this->template(), 'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
         $broadcast = Broadcast::find($id);
@@ -152,7 +167,7 @@ class BroadcastPlatformTest extends TestCase
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '082222222222', 'whatsapp_opt_in' => false]);
 
         $this->postJson($this->tenantUrl('broadcasts'), [
-            'title' => 'Promo', 'message' => 'Halo {nama}', 'audience' => 'all', 'kind' => 'promo',
+            'title' => 'Promo', 'template' => $this->template(), 'audience' => 'all', 'kind' => 'promo',
         ])->assertCreated()->assertJsonPath('data.recipients_total', 1);
     }
 
@@ -274,17 +289,26 @@ class BroadcastPlatformTest extends TestCase
             ->assertJsonPath('data.available', false);
     }
 
-    public function test_test_message_endpoint_sends_via_client(): void
+    public function test_test_message_endpoint_sends_the_template_via_cloud_api(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaReady();
-        Http::fake(['waha.test/*' => Http::response(['id' => 'true_628@c.us'])]);
+        $this->cloudConfigured();
+        Http::fake(['graph.test/*' => Http::response(['messages' => [['id' => 'wamid.ok']]], 200)]);
 
         $this->postJson($this->tenantUrl('broadcasts/test-message'), [
-            'phone' => '0812-3456-7890', 'message' => 'Tes koneksi',
+            'phone' => '0812-3456-7890',
+            'template' => [
+                'name' => 'promo_bulanan',
+                'language' => 'id',
+                'body' => 'Halo {{1}}',
+                'params' => ['nama'],
+            ],
         ])->assertOk();
 
-        Http::assertSent(fn ($request) => $request['chatId'] === '6281234567890@c.us');
+        Http::assertSent(fn ($request) => $request['to'] === '6281234567890'
+            && $request['type'] === 'template'
+            && $request['template']['name'] === 'promo_bulanan'
+            && $request['template']['components'][0]['parameters'][0]['text'] === 'Budi');
     }
 
     public function test_connection_returns_qr_as_data_uri_when_not_connected(): void

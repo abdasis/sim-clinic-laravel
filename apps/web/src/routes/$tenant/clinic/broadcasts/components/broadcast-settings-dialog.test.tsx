@@ -26,6 +26,7 @@ const TRANSLATIONS = {
 interface Settings {
   session?: string | null
   phone_number_id?: string | null
+  waba_id?: string | null
   waha_available: boolean
 }
 
@@ -99,6 +100,8 @@ describe("BroadcastSettingsDialog", () => {
       expect(JSON.parse(String((put?.[1] as RequestInit).body))).toEqual({
         session: "klinik-dua",
         phone_number_id: null,
+        waba_id: null,
+        reminder_template: null,
       })
     })
   })
@@ -167,6 +170,8 @@ describe("BroadcastSettingsDialog", () => {
       expect(JSON.parse(String((put?.[1] as RequestInit).body))).toEqual({
         session: null,
         phone_number_id: null,
+        waba_id: null,
+        reminder_template: null,
       })
     })
   })
@@ -206,6 +211,8 @@ describe("BroadcastSettingsDialog", () => {
       expect(JSON.parse(String((put?.[1] as RequestInit).body))).toEqual({
         session: "klinik-satu",
         phone_number_id: "109900000000001",
+        waba_id: null,
+        reminder_template: null,
       })
     })
   })

@@ -10,17 +10,15 @@ use App\Enums\ConversationChannel;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\Tenant;
+use App\Support\CloudApiClient;
+use App\Support\CloudApiException;
 use App\Support\DailyMessageQuota;
-use App\Support\WahaClient;
-use App\Support\WahaException;
-use App\Support\WahaSessionState;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -28,6 +26,9 @@ use Throwable;
  * kegagalan satu nomor tidak menyentuh nomor lain, retry per nomor, dan
  * jarak antar job (diatur lewat delay saat dispatch) menjaga pengiriman
  * tidak menyembur ratusan pesan sekaligus.
+ *
+ * Jalurnya WhatsApp Cloud API Meta memakai template resmi yang sudah
+ * disetujui; teks bebas tidak diterima di luar jendela 24 jam.
  */
 class SendBroadcastRecipientJob implements ShouldQueue
 {
@@ -36,22 +37,20 @@ class SendBroadcastRecipientJob implements ShouldQueue
     public int $tries = 5;
 
     /**
-     * Detik tunggu antar percobaan.
+     * Detik tunggu antar percobaan — untuk gangguan sesaat di sisi Meta.
      *
-     * Panjang karena yang ditunggu biasanya halaman WhatsApp Web milik
-     * gateway yang sedang dimuat ulang; itu butuh puluhan detik, bukan
-     * sekejap. Nomor yang memang ditolak tidak ikut menunggu selama ini —
-     * penolakan seperti itu tidak diulang sama sekali.
+     * Nomor yang memang ditolak tidak ikut menunggu selama ini; penolakan
+     * seperti itu tidak diulang sama sekali.
      *
      * @var array<int, int>
      */
     public array $backoff = [30, 60, 120, 300];
 
     /**
-     * Lama diam setelah gateway menahan laju kiriman.
+     * Lama diam setelah Meta menahan laju kiriman.
      *
      * Setengah jam, bukan hitungan detik seperti gangguan biasa: yang
-     * disampaikan WhatsApp bukan "coba lagi sebentar" melainkan "kamu terlalu
+     * disampaikan Meta bukan "coba lagi sebentar" melainkan "kamu terlalu
      * banyak mengirim". Melanjutkan lebih cepat dari itu sama saja dengan
      * mengabaikan peringatan yang baru saja diberikan.
      */
@@ -81,6 +80,7 @@ class SendBroadcastRecipientJob implements ShouldQueue
         }
 
         $broadcast = $recipient->broadcast;
+        $template = $broadcast->template;
 
         // Jeda/batal dihormati di sini, bukan hanya di UI: job yang sudah
         // terlanjur antre tidak mengirim apa pun.
@@ -88,13 +88,19 @@ class SendBroadcastRecipientJob implements ShouldQueue
             return;
         }
 
-        $client = app(WahaClient::class);
+        $client = app(CloudApiClient::class);
 
-        if ($client === null) {
+        // Tanpa klien atau tanpa template tidak ada yang bisa dikirim, dan
+        // mengulanginya tidak akan berubah. Penerimanya ditandai gagal dengan
+        // sebab yang bisa dibaca admin.
+        if (! $client instanceof CloudApiClient || $template === null) {
             $recipient->update([
                 'status' => BroadcastRecipientStatus::Failed,
-                'error' => __('broadcast.waha_not_ready'),
+                'error' => __($client instanceof CloudApiClient
+                    ? 'broadcast.template_required'
+                    : 'broadcast.cloud_not_ready'),
             ]);
+            $this->finishIfDrained($broadcast);
 
             return;
         }
@@ -118,7 +124,7 @@ class SendBroadcastRecipientJob implements ShouldQueue
         $recipient->increment('attempts');
 
         try {
-            $this->deliver($client, $broadcast, $recipient);
+            $this->deliver($client, $broadcast, $recipient, $template);
         } catch (Throwable $e) {
             Log::error('Gagal mengirim pesan broadcast dari antrian', [
                 'exception' => $e,
@@ -131,19 +137,18 @@ class SendBroadcastRecipientJob implements ShouldQueue
             // Diperiksa paling dulu karena 429 berbagi kode 4xx dengan
             // penolakan nomor — tanpa ini penerimanya dihanguskan permanen,
             // padahal yang perlu justru berhenti menembak sebentar.
-            if ($e instanceof WahaException && $e->isThrottle()) {
+            if ($e instanceof CloudApiException && $e->isThrottle()) {
                 app(PauseStalledBroadcastAction::class)
                     ->handle($broadcast, $e->getMessage(), self::THROTTLE_COOL_DOWN_MINUTES);
 
                 return;
             }
 
-            $state = $this->sessionState($client);
-
-            // Sesi sehat tapi kirimannya ditolak mentah: yang bermasalah
-            // nomor ini, bukan gatewaynya. Tidak diulang — penolakan begini
-            // menjawab sama persis tiap kali — dan nomor lain jalan terus.
-            if ($state === WahaSessionState::Working && $this->isNumberRejection($e)) {
+            // 4xx berarti Meta paham permintaannya dan tetap menolak — nomor
+            // tidak terdaftar, template tidak cocok dengan parameternya,
+            // misalnya. Penolakan begini menjawab sama persis tiap kali, jadi
+            // nomornya ditandai gagal dan nomor lain jalan terus.
+            if ($e instanceof CloudApiException && $e->status >= 400 && $e->status < 500) {
                 $recipient->update([
                     'status' => BroadcastRecipientStatus::Failed,
                     'error' => mb_substr($e->getMessage(), 0, 250),
@@ -153,23 +158,13 @@ class SendBroadcastRecipientJob implements ShouldQueue
                 return;
             }
 
-            // Sesi yang butuh orang (QR perlu dipindai ulang, sesi mati)
-            // tidak akan pulih sendiri; sisa antrean akan ditolak dengan cara
-            // yang sama persis.
-            if ($state->needsAttention()) {
-                app(PauseStalledBroadcastAction::class)->handle($broadcast, $e->getMessage());
-
-                return;
-            }
-
-            // Sisanya gangguan sesaat — halaman WhatsApp Web milik gateway
-            // yang dimuat ulang di tengah blast, jaringan yang tersendat.
+            // Sisanya gangguan sesaat: 5xx, jaringan tersendat, timeout.
             // Yang begini pulih sendiri, jadi ditunggu dan diulang.
             if ($this->attempts() < $this->tries) {
                 throw $e;
             }
 
-            // Sudah ditunggu sampai habis dan gatewaynya masih tersendat.
+            // Sudah ditunggu sampai habis dan Meta masih tersendat.
             // Menandai nomor ini gagal menyalahkan orang yang salah, jadi
             // campaign-nya yang dijeda — sisanya tetap utuh menunggu.
             app(PauseStalledBroadcastAction::class)->handle($broadcast, $e->getMessage());
@@ -202,7 +197,7 @@ class SendBroadcastRecipientJob implements ShouldQueue
                 $this->tenantId,
                 $recipient->phone,
                 $recipient->message,
-                ConversationChannel::Waha,
+                ConversationChannel::CloudApi,
             );
         } catch (Throwable $e) {
             Log::error('Pesan broadcast terkirim tetapi gagal dicatat ke kotak masuk.', [
@@ -214,44 +209,26 @@ class SendBroadcastRecipientJob implements ShouldQueue
     }
 
     /**
-     * Kirim pesannya, berikut gambar bila broadcast ini membawanya.
+     * Kirim template-nya, berikut gambar header bila broadcast ini membawanya.
      *
-     * Pesan jadi caption, bukan kiriman terpisah: dua kiriman berurutan
-     * sampai sebagai dua notifikasi, dan yang kedua kerap terbaca lebih dulu
-     * tanpa konteks gambarnya.
+     * @param  array<string, mixed>  $template
      */
-    private function deliver(WahaClient $client, Broadcast $broadcast, BroadcastRecipient $recipient): void
-    {
-        $image = $broadcast->image_path;
+    private function deliver(
+        CloudApiClient $client,
+        Broadcast $broadcast,
+        BroadcastRecipient $recipient,
+        array $template,
+    ): void {
+        $headerImageLink = ($template['header_type'] ?? null) === 'IMAGE'
+            ? $broadcast->image_url
+            : null;
 
-        if ($image === null) {
-            $client->send($recipient->phone, $recipient->message);
-
-            return;
-        }
-
-        $disk = Storage::disk('public');
-
-        // Berkasnya bisa hilang belakangan (dibersihkan, disk diganti).
-        // Pesannya tetap berangkat sebagai teks — kehilangan poster lebih
-        // ringan daripada pasien tidak menerima kabar sama sekali.
-        if (! $disk->exists($image)) {
-            Log::warning('Gambar broadcast tidak ditemukan; pesan dikirim sebagai teks.', [
-                'broadcast_id' => $broadcast->id,
-                'image_path' => $image,
-            ]);
-
-            $client->send($recipient->phone, $recipient->message);
-
-            return;
-        }
-
-        $client->sendImage(
+        $client->sendTemplate(
             $recipient->phone,
-            $disk->get($image),
-            $disk->mimeType($image) ?: 'image/jpeg',
-            basename($image),
-            $recipient->message,
+            (string) $template['name'],
+            (string) $template['language'],
+            (array) ($recipient->template_values ?? []),
+            $headerImageLink,
         );
     }
 
@@ -265,45 +242,6 @@ class SendBroadcastRecipientJob implements ShouldQueue
     private function minutesUntilTomorrow(): int
     {
         return (int) ceil(now()->diffInMinutes(now()->addDay()->startOfDay())) + 5;
-    }
-
-    /**
-     * Keadaan sesi saat kiriman ditolak.
-     *
-     * Ditanyakan ke gateway, bukan ditebak dari isi balasannya: WAHA memakai
-     * 422 yang sama untuk sesi terputus dan nomor yang ditolak, jadi
-     * mencocokkan kalimat errornya cuma memindahkan tebakan. Keadaan sesinya
-     * yang memisahkan keduanya.
-     *
-     * Gateway yang tidak bisa ditanya dihitung "belum jelas", bukan mati:
-     * dari sisi aplikasi itu tidak terbedakan dari tersendat sesaat, dan
-     * menunggu sebentar jauh lebih murah daripada salah menghentikan blast.
-     */
-    private function sessionState(WahaClient $client): WahaSessionState
-    {
-        try {
-            return $client->sessionState();
-        } catch (Throwable $e) {
-            Log::error('Gagal memeriksa sesi WhatsApp setelah pengiriman ditolak.', [
-                'exception' => $e,
-                'recipient_id' => $this->recipientId,
-            ]);
-
-            return WahaSessionState::Unknown;
-        }
-    }
-
-    /**
-     * Penolakan yang menyangkut nomor atau isi kirimannya sendiri, bukan
-     * kesehatan gateway.
-     *
-     * 4xx berarti gateway paham permintaannya dan tetap menolak — nomor tidak
-     * terdaftar di WhatsApp, misalnya. 5xx sebaliknya: gatewaynya yang
-     * tersandung, dan itu bukan urusan nomor yang kebetulan sedang antre.
-     */
-    private function isNumberRejection(Throwable $e): bool
-    {
-        return $e instanceof WahaException && $e->status >= 400 && $e->status < 500;
     }
 
     /**

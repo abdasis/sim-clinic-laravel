@@ -3,7 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Models\Broadcast;
+use App\Support\TemplateVariables;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class BroadcastTestRequest extends FormRequest
 {
@@ -19,8 +22,38 @@ class BroadcastTestRequest extends FormRequest
     {
         return [
             'phone' => ['required', 'string', 'max:32'],
-            'message' => ['required', 'string', 'max:4000'],
+            'template' => ['required', 'array'],
+            'template.name' => ['required', 'string', 'max:255'],
+            'template.language' => ['required', 'string', 'max:20'],
+            'template.body' => ['required', 'string', 'max:4000'],
+            'template.header_type' => ['nullable', Rule::in(TemplateVariables::HEADER_TYPES)],
+            'template.params' => ['nullable', 'array', 'max:10'],
+            'template.params.*' => ['string', Rule::in(TemplateVariables::KEYS)],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $template = $this->input('template');
+
+            if (! is_array($template)) {
+                return;
+            }
+
+            $placeholders = TemplateVariables::placeholderCount((string) ($template['body'] ?? ''));
+            $params = (array) ($template['params'] ?? []);
+
+            if ($placeholders !== count($params)) {
+                $validator->errors()->add(
+                    'template.params',
+                    __('broadcast.template_params_mismatch', [
+                        'placeholders' => $placeholders,
+                        'params' => count($params),
+                    ]),
+                );
+            }
+        });
     }
 
     /**
@@ -30,7 +63,11 @@ class BroadcastTestRequest extends FormRequest
     {
         return [
             'phone' => __('broadcast.test_phone_label'),
-            'message' => __('broadcast.test_message_label'),
+            'template' => __('broadcast.template_label'),
+            'template.name' => __('broadcast.template_name'),
+            'template.language' => __('broadcast.template_language'),
+            'template.body' => __('broadcast.template_body'),
+            'template.params' => __('broadcast.template_params'),
         ];
     }
 }

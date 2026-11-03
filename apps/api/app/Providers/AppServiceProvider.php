@@ -139,7 +139,8 @@ class AppServiceProvider extends ServiceProvider
                 return null;
             }
 
-            $phoneNumberId = (string) (WhatsappSetting::query()->first()?->phone_number_id ?? '');
+            $setting = WhatsappSetting::query()->first();
+            $phoneNumberId = (string) ($setting?->phone_number_id ?? '');
 
             if ($phoneNumberId === '') {
                 return null;
@@ -150,6 +151,7 @@ class AppServiceProvider extends ServiceProvider
                 (string) config('meta_whatsapp.api_version'),
                 $token,
                 $phoneNumberId,
+                $setting?->waba_id,
             );
         });
 

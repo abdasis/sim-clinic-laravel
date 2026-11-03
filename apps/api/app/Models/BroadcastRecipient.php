@@ -22,6 +22,7 @@ class BroadcastRecipient extends Model
         'name',
         'phone',
         'message',
+        'template_values',
         'status',
         'attempts',
         'sent_at',
@@ -32,6 +33,7 @@ class BroadcastRecipient extends Model
     {
         return [
             'status' => BroadcastRecipientStatus::class,
+            'template_values' => 'array',
             'sent_at' => 'datetime',
         ];
     }

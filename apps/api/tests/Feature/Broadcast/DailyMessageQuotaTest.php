@@ -8,7 +8,6 @@ use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\Patient;
-use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Contracts\Queue\Job as JobContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,12 +37,19 @@ class DailyMessageQuotaTest extends TestCase
         // dan actingAsClinicUser() baru membuatnya saat dipanggil.
         $this->tenant = $this->createTenant();
 
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
+        config([
+            'meta_whatsapp.access_token' => 'token-uji',
+            'meta_whatsapp.api_version' => 'v21.0',
+            'meta_whatsapp.base_url' => 'https://graph.test',
+        ]);
+
+        WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'phone_number_id' => '109876543210',
+        ]);
 
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/*' => Http::response(['id' => 'true_628@c.us'], 201),
+            'graph.test/*' => Http::response(['messages' => [['id' => 'wamid.ok']]], 200),
         ]);
     }
 
@@ -58,7 +64,12 @@ class DailyMessageQuotaTest extends TestCase
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'PROMO SEPTEMBER',
-            'message' => 'Halo {nama}',
+            'template' => [
+                'name' => 'promo_bulanan',
+                'language' => 'id',
+                'body' => 'Halo {{1}}',
+                'params' => ['nama'],
+            ],
             'audience' => 'all',
         ])->assertCreated()->json('data.id');
 
@@ -179,7 +190,7 @@ class DailyMessageQuotaTest extends TestCase
             $broadcast->resume_after->greaterThan(now()->endOfDay()),
             'dilanjutkan masih di hari yang sama, jadi jatahnya tetap penuh',
         );
-        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api/sendText'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/messages'));
     }
 
     /** Selama jatahnya masih ada, pesannya berangkat seperti biasa. */

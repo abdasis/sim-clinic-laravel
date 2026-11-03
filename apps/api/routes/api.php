@@ -217,6 +217,7 @@ Route::prefix('{tenant}/clinic')
 
         // Broadcast WhatsApp — pengingat perawatan & promo ke pasien
         Route::get('broadcasts/audience-preview', [BroadcastController::class, 'preview']);
+        Route::get('broadcasts/templates', [BroadcastController::class, 'templates']);
         Route::get('broadcasts/settings', [BroadcastController::class, 'settings']);
         Route::put('broadcasts/settings', [BroadcastController::class, 'updateSettings']);
         Route::get('broadcasts/auto-reminder', [BroadcastAutoReminderController::class, 'show']);

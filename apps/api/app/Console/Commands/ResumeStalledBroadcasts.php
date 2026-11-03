@@ -6,19 +6,18 @@ use App\Enums\BroadcastStatus;
 use App\Models\Broadcast;
 use App\Models\Tenant;
 use App\Services\BroadcastService;
-use App\Support\WahaClient;
+use App\Support\CloudApiClient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Lanjutkan sendiri broadcast yang berhenti karena gatewaynya tersendat.
+ * Lanjutkan sendiri broadcast yang berhenti karena Cloud API tersendat.
  *
- * Halaman WhatsApp Web milik gateway kerap dimuat ulang di tengah blast
- * ratusan pesan — gejalanya "Execution context was destroyed" — lalu pulih
- * sendiri semenit kemudian. Tanpa ini, tiap tersendat berarti seseorang
- * harus menunggui layar dan menekan Lanjutkan; blast 130 pasien jadi
- * pekerjaan menjaga, bukan pekerjaan mengirim.
+ * Meta bisa menahan laju atau tersandung sesaat di tengah blast ratusan
+ * pesan, lalu pulih sendiri semenit kemudian. Tanpa ini, tiap tersendat
+ * berarti seseorang harus menunggui layar dan menekan Lanjutkan; blast 130
+ * pasien jadi pekerjaan menjaga, bukan pekerjaan mengirim.
  *
  * Yang dijeda orang tidak ikut dilanjutkan: itu keputusan yang harus
  * dihormati, dan bedanya terbaca dari `paused_reason` yang kosong.
@@ -75,16 +74,21 @@ class ResumeStalledBroadcasts extends Command
             return;
         }
 
-        $client = app(WahaClient::class);
+        $client = app(CloudApiClient::class);
 
-        // Gateway belum disetel, atau sesinya masih belum siap. Dibiarkan
-        // menunggu putaran berikutnya — menekan kirim sekarang cuma
-        // mengulang kegagalan yang sama.
-        if ($client === null || ! $client->isConnected()) {
+        // Cloud API belum disetel. Dibiarkan menunggu putaran berikutnya —
+        // menekan kirim sekarang cuma mengulang kegagalan yang sama.
+        if (! $client instanceof CloudApiClient) {
             return;
         }
 
         foreach ($stalled as $broadcast) {
+            // Template yang tidak ada tidak akan pernah bisa dikirim;
+            // melanjutkannya hanya mengulang kegagalan yang sama.
+            if ($broadcast->template === null) {
+                continue;
+            }
+
             $broadcasts->queueSend($broadcast, automatic: true);
 
             $this->info("{$tenant->slug}: broadcast {$broadcast->title} dilanjutkan.");

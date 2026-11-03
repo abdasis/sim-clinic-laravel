@@ -11,10 +11,8 @@ use App\Models\BroadcastReminderSetting;
 use App\Models\MedicalRecord;
 use App\Models\Patient;
 use App\Models\Tenant;
-use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
@@ -61,8 +59,32 @@ class SendAutoRemindersCommandTest extends TestCase
         ]);
     }
 
-    /** Tanpa WAHA broadcast-nya tetap tersusun, menunggu dikirim manual. */
-    public function test_broadcast_stays_ready_when_waha_is_not_configured(): void
+    /**
+     * Cloud API siap sekaligus template pengingatnya dipilih. Tanpa template,
+     * command sengaja melewati broadcast dan hanya mencatat peringatan.
+     */
+    private function cloudReady(Tenant $tenant): void
+    {
+        config([
+            'meta_whatsapp.access_token' => 'token-uji',
+            'meta_whatsapp.api_version' => 'v21.0',
+            'meta_whatsapp.base_url' => 'https://graph.test',
+        ]);
+
+        WhatsappSetting::create([
+            'tenant_id' => $tenant->id,
+            'phone_number_id' => '109876543210',
+            'reminder_template' => [
+                'name' => 'pengingat_perawatan',
+                'language' => 'id',
+                'body' => 'Halo {{1}}, sudah {{2}} hari sejak {{3}}.',
+                'params' => ['nama', 'hari_sejak_kunjungan', 'layanan_terakhir'],
+            ],
+        ]);
+    }
+
+    /** Tanpa Cloud API broadcast-nya tetap tersusun, menunggu dikirim manual. */
+    public function test_broadcast_stays_ready_when_cloud_api_is_not_configured(): void
     {
         Queue::fake();
         $this->tenant = $this->createTenant();
@@ -77,17 +99,14 @@ class SendAutoRemindersCommandTest extends TestCase
         Queue::assertNothingPushed();
     }
 
-    public function test_broadcast_is_queued_when_waha_is_ready(): void
+    public function test_broadcast_is_queued_when_cloud_api_is_ready(): void
     {
         Queue::fake();
         $this->tenant = $this->createTenant();
         $this->activate($this->tenant);
         $this->duePatient($this->tenant);
 
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
-        // Antre hanya kalau sesinya benar-benar tersambung.
-        Http::fake(['waha.test/*' => Http::response(['status' => 'WORKING'], 200)]);
+        $this->cloudReady($this->tenant);
 
         $this->artisan('clinic:send-auto-reminders')->assertSuccessful();
 
@@ -109,9 +128,6 @@ class SendAutoRemindersCommandTest extends TestCase
         $this->tenant = $this->createTenant();
         $this->activate($this->tenant);
         $this->duePatient($this->tenant);
-
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
 
         $perLayanan = Broadcast::create([
             'tenant_id' => $this->tenant->id,
