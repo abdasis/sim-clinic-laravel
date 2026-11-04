@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\LogAuditAction;
+use App\Actions\Whatsapp\SaveWhatsappClinicSettingAction;
 use App\Enums\BroadcastAudience;
 use App\Enums\BroadcastRecipientStatus;
 use App\Enums\BroadcastStatus;
@@ -17,6 +19,7 @@ use App\Http\Resources\BroadcastRecipientResource;
 use App\Http\Resources\BroadcastResource;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
+use App\Models\Tenant;
 use App\Models\WhatsappGatewaySetting;
 use App\Models\WhatsappSetting;
 use App\Services\BroadcastService;
@@ -26,6 +29,7 @@ use App\Support\DailyMessageQuota;
 use App\Support\PhoneNumber;
 use App\Support\TenantCache;
 use App\Support\WhatsappGatewayException;
+use App\Support\WhatsappWebhookUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -441,13 +445,16 @@ class BroadcastController extends Controller
                 'api_key_configured' => filled($setting?->gateway_api_key),
                 'webhook_configured' => filled($setting?->gateway_webhook_secret)
                     && filled($setting?->gateway_webhook_token),
+                'webhook_url' => WhatsappWebhookUrl::for($setting?->gateway_webhook_token),
             ],
             'meta' => [],
         ]);
     }
 
-    public function updateSettings(WhatsappSessionRequest $request): JsonResponse
-    {
+    public function updateSettings(
+        WhatsappSessionRequest $request,
+        SaveWhatsappClinicSettingAction $saveSetting,
+    ): JsonResponse {
         // Pemeriksaan di FormRequest bukan pengganti pemeriksaan di sini:
         // yang pertama menjaga bentuk permintaan, yang kedua menjaga aksinya.
         // Keduanya dipasang supaya menghapus salah satunya tidak diam-diam
@@ -455,27 +462,54 @@ class BroadcastController extends Controller
         $this->authorize('update', Broadcast::class);
 
         $validated = $request->validated();
+        $tenant = app('tenant');
 
-        $setting = WhatsappSetting::query()->firstOrNew([]);
+        // Sesi, batas harian, dan API key milik klinik ini disimpan lewat
+        // action yang sama dengan dashboard central, supaya aturan "kosong
+        // berarti tidak berubah" tidak ditulis dua kali.
+        $setting = $saveSetting->handle($tenant, $validated);
 
-        // Hanya ditimpa bila dikirim: menyimpan satu bagian tidak boleh
-        // menghapus bagian lain yang sudah diisi sebelumnya.
-        if (array_key_exists('session', $validated)) {
-            $setting->session = $validated['session'];
+        if (array_key_exists('base_url', $validated)) {
+            $this->saveGatewayBaseUrl($validated['base_url'], $tenant);
         }
 
-        if (array_key_exists('daily_message_limit', $validated)) {
-            $setting->daily_message_limit = $validated['daily_message_limit'];
-        }
-
-        $setting->save();
+        $gateway = WhatsappGatewaySetting::query()->first();
 
         return response()->json([
             'data' => [
                 'session' => $setting->session,
                 'daily_message_limit' => $setting->daily_message_limit,
+                // Nilai rahasianya tidak pernah kembali; cukup statusnya.
+                'api_key_configured' => filled($setting->gateway_api_key),
+                'gateway_base_url' => $gateway?->base_url,
             ],
             'meta' => ['message' => __('broadcast.settings_saved')],
         ]);
+    }
+
+    /**
+     * Alamat gateway satu untuk semua klinik, jadi perubahannya dicatat
+     * lintas tenant di audit log.
+     */
+    private function saveGatewayBaseUrl(?string $baseUrl, Tenant $tenant): void
+    {
+        $gateway = WhatsappGatewaySetting::query()->firstOrNew([]);
+        $previous = $gateway->base_url;
+
+        if ($previous === $baseUrl) {
+            return;
+        }
+
+        $gateway->base_url = $baseUrl;
+        $gateway->save();
+
+        app(LogAuditAction::class)->handle(
+            'whatsapp.gateway_base_url_updated',
+            $gateway,
+            null,
+            ['base_url' => ['old' => $previous, 'new' => $baseUrl]],
+            'Memperbarui alamat gateway WhatsApp dari pengaturan klinik '.$tenant->name.'.',
+            $tenant,
+        );
     }
 }

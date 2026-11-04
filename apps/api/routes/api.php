@@ -10,6 +10,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CentralAuthController;
 use App\Http\Controllers\CentralBackupController;
 use App\Http\Controllers\CentralStatsController;
+use App\Http\Controllers\CentralWhatsappGatewayClinicController;
 use App\Http\Controllers\CentralWhatsappGatewaySettingController;
 use App\Http\Controllers\ChatbotSettingController;
 use App\Http\Controllers\ClinicIdentityController;
@@ -98,6 +99,11 @@ Route::middleware(['auth:sanctum', 'permission.team'])->prefix('central')->group
     // Alamat gateway dipakai bersama seluruh klinik, jadi pengaturannya di sini.
     Route::get('/whatsapp-gateway', [CentralWhatsappGatewaySettingController::class, 'show']);
     Route::put('/whatsapp-gateway', [CentralWhatsappGatewaySettingController::class, 'update']);
+
+    // Kredensial gateway milik tiap klinik; pengelola platform yang mengisinya.
+    Route::get('/whatsapp-gateway/clinics', [CentralWhatsappGatewayClinicController::class, 'index']);
+    Route::put('/whatsapp-gateway/clinics/{tenant}', [CentralWhatsappGatewayClinicController::class, 'update']);
+    Route::post('/whatsapp-gateway/clinics/{tenant}/webhook', [CentralWhatsappGatewayClinicController::class, 'webhook']);
 });
 
 // =========================================================================

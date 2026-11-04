@@ -31,4 +31,26 @@ describe("visibleSettingsItems", () => {
       "activity-logs",
     )
   })
+
+  it("memetakan item Pengaturan ke kunci submenu sidebar", () => {
+    // Bentuk yang sama dengan pemetaan di route.tsx: item tanpa `match`
+    // memakai kunci induk "settings".
+    const sidebarKeysFor = (role: string, permissions: string[] | null) =>
+      visibleSettingsItems(SETTINGS_ITEMS, role, permissions).map((item) =>
+        item.match ? `settings/${item.match}` : "settings",
+      )
+
+    expect(
+      sidebarKeysFor("admin", ["content.view", "staff.view", "activity_log.view"]),
+    ).toEqual([
+      "settings",
+      "settings/whatsapp",
+      "settings/chatbot",
+      "settings/users",
+      "settings/preferences",
+      "settings/activity-logs",
+    ])
+
+    expect(sidebarKeysFor("cashier", [])).toEqual(["settings", "settings/preferences"])
+  })
 })

@@ -39,6 +39,12 @@ class WhatsappSessionRequest extends FormRequest
             ],
             // Kosong berarti tanpa batas harian.
             'daily_message_limit' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            // Kosong berarti API key lama dipertahankan, bukan dihapus:
+            // formulir klinik hanya mengirimnya saat admin menggantinya.
+            'api_key' => ['nullable', 'string', 'min:8', 'max:255'],
+            // Alamat server gateway yang dipakai seluruh klinik. Boleh http
+            // untuk pemasangan di jaringan internal.
+            'base_url' => ['nullable', 'url', 'max:255'],
         ];
     }
 
@@ -72,6 +78,8 @@ class WhatsappSessionRequest extends FormRequest
     {
         return [
             'session' => __('broadcast.session_label'),
+            'api_key' => __('whatsapp_gateway.api_key'),
+            'base_url' => __('whatsapp_gateway.base_url'),
         ];
     }
 

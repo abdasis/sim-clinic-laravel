@@ -1,13 +1,12 @@
 import {
   createFileRoute,
-  Link,
   Outlet,
   redirect,
   useNavigate,
   useParams,
   useRouterState,
 } from "@tanstack/react-router"
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
+import { type IconSvgElement } from "@hugeicons/react"
 import {
   BarChartIcon,
   BubbleChatIcon,
@@ -24,7 +23,6 @@ import {
   MessageMultiple01Icon,
   PackageIcon,
   RulerIcon,
-  PaintBoardIcon,
   SecurityLockIcon,
   Settings02Icon,
   StethoscopeIcon,
@@ -177,6 +175,15 @@ function ClinicLayout() {
     { key: "inbox", label: t("inbox.title"), permission: "inbox.view", roles: ["admin", "cashier", "doctor", "therapist"], icon: MessageMultiple01Icon, group: "system" },
     { key: "broadcasts", label: t("broadcast.title"), permission: "broadcast.view", roles: ["admin"], icon: BubbleChatIcon, group: "system" },
     { key: "company-profile", label: t("company_profile.title"), permission: "content.view", roles: ["admin"], icon: Globe02Icon, group: "system" },
+    {
+      // Satu pintu menuju halaman Pengaturan. Sub-halamannya sengaja tidak
+      // diulang di sini: daftarnya sudah ada di sidebar halaman Pengaturan.
+      key: "settings",
+      label: t("settings.title"),
+      roles: ["admin", "doctor", "therapist", "cashier"],
+      icon: Settings02Icon,
+      group: "system",
+    },
     // Laporan & Log.
     { key: "reports", label: t("report.title"), permission: "report.view", roles: ["admin"], icon: BarChartIcon, group: "insights" },
   ]
@@ -229,21 +236,8 @@ function ClinicLayout() {
       {mounted ? (
         <AppSidebar
           variant={appearance.sidebar_variant}
-          preferencesTo={
-            <Link to="/$tenant/clinic/settings/preferences" params={{ tenant }}>
-              <HugeiconsIcon icon={PaintBoardIcon} strokeWidth={2} />
-              {t("preferences.title")}
-            </Link>
-          }
-          clinicSettingsTo={
-            // Hanya yang boleh mengubah identitas yang melihat pintunya.
-            permissions?.includes("content.manage") ? (
-              <Link to="/$tenant/clinic/settings" params={{ tenant }}>
-                <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
-                {t("clinic.settings")}
-              </Link>
-            ) : undefined
-          }
+          // Pintu Pengaturan sudah ada di submenu sidebar; tautan ganda di
+          // menu pengguna sengaja tidak dipasang lagi.
           // Slug hanya cadangan: klinik yang belum mengisi profil tetap
           // punya sesuatu yang bisa dikenali di kepala sidebar.
           brandTitle={identity?.name ?? tenant}

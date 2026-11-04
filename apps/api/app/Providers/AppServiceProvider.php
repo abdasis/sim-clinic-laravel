@@ -104,6 +104,7 @@ class AppServiceProvider extends ServiceProvider
         'company_content_section' => CompanyContentSection::class,
         'conversation' => Conversation::class,
         'whatsapp_setting' => WhatsappSetting::class,
+        'whatsapp_gateway_setting' => WhatsappGatewaySetting::class,
     ];
 
     public function register(): void

@@ -18,6 +18,7 @@ use App\Models\WhatsappGatewaySetting;
 use App\Models\WhatsappSetting;
 use App\Support\PhoneNumber;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
@@ -331,6 +332,73 @@ class BroadcastApiTest extends TestCase
         $this->assertSame('klinik-satu', WhatsappSetting::first()->session);
     }
 
+    public function test_settings_update_stores_the_gateway_base_url(): void
+    {
+        $this->actingAsClinicUser();
+
+        $this->putJson($this->tenantUrl('broadcasts/settings'), [
+            'base_url' => 'https://gateway.baru.test',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.gateway_base_url', 'https://gateway.baru.test');
+
+        $this->assertSame(
+            'https://gateway.baru.test',
+            WhatsappGatewaySetting::query()->value('base_url'),
+        );
+    }
+
+    public function test_settings_update_stores_the_api_key_encrypted_and_keeps_the_old_one(): void
+    {
+        $this->actingAsClinicUser();
+
+        $this->putJson($this->tenantUrl('broadcasts/settings'), [
+            'api_key' => 'kunci-rahasia-uji',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.api_key_configured', true);
+
+        $raw = DB::table('whatsapp_settings')->value('gateway_api_key');
+
+        // Tersimpan terenkripsi, dan nilainya tidak pernah ikut di respons.
+        $this->assertNotSame('kunci-rahasia-uji', $raw);
+        $this->assertStringNotContainsString('kunci-rahasia-uji', (string) $raw);
+
+        // Menyimpan bagian lain dengan API key kosong tidak boleh menimpa
+        // kredensial lama.
+        $this->putJson($this->tenantUrl('broadcasts/settings'), [
+            'session' => 'klinik-dua',
+            'api_key' => '',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.api_key_configured', true);
+
+        $this->assertSame($raw, DB::table('whatsapp_settings')->value('gateway_api_key'));
+        $this->assertSame('kunci-rahasia-uji', WhatsappSetting::first()->gateway_api_key);
+    }
+
+    public function test_settings_reject_an_invalid_gateway_address_or_short_api_key(): void
+    {
+        $this->actingAsClinicUser();
+
+        $this->putJson($this->tenantUrl('broadcasts/settings'), [
+            'base_url' => 'bukan-url',
+        ])->assertStatus(422)->assertJsonValidationErrors('base_url');
+
+        $this->putJson($this->tenantUrl('broadcasts/settings'), [
+            'api_key' => 'pendek',
+        ])->assertStatus(422)->assertJsonValidationErrors('api_key');
+    }
+
+    public function test_non_admin_cannot_update_whatsapp_settings(): void
+    {
+        $this->actingAsClinicUser(ClinicRole::Cashier);
+
+        $this->putJson($this->tenantUrl('broadcasts/settings'), [
+            'session' => 'klinik-satu',
+        ])->assertForbidden();
+    }
+
     public function test_settings_reject_a_session_name_the_gateway_cannot_use(): void
     {
         $this->actingAsClinicUser();
@@ -349,6 +417,7 @@ class BroadcastApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.api_key_configured', false)
             ->assertJsonPath('data.webhook_configured', false)
+            ->assertJsonPath('data.webhook_url', null)
             ->assertJsonPath('data.gateway_base_url', null);
 
         WhatsappGatewaySetting::create(['base_url' => 'https://gateway.test']);
@@ -356,10 +425,15 @@ class BroadcastApiTest extends TestCase
         $setting = $this->configureWhatsappGateway();
         $setting->update(['gateway_webhook_token' => 'token-uji']);
 
+        // URL mengikuti app.url; token boleh tampil karena memang bagian
+        // alamat yang dipanggil gateway.
+        config(['app.url' => 'https://api.contoh.test/']);
+
         $response = $this->getJson($this->tenantUrl('broadcasts/settings'))
             ->assertOk()
             ->assertJsonPath('data.api_key_configured', true)
             ->assertJsonPath('data.webhook_configured', true)
+            ->assertJsonPath('data.webhook_url', 'https://api.contoh.test/api/whatsapp/webhook/token-uji')
             ->assertJsonPath('data.gateway_base_url', 'https://gateway.test')
             ->assertJsonPath('data.gateway_available', true);
 
@@ -368,7 +442,28 @@ class BroadcastApiTest extends TestCase
 
         $this->assertStringNotContainsString('api-key-uji', $body);
         $this->assertStringNotContainsString('rahasia-uji', $body);
-        $this->assertStringNotContainsString('token-uji', $body);
+    }
+
+    public function test_settings_webhook_url_follows_app_url_and_is_null_without_a_token(): void
+    {
+        $this->actingAsClinicUser();
+
+        config(['app.url' => 'http://localhost:8000']);
+        $setting = $this->configureWhatsappGateway();
+
+        $this->getJson($this->tenantUrl('broadcasts/settings'))
+            ->assertOk()
+            ->assertJsonPath('data.webhook_url', null);
+
+        $setting->update(['gateway_webhook_token' => 'token-dev']);
+
+        $this->getJson($this->tenantUrl('broadcasts/settings'))
+            ->assertJsonPath('data.webhook_url', 'http://localhost:8000/api/whatsapp/webhook/token-dev');
+
+        config(['app.url' => 'https://api.contoh.test']);
+
+        $this->getJson($this->tenantUrl('broadcasts/settings'))
+            ->assertJsonPath('data.webhook_url', 'https://api.contoh.test/api/whatsapp/webhook/token-dev');
     }
 
     public function test_settings_gateway_flag_follows_the_configured_base_url(): void
