@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('gateway_api_key')->nullable()->after('gateway_tenant_key');
             $table->string('gateway_webhook_token', 64)->nullable()->unique()->after('gateway_api_key');
             $table->text('gateway_webhook_secret')->nullable()->after('gateway_webhook_token');
-            $table->string('gateway_session_id')->nullable()->after('gateway_webhook_secret');
+            $table->text('gateway_session_id')->nullable()->after('gateway_webhook_secret');
             $table->text('gateway_password')->nullable()->after('gateway_session_id');
         });
     }

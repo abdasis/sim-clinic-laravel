@@ -62,7 +62,10 @@ class WhatsappSetting extends Model
         ];
     }
 
-    /** Cukup satu jalur pengiriman siap dipakai. */
+    /**
+     * Siap kirim hanya bila nama sesi dan id sesi gateway sama-sama terisi —
+     * keduanya wajib, bukan salah satu.
+     */
     public function isConfigured(): bool
     {
         return filled($this->session) && filled($this->gateway_session_id);

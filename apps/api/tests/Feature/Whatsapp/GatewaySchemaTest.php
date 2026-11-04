@@ -44,7 +44,38 @@ class GatewaySchemaTest extends TestCase
         $this->assertNotSame('secret-uji', $raw->gateway_webhook_secret);
         $this->assertTrue($setting->provisioned());
         $this->assertTrue($setting->isConfigured());
-        $this->assertArrayNotHasKey('gateway_api_key', $setting->toArray());
+
+        foreach ([
+            'gateway_tenant_key',
+            'gateway_api_key',
+            'gateway_webhook_secret',
+            'gateway_session_id',
+            'gateway_password',
+        ] as $credential) {
+            $this->assertArrayNotHasKey($credential, $setting->toArray());
+        }
+    }
+
+    /**
+     * Ciphertext UUID 36 karakter jauh melebihi varchar(255), dan PostgreSQL
+     * menolaknya saat menyimpan — SQLite diam saja. Kelima kolom terenkripsi
+     * harus bertipe text.
+     */
+    public function test_encrypted_columns_are_text_not_varchar(): void
+    {
+        foreach ([
+            'gateway_tenant_key',
+            'gateway_api_key',
+            'gateway_webhook_secret',
+            'gateway_session_id',
+            'gateway_password',
+        ] as $column) {
+            $this->assertSame(
+                'text',
+                Schema::getColumnType('whatsapp_settings', $column),
+                $column.' harus text karena menyimpan ciphertext.',
+            );
+        }
     }
 
     /**
