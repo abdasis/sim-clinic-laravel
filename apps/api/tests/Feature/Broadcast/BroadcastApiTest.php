@@ -36,18 +36,9 @@ class BroadcastApiTest extends TestCase
         ], $overrides);
     }
 
-    private function cloudConfigured(): void
+    private function gatewayConfigured(): void
     {
-        config([
-            'meta_whatsapp.access_token' => 'token-uji',
-            'meta_whatsapp.api_version' => 'v21.0',
-            'meta_whatsapp.base_url' => 'https://graph.test',
-        ]);
-
-        WhatsappSetting::create([
-            'tenant_id' => $this->tenant->id,
-            'phone_number_id' => '109876543210',
-        ]);
+        $this->configureWhatsappGateway();
     }
 
     private function patient(string $name, ?string $whatsapp = '081234567890'): Patient
@@ -235,7 +226,7 @@ class BroadcastApiTest extends TestCase
     {
         $this->actingAsClinicUser();
 
-        $this->cloudConfigured();
+        $this->gatewayConfigured();
 
         $this->patient('Gagal', '082222222222');
 
@@ -251,9 +242,11 @@ class BroadcastApiTest extends TestCase
         // dijeda, penerimanya dibiarkan menunggu); lihat
         // BroadcastGatewayFailureTest.
         Http::fake([
-            'graph.test/*' => Http::response([
-                'error' => ['message' => 'Recipient not registered', 'code' => 131026],
-            ], 400),
+            '*' => Http::response([
+                'success' => false,
+                'message' => 'Recipient not registered',
+                'error' => ['code' => 'INVALID_RECIPIENT'],
+            ], 422),
         ]);
 
         // Jalankan percobaan terakhir langsung: job harus menandai gagal
@@ -268,11 +261,9 @@ class BroadcastApiTest extends TestCase
         $this->assertSame('failed', $fresh->status->value);
         $this->assertStringContainsString('Recipient not registered', (string) $fresh->error);
 
-        Http::assertSent(fn ($request) => str_contains($request->url(), 'graph.test/v21.0/109876543210/messages')
+        Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/messages/send'
             && $request['to'] === '6282222222222'
-            && $request['type'] === 'template'
-            && $request['template']['name'] === 'promo_bulanan'
-            && $request['template']['language']['code'] === 'id');
+            && $request['text'] === 'Halo Gagal, kabar dari '.$this->tenant->name.'.');
     }
 
     public function test_gateway_send_rejected_when_not_configured(): void
@@ -286,7 +277,7 @@ class BroadcastApiTest extends TestCase
 
         $this->postJson($this->tenantUrl("broadcasts/{$broadcast}/send"))
             ->assertStatus(422)
-            ->assertJsonPath('message', __('broadcast.cloud_not_ready'));
+            ->assertJsonPath('message', __('broadcast.gateway_not_ready'));
     }
 
     public function test_settings_store_the_session_name(): void

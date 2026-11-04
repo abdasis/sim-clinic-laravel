@@ -91,19 +91,17 @@ class WhatsappSessionTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.session', null);
 
-        // Broadcast tidak lagi bergantung pada sesi WAHA: jalurnya Cloud API.
-        // Tanpa kredensial Cloud API, pesan uji ditolak dengan pesan yang jelas
-        // alih-alih gagal diam-diam di worker.
+        // Broadcast tidak lagi bergantung pada sesi WAHA: jalurnya gateway
+        // internal. Tanpa kredensial gateway, pesan uji ditolak dengan pesan
+        // yang jelas alih-alih gagal diam-diam di worker.
         $this->postJson($this->tenantUrl('broadcasts/test-message'), [
             'phone' => '081234567890',
             'template' => [
-                'name' => 'promo_bulanan',
-                'language' => 'id',
                 'body' => 'Halo {{1}}',
                 'params' => ['nama'],
             ],
         ])->assertStatus(422)
-            ->assertJsonPath('message', __('broadcast.cloud_not_ready'));
+            ->assertJsonPath('message', __('broadcast.gateway_not_ready'));
     }
 
     public function test_clinic_saves_reminder_template(): void

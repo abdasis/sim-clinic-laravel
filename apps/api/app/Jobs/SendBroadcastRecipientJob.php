@@ -10,9 +10,10 @@ use App\Enums\ConversationChannel;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\Tenant;
-use App\Support\CloudApiClient;
-use App\Support\CloudApiException;
+use App\Models\WhatsappSetting;
 use App\Support\DailyMessageQuota;
+use App\Support\WhatsappGatewayClient;
+use App\Support\WhatsappGatewayException;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -27,8 +28,9 @@ use Throwable;
  * jarak antar job (diatur lewat delay saat dispatch) menjaga pengiriman
  * tidak menyembur ratusan pesan sekaligus.
  *
- * Jalurnya WhatsApp Cloud API Meta memakai template resmi yang sudah
- * disetujui; teks bebas tidak diterima di luar jendela 24 jam.
+ * Jalurnya gateway WhatsApp internal, jadi teks bebas boleh dikirim tanpa
+ * template yang disetujui Meta lebih dulu. Pesan tiap penerima sudah
+ * dirender saat kampanye dibuat; job tinggal mengirim kolom `message`.
  */
 class SendBroadcastRecipientJob implements ShouldQueue
 {
@@ -37,7 +39,7 @@ class SendBroadcastRecipientJob implements ShouldQueue
     public int $tries = 5;
 
     /**
-     * Detik tunggu antar percobaan — untuk gangguan sesaat di sisi Meta.
+     * Detik tunggu antar percobaan — untuk gangguan sesaat di sisi gateway.
      *
      * Nomor yang memang ditolak tidak ikut menunggu selama ini; penolakan
      * seperti itu tidak diulang sama sekali.
@@ -46,15 +48,8 @@ class SendBroadcastRecipientJob implements ShouldQueue
      */
     public array $backoff = [30, 60, 120, 300];
 
-    /**
-     * Lama diam setelah Meta menahan laju kiriman.
-     *
-     * Setengah jam, bukan hitungan detik seperti gangguan biasa: yang
-     * disampaikan Meta bukan "coba lagi sebentar" melainkan "kamu terlalu
-     * banyak mengirim". Melanjutkan lebih cepat dari itu sama saja dengan
-     * mengabaikan peringatan yang baru saja diberikan.
-     */
-    private const THROTTLE_COOL_DOWN_MINUTES = 30;
+    /** Detik diam bawaan bila gateway menahan laju tanpa menyebut angkanya. */
+    private const DEFAULT_THROTTLE_SECONDS = 60;
 
     public function __construct(
         public readonly int $recipientId,
@@ -80,25 +75,22 @@ class SendBroadcastRecipientJob implements ShouldQueue
         }
 
         $broadcast = $recipient->broadcast;
-        $template = $broadcast->template;
 
         // Jeda/batal dihormati di sini, bukan hanya di UI: job yang sudah
         // terlanjur antre tidak mengirim apa pun.
-        if (! in_array($broadcast->status, [BroadcastStatus::Sending], true)) {
+        if ($broadcast->status !== BroadcastStatus::Sending) {
             return;
         }
 
-        $client = app(CloudApiClient::class);
+        $setting = WhatsappSetting::query()->first();
 
-        // Tanpa klien atau tanpa template tidak ada yang bisa dikirim, dan
+        // Tanpa kredensial gateway tidak ada yang bisa dikirim, dan
         // mengulanginya tidak akan berubah. Penerimanya ditandai gagal dengan
         // sebab yang bisa dibaca admin.
-        if (! $client instanceof CloudApiClient || $template === null) {
+        if ($setting === null || ! $setting->provisioned()) {
             $recipient->update([
                 'status' => BroadcastRecipientStatus::Failed,
-                'error' => __($client instanceof CloudApiClient
-                    ? 'broadcast.template_required'
-                    : 'broadcast.cloud_not_ready'),
+                'error' => __('broadcast.gateway_not_ready'),
             ]);
             $this->finishIfDrained($broadcast);
 
@@ -124,7 +116,7 @@ class SendBroadcastRecipientJob implements ShouldQueue
         $recipient->increment('attempts');
 
         try {
-            $this->deliver($client, $broadcast, $recipient, $template);
+            $providerMessageId = $this->deliver($setting, $broadcast, $recipient);
         } catch (Throwable $e) {
             Log::error('Gagal mengirim pesan broadcast dari antrian', [
                 'exception' => $e,
@@ -133,41 +125,36 @@ class SendBroadcastRecipientJob implements ShouldQueue
                 'attempt' => $recipient->attempts,
             ]);
 
-            // Ditahan laju: seluruh blast berhenti, bukan cuma nomor ini.
-            // Diperiksa paling dulu karena 429 berbagi kode 4xx dengan
-            // penolakan nomor — tanpa ini penerimanya dihanguskan permanen,
-            // padahal yang perlu justru berhenti menembak sebentar.
-            if ($e instanceof CloudApiException && $e->isThrottle()) {
-                app(PauseStalledBroadcastAction::class)
-                    ->handle($broadcast, $e->getMessage(), self::THROTTLE_COOL_DOWN_MINUTES);
+            // Sesi putus bukan salah nomor mana pun: seluruh sisa antrean akan
+            // ditolak dengan cara yang sama. Campaign dijeda agar sisanya tetap
+            // menunggu dan bisa dilanjutkan setelah WhatsApp tersambung lagi.
+            if ($e instanceof WhatsappGatewayException && $this->sessionIsGone($e)) {
+                app(PauseStalledBroadcastAction::class)->handle($broadcast, $e->getMessage());
 
                 return;
             }
 
-            // 4xx berarti Meta paham permintaannya dan tetap menolak — nomor
-            // tidak terdaftar, template tidak cocok dengan parameternya,
-            // misalnya. Penolakan begini menjawab sama persis tiap kali, jadi
-            // nomornya ditandai gagal dan nomor lain jalan terus.
-            if ($e instanceof CloudApiException && $e->status >= 400 && $e->status < 500) {
-                $recipient->update([
-                    'status' => BroadcastRecipientStatus::Failed,
-                    'error' => mb_substr($e->getMessage(), 0, 250),
-                ]);
-                $this->finishIfDrained($broadcast);
+            // Ditahan laju: pesan ini belum tentu ditolak, hanya harus
+            // didiamkan dulu. Dikembalikan ke antrean tanpa menghanguskan
+            // penerimanya; kunci idempotensi yang sama mencegah kiriman ganda
+            // bila ternyata pesan sebelumnya sempat berangkat.
+            if ($e instanceof WhatsappGatewayException && $this->isThrottled($e)) {
+                if ($this->job !== null) {
+                    $this->release($e->retryAfter ?? self::DEFAULT_THROTTLE_SECONDS);
+                }
 
                 return;
             }
 
-            // Sisanya gangguan sesaat: 5xx, jaringan tersendat, timeout.
-            // Yang begini pulih sendiri, jadi ditunggu dan diulang.
-            if ($this->attempts() < $this->tries) {
-                throw $e;
-            }
-
-            // Sudah ditunggu sampai habis dan Meta masih tersendat.
-            // Menandai nomor ini gagal menyalahkan orang yang salah, jadi
-            // campaign-nya yang dijeda — sisanya tetap utuh menunggu.
-            app(PauseStalledBroadcastAction::class)->handle($broadcast, $e->getMessage());
+            // 4xx lain berarti gateway paham permintaannya dan tetap menolak —
+            // nomor tidak terdaftar, misalnya. Penolakan begini menjawab sama
+            // persis tiap kali, jadi nomornya ditandai gagal dan nomor lain
+            // jalan terus.
+            $recipient->update([
+                'status' => BroadcastRecipientStatus::Failed,
+                'error' => mb_substr($e->getMessage(), 0, 250),
+            ]);
+            $this->finishIfDrained($broadcast);
 
             return;
         }
@@ -178,7 +165,7 @@ class SendBroadcastRecipientJob implements ShouldQueue
             'error' => null,
         ]);
 
-        $this->recordOutbound($recipient);
+        $this->recordOutbound($recipient, $providerMessageId);
 
         $this->finishIfDrained($broadcast);
     }
@@ -190,14 +177,15 @@ class SendBroadcastRecipientJob implements ShouldQueue
      * menjadi gagal — pesannya sudah sampai ke pasien, dan mengirim ulang
      * hanya akan membuat pasien menerimanya dua kali.
      */
-    private function recordOutbound(BroadcastRecipient $recipient): void
+    private function recordOutbound(BroadcastRecipient $recipient, ?string $providerMessageId): void
     {
         try {
             app(RecordOutboundMessageAction::class)->handle(
                 $this->tenantId,
                 $recipient->phone,
                 $recipient->message,
-                ConversationChannel::CloudApi,
+                ConversationChannel::Gateway,
+                $providerMessageId,
             );
         } catch (Throwable $e) {
             Log::error('Pesan broadcast terkirim tetapi gagal dicatat ke kotak masuk.', [
@@ -209,27 +197,48 @@ class SendBroadcastRecipientJob implements ShouldQueue
     }
 
     /**
-     * Kirim template-nya, berikut gambar header bila broadcast ini membawanya.
+     * Kirim pesannya, berikut poster sebagai lampiran gambar bila ada.
      *
-     * @param  array<string, mixed>  $template
+     * Kunci idempotensi memakai nomor percobaan kirim, bukan percobaan
+     * antrean: pengiriman ulang oleh worker untuk pesan yang sama tetap
+     * dibuang gateway, sedangkan kampanye yang diantrekan ulang lewat
+     * "Kirim" memang pesan baru dan harus berangkat.
      */
     private function deliver(
-        CloudApiClient $client,
+        WhatsappSetting $setting,
         Broadcast $broadcast,
         BroadcastRecipient $recipient,
-        array $template,
-    ): void {
-        $headerImageLink = ($template['header_type'] ?? null) === 'IMAGE'
-            ? $broadcast->image_url
-            : null;
+    ): ?string {
+        $client = app(WhatsappGatewayClient::class);
+        $key = 'broadcast-'.$recipient->id.'-'.$recipient->send_attempt;
 
-        $client->sendTemplate(
-            $recipient->phone,
-            (string) $template['name'],
-            (string) $template['language'],
-            (array) ($recipient->template_values ?? []),
-            $headerImageLink,
-        );
+        if ($broadcast->image_url !== null) {
+            return $client->sendImage(
+                $setting,
+                $recipient->phone,
+                $broadcast->image_url,
+                $recipient->message,
+                $key,
+            );
+        }
+
+        return $client->sendText($setting, $recipient->phone, $recipient->message, $key);
+    }
+
+    /** Sesi WhatsApp klinik tidak tersedia di gateway. */
+    private function sessionIsGone(WhatsappGatewayException $e): bool
+    {
+        return in_array($e->code, [
+            'SESSION_NOT_CONNECTED',
+            'SESSION_NOT_FOUND',
+            'SESSION_NOT_CONFIGURED',
+        ], true);
+    }
+
+    /** Gateway menahan laju kiriman (HTTP 429). */
+    private function isThrottled(WhatsappGatewayException $e): bool
+    {
+        return $e->status === 429 || $e->code === 'RATE_LIMIT_EXCEEDED';
     }
 
     /**

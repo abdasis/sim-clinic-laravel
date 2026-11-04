@@ -238,38 +238,40 @@ class BroadcastUpdateTest extends TestCase
         Storage::disk('public')->assertMissing($path);
     }
 
-    public function test_an_image_header_without_a_stored_or_new_poster_is_rejected(): void
-    {
-        $this->actingAsClinicUser();
-
-        $broadcast = $this->createBroadcast();
-
-        $this->putJson($this->tenantUrl("broadcasts/{$broadcast->id}"), [
-            'title' => 'Promo Bergambar',
-            'audience' => 'all',
-            'template' => $this->template('Halo {{1}}', ['nama'], 'IMAGE'),
-        ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('image');
-    }
-
-    public function test_removing_the_poster_while_the_header_still_needs_one_is_rejected(): void
+    /**
+     * Poster yang masih menempel ikut menentukan batas panjang pesan, walau
+     * tidak ada berkas baru yang diunggah.
+     */
+    public function test_a_stored_poster_shortens_the_body_limit_on_edit(): void
     {
         $this->actingAsClinicUser();
 
         $broadcast = $this->createBroadcast(
-            ['template' => $this->template('Halo {{1}}', ['nama'], 'IMAGE')],
+            ['template' => $this->template('Halo {{1}}', ['nama'])],
             UploadedFile::fake()->image('poster.jpg'),
         );
 
         $this->putJson($this->tenantUrl("broadcasts/{$broadcast->id}"), [
             'title' => 'Promo Bergambar',
             'audience' => 'all',
-            'template' => $this->template('Halo {{1}}', ['nama'], 'IMAGE'),
-            'remove_image' => true,
+            'template' => $this->template(str_repeat('a', 1100), []),
         ])
             ->assertStatus(422)
-            ->assertJsonValidationErrors('image');
+            ->assertJsonValidationErrors('template.body');
+    }
+
+    /** Tanpa poster, pesan boleh jauh lebih panjang. */
+    public function test_a_long_body_is_accepted_without_a_poster(): void
+    {
+        $this->actingAsClinicUser();
+
+        $broadcast = $this->createBroadcast();
+
+        $this->putJson($this->tenantUrl("broadcasts/{$broadcast->id}"), [
+            'title' => 'Promo Panjang',
+            'audience' => 'all',
+            'template' => $this->template(str_repeat('a', 1500), []),
+        ])->assertOk();
     }
 
     public function test_template_params_must_match_the_placeholders(): void

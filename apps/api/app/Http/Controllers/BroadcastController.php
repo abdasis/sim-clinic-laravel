@@ -13,7 +13,6 @@ use App\Http\Requests\BroadcastTestRequest;
 use App\Http\Requests\BroadcastUpdateRequest;
 use App\Http\Requests\WhatsappPairingRequest;
 use App\Http\Requests\WhatsappSessionRequest;
-use App\Http\Requests\WhatsappTemplateRequest;
 use App\Http\Resources\BroadcastRecipientResource;
 use App\Http\Resources\BroadcastResource;
 use App\Models\Broadcast;
@@ -22,9 +21,7 @@ use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use App\Services\BroadcastService;
 use App\Services\WhatsappGatewaySessionService;
-use App\Services\WhatsappTemplateService;
 use App\Support\BroadcastAudienceBuilder;
-use App\Support\CloudApiClient;
 use App\Support\DailyMessageQuota;
 use App\Support\PhoneNumber;
 use App\Support\TenantCache;
@@ -117,19 +114,17 @@ class BroadcastController extends Controller
         ]);
     }
 
-    public function show(Broadcast $broadcast): JsonResponse
+    public function show(Broadcast $broadcast, BroadcastService $broadcasts): JsonResponse
     {
         $this->authorize('view', $broadcast);
 
         $broadcast->load(['creator', 'recipients' => fn ($q) => $q->orderBy('name')])
             ->loadCount(['recipients', 'sentRecipients', 'pendingRecipients', 'failedRecipients']);
 
-        $client = app(CloudApiClient::class);
-
         return response()->json([
             'data' => new BroadcastResource($broadcast),
-            // Template bisa dikelola tanpa nomor pengirim, tapi kirim tidak.
-            'meta' => ['cloud_api_ready' => $client instanceof CloudApiClient && $client->canSend()],
+            // Pesan bisa disusun tanpa nomor pengirim, tapi kirim tidak.
+            'meta' => ['gateway_ready' => $broadcasts->gatewayReady()],
         ]);
     }
 
@@ -220,83 +215,6 @@ class BroadcastController extends Controller
         return response()->json([
             'data' => null,
             'meta' => ['message' => __('broadcast.test_sent')],
-        ]);
-    }
-
-    /**
-     * Template resmi yang sudah disetujui Meta untuk klinik ini.
-     *
-     * Hanya template APPROVED yang bisa dipakai mengirim; daftar ini yang
-     * mengisi pemilih template di layar broadcast.
-     */
-    public function templates(): JsonResponse
-    {
-        $this->authorize('viewAny', Broadcast::class);
-
-        $client = app(CloudApiClient::class);
-
-        if (! $client instanceof CloudApiClient) {
-            return response()->json(['data' => [], 'meta' => ['ready' => false]]);
-        }
-
-        try {
-            $templates = $client->approvedTemplates();
-        } catch (Throwable $e) {
-            Log::error('Gagal mengambil daftar template WhatsApp Cloud API.', [
-                'exception' => $e,
-            ]);
-
-            return response()->json(['data' => [], 'meta' => ['ready' => false]]);
-        }
-
-        return response()->json(['data' => $templates, 'meta' => ['ready' => true]]);
-    }
-
-    /**
-     * Semua template klinik beserta status peninjauannya — layar kelola
-     * template, bukan pemilih template.
-     */
-    public function manageTemplates(WhatsappTemplateService $templates): JsonResponse
-    {
-        $this->authorize('viewAny', Broadcast::class);
-
-        $result = $templates->all();
-
-        return response()->json([
-            'data' => $result['templates'],
-            'meta' => ['ready' => $result['ready']],
-        ]);
-    }
-
-    /** Daftarkan template baru; Meta meninjaunya sebelum bisa dipakai. */
-    public function storeTemplate(WhatsappTemplateRequest $request, WhatsappTemplateService $templates): JsonResponse
-    {
-        $this->authorize('update', Broadcast::class);
-
-        $template = $templates->create($request->validated());
-
-        return response()->json([
-            'data' => $template,
-            'meta' => ['message' => __('broadcast.template_created')],
-        ], 201);
-    }
-
-    /** Hapus template; `hsm_id` memilih versi bahasa tertentu bila ada. */
-    public function destroyTemplate(
-        Request $request,
-        string $name,
-        WhatsappTemplateService $templates,
-    ): JsonResponse {
-        $this->authorize('update', Broadcast::class);
-
-        $hsmId = $request->query('hsm_id');
-        $hsmId = is_string($hsmId) && $hsmId !== '' ? $hsmId : null;
-
-        $templates->delete($name, $hsmId);
-
-        return response()->json([
-            'data' => null,
-            'meta' => ['message' => __('broadcast.template_deleted')],
         ]);
     }
 

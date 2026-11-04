@@ -6,7 +6,6 @@ use App\Enums\BroadcastStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\Patient;
-use App\Models\WhatsappSetting;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -14,12 +13,12 @@ use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
 /**
- * Blast yang berhenti karena Cloud API Meta tersendat dilanjutkan sendiri.
+ * Blast yang berhenti karena sesi gateway tersendat dilanjutkan sendiri.
  *
- * Meta bisa menahan laju atau tersandung sesaat di tengah kiriman ratusan
- * pesan lalu pulih semenit kemudian. Tanpa penjadwal ini, tiap kedipan
- * berarti seseorang harus menunggui layar dan menekan Lanjutkan — blast 130
- * pasien jadi pekerjaan menjaga, bukan pekerjaan mengirim.
+ * Sesi WhatsApp bisa putus sesaat di tengah kiriman ratusan pesan lalu pulih
+ * semenit kemudian. Tanpa penjadwal ini, tiap kedipan berarti seseorang harus
+ * menunggui layar dan menekan Lanjutkan — blast 130 pasien jadi pekerjaan
+ * menjaga, bukan pekerjaan mengirim.
  */
 class ResumeStalledBroadcastsTest extends TestCase
 {
@@ -27,16 +26,7 @@ class ResumeStalledBroadcastsTest extends TestCase
 
     private function configured(): void
     {
-        config([
-            'meta_whatsapp.access_token' => 'token-uji',
-            'meta_whatsapp.api_version' => 'v21.0',
-            'meta_whatsapp.base_url' => 'https://graph.test',
-        ]);
-
-        WhatsappSetting::create([
-            'tenant_id' => $this->tenant->id,
-            'phone_number_id' => '109876543210',
-        ]);
+        $this->configureWhatsappGateway();
     }
 
     /** Campaign yang tertinggal separuh jalan, dijeda gateway. */
@@ -70,7 +60,7 @@ class ResumeStalledBroadcastsTest extends TestCase
         return $broadcast;
     }
 
-    public function test_a_gateway_paused_campaign_resumes_once_cloud_api_is_ready(): void
+    public function test_a_stalled_campaign_resumes_once_the_gateway_is_configured(): void
     {
         $this->actingAsClinicUser();
         $this->configured();
@@ -89,8 +79,8 @@ class ResumeStalledBroadcastsTest extends TestCase
         Queue::assertPushed(SendBroadcastRecipientJob::class, 2);
     }
 
-    /** Cloud API yang belum disetel tidak disentuh — kirim sekarang cuma gagal lagi. */
-    public function test_it_waits_while_cloud_api_is_not_configured(): void
+    /** Gateway yang belum disetel tidak disentuh — kirim sekarang cuma gagal lagi. */
+    public function test_it_waits_while_the_gateway_is_not_configured(): void
     {
         $this->actingAsClinicUser();
 

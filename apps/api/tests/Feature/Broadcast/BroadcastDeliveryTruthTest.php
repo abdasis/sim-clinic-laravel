@@ -7,7 +7,6 @@ use App\Enums\BroadcastStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\Patient;
-use App\Models\WhatsappSetting;
 use Illuminate\Contracts\Queue\Job as JobContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -22,44 +21,40 @@ use Tests\TestCase;
  * Lahir dari laporan sungguhan: campaign terbaca "Selesai" padahal tidak
  * satu pun pesan sampai. Dua sebab yang dijaga di sini — campaign yang
  * seluruhnya gagal dulu ditutup sebagai selesai, dan pengiriman massal boleh
- * berjalan walau Cloud API belum siap sehingga tiap pesan hangus satu per satu.
+ * berjalan walau gateway belum siap sehingga tiap pesan hangus satu per satu.
  */
 class BroadcastDeliveryTruthTest extends TestCase
 {
     use InteractsWithTenant, RefreshDatabase;
 
-    private function cloudConfigured(): void
+    private function gatewayConfigured(): void
     {
-        config([
-            'meta_whatsapp.access_token' => 'token-uji',
-            'meta_whatsapp.api_version' => 'v21.0',
-            'meta_whatsapp.base_url' => 'https://graph.test',
-        ]);
-
-        WhatsappSetting::create([
-            'tenant_id' => $this->tenant->id,
-            'phone_number_id' => '109876543210',
-        ]);
+        $this->configureWhatsappGateway();
     }
 
     /** @param array<string, mixed> $fakes */
-    private function cloud(array $fakes): void
+    private function gateway(array $fakes): void
     {
-        $this->cloudConfigured();
+        $this->gatewayConfigured();
         Http::fake($fakes);
     }
 
     private function connectedAndSending(): array
     {
-        return ['graph.test/*' => Http::response(['messages' => [['id' => 'wamid.ok']]], 200)];
+        return ['*' => Http::response([
+            'success' => true,
+            'data' => ['messageId' => 'uuid-ok', 'status' => 'QUEUED'],
+        ], 202)];
     }
 
     private function connectedButRejecting(): array
     {
         return [
-            'graph.test/*' => Http::response([
-                'error' => ['message' => 'Recipient not registered', 'code' => 131026],
-            ], 400),
+            '*' => Http::response([
+                'success' => false,
+                'message' => 'Recipient not registered',
+                'error' => ['code' => 'INVALID_RECIPIENT'],
+            ], 422),
         ];
     }
 
@@ -106,7 +101,7 @@ class BroadcastDeliveryTruthTest extends TestCase
     public function test_a_campaign_where_nothing_was_delivered_is_marked_failed(): void
     {
         $this->actingAsClinicUser();
-        $this->cloud($this->connectedButRejecting());
+        $this->gateway($this->connectedButRejecting());
 
         $broadcast = $this->makeBroadcast();
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -127,14 +122,21 @@ class BroadcastDeliveryTruthTest extends TestCase
     public function test_a_campaign_with_at_least_one_delivery_is_marked_done(): void
     {
         $this->actingAsClinicUser();
-        $this->cloudConfigured();
+        $this->gatewayConfigured();
 
         $calls = 0;
         Http::fake(function () use (&$calls) {
             // Nomor pertama lolos, sisanya ditolak.
             return ++$calls === 1
-                ? Http::response(['messages' => [['id' => 'wamid.ok']]], 200)
-                : Http::response(['error' => ['message' => 'Recipient not registered']], 400);
+                ? Http::response([
+                    'success' => true,
+                    'data' => ['messageId' => 'uuid-ok', 'status' => 'QUEUED'],
+                ], 202)
+                : Http::response([
+                    'success' => false,
+                    'message' => 'Recipient not registered',
+                    'error' => ['code' => 'INVALID_RECIPIENT'],
+                ], 422);
         });
 
         $broadcast = $this->makeBroadcast();
@@ -152,10 +154,10 @@ class BroadcastDeliveryTruthTest extends TestCase
     }
 
     /**
-     * Penjagaan yang mencegah seluruh kejadian di atas: Cloud API yang belum
+     * Penjagaan yang mencegah seluruh kejadian di atas: gateway yang belum
      * siap tidak boleh menghanguskan ratusan pesan satu per satu.
      */
-    public function test_sending_is_refused_while_cloud_api_is_not_configured(): void
+    public function test_sending_is_refused_while_the_gateway_is_not_configured(): void
     {
         Queue::fake();
         $this->actingAsClinicUser();
@@ -164,7 +166,7 @@ class BroadcastDeliveryTruthTest extends TestCase
 
         $this->postJson($this->tenantUrl("broadcasts/{$broadcast->id}/send"))
             ->assertStatus(422)
-            ->assertJsonPath('message', __('broadcast.cloud_not_ready'));
+            ->assertJsonPath('message', __('broadcast.gateway_not_ready'));
 
         Queue::assertNothingPushed();
         $this->assertSame(BroadcastStatus::Ready, $broadcast->fresh()->status);
@@ -176,7 +178,7 @@ class BroadcastDeliveryTruthTest extends TestCase
     {
         Queue::fake();
         $this->actingAsClinicUser();
-        $this->cloudConfigured();
+        $this->gatewayConfigured();
 
         $broadcast = $this->makeBroadcast();
         $broadcast->update(['template' => null]);
@@ -195,7 +197,7 @@ class BroadcastDeliveryTruthTest extends TestCase
     public function test_pressing_send_again_retries_the_failed_recipients(): void
     {
         $this->actingAsClinicUser();
-        $this->cloud($this->connectedButRejecting());
+        $this->gateway($this->connectedButRejecting());
 
         $broadcast = $this->makeBroadcast();
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -223,7 +225,7 @@ class BroadcastDeliveryTruthTest extends TestCase
     public function test_the_failed_count_reaches_the_client(): void
     {
         $this->actingAsClinicUser();
-        $this->cloud($this->connectedButRejecting());
+        $this->gateway($this->connectedButRejecting());
 
         $broadcast = $this->makeBroadcast();
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -240,7 +242,7 @@ class BroadcastDeliveryTruthTest extends TestCase
     public function test_failed_is_not_a_status_an_admin_can_set(): void
     {
         $this->actingAsClinicUser();
-        $this->cloudConfigured();
+        $this->gatewayConfigured();
 
         $broadcast = $this->makeBroadcast();
 
@@ -256,7 +258,7 @@ class BroadcastDeliveryTruthTest extends TestCase
     {
         Queue::fake();
         $this->actingAsClinicUser();
-        $this->cloud($this->connectedAndSending());
+        $this->gateway($this->connectedAndSending());
 
         $broadcast = $this->makeBroadcast();
         $first = $broadcast->recipients()->first();

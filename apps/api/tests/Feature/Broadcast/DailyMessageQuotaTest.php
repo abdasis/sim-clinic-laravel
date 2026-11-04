@@ -36,20 +36,13 @@ class DailyMessageQuotaTest extends TestCase
         // Tenant-nya dibuat di depan: setelan WhatsApp di bawah butuh id-nya,
         // dan actingAsClinicUser() baru membuatnya saat dipanggil.
         $this->tenant = $this->createTenant();
-
-        config([
-            'meta_whatsapp.access_token' => 'token-uji',
-            'meta_whatsapp.api_version' => 'v21.0',
-            'meta_whatsapp.base_url' => 'https://graph.test',
-        ]);
-
-        WhatsappSetting::create([
-            'tenant_id' => $this->tenant->id,
-            'phone_number_id' => '109876543210',
-        ]);
+        $this->configureWhatsappGateway();
 
         Http::fake([
-            'graph.test/*' => Http::response(['messages' => [['id' => 'wamid.ok']]], 200),
+            '*' => Http::response([
+                'success' => true,
+                'data' => ['messageId' => 'uuid-ok', 'status' => 'QUEUED'],
+            ], 202),
         ]);
     }
 

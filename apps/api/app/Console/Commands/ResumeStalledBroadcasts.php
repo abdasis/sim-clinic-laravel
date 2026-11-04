@@ -6,18 +6,17 @@ use App\Enums\BroadcastStatus;
 use App\Models\Broadcast;
 use App\Models\Tenant;
 use App\Services\BroadcastService;
-use App\Support\CloudApiClient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Lanjutkan sendiri broadcast yang berhenti karena Cloud API tersendat.
+ * Lanjutkan sendiri broadcast yang berhenti karena gateway tersendat.
  *
- * Meta bisa menahan laju atau tersandung sesaat di tengah blast ratusan
- * pesan, lalu pulih sendiri semenit kemudian. Tanpa ini, tiap tersendat
- * berarti seseorang harus menunggui layar dan menekan Lanjutkan; blast 130
- * pasien jadi pekerjaan menjaga, bukan pekerjaan mengirim.
+ * Sesi WhatsApp bisa putus sesaat di tengah blast ratusan pesan, lalu pulih
+ * sendiri semenit kemudian. Tanpa ini, tiap tersendat berarti seseorang harus
+ * menunggui layar dan menekan Lanjutkan; blast 130 pasien jadi pekerjaan
+ * menjaga, bukan pekerjaan mengirim.
  *
  * Yang dijeda orang tidak ikut dilanjutkan: itu keputusan yang harus
  * dihormati, dan bedanya terbaca dari `paused_reason` yang kosong.
@@ -74,11 +73,10 @@ class ResumeStalledBroadcasts extends Command
             return;
         }
 
-        $client = app(CloudApiClient::class);
-
-        // Cloud API belum disetel. Dibiarkan menunggu putaran berikutnya —
-        // menekan kirim sekarang cuma mengulang kegagalan yang sama.
-        if (! $client instanceof CloudApiClient) {
+        // Kredensial gateway klinik belum lengkap. Dibiarkan menunggu putaran
+        // berikutnya — menekan kirim sekarang cuma mengulang kegagalan yang
+        // sama.
+        if (! $broadcasts->gatewayConfigured()) {
             return;
         }
 

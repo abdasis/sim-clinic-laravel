@@ -7,8 +7,6 @@ use App\Enums\BroadcastStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\Patient;
-use App\Models\WhatsappSetting;
-use App\Support\CloudApiException;
 use Illuminate\Contracts\Queue\Job as JobContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -32,16 +30,7 @@ class BroadcastGatewayFailureTest extends TestCase
 
     private function configured(): void
     {
-        config([
-            'meta_whatsapp.access_token' => 'token-uji',
-            'meta_whatsapp.api_version' => 'v21.0',
-            'meta_whatsapp.base_url' => 'https://graph.test',
-        ]);
-
-        WhatsappSetting::create([
-            'tenant_id' => $this->tenant->id,
-            'phone_number_id' => '109876543210',
-        ]);
+        $this->configureWhatsappGateway();
     }
 
     private function makeBroadcast(int $patients = 3): Broadcast
@@ -56,8 +45,6 @@ class BroadcastGatewayFailureTest extends TestCase
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'PROMO SEPTEMBER',
             'template' => [
-                'name' => 'promo_bulanan',
-                'language' => 'id',
                 'body' => 'Halo {{1}}',
                 'params' => ['nama'],
             ],
@@ -67,41 +54,27 @@ class BroadcastGatewayFailureTest extends TestCase
         return Broadcast::find($id);
     }
 
-    /** Tiru worker pada percobaan ke-$attempt. */
-    private function runAttempt(int $recipientId, int $attempt): void
+    private function runAttempt(int $recipientId, ?JobContract $queueJob = null): void
     {
         $job = new SendBroadcastRecipientJob($recipientId, $this->tenant->id);
 
-        $queueJob = Mockery::mock(JobContract::class);
-        $queueJob->shouldReceive('attempts')->andReturn($attempt);
-        $queueJob->shouldReceive('getJobId')->andReturn('1');
-        $job->setJob($queueJob);
+        if ($queueJob !== null) {
+            $job->setJob($queueJob);
+        }
 
         $job->handle();
     }
 
-    /** Tiru worker yang percobaannya sudah habis. */
-    private function runExhausted(int $recipientId): void
+    /** @param array<string, string> $error */
+    private function rejection(array $error, int $status): void
     {
-        $this->runAttempt($recipientId, 99);
-    }
-
-    /**
-     * Gangguan sesaat yang sungguhan terjadi di lapangan: Meta tersandung
-     * saat blast berjalan dan membalas 5xx, lalu pulih sendiri.
-     *
-     * @return array<string, mixed>
-     */
-    private function gatewayCrash(): array
-    {
-        return [
-            'graph.test/*' => Http::response([
-                'error' => [
-                    'message' => 'An unexpected error occurred while processing the request.',
-                    'code' => 1,
-                ],
-            ], 500),
-        ];
+        Http::fake([
+            '*' => Http::response([
+                'success' => false,
+                'message' => $error['message'],
+                'error' => ['code' => $error['code']],
+            ], $status),
+        ]);
     }
 
     /**
@@ -161,20 +134,16 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        Http::fake([
-            'graph.test/*' => Http::response([
-                'error' => ['message' => 'Template parameter mismatch for body component.', 'code' => 132000],
-            ], 400),
-        ]);
+        $this->rejection(['message' => 'Recipient not registered', 'code' => 'INVALID_RECIPIENT'], 422);
 
         $broadcast = $this->makeBroadcast(1);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
         $recipient = $broadcast->recipients()->first();
 
-        $this->runExhausted($recipient->id);
+        $this->runAttempt($recipient->id);
 
         $this->assertStringContainsString(
-            'Template parameter mismatch',
+            'Recipient not registered',
             (string) $recipient->fresh()->error,
             'alasan penolakan gateway tidak tersimpan; yang tersisa cuma kode status',
         );
@@ -192,26 +161,26 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        Http::fake($this->gatewayCrash());
+        $this->rejection(['message' => 'Sesi WhatsApp belum tersambung.', 'code' => 'SESSION_NOT_CONNECTED'], 422);
 
         $broadcast = $this->makeBroadcast(3);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
 
-        $this->runExhausted($broadcast->recipients()->orderBy('id')->first()->id);
+        $this->runAttempt($broadcast->recipients()->orderBy('id')->first()->id);
 
         $broadcast->refresh();
 
         $this->assertSame(
             BroadcastStatus::Paused,
             $broadcast->status,
-            'campaign tidak dijeda saat Cloud API tersendat',
+            'campaign tidak dijeda saat sesi WhatsApp putus',
         );
         // Termasuk nomor yang barusan ditolak: pesannya tidak berangkat ke
         // mana pun, jadi ia tetap menunggu dan ikut terkirim saat dilanjutkan.
         $this->assertSame(
             3,
             $broadcast->recipients()->where('status', BroadcastRecipientStatus::Pending)->count(),
-            'penerima ikut hangus padahal gateway-nya yang tersendat',
+            'penerima ikut hangus padahal sesinya yang putus',
         );
     }
 
@@ -226,19 +195,15 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        Http::fake([
-            'graph.test/*' => Http::response([
-                'error' => ['message' => 'Upstream service temporarily unavailable.', 'code' => 2],
-            ], 503),
-        ]);
+        $this->rejection(['message' => 'Sesi WhatsApp terputus. Pindai ulang QR.', 'code' => 'SESSION_NOT_FOUND'], 422);
 
         $broadcast = $this->makeBroadcast(2);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
 
-        $this->runExhausted($broadcast->recipients()->orderBy('id')->first()->id);
+        $this->runAttempt($broadcast->recipients()->orderBy('id')->first()->id);
 
         $this->assertStringContainsString(
-            'temporarily unavailable',
+            'Pindai ulang QR',
             (string) $broadcast->fresh()->paused_reason,
         );
     }
@@ -254,15 +219,19 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->actingAsClinicUser();
         $this->configured();
 
-        // Satu fake untuk dua babak: Meta tersendat, lalu pulih.
-        // Http::fake() yang dipanggil dua kali menumpuk stub, bukan
-        // menggantinya — babak pertama akan menang terus.
+        // Satu fake untuk dua babak: sesi putus, lalu pulih. Http::fake() yang
+        // dipanggil dua kali menumpuk stub, bukan menggantinya.
         $healthy = false;
-        Http::fake(function () use (&$healthy) {
-            return $healthy
-                ? Http::response(['messages' => [['id' => 'wamid.ok']]], 200)
-                : Http::response(['error' => ['message' => 'Try again later.', 'code' => 2]], 503);
-        });
+        Http::fake(fn () => $healthy
+            ? Http::response([
+                'success' => true,
+                'data' => ['messageId' => 'uuid-ok', 'status' => 'QUEUED'],
+            ], 202)
+            : Http::response([
+                'success' => false,
+                'message' => 'Sesi WhatsApp belum tersambung.',
+                'error' => ['code' => 'SESSION_NOT_CONNECTED'],
+            ], 422));
 
         $broadcast = $this->makeBroadcast(3);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -271,7 +240,7 @@ class BroadcastGatewayFailureTest extends TestCase
         $sent = $broadcast->recipients()->orderBy('id')->first();
         $sent->update(['status' => BroadcastRecipientStatus::Sent, 'sent_at' => now()]);
 
-        $this->runExhausted($broadcast->recipients()->orderBy('id')->skip(1)->first()->id);
+        $this->runAttempt($broadcast->recipients()->orderBy('id')->skip(1)->first()->id);
         $this->assertSame(BroadcastStatus::Paused, $broadcast->fresh()->status);
 
         // WhatsApp tersambung lagi, admin menekan "Lanjutkan".
@@ -290,55 +259,27 @@ class BroadcastGatewayFailureTest extends TestCase
     }
 
     /**
-     * Gateway yang tersendat sesaat ditunggu, bukan dijadikan alasan
-     * menghentikan campaign.
-     *
-     * Halaman WhatsApp Web milik gateway dimuat ulang di tengah blast lalu
-     * pulih sendiri semenit kemudian. Menjeda seluruh campaign untuk itu
-     * berarti tiap kedipan gateway menuntut orang menunggui layar.
+     * Gangguan yang bukan soal sesi hanya menghanguskan nomor yang sedang
+     * dikirim; nomor lain tidak ikut menunggu.
      */
-    public function test_a_passing_gateway_hiccup_is_retried_not_paused(): void
+    public function test_a_server_error_marks_only_that_recipient_failed(): void
     {
         $this->actingAsClinicUser();
         $this->configured();
-        Http::fake($this->gatewayCrash());
+        $this->rejection(['message' => 'Upstream service temporarily unavailable.', 'code' => 'HTTP_500'], 500);
 
         $broadcast = $this->makeBroadcast(3);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
         $recipient = $broadcast->recipients()->orderBy('id')->first();
 
-        // Percobaan pertama: job melempar supaya antrean mengulangnya nanti.
-        try {
-            $this->runAttempt($recipient->id, 1);
-            $this->fail('job tidak melempar, jadi antrean tidak akan mengulangnya');
-        } catch (CloudApiException $e) {
-            $this->assertSame(500, $e->status);
-        }
+        $this->runAttempt($recipient->id);
 
-        $this->assertSame(BroadcastStatus::Sending, $broadcast->fresh()->status, 'campaign dijeda padahal cuma tersendat');
-        $this->assertSame(BroadcastRecipientStatus::Pending, $recipient->fresh()->status);
-    }
-
-    /**
-     * Tersendat yang tidak pulih-pulih tetap tidak menghanguskan nomornya.
-     *
-     * Setelah percobaannya habis, yang salah tetap gatewaynya — jadi
-     * campaign-nya yang berhenti, bukan orang yang kebetulan sedang antre.
-     */
-    public function test_a_gateway_that_never_recovers_pauses_instead_of_burning(): void
-    {
-        $this->actingAsClinicUser();
-        $this->configured();
-        Http::fake($this->gatewayCrash());
-
-        $broadcast = $this->makeBroadcast(3);
-        $broadcast->update(['status' => BroadcastStatus::Sending]);
-        $recipient = $broadcast->recipients()->orderBy('id')->first();
-
-        $this->runExhausted($recipient->id);
-
-        $this->assertSame(BroadcastStatus::Paused, $broadcast->fresh()->status);
-        $this->assertSame(BroadcastRecipientStatus::Pending, $recipient->fresh()->status);
+        $this->assertSame(BroadcastRecipientStatus::Failed, $recipient->fresh()->status);
+        $this->assertSame(
+            BroadcastStatus::Sending,
+            $broadcast->fresh()->status,
+            'satu kiriman gagal menghentikan seluruh blast',
+        );
     }
 
     /**
@@ -352,19 +293,13 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        Http::fake([
-            'graph.test/*' => Http::response([
-                'error' => ['message' => 'Recipient not registered', 'code' => 131026],
-            ], 400),
-        ]);
+        $this->rejection(['message' => 'Recipient not registered', 'code' => 'INVALID_RECIPIENT'], 422);
 
         $broadcast = $this->makeBroadcast(3);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
         $recipient = $broadcast->recipients()->orderBy('id')->first();
 
-        // Percobaan pertama, jauh dari batas: tetap ditandai gagal saat itu
-        // juga, bukan diulang.
-        $this->runAttempt($recipient->id, 1);
+        $this->runAttempt($recipient->id);
 
         $this->assertSame(BroadcastRecipientStatus::Failed, $recipient->fresh()->status);
         $this->assertStringContainsString('Recipient not registered', (string) $recipient->fresh()->error);
@@ -376,54 +311,35 @@ class BroadcastGatewayFailureTest extends TestCase
      *
      * 429 punya kode 4xx yang sama dengan penolakan nomor, jadi tanpa
      * pemisahan ia jatuh ke cabang "nomor ditolak" dan penerimanya dihanguskan
-     * permanen — padahal yang perlu justru berhenti mengirim sebentar. Terus
-     * menembak saat WhatsApp sedang menahan laju adalah cara tercepat membuat
-     * nomor klinik diblokir.
+     * permanen — padahal yang perlu justru berhenti mengirim sebentar. Jeda
+     * yang diminta gateway dihormati, bukan ditebak.
      */
-    public function test_being_throttled_does_not_burn_the_recipient(): void
+    public function test_being_throttled_returns_the_job_with_the_requested_delay(): void
     {
         $this->actingAsClinicUser();
         $this->configured();
         Http::fake([
-            'graph.test/*' => Http::response([
-                'error' => ['message' => 'Too many requests', 'code' => 130429],
-            ], 429),
+            '*' => Http::response([
+                'success' => false,
+                'message' => 'Too many requests',
+                'error' => ['code' => 'RATE_LIMIT_EXCEEDED'],
+            ], 429, ['Retry-After' => '120']),
         ]);
 
         $broadcast = $this->makeBroadcast(3);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
         $recipient = $broadcast->recipients()->orderBy('id')->first();
 
-        $this->runAttempt($recipient->id, 1);
+        $queueJob = Mockery::mock(JobContract::class);
+        $queueJob->shouldReceive('release')->once()->with(120);
+
+        $this->runAttempt($recipient->id, $queueJob);
 
         $this->assertSame(
             BroadcastRecipientStatus::Pending,
             $recipient->fresh()->status,
             'penerima dihanguskan padahal gatewaynya cuma menahan laju',
         );
-    }
-
-    /** Ditahan laju berarti seluruh blast berhenti, bukan cuma satu nomor. */
-    public function test_being_throttled_pauses_the_whole_campaign(): void
-    {
-        $this->actingAsClinicUser();
-        $this->configured();
-        Http::fake([
-            'graph.test/*' => Http::response([
-                'error' => ['message' => 'Too many requests', 'code' => 130429],
-            ], 429),
-        ]);
-
-        $broadcast = $this->makeBroadcast(3);
-        $broadcast->update(['status' => BroadcastStatus::Sending]);
-
-        $this->runAttempt($broadcast->recipients()->orderBy('id')->first()->id, 1);
-
-        $broadcast->refresh();
-
-        $this->assertSame(BroadcastStatus::Paused, $broadcast->status);
-        $this->assertNotNull($broadcast->resume_after, 'tidak ada jeda pendinginan sebelum dicoba lagi');
-        $this->assertTrue($broadcast->resume_after->isFuture());
     }
 
     /**

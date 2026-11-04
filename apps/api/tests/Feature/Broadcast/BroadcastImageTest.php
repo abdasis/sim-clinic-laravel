@@ -6,7 +6,6 @@ use App\Enums\BroadcastStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\Patient;
-use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -19,8 +18,8 @@ use Tests\TestCase;
  *
  * Promo klinik hampir selalu berupa gambar, jadi satu broadcast boleh
  * membawanya. Yang dijaga: berkasnya mendarat di folder milik kliniknya
- * sendiri, tautannya ikut sebagai header template, dan template tanpa header
- * tidak mengirim komponen header sama sekali.
+ * sendiri, dan gambarnya terkirim sebagai lampiran dengan pesan sebagai
+ * caption — bukan dua kiriman terpisah yang sampai sebagai dua notifikasi.
  */
 class BroadcastImageTest extends TestCase
 {
@@ -33,21 +32,15 @@ class BroadcastImageTest extends TestCase
         Storage::fake('public');
     }
 
-    private function cloudConnected(): void
+    private function gatewayConnected(): void
     {
-        config([
-            'meta_whatsapp.access_token' => 'token-uji',
-            'meta_whatsapp.api_version' => 'v21.0',
-            'meta_whatsapp.base_url' => 'https://graph.test',
-        ]);
-
-        WhatsappSetting::create([
-            'tenant_id' => $this->tenant->id,
-            'phone_number_id' => '109876543210',
-        ]);
+        $this->configureWhatsappGateway();
 
         Http::fake([
-            'graph.test/*' => Http::response(['messages' => [['id' => 'wamid.ok']]], 200),
+            '*' => Http::response([
+                'success' => true,
+                'data' => ['messageId' => 'uuid-ok', 'status' => 'QUEUED'],
+            ], 202),
         ]);
     }
 
@@ -65,10 +58,7 @@ class BroadcastImageTest extends TestCase
         $id = $this->post($this->tenantUrl('broadcasts'), [
             'title' => 'Promo Agustus',
             'template' => array_replace([
-                'name' => 'promo_bergambar',
-                'language' => 'id',
                 'body' => 'Halo {{1}}, ada promo bulan ini.',
-                'header_type' => 'IMAGE',
                 'params' => ['nama'],
             ], $templateOverrides),
             'audience' => 'all',
@@ -111,19 +101,21 @@ class BroadcastImageTest extends TestCase
             ->assertJsonPath('data.image_url', Storage::disk('public')->url($broadcast->image_path));
     }
 
-    /** Tanpa gambar header, template tetap terkirim sebagai template biasa. */
-    public function test_a_template_without_an_image_still_sends(): void
+    /** Tanpa poster, pesannya tetap terkirim sebagai teks biasa. */
+    public function test_a_broadcast_without_an_image_sends_as_text(): void
     {
         $this->actingAsClinicUser();
-        $this->cloudConnected();
+        $this->gatewayConnected();
 
-        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
+        Patient::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'whatsapp' => '081111111111',
+            'name' => 'Ani',
+        ]);
 
         $id = $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'Tanpa poster',
             'template' => [
-                'name' => 'promo_teks',
-                'language' => 'id',
                 'body' => 'Halo {{1}}',
                 'params' => ['nama'],
             ],
@@ -132,25 +124,25 @@ class BroadcastImageTest extends TestCase
 
         $broadcast = Broadcast::find($id);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
+        $recipient = $broadcast->recipients()->first();
 
-        (new SendBroadcastRecipientJob($broadcast->recipients()->first()->id, $this->tenant->id))->handle();
+        (new SendBroadcastRecipientJob($recipient->id, $this->tenant->id))->handle();
 
-        $this->assertSame('sent', $broadcast->recipients()->first()->fresh()->status->value);
+        $this->assertSame('sent', $recipient->fresh()->status->value);
 
-        Http::assertSent(fn ($request) => $request['type'] === 'template'
-            && collect($request['template']['components'] ?? [])
-                ->pluck('type')
-                ->doesntContain('header'));
+        Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/messages/send'
+            && $request['text'] === 'Halo Ani'
+            && ! isset($request['caption']));
     }
 
     /**
-     * Posternya jadi komponen header template, bukan kiriman terpisah: dua
+     * Posternya jadi lampiran pesan yang sama, bukan kiriman terpisah: dua
      * kiriman berurutan sampai sebagai dua notifikasi terpisah.
      */
-    public function test_the_poster_travels_as_the_template_header(): void
+    public function test_the_poster_travels_as_the_image_with_the_message_as_caption(): void
     {
         $this->actingAsClinicUser();
-        $this->cloudConnected();
+        $this->gatewayConnected();
 
         $broadcast = $this->createWithImage();
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -160,51 +152,10 @@ class BroadcastImageTest extends TestCase
 
         $this->assertSame('sent', $recipient->fresh()->status->value);
 
-        Http::assertSent(function ($request) use ($broadcast) {
-            if ($request['type'] !== 'template') {
-                return false;
-            }
-
-            $components = $request['template']['components'] ?? [];
-            $header = collect($components)->firstWhere('type', 'header');
-
-            return $request['to'] === '6281111111111'
-                && $request['template']['name'] === 'promo_bergambar'
-                && ($header['parameters'][0]['image']['link'] ?? null) === $broadcast->image_url;
-        });
-    }
-
-    /**
-     * Template tanpa header gambar tidak mengirim komponen header kosong:
-     * Meta menolaknya sebagai parameter yang tidak dikenal.
-     */
-    public function test_a_template_without_an_image_header_sends_no_header_component(): void
-    {
-        $this->actingAsClinicUser();
-        $this->cloudConnected();
-
-        Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
-
-        $id = $this->postJson($this->tenantUrl('broadcasts'), [
-            'title' => 'Tanpa poster',
-            'template' => [
-                'name' => 'promo_teks',
-                'language' => 'id',
-                'body' => 'Halo {{1}}',
-                'params' => ['nama'],
-            ],
-            'audience' => 'all',
-        ])->assertCreated()->json('data.id');
-
-        $broadcast = Broadcast::find($id);
-        $broadcast->update(['status' => BroadcastStatus::Sending]);
-        $recipient = $broadcast->recipients()->first();
-
-        (new SendBroadcastRecipientJob($recipient->id, $this->tenant->id))->handle();
-
-        Http::assertSent(fn ($request) => collect($request['template']['components'] ?? [])
-            ->pluck('type')
-            ->doesntContain('header'));
+        Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/messages/image'
+            && $request['to'] === '6281111111111'
+            && $request['url'] === $broadcast->image_url
+            && $request['caption'] === 'Halo Ani, ada promo bulan ini.');
     }
 
     public function test_a_non_image_file_is_rejected(): void
@@ -214,8 +165,6 @@ class BroadcastImageTest extends TestCase
         $this->post($this->tenantUrl('broadcasts'), [
             'title' => 'Promo',
             'template' => [
-                'name' => 'promo_teks',
-                'language' => 'id',
                 'body' => 'Halo',
                 'params' => [],
             ],
@@ -233,8 +182,6 @@ class BroadcastImageTest extends TestCase
         $this->post($this->tenantUrl('broadcasts'), [
             'title' => 'Promo',
             'template' => [
-                'name' => 'promo_teks',
-                'language' => 'id',
                 'body' => 'Halo',
                 'params' => [],
             ],
@@ -243,6 +190,24 @@ class BroadcastImageTest extends TestCase
         ], ['Accept' => 'application/json'])
             ->assertStatus(422)
             ->assertJsonValidationErrors('image');
+    }
+
+    /** Poster memakan ruang layar, jadi pesannya dibatasi lebih pendek. */
+    public function test_a_long_body_is_rejected_when_a_poster_is_attached(): void
+    {
+        $this->actingAsClinicUser();
+
+        $this->post($this->tenantUrl('broadcasts'), [
+            'title' => 'Promo',
+            'template' => [
+                'body' => str_repeat('a', 1100),
+                'params' => [],
+            ],
+            'audience' => 'all',
+            'image' => UploadedFile::fake()->image('poster.jpg'),
+        ], ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('template.body');
     }
 
     /** Broadcast yang dihapus tidak meninggalkan berkas yatim di disk. */

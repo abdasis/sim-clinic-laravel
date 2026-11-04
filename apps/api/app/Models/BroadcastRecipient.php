@@ -34,6 +34,8 @@ class BroadcastRecipient extends Model
         return [
             'status' => BroadcastRecipientStatus::class,
             'template_values' => 'array',
+            'attempts' => 'integer',
+            'send_attempt' => 'integer',
             'sent_at' => 'datetime',
         ];
     }

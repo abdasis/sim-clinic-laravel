@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\WhatsappSetting;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
@@ -64,6 +65,25 @@ trait InteractsWithTenant
         Sanctum::actingAs($user);
 
         return $user;
+    }
+
+    /**
+     * Setelan WhatsApp klinik yang sudah diprovisioning di gateway, siap
+     * dipakai mengirim. Kredensialnya nilai uji; yang menentukan siap atau
+     * tidak hanya kelengkapannya.
+     */
+    protected function configureWhatsappGateway(array $overrides = []): WhatsappSetting
+    {
+        config(['whatsapp_gateway.base_url' => 'https://gateway.test']);
+
+        return WhatsappSetting::create(array_merge([
+            'tenant_id' => $this->tenant->id,
+            'session' => 'klinik-uji',
+            'gateway_tenant_key' => 'tenant-key-uji',
+            'gateway_api_key' => 'api-key-uji',
+            'gateway_webhook_secret' => 'rahasia-uji',
+            'gateway_session_id' => 'sesi-uji',
+        ], $overrides));
     }
 
     /**

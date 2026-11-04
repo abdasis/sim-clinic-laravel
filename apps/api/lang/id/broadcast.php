@@ -76,13 +76,17 @@ return [
     'phone_number_id_taken' => 'Nomor Cloud API ini sudah dipakai klinik lain. Periksa kembali di aplikasi Meta.',
     // Pengiriman lewat WhatsApp Cloud API Meta memakai template resmi
     'cloud_not_ready' => 'Pengiriman lewat WhatsApp Cloud API Meta belum siap. Isi nomor Cloud API dan WABA di pengaturan pengiriman, atau hubungi pengelola platform.',
+    // Pengiriman lewat gateway internal, tanpa template Meta
+    'gateway_not_ready' => 'WhatsApp klinik belum terhubung ke gateway. Buka menu Koneksi WhatsApp lalu sambungkan nomornya dulu.',
+    'template_body_too_long' => 'Pesan terlalu panjang, maksimal :max karakter. Pesan yang disertai gambar perlu lebih ringkas karena gambarnya ikut ditampilkan.',
+    'test_failed' => 'Pesan uji gagal dikirim. Periksa sambungan WhatsApp klinik, lalu coba lagi.',
     'template_section' => 'Template Pesan Resmi',
     'template_label' => 'Template WhatsApp',
     'template_hint' => 'Broadcast dikirim memakai template yang sudah disetujui Meta. Pilih template, lalu tentukan isi tiap bagiannya.',
     'template_none' => 'Belum ada template yang disetujui untuk klinik ini.',
     'template_not_ready' => 'Daftar template belum bisa diambil. Periksa WABA dan nomor Cloud API di pengaturan pengiriman.',
     'template_loading' => 'Memuat template...',
-    'template_required' => 'Pilih template WhatsApp yang akan dipakai mengirim.',
+    'template_required' => 'Susun dulu pesan broadcast ini sebelum dikirim.',
     'template_param_slot' => 'Isi bagian :number',
     'template_header_image_hint' => 'Template ini memakai gambar header. Unggah posternya, karena Meta butuh tautan gambar saat mengirim.',
     'template_preview' => 'Pratinjau pesan',

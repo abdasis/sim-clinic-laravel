@@ -15,11 +15,15 @@ use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
 use App\Models\BroadcastReminderSetting;
-use App\Support\CloudApiClient;
+use App\Models\WhatsappSetting;
 use App\Support\DailyMessageQuota;
 use App\Support\TemplateVariables;
+use App\Support\WhatsappGatewayClient;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * Orkestrasi broadcast WhatsApp: snapshot penerima, penandaan manual, dan
@@ -88,13 +92,11 @@ class BroadcastService
      */
     public function queueSend(Broadcast $broadcast, bool $automatic = false): array
     {
-        // Cloud API yang belum bisa mengirim atau template yang belum dipilih
+        // Kredensial gateway yang belum lengkap atau pesan yang belum disusun
         // membuat seluruh antrean gugur satu per satu di worker. Ditolak di
         // depan supaya admin tahu sebelum menekan kirim.
-        $client = app(CloudApiClient::class);
-
-        if (! $client instanceof CloudApiClient || ! $client->canSend()) {
-            abort(422, __('broadcast.cloud_not_ready'));
+        if (! $this->gatewayConfigured()) {
+            abort(422, __('broadcast.gateway_not_ready'));
         }
 
         abort_if($broadcast->template === null, 422, __('broadcast.template_required'));
@@ -187,34 +189,67 @@ class BroadcastService
     }
 
     /**
-     * Kirim template uji ke satu nomor — memastikan template yang dipilih
-     * benar-benar diterima Meta sebelum ratusan pasien dikirimi.
+     * Klinik sudah punya kredensial gateway yang lengkap. Pemeriksaan murah
+     * dari database, tanpa memanggil gateway.
+     */
+    public function gatewayConfigured(): bool
+    {
+        $setting = WhatsappSetting::query()->first();
+
+        return $setting !== null && $setting->provisioned();
+    }
+
+    /**
+     * Gateway siap mengirim sekarang: kredensial lengkap dan sesinya
+     * tersambung. Dipakai layar campaign untuk memberi tahu admin sebelum
+     * menekan kirim.
+     */
+    public function gatewayReady(): bool
+    {
+        return $this->gatewayConfigured()
+            && (bool) (app(WhatsappGatewaySessionService::class)->state()['connected'] ?? false);
+    }
+
+    /**
+     * Kirim pesan uji ke satu nomor — memastikan pesan yang disusun benar-benar
+     * sampai sebelum ratusan pasien dikirimi.
+     *
+     * Nilai contoh dipakai untuk mengisi placeholder, jadi admin melihat
+     * bentuk pesannya apa adanya tanpa menunggu data pasien sungguhan.
      *
      * @param  array<string, mixed>  $template
      */
     public function sendTest(string $phone, array $template): void
     {
-        $client = app(CloudApiClient::class);
+        $setting = WhatsappSetting::query()->first();
 
-        if (! $client instanceof CloudApiClient || ! $client->canSend()) {
-            abort(422, __('broadcast.cloud_not_ready'));
+        if ($setting === null || ! $setting->provisioned()) {
+            abort(422, __('broadcast.gateway_not_ready'));
         }
 
-        // Header gambar butuh berkas yang benar-benar bisa diakses Meta.
-        // Pesan uji belum punya poster tersimpan, jadi lebih jujur ditolak
-        // daripada mengirim template yang pasti gagal.
-        if (($template['header_type'] ?? null) === 'IMAGE') {
-            abort(422, __('broadcast.template_test_image_unsupported'));
-        }
-
-        $client->sendTemplate(
-            $phone,
-            (string) $template['name'],
-            (string) $template['language'],
+        $text = TemplateVariables::render(
+            (string) $template['body'],
             TemplateVariables::resolve(
                 (array) ($template['params'] ?? []),
                 TemplateVariables::examples(),
             ),
         );
+
+        try {
+            app(WhatsappGatewayClient::class)->sendText(
+                $setting,
+                $phone,
+                $text,
+                'broadcast-test-'.Str::uuid(),
+            );
+        } catch (Throwable $e) {
+            Log::error('Pesan uji broadcast gagal dikirim lewat gateway WhatsApp.', [
+                'exception' => $e,
+                'tenant_id' => $setting->tenant_id,
+                'phone' => $phone,
+            ]);
+
+            abort(422, __('broadcast.test_failed'));
+        }
     }
 }

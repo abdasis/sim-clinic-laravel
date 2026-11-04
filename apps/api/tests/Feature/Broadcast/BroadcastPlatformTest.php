@@ -11,7 +11,6 @@ use App\Models\Patient;
 use App\Models\ReminderRule;
 use App\Models\Service;
 use App\Models\Transaction;
-use App\Models\WhatsappSetting;
 use App\Support\ReminderEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -28,22 +27,12 @@ class BroadcastPlatformTest extends TestCase
     use InteractsWithTenant, RefreshDatabase;
 
     /**
-     * Cloud API siap: token platform, nomor pengirim klinik. Pengiriman
-     * massal sekarang memeriksanya lebih dulu, jadi test yang menekan kirim
-     * harus menyatakan keadaan itu.
+     * Gateway klinik sudah diprovisioning; pengiriman massal memeriksanya
+     * lebih dulu, jadi test yang menekan kirim harus menyatakan keadaan itu.
      */
-    private function cloudConfigured(): void
+    private function gatewayConfigured(): void
     {
-        config([
-            'meta_whatsapp.access_token' => 'token-uji',
-            'meta_whatsapp.api_version' => 'v21.0',
-            'meta_whatsapp.base_url' => 'https://graph.test',
-        ]);
-
-        WhatsappSetting::create([
-            'tenant_id' => $this->tenant->id,
-            'phone_number_id' => '109876543210',
-        ]);
+        $this->configureWhatsappGateway();
     }
 
     /** @return array<string, mixed> */
@@ -85,7 +74,7 @@ class BroadcastPlatformTest extends TestCase
     {
         Queue::fake();
         $this->actingAsClinicUser();
-        $this->cloudConfigured();
+        $this->gatewayConfigured();
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '082222222222']);
@@ -105,7 +94,7 @@ class BroadcastPlatformTest extends TestCase
     public function test_paused_campaign_job_does_not_send(): void
     {
         $this->actingAsClinicUser();
-        $this->cloudConfigured();
+        $this->gatewayConfigured();
         Http::fake();
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
@@ -127,8 +116,11 @@ class BroadcastPlatformTest extends TestCase
     public function test_job_sends_and_closes_campaign_when_drained(): void
     {
         $this->actingAsClinicUser();
-        $this->cloudConfigured();
-        Http::fake(['graph.test/*' => Http::response(['messages' => [['id' => 'wamid.ok']]], 200)]);
+        $this->gatewayConfigured();
+        Http::fake(['*' => Http::response([
+            'success' => true,
+            'data' => ['messageId' => 'uuid-ok', 'status' => 'QUEUED'],
+        ], 202)]);
 
         Patient::factory()->create(['tenant_id' => $this->tenant->id, 'whatsapp' => '081111111111']);
 
@@ -278,25 +270,25 @@ class BroadcastPlatformTest extends TestCase
             ->assertJsonPath('data.provisioned', false);
     }
 
-    public function test_test_message_endpoint_sends_the_template_via_cloud_api(): void
+    public function test_test_message_endpoint_sends_rendered_text_via_gateway(): void
     {
         $this->actingAsClinicUser();
-        $this->cloudConfigured();
-        Http::fake(['graph.test/*' => Http::response(['messages' => [['id' => 'wamid.ok']]], 200)]);
+        $this->gatewayConfigured();
+        Http::fake(['*' => Http::response([
+            'success' => true,
+            'data' => ['messageId' => 'uuid-uji', 'status' => 'QUEUED'],
+        ], 202)]);
 
         $this->postJson($this->tenantUrl('broadcasts/test-message'), [
             'phone' => '0812-3456-7890',
             'template' => [
-                'name' => 'promo_bulanan',
-                'language' => 'id',
                 'body' => 'Halo {{1}}',
                 'params' => ['nama'],
             ],
         ])->assertOk();
 
-        Http::assertSent(fn ($request) => $request['to'] === '6281234567890'
-            && $request['type'] === 'template'
-            && $request['template']['name'] === 'promo_bulanan'
-            && $request['template']['components'][0]['parameters'][0]['text'] === 'Budi');
+        Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/messages/send'
+            && $request['to'] === '6281234567890'
+            && $request['text'] === 'Halo Budi');
     }
 }

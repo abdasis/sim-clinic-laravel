@@ -6,8 +6,8 @@ use App\Models\Broadcast;
 
 /**
  * Sunting broadcast. Isi formulirnya sama dengan pembuatan; bedanya poster
- * boleh tetap memakai yang lama, jadi kewajiban gambar header dihitung dari
- * poster yang tersimpan — bukan hanya dari berkas yang diunggah sekarang.
+ * boleh tetap memakai yang lama, jadi batas panjang pesan bergambar dihitung
+ * dari poster yang tersimpan — bukan hanya dari berkas yang diunggah sekarang.
  */
 class BroadcastUpdateRequest extends BroadcastRequest
 {
@@ -26,19 +26,19 @@ class BroadcastUpdateRequest extends BroadcastRequest
         ]);
     }
 
-    protected function imageMissing(): bool
+    protected function hasImage(): bool
     {
         if ($this->hasFile('image')) {
-            return false;
+            return true;
         }
 
         if ($this->boolean('remove_image')) {
-            return true;
+            return false;
         }
 
         $route = $this->route('broadcast');
         $key = $route instanceof Broadcast ? $route->getKey() : $route;
 
-        return Broadcast::query()->whereKey($key)->value('image_path') === null;
+        return Broadcast::query()->whereKey($key)->value('image_path') !== null;
     }
 }

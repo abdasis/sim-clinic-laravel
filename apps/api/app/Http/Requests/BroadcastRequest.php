@@ -13,6 +13,12 @@ use Illuminate\Validation\Validator;
 
 class BroadcastRequest extends FormRequest
 {
+    /** Batas panjang pesan tanpa lampiran gambar. */
+    protected const BODY_MAX = 4000;
+
+    /** Batas lebih pendek saat ada gambar: caption ikut ditampilkan di bawahnya. */
+    protected const BODY_MAX_WITH_IMAGE = 1024;
+
     public function authorize(): bool
     {
         return true;
@@ -22,18 +28,15 @@ class BroadcastRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
-            // Template resmi Meta yang dipakai saat pengiriman. Body-nya juga
-            // menjadi snapshot pesan yang disimpan per penerima.
+            // Pesan disusun bebas dari klinik, tanpa template yang disetujui
+            // Meta. Body-nya juga menjadi snapshot pesan per penerima.
             'template' => ['required', 'array'],
-            'template.name' => ['required', 'string', 'max:255'],
-            'template.language' => ['required', 'string', 'max:20'],
-            // WhatsApp memutus pesan sangat panjang; 4000 aman untuk semua gateway.
+            // WhatsApp memutus pesan sangat panjang; 4000 aman untuk gateway.
             'template.body' => ['required', 'string', 'max:4000'],
-            'template.header_type' => ['nullable', Rule::in(TemplateVariables::HEADER_TYPES)],
             'template.params' => ['nullable', 'array', 'max:10'],
             'template.params.*' => ['string', Rule::in(TemplateVariables::KEYS)],
             // Poster promo; batasnya sama dengan foto rekam medis, dan
-            // gambarnya dikirim sebagai tautan header template.
+            // gambarnya dikirim sebagai lampiran pesan.
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'audience' => ['required', new Enum(BroadcastAudience::class)],
             'kind' => ['nullable', new Enum(BroadcastKind::class)],
@@ -71,8 +74,8 @@ class BroadcastRequest extends FormRequest
     }
 
     /**
-     * Jumlah placeholder harus sama dengan jumlah parameter: Meta menolak
-     * template yang parameternya kurang atau berlebih, dan penolakannya baru
+     * Jumlah placeholder harus sama dengan jumlah parameter: pesan yang
+     * penandanya tidak terisi akan sampai apa adanya, dan kekurangannya baru
      * terlihat setelah seluruh antrean terbentuk.
      */
     protected function validateTemplate(Validator $validator): void
@@ -97,18 +100,23 @@ class BroadcastRequest extends FormRequest
             );
         }
 
-        if (($template['header_type'] ?? null) === 'IMAGE' && $this->imageMissing()) {
-            $validator->errors()->add('image', __('broadcast.template_image_required'));
+        $max = $this->hasImage() ? self::BODY_MAX_WITH_IMAGE : self::BODY_MAX;
+
+        if (mb_strlen($body) > $max) {
+            $validator->errors()->add(
+                'template.body',
+                __('broadcast.template_body_too_long', ['max' => $max]),
+            );
         }
     }
 
     /**
-     * Template bergambar butuh berkas. Saat menyunting, poster lama yang
-     * masih menempel juga dihitung — lihat BroadcastUpdateRequest.
+     * Poster yang akan ikut terkirim. Saat menyunting, poster lama yang masih
+     * menempel juga dihitung — lihat BroadcastUpdateRequest.
      */
-    protected function imageMissing(): bool
+    protected function hasImage(): bool
     {
-        return ! $this->hasFile('image');
+        return $this->hasFile('image');
     }
 
     public function attributes(): array
@@ -116,11 +124,8 @@ class BroadcastRequest extends FormRequest
         return [
             'title' => __('broadcast.title_field'),
             'template' => __('broadcast.template_label'),
-            'template.name' => __('broadcast.template_name'),
-            'template.language' => __('broadcast.template_language'),
             'template.body' => __('broadcast.template_body'),
             'template.params' => __('broadcast.template_params'),
-            'template.header_type' => __('broadcast.template_header_type'),
             'image' => __('broadcast.image'),
             'audience' => __('broadcast.audience_label'),
             'audience_params.days' => __('broadcast.days'),

@@ -23,10 +23,7 @@ class BroadcastTestRequest extends FormRequest
         return [
             'phone' => ['required', 'string', 'max:32'],
             'template' => ['required', 'array'],
-            'template.name' => ['required', 'string', 'max:255'],
-            'template.language' => ['required', 'string', 'max:20'],
             'template.body' => ['required', 'string', 'max:4000'],
-            'template.header_type' => ['nullable', Rule::in(TemplateVariables::HEADER_TYPES)],
             'template.params' => ['nullable', 'array', 'max:10'],
             'template.params.*' => ['string', Rule::in(TemplateVariables::KEYS)],
         ];
@@ -64,8 +61,6 @@ class BroadcastTestRequest extends FormRequest
         return [
             'phone' => __('broadcast.test_phone_label'),
             'template' => __('broadcast.template_label'),
-            'template.name' => __('broadcast.template_name'),
-            'template.language' => __('broadcast.template_language'),
             'template.body' => __('broadcast.template_body'),
             'template.params' => __('broadcast.template_params'),
         ];

@@ -34,8 +34,8 @@ class UpdateBroadcastAction
             'title' => $broadcast->title,
             'audience' => $broadcast->audience?->value,
             'template' => [
-                'name' => $oldTemplate['name'] ?? null,
-                'language' => $oldTemplate['language'] ?? null,
+                'body' => $oldTemplate['body'] ?? null,
+                'params' => $oldTemplate['params'] ?? [],
             ],
             'image_path' => $broadcast->image_path,
             'recipients_count' => $broadcast->recipients()->count(),
@@ -97,8 +97,8 @@ class UpdateBroadcastAction
                     'title' => $data['title'],
                     'audience' => $audience->value,
                     'template' => [
-                        'name' => $template['name'] ?? null,
-                        'language' => $template['language'] ?? null,
+                        'body' => $templateBody,
+                        'params' => $templateParams,
                     ],
                     'image_path' => $imagePath,
                     'recipients_count' => count($rows),

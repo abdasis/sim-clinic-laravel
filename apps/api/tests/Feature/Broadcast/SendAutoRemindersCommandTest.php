@@ -11,7 +11,6 @@ use App\Models\BroadcastReminderSetting;
 use App\Models\MedicalRecord;
 use App\Models\Patient;
 use App\Models\Tenant;
-use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\Concerns\InteractsWithTenant;
@@ -71,9 +70,7 @@ class SendAutoRemindersCommandTest extends TestCase
             'meta_whatsapp.base_url' => 'https://graph.test',
         ]);
 
-        WhatsappSetting::create([
-            'tenant_id' => $tenant->id,
-            'phone_number_id' => '109876543210',
+        $this->configureWhatsappGateway([
             'reminder_template' => [
                 'name' => 'pengingat_perawatan',
                 'language' => 'id',
