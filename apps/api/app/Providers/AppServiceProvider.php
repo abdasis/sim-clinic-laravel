@@ -106,6 +106,7 @@ class AppServiceProvider extends ServiceProvider
         'company_testimonial' => CompanyTestimonial::class,
         'company_content_section' => CompanyContentSection::class,
         'conversation' => Conversation::class,
+        'whatsapp_setting' => WhatsappSetting::class,
     ];
 
     /**

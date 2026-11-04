@@ -55,6 +55,14 @@ class GatewayProvisioningTest extends TestCase
         $this->assertSame('api-uji', $setting->gateway_api_key);
         $this->assertNull($setting->gateway_password);
         $this->assertTrue($setting->provisioned());
+
+        // Dibaca ulang dari basis data supaya penyimpanan yang gagal diam-diam
+        // tidak lolos hanya karena atribut di memori sudah berubah.
+        $fresh = $setting->fresh();
+        $this->assertSame('tenant-uji', $fresh->gateway_tenant_key);
+        $this->assertSame('api-uji', $fresh->gateway_api_key);
+        $this->assertNull($fresh->gateway_password);
+
         Http::assertNotSent(fn ($request) => str_contains($request->url(), '/webhooks'));
 
         Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/auth/register'
@@ -125,5 +133,40 @@ class GatewayProvisioningTest extends TestCase
 
         Http::assertNothingSent();
         Log::shouldHaveReceived('error')->once();
+    }
+
+    /**
+     * API key gagal dibuat: kredensial pendaftaran harus tetap tersimpan agar
+     * percobaan berikutnya cukup login, tidak mendaftar ulang.
+     */
+    public function test_failed_api_key_step_keeps_registration_password_for_retry(): void
+    {
+        Http::fake([
+            'gateway.test/api/v1/auth/register' => Http::response(['success' => true, 'data' => [
+                'tenant' => ['id' => 't1', 'name' => 'Klinik', 'key' => 'tenant-uji'],
+                'token' => ['accessToken' => 'access-uji', 'refreshToken' => 'refresh-uji'],
+                'user' => [],
+            ]], 201),
+            'gateway.test/api/v1/api-keys' => Http::response([
+                'success' => false,
+                'message' => 'Gateway sedang bermasalah.',
+                'error' => ['code' => 'INTERNAL_ERROR'],
+            ], 500),
+        ]);
+
+        $setting = $this->setting();
+
+        try {
+            app(WhatsappGatewayProvisioningService::class)->ensure($setting);
+            $this->fail('Seharusnya melempar.');
+        } catch (WhatsappGatewayException $e) {
+            $this->assertSame(500, $e->status);
+        }
+
+        $fresh = $setting->fresh();
+        $this->assertSame('tenant-uji', $fresh->gateway_tenant_key);
+        $this->assertNull($fresh->gateway_api_key);
+        $this->assertNotNull($fresh->gateway_password);
+        $this->assertFalse($fresh->provisioned());
     }
 }

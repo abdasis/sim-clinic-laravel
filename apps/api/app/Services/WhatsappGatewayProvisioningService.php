@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Actions\Whatsapp\StoreGatewayApiKeyAction;
+use App\Actions\Whatsapp\StoreGatewayRegistrationAction;
 use App\Models\WhatsappSetting;
 use App\Support\WhatsappGatewayClient;
 use App\Support\WhatsappGatewayException;
@@ -20,7 +22,11 @@ use Throwable;
  */
 class WhatsappGatewayProvisioningService
 {
-    public function __construct(private readonly WhatsappGatewayClient $client) {}
+    public function __construct(
+        private readonly WhatsappGatewayClient $client,
+        private readonly StoreGatewayRegistrationAction $storeRegistration,
+        private readonly StoreGatewayApiKeyAction $storeApiKey,
+    ) {}
 
     /**
      * Lengkapi kredensial gateway klinik. Aman dipanggil berulang: bila
@@ -32,22 +38,20 @@ class WhatsappGatewayProvisioningService
             return $setting;
         }
 
-        $step = 'register';
+        // Langkah dicatat sebelum dijalankan supaya kegagalan login tidak
+        // tertukar dengan kegagalan pendaftaran.
+        $step = blank($setting->gateway_tenant_key) ? 'register' : 'login';
 
         try {
             $accessToken = $this->accessToken($setting);
 
             $step = 'api-key';
 
-            $setting->forceFill([
-                'gateway_api_key' => $this->client->createApiKey(
-                    (string) $setting->gateway_tenant_key,
-                    $accessToken,
-                    $this->clinicName($setting),
-                ),
-                // Kata sandi hanya dibutuhkan untuk login saat percobaan ulang.
-                'gateway_password' => null,
-            ])->save();
+            $this->storeApiKey->handle($setting, $this->client->createApiKey(
+                (string) $setting->gateway_tenant_key,
+                $accessToken,
+                $this->clinicName($setting),
+            ));
         } catch (Throwable $e) {
             Log::error('Provisioning akun gateway WhatsApp klinik gagal.', [
                 'exception' => $e,
@@ -69,6 +73,11 @@ class WhatsappGatewayProvisioningService
     private function accessToken(WhatsappSetting $setting): string
     {
         if (blank($setting->gateway_tenant_key)) {
+            // ponytail: email pendaftaran dikunci ke id klinik. Bila register
+            // sudah diterima gateway tetapi proses mati sebelum kredensial
+            // tersimpan, percobaan ulang akan ditolak 409 secara permanen.
+            // Jalur pemulihannya administratif: klaim/ganti email tenant di
+            // gateway, lalu isi kredensialnya lewat pengaturan.
             $password = Str::password(24);
 
             $auth = $this->client->register(
@@ -78,12 +87,7 @@ class WhatsappGatewayProvisioningService
                 $password,
             );
 
-            // Disimpan segera supaya percobaan ulang bisa login, bukan
-            // mendaftarkan tenant gateway kedua.
-            $setting->forceFill([
-                'gateway_tenant_key' => $auth['tenant_key'],
-                'gateway_password' => $password,
-            ])->save();
+            $this->storeRegistration->handle($setting, $auth['tenant_key'], $password);
 
             return $auth['access_token'];
         }
