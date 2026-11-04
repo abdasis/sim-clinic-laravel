@@ -14,6 +14,7 @@ use App\Models\Conversation;
 use App\Models\Patient;
 use App\Models\Service;
 use App\Models\Transaction;
+use App\Models\WhatsappGatewaySetting;
 use App\Models\WhatsappSetting;
 use App\Support\PhoneNumber;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -338,6 +339,49 @@ class BroadcastApiTest extends TestCase
         $this->putJson($this->tenantUrl('broadcasts/settings'), [
             'session' => 'Klinik Satu!',
         ])->assertStatus(422)->assertJsonValidationErrors('session');
+    }
+
+    public function test_settings_report_credential_state_without_leaking_the_values(): void
+    {
+        $this->actingAsClinicUser();
+
+        $this->getJson($this->tenantUrl('broadcasts/settings'))
+            ->assertOk()
+            ->assertJsonPath('data.api_key_configured', false)
+            ->assertJsonPath('data.webhook_configured', false)
+            ->assertJsonPath('data.gateway_base_url', null);
+
+        WhatsappGatewaySetting::create(['base_url' => 'https://gateway.test']);
+
+        $setting = $this->configureWhatsappGateway();
+        $setting->update(['gateway_webhook_token' => 'token-uji']);
+
+        $response = $this->getJson($this->tenantUrl('broadcasts/settings'))
+            ->assertOk()
+            ->assertJsonPath('data.api_key_configured', true)
+            ->assertJsonPath('data.webhook_configured', true)
+            ->assertJsonPath('data.gateway_base_url', 'https://gateway.test')
+            ->assertJsonPath('data.gateway_available', true);
+
+        // Kredensial membuka nomor WhatsApp klinik: cukup statusnya yang dikirim.
+        $body = $response->getContent();
+
+        $this->assertStringNotContainsString('api-key-uji', $body);
+        $this->assertStringNotContainsString('rahasia-uji', $body);
+        $this->assertStringNotContainsString('token-uji', $body);
+    }
+
+    public function test_settings_gateway_flag_follows_the_configured_base_url(): void
+    {
+        $this->actingAsClinicUser();
+
+        $this->getJson($this->tenantUrl('broadcasts/settings'))
+            ->assertJsonPath('data.gateway_available', false);
+
+        WhatsappGatewaySetting::create(['base_url' => 'https://gateway.test']);
+
+        $this->getJson($this->tenantUrl('broadcasts/settings'))
+            ->assertJsonPath('data.gateway_available', true);
     }
 
     public function test_non_admin_cannot_touch_broadcasts(): void

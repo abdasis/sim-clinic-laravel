@@ -426,6 +426,7 @@ class BroadcastController extends Controller
         $this->authorize('viewAny', Broadcast::class);
 
         $setting = WhatsappSetting::query()->first();
+        $gateway = WhatsappGatewaySetting::query()->first();
 
         return response()->json([
             'data' => [
@@ -433,7 +434,13 @@ class BroadcastController extends Controller
                 'daily_message_limit' => $setting?->daily_message_limit,
                 // Klinik tidak bisa berbuat apa-apa sampai pengelola platform
                 // mengisi alamat servernya, jadi keadaannya ikut disebut.
-                'gateway_available' => WhatsappGatewaySetting::query()->first()?->isConfigured() ?? false,
+                'gateway_available' => $gateway?->isConfigured() ?? false,
+                'gateway_base_url' => $gateway?->base_url,
+                // Hanya statusnya, bukan nilainya: kredensial membuka nomor
+                // WhatsApp klinik dan tidak pernah dikirim balik ke aplikasi web.
+                'api_key_configured' => filled($setting?->gateway_api_key),
+                'webhook_configured' => filled($setting?->gateway_webhook_secret)
+                    && filled($setting?->gateway_webhook_token),
             ],
             'meta' => [],
         ]);

@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
-import type { StaffRow } from "../index.tsx"
+import type { StaffRow } from "../../settings/users/index.tsx"
 import { DeactivateStaffDialog } from "./deactivate-staff-dialog.tsx"
 import { ResetPasswordDialog } from "./reset-password-dialog.tsx"
 import { DeleteStaffDialog } from "./delete-staff-dialog.tsx"

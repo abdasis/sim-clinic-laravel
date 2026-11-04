@@ -10,14 +10,12 @@ import {
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   BarChartIcon,
-  AiChat01Icon,
   BubbleChatIcon,
   CrownIcon,
   DiscountTag01Icon,
   MoneyBag02Icon,
   Calendar01Icon,
   CashierIcon,
-  ClockIcon,
   DashboardSquare01Icon,
   File02Icon,
   Globe02Icon,
@@ -31,7 +29,6 @@ import {
   Settings02Icon,
   StethoscopeIcon,
   TagsIcon,
-  UserGroupIcon,
 } from "@hugeicons/core-free-icons"
 
 import { AppSidebar, type SidebarNavItem, type SidebarUser } from "#/components/app-sidebar.tsx"
@@ -148,8 +145,7 @@ function ClinicLayout() {
   const items: NavItem[] = [
     // Puncak — tanpa grup.
     { key: "", label: t("dashboard.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: DashboardSquare01Icon },
-    // Operasional.
-    { key: "staff", label: t("staff.title"), permission: "staff.view", roles: ["admin"], icon: UserGroupIcon, group: "operations" },
+    // Operasional. Daftar staf kini tinggal di Pengaturan → Pengguna.
     { key: "roles", label: t("role.title"), permission: "role.view", roles: ["admin"], icon: SecurityLockIcon, group: "operations" },
     { key: "patients", label: t("patient.title"), permission: "patient.view", roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulseIcon, group: "operations" },
     { key: "bookings", label: t("booking.title"), permission: "booking.view", roles: ["admin", "doctor", "therapist"], icon: Calendar01Icon, group: "operations" },
@@ -180,11 +176,9 @@ function ClinicLayout() {
     // Komunikasi & Pengaturan.
     { key: "inbox", label: t("inbox.title"), permission: "inbox.view", roles: ["admin", "cashier", "doctor", "therapist"], icon: MessageMultiple01Icon, group: "system" },
     { key: "broadcasts", label: t("broadcast.title"), permission: "broadcast.view", roles: ["admin"], icon: BubbleChatIcon, group: "system" },
-    { key: "chatbot/settings", label: t("chatbot.title"), permission: "content.view", roles: ["admin"], icon: AiChat01Icon, group: "system" },
     { key: "company-profile", label: t("company_profile.title"), permission: "content.view", roles: ["admin"], icon: Globe02Icon, group: "system" },
     // Laporan & Log.
     { key: "reports", label: t("report.title"), permission: "report.view", roles: ["admin"], icon: BarChartIcon, group: "insights" },
-    { key: "activity-logs", label: t("activity_log.title"), permission: "activity_log.view", roles: ["admin"], icon: ClockIcon, group: "insights" },
   ]
 
   // Menu mengikuti izin sungguhan, bukan peran yang di-hardcode. Sebelumnya
@@ -236,7 +230,7 @@ function ClinicLayout() {
         <AppSidebar
           variant={appearance.sidebar_variant}
           preferencesTo={
-            <Link to="/$tenant/clinic/preferences" params={{ tenant }}>
+            <Link to="/$tenant/clinic/settings/preferences" params={{ tenant }}>
               <HugeiconsIcon icon={PaintBoardIcon} strokeWidth={2} />
               {t("preferences.title")}
             </Link>
@@ -355,7 +349,25 @@ function outsideNavLabel(
   t: (key: string) => string,
 ): string {
   if (pathname.startsWith(`${base}/preferences`)) return t("preferences.title")
-  if (pathname.startsWith(`${base}/settings`)) return t("clinic.settings")
+
+  if (pathname.startsWith(`${base}/settings`)) {
+    if (pathname.startsWith(`${base}/settings/whatsapp`)) {
+      return t("settings.nav.whatsapp")
+    }
+    if (pathname.startsWith(`${base}/settings/chatbot`)) {
+      return t("chatbot.title")
+    }
+    if (pathname.startsWith(`${base}/settings/users`)) {
+      return t("settings.nav.users")
+    }
+    if (pathname.startsWith(`${base}/settings/preferences`)) {
+      return t("settings.nav.preferences")
+    }
+    if (pathname.startsWith(`${base}/settings/activity-logs`)) {
+      return t("activity_log.title")
+    }
+    return t("settings.nav.profile")
+  }
 
   return t("dashboard.title")
 }

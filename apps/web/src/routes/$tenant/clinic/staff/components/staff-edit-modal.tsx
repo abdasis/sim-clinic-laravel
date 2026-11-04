@@ -19,7 +19,7 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { clinicRoleOptions } from "#/types/clinic-role.ts"
 import { apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
-import type { StaffRow } from "../index.tsx"
+import type { StaffRow } from "../../settings/users/index.tsx"
 
 const schema = z.object({
   name: z.string().min(1),

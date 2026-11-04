@@ -117,13 +117,13 @@ function ClinicSettingsPage() {
     return () => window.removeEventListener("keydown", onKey)
   })
 
-  useBreadcrumbTail(t("clinic.settings"))
+  useBreadcrumbTail(t("settings.nav.profile"))
 
   return (
     <div className="max-w-3xl">
       <div className="mb-4">
         <h1 className="text-xl font-semibold tracking-tight">
-          {t("clinic.settings")}
+          {t("settings.nav.profile")}
         </h1>
         <p className="mt-1 text-sm text-pretty text-muted-foreground">
           {t("company_profile.subtitle")}

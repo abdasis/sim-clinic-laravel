@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -111,7 +112,10 @@ export function BroadcastSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      {/* Dialog ini hanya punya satu field. `layout="form"` membuatnya setinggi
+          layar di ponsel, menyisakan ruang kosong besar; `h-fit` mengembalikan
+          tinggi ke isi tanpa melepas perilaku formulir (footer menempel). */}
+      <DialogContent layout="form" className="max-md:h-fit">
         <DialogHeader>
           <DialogTitle>{t("broadcast.settings")}</DialogTitle>
           <DialogDescription className="text-pretty">
@@ -125,27 +129,29 @@ export function BroadcastSettingsDialog({
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-              className="space-y-4"
+              className="flex min-h-0 flex-1 flex-col gap-4"
             >
-              {current && !current.gateway_available ? (
-                <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-pretty text-amber-700 dark:text-amber-400">
-                  {t("broadcast.gateway_server_unconfigured")}
-                </p>
-              ) : null}
+              <DialogBody className="space-y-4">
+                {current && !current.gateway_available ? (
+                  <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-pretty text-amber-700 dark:text-amber-400">
+                    {t("broadcast.gateway_server_unconfigured")}
+                  </p>
+                ) : null}
 
-              <FormInput
-                control={form.control}
-                name="session"
-                label={t("broadcast.session_label")}
-                placeholder="klinik-satu"
-                description={
-                  provisioned
-                    ? t("broadcast.session_locked")
-                    : t("broadcast.session_empty")
-                }
-                disabled={provisioned}
-                inputClassName="font-mono"
-              />
+                <FormInput
+                  control={form.control}
+                  name="session"
+                  label={t("broadcast.session_label")}
+                  placeholder="klinik-satu"
+                  description={
+                    provisioned
+                      ? t("broadcast.session_locked")
+                      : t("broadcast.session_empty")
+                  }
+                  disabled={provisioned}
+                  inputClassName="font-mono"
+                />
+              </DialogBody>
               <DialogFooter>
                 <FormSubmit loading={mutation.isPending} disabled={provisioned}>
                   {t("general.save")}

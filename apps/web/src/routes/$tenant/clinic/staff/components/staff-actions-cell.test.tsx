@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { StaffActionsCell } from "./staff-actions-cell.tsx"
-import type { StaffRow } from "../index.tsx"
+import type { StaffRow } from "../../settings/users/index.tsx"
 
 const TRANSLATIONS = {
   staff: {
