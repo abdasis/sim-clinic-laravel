@@ -38,7 +38,7 @@ import { Route as MarketingTreatmentSlugRouteImport } from './routes/_marketing/
 import { Route as MarketingTreatmentsIndexRouteImport } from './routes/_marketing/treatments/index'
 import { Route as CentralBackupIndexRouteImport } from './routes/central/backup/index'
 import { Route as CentralTenantsIndexRouteImport } from './routes/central/tenants/index'
-import { Route as CentralWahaIndexRouteImport } from './routes/central/waha/index'
+import { Route as CentralWhatsappGatewayIndexRouteImport } from './routes/central/whatsapp-gateway/index'
 import { Route as TenantClinicActivityLogsIndexRouteImport } from './routes/$tenant/clinic/activity-logs/index'
 import { Route as TenantClinicBookingsIndexRouteImport } from './routes/$tenant/clinic/bookings/index'
 import { Route as TenantClinicBroadcastsIndexRouteImport } from './routes/$tenant/clinic/broadcasts/index'
@@ -229,11 +229,12 @@ const CentralTenantsIndexRoute = CentralTenantsIndexRouteImport.update({
   path: '/tenants/',
   getParentRoute: () => CentralRouteRoute,
 } as any)
-const CentralWahaIndexRoute = CentralWahaIndexRouteImport.update({
-  id: '/waha/',
-  path: '/waha/',
-  getParentRoute: () => CentralRouteRoute,
-} as any)
+const CentralWhatsappGatewayIndexRoute =
+  CentralWhatsappGatewayIndexRouteImport.update({
+    id: '/whatsapp-gateway/',
+    path: '/whatsapp-gateway/',
+    getParentRoute: () => CentralRouteRoute,
+  } as any)
 const TenantClinicActivityLogsIndexRoute =
   TenantClinicActivityLogsIndexRouteImport.update({
     id: '/activity-logs/',
@@ -513,7 +514,7 @@ export interface FileRoutesByFullPath {
   '/treatments/': typeof MarketingTreatmentsIndexRoute
   '/central/backup/': typeof CentralBackupIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
-  '/central/waha/': typeof CentralWahaIndexRoute
+  '/central/whatsapp-gateway/': typeof CentralWhatsappGatewayIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
   '/$tenant/clinic/broadcasts/new': typeof TenantClinicBroadcastsNewRoute
   '/$tenant/clinic/chatbot/settings': typeof TenantClinicChatbotSettingsRoute
@@ -584,7 +585,7 @@ export interface FileRoutesByTo {
   '/treatments': typeof MarketingTreatmentsIndexRoute
   '/central/backup': typeof CentralBackupIndexRoute
   '/central/tenants': typeof CentralTenantsIndexRoute
-  '/central/waha': typeof CentralWahaIndexRoute
+  '/central/whatsapp-gateway': typeof CentralWhatsappGatewayIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
   '/$tenant/clinic/broadcasts/new': typeof TenantClinicBroadcastsNewRoute
   '/$tenant/clinic/chatbot/settings': typeof TenantClinicChatbotSettingsRoute
@@ -660,7 +661,7 @@ export interface FileRoutesById {
   '/_marketing/treatments/': typeof MarketingTreatmentsIndexRoute
   '/central/backup/': typeof CentralBackupIndexRoute
   '/central/tenants/': typeof CentralTenantsIndexRoute
-  '/central/waha/': typeof CentralWahaIndexRoute
+  '/central/whatsapp-gateway/': typeof CentralWhatsappGatewayIndexRoute
   '/$tenant/clinic/broadcasts/$id': typeof TenantClinicBroadcastsIdRoute
   '/$tenant/clinic/broadcasts/new': typeof TenantClinicBroadcastsNewRoute
   '/$tenant/clinic/chatbot/settings': typeof TenantClinicChatbotSettingsRoute
@@ -736,7 +737,7 @@ export interface FileRouteTypes {
     | '/treatments/'
     | '/central/backup/'
     | '/central/tenants/'
-    | '/central/waha/'
+    | '/central/whatsapp-gateway/'
     | '/$tenant/clinic/broadcasts/$id'
     | '/$tenant/clinic/broadcasts/new'
     | '/$tenant/clinic/chatbot/settings'
@@ -807,7 +808,7 @@ export interface FileRouteTypes {
     | '/treatments'
     | '/central/backup'
     | '/central/tenants'
-    | '/central/waha'
+    | '/central/whatsapp-gateway'
     | '/$tenant/clinic/broadcasts/$id'
     | '/$tenant/clinic/broadcasts/new'
     | '/$tenant/clinic/chatbot/settings'
@@ -882,7 +883,7 @@ export interface FileRouteTypes {
     | '/_marketing/treatments/'
     | '/central/backup/'
     | '/central/tenants/'
-    | '/central/waha/'
+    | '/central/whatsapp-gateway/'
     | '/$tenant/clinic/broadcasts/$id'
     | '/$tenant/clinic/broadcasts/new'
     | '/$tenant/clinic/chatbot/settings'
@@ -1148,11 +1149,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CentralTenantsIndexRouteImport
       parentRoute: typeof CentralRouteRoute
     }
-    '/central/waha/': {
-      id: '/central/waha/'
-      path: '/waha'
-      fullPath: '/central/waha/'
-      preLoaderRoute: typeof CentralWahaIndexRouteImport
+    '/central/whatsapp-gateway/': {
+      id: '/central/whatsapp-gateway/'
+      path: '/whatsapp-gateway'
+      fullPath: '/central/whatsapp-gateway/'
+      preLoaderRoute: typeof CentralWhatsappGatewayIndexRouteImport
       parentRoute: typeof CentralRouteRoute
     }
     '/$tenant/clinic/activity-logs/': {
@@ -1464,7 +1465,7 @@ interface CentralRouteRouteChildren {
   CentralIndexRoute: typeof CentralIndexRoute
   CentralBackupIndexRoute: typeof CentralBackupIndexRoute
   CentralTenantsIndexRoute: typeof CentralTenantsIndexRoute
-  CentralWahaIndexRoute: typeof CentralWahaIndexRoute
+  CentralWhatsappGatewayIndexRoute: typeof CentralWhatsappGatewayIndexRoute
 }
 
 const CentralRouteRouteChildren: CentralRouteRouteChildren = {
@@ -1472,7 +1473,7 @@ const CentralRouteRouteChildren: CentralRouteRouteChildren = {
   CentralIndexRoute: CentralIndexRoute,
   CentralBackupIndexRoute: CentralBackupIndexRoute,
   CentralTenantsIndexRoute: CentralTenantsIndexRoute,
-  CentralWahaIndexRoute: CentralWahaIndexRoute,
+  CentralWhatsappGatewayIndexRoute: CentralWhatsappGatewayIndexRoute,
 }
 
 const CentralRouteRouteWithChildren = CentralRouteRoute._addFileChildren(
@@ -1643,3 +1644,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

@@ -7,7 +7,6 @@ import { z } from "zod"
 import { Card, CardContent } from "#/components/ui/card.tsx"
 import { Form } from "#/components/ui/form.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
-import { FormPassword } from "#/components/forms/form-password.tsx"
 import { FormSubmit } from "#/components/forms/form-submit.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
@@ -15,57 +14,48 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
 
-export const Route = createFileRoute("/central/waha/")({
-  component: WahaSettingsPage,
+export const Route = createFileRoute("/central/whatsapp-gateway/")({
+  component: WhatsappGatewayPage,
 })
 
-interface WahaSettings {
+interface GatewaySettings {
   base_url?: string | null
-  has_api_key: boolean
 }
 
 const schema = z.object({
   base_url: z.string().url(),
-  // Kosong berarti pertahankan kunci yang tersimpan; server memperlakukannya
-  // sama, jadi field ini tidak pernah wajib diisi ulang.
-  api_key: z.string().optional(),
 })
 
 type Values = z.infer<typeof schema>
 
-function WahaSettingsPage() {
+/**
+ * Alamat server gateway WhatsApp yang dipakai seluruh klinik. Satu alamat
+ * untuk semua tenant, jadi hanya pengelola platform yang boleh mengubahnya.
+ */
+function WhatsappGatewayPage() {
   const { t } = useTrans()
   const qc = useQueryClient()
 
   const settings = useQuery({
-    queryKey: ["central-waha"],
-    queryFn: () => apiGet<{ data: WahaSettings }>("/central/waha"),
+    queryKey: ["central-whatsapp-gateway"],
+    queryFn: () => apiGet<{ data: GatewaySettings }>("/central/whatsapp-gateway"),
   })
 
-  const form = useForm(schema, {
-    defaultValues: { base_url: "", api_key: "" },
-  })
-
+  const form = useForm(schema, { defaultValues: { base_url: "" } })
   const current = settings.data?.data
 
   useEffect(() => {
     if (!current) return
 
-    form.reset({ base_url: current.base_url ?? "", api_key: "" })
+    form.reset({ base_url: current.base_url ?? "" })
   }, [current, form])
 
   const mutation = useMutation({
     mutationFn: (values: Values) =>
-      apiPut("/central/waha", {
-        base_url: values.base_url,
-        api_key: values.api_key || null,
-      }),
+      apiPut("/central/whatsapp-gateway", { base_url: values.base_url }),
     onSuccess: () => {
-      toast.success(t("waha.saved"))
-      qc.invalidateQueries({ queryKey: ["central-waha"] })
-      // Kuncinya tidak pernah dikirim balik, jadi isian dikosongkan lagi
-      // supaya tidak terlihat seolah nilainya tersimpan di layar.
-      form.setValue("api_key", "")
+      toast.success(t("whatsapp_gateway.saved"))
+      qc.invalidateQueries({ queryKey: ["central-whatsapp-gateway"] })
     },
     onError: (err: ApiError) => {
       applyServerErrors(form, err.errors)
@@ -77,11 +67,8 @@ function WahaSettingsPage() {
     <div className="max-w-2xl">
       <div className="mb-4">
         <h1 className="text-xl font-semibold tracking-tight">
-          {t("waha.title")}
+          {t("whatsapp_gateway.title")}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground text-pretty">
-          {t("waha.hint")}
-        </p>
       </div>
 
       <Card>
@@ -89,7 +76,7 @@ function WahaSettingsPage() {
           {settings.isLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-9 w-full" />
-              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-8 w-24" />
             </div>
           ) : (
             <Form {...form}>
@@ -100,20 +87,10 @@ function WahaSettingsPage() {
                 <FormInput
                   control={form.control}
                   name="base_url"
-                  label={t("waha.base_url")}
-                  placeholder="https://waha.klinik.test"
+                  label={t("whatsapp_gateway.base_url")}
+                  placeholder="https://gateway.klinik.test"
                   required
-                />
-
-                <FormPassword
-                  control={form.control}
-                  name="api_key"
-                  label={t("waha.api_key")}
-                  description={
-                    current?.has_api_key ? t("waha.api_key_saved") : undefined
-                  }
-                  showLabel={t("auth.show_password")}
-                  hideLabel={t("auth.hide_password")}
+                  inputClassName="font-mono"
                 />
 
                 <FormSubmit loading={mutation.isPending}>

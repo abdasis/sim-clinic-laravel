@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "#/components/ui/dialog.tsx"
 import { Input } from "#/components/ui/input.tsx"
+import { Kbd } from "#/components/ui/kbd.tsx"
 import { Label } from "#/components/ui/label.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { Switch } from "#/components/ui/switch.tsx"
@@ -27,6 +28,7 @@ import { NativeSelect, NativeSelectOption } from "#/components/ui/native-select.
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiDelete, apiGet, apiPost, apiPut } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
+import { formatDateTime } from "#/lib/format.ts"
 
 interface ToolDialogProps {
   tenant: string
@@ -34,20 +36,49 @@ interface ToolDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-interface ConnectionState {
+export interface ConnectionState {
   available: boolean
+  provisioned: boolean
   connected: boolean
-  number?: string | null
-  name?: string | null
-  qr?: string | null
-  error?: boolean
-  needs_start?: boolean
+  qr: string | null
+  number: string | null
+  name: string | null
+  error: boolean
+}
+
+interface PairingCode {
+  pairing_code: string | null
+  expires_at: string | null
 }
 
 /**
- * Koneksi WhatsApp lewat WAHA: status terhubung, atau QR untuk dipindai.
- * Selagi belum terhubung, status ditanya ulang tiap 4 detik supaya begitu
- * admin memindai, layarnya langsung berubah tanpa muat ulang.
+ * Label yang belum ada di kamus backend. Kuncinya tetap dipakai lebih dulu,
+ * jadi begitu pengelola menambahkan terjemahannya, fallback ini berhenti
+ * terpakai tanpa mengubah komponen.
+ */
+const LOCAL_LABELS: Record<string, string> = {
+  "broadcast.pairing_phone": "Nomor WhatsApp",
+  "broadcast.pairing_request": "Minta kode pairing",
+  "broadcast.pairing_code": "Kode pairing",
+  "broadcast.pairing_expires": "Kode berlaku sampai :time",
+}
+
+function localLabel(t: (key: string) => string, key: string, values?: Record<string, string>) {
+  const raw = t(key)
+  let value = raw === key ? (LOCAL_LABELS[key] ?? key) : raw
+
+  for (const [name, replacement] of Object.entries(values ?? {})) {
+    value = value.replace(`:${name}`, replacement)
+  }
+
+  return value
+}
+
+/**
+ * Koneksi WhatsApp lewat gateway: status terhubung, QR untuk dipindai, atau
+ * kode pairing bila nomornya disambungkan tanpa kamera. Selagi belum
+ * terhubung, status ditanya ulang tiap 4 detik supaya begitu admin memindai,
+ * layarnya langsung berubah tanpa muat ulang.
  *
  * Menanya dan menyalakan sengaja dipisah. Tanyaan tiap 4 detik yang ikut
  * menyalakan sesi berarti memulai ulang sambungannya belasan kali semenit,
@@ -58,6 +89,8 @@ interface ConnectionState {
 export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps) {
   const { t } = useTrans()
   const qc = useQueryClient()
+  const [phone, setPhone] = useState("")
+  const [pairing, setPairing] = useState<PairingCode | null>(null)
 
   const connection = useQuery({
     queryKey: ["wa-connection", tenant],
@@ -80,6 +113,16 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
     onError: (err: ApiError) => toast.error(err.message),
   })
 
+  const pairingMutation = useMutation({
+    mutationFn: () =>
+      apiPost<{ data: PairingCode }>(
+        `/${tenant}/clinic/broadcasts/connection/pairing`,
+        { phone },
+      ),
+    onSuccess: (result) => setPairing(result.data),
+    onError: (err: ApiError) => toast.error(err.message),
+  })
+
   // Sekali tiap dialog dibuka, bukan tiap tanyaan: sesi yang sedang membuka
   // WhatsApp Web butuh puluhan detik dan tidak boleh dipotong di tengah.
   useEffect(() => {
@@ -88,6 +131,14 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, tenant])
+
+  // Kode pairing hanya berlaku untuk satu percobaan; menutup dialog berarti
+  // percobaannya selesai.
+  useEffect(() => {
+    if (open) return
+    setPhone("")
+    setPairing(null)
+  }, [open])
 
   const state = connection.data?.data
 
@@ -104,10 +155,10 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
         {connection.isLoading ? (
           <Skeleton className="h-48 w-full" />
         ) : !state?.available ? (
-          // Belum tersambung ke WAHA sama sekali: entah servernya belum diisi
-          // pengelola, entah kliniknya belum menyebut nama sesi.
+          // Gateway belum siap untuk klinik ini: alamat servernya belum diisi
+          // pengelola, atau sesinya belum disiapkan.
           <p className="rounded-md border border-dashed border-border/60 px-4 py-6 text-center text-sm text-pretty text-muted-foreground">
-            {t("broadcast.waha_session_missing")}
+            {t("broadcast.gateway_not_ready")}
           </p>
         ) : state.connected ? (
           <div className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-4 text-sm">
@@ -137,10 +188,73 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
               <Skeleton className="mx-auto size-64" />
             )}
             <p className="text-xs text-pretty text-muted-foreground">
-              {state.needs_start
-                ? t("broadcast.session_needs_start")
-                : t("broadcast.scan_hint")}
+              {state.qr ? t("broadcast.scan_hint") : t("broadcast.session_needs_start")}
             </p>
+
+            {pairing ? (
+              <div className="space-y-1 rounded-md border border-border/50 bg-muted/30 px-3 py-2.5 text-left">
+                <p className="text-xs text-muted-foreground">
+                  {localLabel(t, "broadcast.pairing_code")}
+                </p>
+                <p className="font-mono text-lg font-semibold tracking-[0.2em] tabular-nums">
+                  {pairing.pairing_code ?? "—"}
+                </p>
+                {pairing.expires_at ? (
+                  <p className="text-xxs text-muted-foreground">
+                    {localLabel(t, "broadcast.pairing_expires", {
+                      time: formatDateTime(pairing.expires_at),
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {/* Menyambung tanpa kamera: masukkan nomor, lalu ketik kodenya di
+                WhatsApp. Formulirnya tetap sederhana — satu nomor, satu aksi. */}
+            <form
+              className="space-y-2 text-left"
+              onSubmit={(event) => {
+                event.preventDefault()
+                if (phone.trim() === "" || pairingMutation.isPending) return
+                pairingMutation.mutate()
+              }}
+            >
+              <div className="space-y-1">
+                <Label htmlFor="wa-pairing-phone" className="text-xs">
+                  {localLabel(t, "broadcast.pairing_phone")}
+                </Label>
+                <Input
+                  id="wa-pairing-phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="08xx"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  className="tabular-nums"
+                />
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    disabled={phone.trim() === "" || pairingMutation.isPending}
+                  >
+                    {pairingMutation.isPending
+                      ? t("general.loading")
+                      : localLabel(t, "broadcast.pairing_request")}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {localLabel(t, "broadcast.pairing_request")}
+                  <Kbd>Enter</Kbd>
+                </TooltipContent>
+              </Tooltip>
+            </form>
+
             {/* Menyalakan ulang atas permintaan, bukan otomatis tiap tanyaan.
                 Ditahan 30 detik di sisi server, jadi menekannya berkali-kali
                 tidak bisa memotong sesi yang sedang bangun. */}
@@ -160,7 +274,7 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
               <TooltipContent>{t("broadcast.reconnect_hint")}</TooltipContent>
             </Tooltip>
             {state.error ? (
-              <p className="text-xs text-destructive">{t("broadcast.waha_error")}</p>
+              <p className="text-xs text-destructive">{t("broadcast.gateway_error")}</p>
             ) : null}
           </div>
         )}

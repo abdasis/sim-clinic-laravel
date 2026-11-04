@@ -97,10 +97,10 @@ function CentralLayout() {
       group: platformGroup,
     },
     {
-      title: t("waha.title"),
-      url: "/central/waha",
+      title: t("whatsapp_gateway.title"),
+      url: "/central/whatsapp-gateway",
       icon: WhatsappIcon,
-      isActive: pathname.startsWith("/central/waha"),
+      isActive: pathname.startsWith("/central/whatsapp-gateway"),
       group: platformGroup,
     },
     {
@@ -163,8 +163,8 @@ function CentralCrumbs({ pathname }: { pathname: string }) {
 
   if (pathname.startsWith("/central/tenants")) {
     items.push({ label: t("tenant.tenants") })
-  } else if (pathname.startsWith("/central/waha")) {
-    items.push({ label: t("waha.title") })
+  } else if (pathname.startsWith("/central/whatsapp-gateway")) {
+    items.push({ label: t("whatsapp_gateway.title") })
   } else if (pathname.startsWith("/central/backup")) {
     items.push({ label: t("backup.title") })
   } else {

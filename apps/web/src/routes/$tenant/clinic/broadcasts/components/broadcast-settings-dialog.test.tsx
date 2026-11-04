@@ -9,25 +9,20 @@ const TRANSLATIONS = {
   broadcast: {
     settings: "Pengaturan Pengiriman",
     settings_saved: "Pengaturan pengiriman tersimpan.",
-    session_label: "Nama Sesi WAHA",
-    session_hint: "Pengelola server mengatur WAHA di halaman platform.",
+    session_label: "Nama Sesi WhatsApp",
+    session_hint: "Pengelola platform mengatur alamat gateway.",
     session_format:
       "Nama sesi hanya boleh huruf kecil, angka, dan strip. Contoh: klinik-satu.",
     session_empty: "Dikosongkan berarti pengiriman otomatis mati.",
-    phone_number_id_label: "Nomor Cloud API Meta",
-    phone_number_id_hint:
-      "Diisi hanya bila klinik membalas lewat WhatsApp Cloud API Meta.",
-    phone_number_id_format: "Nomor Cloud API hanya boleh berisi angka.",
-    waha_not_configured: "WAHA belum dikonfigurasi di platform.",
+    session_locked: "Nama sesi tidak bisa diubah setelah sesi gateway dibuat.",
+    gateway_not_ready: "Gateway WhatsApp belum siap.",
   },
   general: { save: "Simpan" },
 }
 
 interface Settings {
   session?: string | null
-  phone_number_id?: string | null
-  waba_id?: string | null
-  waha_available: boolean
+  gateway_available: boolean
 }
 
 /**
@@ -35,11 +30,38 @@ interface Settings {
  * kamusnya tertimpa dan label berubah jadi kunci mentah — test lalu gagal
  * karena alasan yang berbeda dari yang diuji.
  */
-function mockFetch(settings: Settings) {
+function mockFetch(settings: Settings, provisioned = true) {
   const mock = vi.fn(async (input: unknown, init?: RequestInit) => {
-    void init
-    if (String(input).includes("/translations")) {
+    const url = String(input)
+
+    if (url.includes("/translations")) {
       return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
+    }
+
+    if (url.endsWith("/broadcasts/connection")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            available: true,
+            provisioned,
+            connected: false,
+            qr: null,
+            number: null,
+            name: null,
+            error: false,
+          },
+        }),
+      }
+    }
+
+    if ((init as RequestInit | undefined)?.method === "PUT") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { session: null }, meta: {} }),
+      }
     }
 
     return { ok: true, status: 200, json: async () => ({ data: settings }) }
@@ -50,17 +72,14 @@ function mockFetch(settings: Settings) {
   return mock
 }
 
-function wrap(ui: React.ReactElement) {
+function open(settings: Settings, provisioned = true) {
+  const fetchMock = mockFetch(settings, provisioned)
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
-}
-
-function open(settings: Settings) {
-  const fetchMock = mockFetch(settings)
-
-  wrap(
-    <BroadcastSettingsDialog tenant="klinik-uji" open onOpenChange={() => {}} />,
+  render(
+    <QueryClientProvider client={client}>
+      <BroadcastSettingsDialog tenant="klinik-uji" open onOpenChange={() => {}} />
+    </QueryClientProvider>,
   )
 
   return fetchMock
@@ -72,22 +91,25 @@ describe("BroadcastSettingsDialog", () => {
     setTranslations(TRANSLATIONS)
   })
 
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
 
   it("menampilkan nama sesi yang tersimpan", async () => {
-    open({ session: "klinik-satu", waha_available: true })
+    open({ session: "klinik-satu", gateway_available: true }, false)
 
     await waitFor(() =>
       expect(
-        (screen.getByLabelText("Nama Sesi WAHA") as HTMLInputElement).value,
+        (screen.getByLabelText("Nama Sesi WhatsApp") as HTMLInputElement).value,
       ).toBe("klinik-satu"),
     )
   })
 
-  it("mengirim PUT berisi nama sesi", async () => {
-    const fetchMock = open({ session: null, waha_available: true })
+  it("mengirim PUT hanya berisi nama sesi", async () => {
+    const fetchMock = open({ session: null, gateway_available: true }, false)
 
-    const field = await screen.findByLabelText("Nama Sesi WAHA")
+    const field = await screen.findByLabelText("Nama Sesi WhatsApp")
     fireEvent.change(field, { target: { value: "klinik-dua" } })
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }))
 
@@ -99,61 +121,29 @@ describe("BroadcastSettingsDialog", () => {
       expect(put).toBeDefined()
       expect(JSON.parse(String((put?.[1] as RequestInit).body))).toEqual({
         session: "klinik-dua",
-        phone_number_id: null,
-        waba_id: null,
-        reminder_template: null,
       })
     })
   })
 
   /**
-   * WAHA menolak nama sesi di luar huruf kecil/angka/strip. Kalau ini lolos ke
-   * server, yang muncul di layar admin bukan pesan yang bisa ditindaklanjuti.
+   * Gateway memetakan sesi lewat slug. Menggantinya setelah sesi dibuat
+   * meninggalkan sesi lama yang masih tertaut nomor klinik.
    */
-  it("menolak nama sesi berhuruf besar dan berspasi sebelum dikirim", async () => {
-    const fetchMock = open({ session: null, waha_available: true })
+  it("mengunci nama sesi setelah sesi gateway dibuat", async () => {
+    open({ session: "klinik-satu", gateway_available: true }, true)
 
-    const field = await screen.findByLabelText("Nama Sesi WAHA")
-    fireEvent.change(field, { target: { value: "Klinik Satu" } })
-    fireEvent.click(screen.getByRole("button", { name: "Simpan" }))
+    const field = (await screen.findByLabelText(
+      "Nama Sesi WhatsApp",
+    )) as HTMLInputElement
 
-    expect(
-      await screen.findByText(TRANSLATIONS.broadcast.session_format),
-    ).toBeTruthy()
-
-    expect(
-      fetchMock.mock.calls.some(
-        ([, init]) => (init as RequestInit | undefined)?.method === "PUT",
-      ),
-    ).toBe(false)
-  })
-
-  /**
-   * Tanpa server WAHA, nama sesi seakurat apa pun tidak akan mengirim apa-apa.
-   * Kliniknya perlu tahu itu urusan pengelola platform, bukan salah isian.
-   */
-  it("memberi tahu saat server WAHA belum disiapkan pengelola", async () => {
-    open({ session: "klinik-satu", waha_available: false })
-
-    expect(
-      await screen.findByText(TRANSLATIONS.broadcast.waha_not_configured),
-    ).toBeTruthy()
-  })
-
-  it("tidak menampilkan peringatan itu saat servernya sudah siap", async () => {
-    open({ session: "klinik-satu", waha_available: true })
-
-    await screen.findByLabelText("Nama Sesi WAHA")
-
-    expect(
-      screen.queryByText(TRANSLATIONS.broadcast.waha_not_configured),
-    ).toBeNull()
+    await waitFor(() => expect(field.disabled).toBe(true))
+    expect(screen.getByText(TRANSLATIONS.broadcast.session_locked)).toBeTruthy()
   })
 
   it("mengosongkan sesi mengirim null, bukan string kosong", async () => {
-    const fetchMock = open({ session: "klinik-satu", waha_available: true })
+    const fetchMock = open({ session: "klinik-satu", gateway_available: true }, false)
 
-    const field = await screen.findByLabelText("Nama Sesi WAHA")
+    const field = await screen.findByLabelText("Nama Sesi WhatsApp")
     await waitFor(() =>
       expect((field as HTMLInputElement).value).toBe("klinik-satu"),
     )
@@ -166,69 +156,29 @@ describe("BroadcastSettingsDialog", () => {
         ([, init]) => (init as RequestInit | undefined)?.method === "PUT",
       )
 
-      expect(put).toBeDefined()
       expect(JSON.parse(String((put?.[1] as RequestInit).body))).toEqual({
         session: null,
-        phone_number_id: null,
-        waba_id: null,
-        reminder_template: null,
       })
     })
   })
 
-  it("menampilkan nomor Cloud API yang tersimpan", async () => {
-    open({
-      session: "klinik-satu",
-      phone_number_id: "109900000000000",
-      waha_available: true,
-    })
+  it("memberi tahu saat gateway belum disiapkan pengelola", async () => {
+    open({ session: "klinik-satu", gateway_available: false }, false)
 
-    await waitFor(() =>
-      expect(
-        (
-          screen.getByLabelText(
-            TRANSLATIONS.broadcast.phone_number_id_label,
-          ) as HTMLInputElement
-        ).value,
-      ).toBe("109900000000000"),
-    )
+    expect(
+      await screen.findByText(TRANSLATIONS.broadcast.gateway_not_ready),
+    ).toBeTruthy()
   })
 
-  it("mengirim nomor Cloud API bersama nama sesi", async () => {
-    const fetchMock = open({ session: "klinik-satu", waha_available: true })
+  it("menolak nama sesi berhuruf besar dan berspasi sebelum dikirim", async () => {
+    const fetchMock = open({ session: null, gateway_available: true }, false)
 
-    const field = await screen.findByLabelText(
-      TRANSLATIONS.broadcast.phone_number_id_label,
-    )
-    fireEvent.change(field, { target: { value: "109900000000001" } })
-    fireEvent.click(screen.getByRole("button", { name: "Simpan" }))
-
-    await waitFor(() => {
-      const put = fetchMock.mock.calls.find(
-        ([, init]) => (init as RequestInit | undefined)?.method === "PUT",
-      )
-
-      expect(JSON.parse(String((put?.[1] as RequestInit).body))).toEqual({
-        session: "klinik-satu",
-        phone_number_id: "109900000000001",
-        waba_id: null,
-        reminder_template: null,
-      })
-    })
-  })
-
-  /** Meta memakai id numerik; huruf apa pun membuat webhook tidak menemukan kliniknya. */
-  it("menolak nomor Cloud API yang bukan angka sebelum dikirim", async () => {
-    const fetchMock = open({ session: "klinik-satu", waha_available: true })
-
-    const field = await screen.findByLabelText(
-      TRANSLATIONS.broadcast.phone_number_id_label,
-    )
-    fireEvent.change(field, { target: { value: "1099-abc" } })
+    const field = await screen.findByLabelText("Nama Sesi WhatsApp")
+    fireEvent.change(field, { target: { value: "Klinik Satu" } })
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }))
 
     expect(
-      await screen.findByText(TRANSLATIONS.broadcast.phone_number_id_format),
+      await screen.findByText(TRANSLATIONS.broadcast.session_format),
     ).toBeTruthy()
 
     expect(
