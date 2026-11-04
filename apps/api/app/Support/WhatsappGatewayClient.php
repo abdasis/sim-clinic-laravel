@@ -209,6 +209,116 @@ class WhatsappGatewayClient
         ));
     }
 
+    public function sendDocument(
+        WhatsappSetting $setting,
+        string $phone,
+        string $url,
+        ?string $filename,
+        ?string $caption,
+        string $idempotencyKey,
+    ): ?string {
+        $body = [
+            'sessionId' => $this->gatewaySessionId($setting),
+            'to' => $phone,
+            'url' => $url,
+        ];
+
+        if ($filename !== null && trim($filename) !== '') {
+            $body['filename'] = $filename;
+        }
+
+        if ($caption !== null && trim($caption) !== '') {
+            $body['caption'] = $caption;
+        }
+
+        return $this->messageId($this->send(
+            'post',
+            '/messages/document',
+            $body,
+            $this->clinicHeaders($setting),
+            $idempotencyKey,
+        ));
+    }
+
+    /**
+     * `$voiceNote` diterima sebagai teks karena pemanggil membacanya dari
+     * kolom media; gateway sendiri menuntut boolean, jadi dinormalkan di sini.
+     */
+    public function sendAudio(
+        WhatsappSetting $setting,
+        string $phone,
+        string $url,
+        string $voiceNote,
+        string $idempotencyKey,
+    ): ?string {
+        return $this->messageId($this->send('post', '/messages/audio', [
+            'sessionId' => $this->gatewaySessionId($setting),
+            'to' => $phone,
+            'url' => $url,
+            'voiceNote' => filter_var($voiceNote, FILTER_VALIDATE_BOOLEAN),
+        ], $this->clinicHeaders($setting), $idempotencyKey));
+    }
+
+    /**
+     * Tanda sedang mengetik/merekam. Kegagalan di sini tidak boleh
+     * menggagalkan pengiriman pesan, jadi ditelan setelah dicatat.
+     */
+    public function presence(WhatsappSetting $setting, string $presence, ?string $phone = null): void
+    {
+        $body = ['presence' => $presence];
+
+        if ($phone !== null && trim($phone) !== '') {
+            $body['to'] = $phone;
+        }
+
+        try {
+            $this->send(
+                'post',
+                '/sessions/'.$this->gatewaySessionId($setting).'/presence',
+                $body,
+                $this->clinicHeaders($setting),
+            );
+        } catch (Throwable $e) {
+            Log::warning('Gagal mengirim status presence ke gateway WhatsApp.', [
+                'exception' => $e,
+                'presence' => $presence,
+            ]);
+        }
+    }
+
+    /**
+     * Daftarkan webhook pesan masuk. Rahasianya hanya dikembalikan gateway
+     * sekali saat pembuatan; pemanggil wajib menyimpannya.
+     *
+     * @param  array<int, string>  $events
+     * @return array{id: string, secret: string}
+     */
+    public function createWebhook(string $tenantKey, string $apiKey, string $url, array $events): array
+    {
+        $data = $this->send('post', '/webhooks', [
+            'name' => (string) config('app.name'),
+            'url' => $url,
+            'events' => array_values($events),
+        ], [
+            'x-tenant-key' => $tenantKey,
+            'X-API-Key' => $apiKey,
+        ]);
+
+        $secret = $data['secret'] ?? null;
+
+        if (! is_string($secret) || $secret === '') {
+            throw new WhatsappGatewayException(
+                'WEBHOOK_SECRET_MISSING',
+                0,
+                null,
+                [],
+                'Gateway tidak mengembalikan rahasia webhook untuk klinik.',
+            );
+        }
+
+        return ['id' => (string) ($data['id'] ?? ''), 'secret' => $secret];
+    }
+
     /**
      * Kredensial yang membuka nomor WhatsApp klinik. Bila salah satunya
      * kosong, klinik memang belum terhubung — bukan galat sesaat.

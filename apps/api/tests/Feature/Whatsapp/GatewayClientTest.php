@@ -8,6 +8,7 @@ use App\Support\WhatsappGatewayException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
@@ -150,7 +151,7 @@ class GatewayClientTest extends TestCase
      */
     public function test_base_url_is_normalized_before_appending_api_version(): void
     {
-        Http::fake(['*' => Http::response(['success' => true, 'data' => []] , 200)]);
+        Http::fake(['*' => Http::response(['success' => true, 'data' => []], 200)]);
 
         $setting = $this->gatewaySetting();
 
@@ -293,6 +294,110 @@ class GatewayClientTest extends TestCase
         $this->expectExceptionMessage('Sesi WhatsApp klinik belum tersedia di gateway.');
 
         app(WhatsappGatewayClient::class)->sessionStatus($setting);
+    }
+
+    public function test_create_webhook_returns_id_and_secret(): void
+    {
+        Http::fake(['gateway.test/api/v1/webhooks' => Http::response([
+            'success' => true,
+            'message' => 'OK',
+            'data' => ['id' => 'w1', 'secret' => 'secret-uji'],
+        ], 201)]);
+
+        $webhook = app(WhatsappGatewayClient::class)->createWebhook(
+            'tenant-uji',
+            'api-uji',
+            'https://app.test/api/whatsapp/webhook/token-uji',
+            ['message.received', 'message.failed'],
+        );
+
+        $this->assertSame(['id' => 'w1', 'secret' => 'secret-uji'], $webhook);
+        Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/webhooks'
+            && $request->hasHeader('x-tenant-key', 'tenant-uji')
+            && $request->hasHeader('X-API-Key', 'api-uji')
+            && $request['name'] === config('app.name')
+            && $request['url'] === 'https://app.test/api/whatsapp/webhook/token-uji'
+            && $request['events'] === ['message.received', 'message.failed']);
+    }
+
+    public function test_presence_posts_composing_with_target_phone(): void
+    {
+        Http::fake(['*' => Http::response(['success' => true, 'data' => ['queued' => true]], 202)]);
+
+        $client = app(WhatsappGatewayClient::class);
+        $setting = $this->gatewaySetting();
+
+        $client->presence($setting, 'composing', '628123');
+        // Tanpa nomor berarti broadcast; `to` tidak boleh ikut terkirim.
+        $client->presence($setting, 'paused');
+
+        $url = 'https://gateway.test/api/v1/sessions/'.self::SESSION_ID.'/presence';
+
+        Http::assertSent(fn ($request) => $request->url() === $url
+            && $request['presence'] === 'composing'
+            && $request['to'] === '628123'
+            && $request->hasHeader('x-tenant-key', 'tenant-uji'));
+        Http::assertSent(fn ($request) => $request->url() === $url
+            && $request['presence'] === 'paused'
+            && ! array_key_exists('to', $request->data()));
+    }
+
+    public function test_presence_failure_is_logged_and_swallowed(): void
+    {
+        Http::fake(['*' => Http::response([
+            'success' => false,
+            'message' => 'Sesi belum terhubung.',
+            'error' => ['code' => 'SESSION_NOT_CONNECTED'],
+        ], 422)]);
+        Log::spy();
+
+        app(WhatsappGatewayClient::class)->presence($this->gatewaySetting(), 'composing', '628123');
+
+        Log::shouldHaveReceived('warning')->once();
+    }
+
+    public function test_document_and_audio_use_their_endpoints(): void
+    {
+        Http::fake([
+            'gateway.test/api/v1/messages/document' => Http::response([
+                'success' => true,
+                'data' => ['messageId' => 'dok-uji', 'status' => 'QUEUED'],
+            ], 202),
+            'gateway.test/api/v1/messages/audio' => Http::response([
+                'success' => true,
+                'data' => ['messageId' => 'audio-uji', 'status' => 'QUEUED'],
+            ], 202),
+        ]);
+
+        $client = app(WhatsappGatewayClient::class);
+        $setting = $this->gatewaySetting();
+
+        $this->assertSame('dok-uji', $client->sendDocument(
+            $setting,
+            '081234567890',
+            'https://contoh.test/berkas.pdf',
+            'berkas.pdf',
+            'Lampiran hasil',
+            'inbox-dok',
+        ));
+        $this->assertSame('audio-uji', $client->sendAudio(
+            $setting,
+            '081234567890',
+            'https://contoh.test/suara.ogg',
+            'true',
+            'inbox-audio',
+        ));
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/messages/document'
+            && $request['sessionId'] === self::SESSION_ID
+            && $request['url'] === 'https://contoh.test/berkas.pdf'
+            && $request['filename'] === 'berkas.pdf'
+            && $request['caption'] === 'Lampiran hasil'
+            && $request->hasHeader('Idempotency-Key', 'inbox-dok'));
+        Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/messages/audio'
+            && $request['url'] === 'https://contoh.test/suara.ogg'
+            && $request['voiceNote'] === true
+            && $request->hasHeader('Idempotency-Key', 'inbox-audio'));
     }
 
     /**
