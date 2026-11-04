@@ -38,7 +38,15 @@ class GatewayProvisioningTest extends TestCase
         ]);
     }
 
-    public function test_first_provisioning_registers_tenant_and_api_key(): void
+    private const MESSAGE_EVENTS = [
+        'message.received',
+        'message.sent',
+        'message.delivered',
+        'message.read',
+        'message.failed',
+    ];
+
+    public function test_webhook_is_created_after_api_key_with_message_events(): void
     {
         Http::fake([
             'gateway.test/api/v1/auth/register' => Http::response(['success' => true, 'data' => [
@@ -47,23 +55,31 @@ class GatewayProvisioningTest extends TestCase
                 'user' => [],
             ]], 201),
             'gateway.test/api/v1/api-keys' => Http::response(['success' => true, 'data' => ['id' => 'k1', 'key' => 'api-uji']], 201),
+            'gateway.test/api/v1/webhooks' => Http::response(['success' => true, 'data' => ['id' => 'w1', 'secret' => 'secret-uji']], 201),
         ]);
 
         $setting = app(WhatsappGatewayProvisioningService::class)->ensure($this->setting());
 
         $this->assertSame('tenant-uji', $setting->gateway_tenant_key);
         $this->assertSame('api-uji', $setting->gateway_api_key);
+        $this->assertSame('secret-uji', $setting->gateway_webhook_secret);
         $this->assertNull($setting->gateway_password);
         $this->assertTrue($setting->provisioned());
+        $this->assertNotEmpty($setting->gateway_webhook_token);
 
         // Dibaca ulang dari basis data supaya penyimpanan yang gagal diam-diam
         // tidak lolos hanya karena atribut di memori sudah berubah.
         $fresh = $setting->fresh();
         $this->assertSame('tenant-uji', $fresh->gateway_tenant_key);
         $this->assertSame('api-uji', $fresh->gateway_api_key);
+        $this->assertSame('secret-uji', $fresh->gateway_webhook_secret);
         $this->assertNull($fresh->gateway_password);
 
-        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/webhooks'));
+        Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/webhooks'
+            && $request->hasHeader('x-tenant-key', 'tenant-uji')
+            && $request->hasHeader('X-API-Key', 'api-uji')
+            && str_ends_with((string) $request['url'], '/api/whatsapp/webhook/'.$fresh->gateway_webhook_token)
+            && $request['events'] === self::MESSAGE_EVENTS);
 
         Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/auth/register'
             && $request['name'] === $this->tenant->name
@@ -85,6 +101,7 @@ class GatewayProvisioningTest extends TestCase
                 'user' => [],
             ]], 200),
             'gateway.test/api/v1/api-keys' => Http::response(['success' => true, 'data' => ['id' => 'k2', 'key' => 'api-baru']], 201),
+            'gateway.test/api/v1/webhooks' => Http::response(['success' => true, 'data' => ['id' => 'w2', 'secret' => 'secret-baru']], 201),
         ]);
 
         $setting = app(WhatsappGatewayProvisioningService::class)->ensure($this->setting([
@@ -93,6 +110,7 @@ class GatewayProvisioningTest extends TestCase
         ]));
 
         $this->assertSame('api-baru', $setting->gateway_api_key);
+        $this->assertSame('secret-baru', $setting->gateway_webhook_secret);
         $this->assertNull($setting->gateway_password);
         Http::assertNotSent(fn ($request) => str_contains($request->url(), '/auth/register'));
         Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/auth/login'
@@ -107,10 +125,36 @@ class GatewayProvisioningTest extends TestCase
         $setting = app(WhatsappGatewayProvisioningService::class)->ensure($this->setting([
             'gateway_tenant_key' => 'tenant-uji',
             'gateway_api_key' => 'api-uji',
+            'gateway_webhook_secret' => 'secret-uji',
         ]));
 
         Http::assertNothingSent();
         $this->assertTrue($setting->provisioned());
+    }
+
+    /**
+     * Kredensial akun lengkap tetapi webhook belum pernah dibuat: lanjutkan
+     * dari langkah webhook saja, tanpa login atau mendaftar ulang.
+     */
+    public function test_missing_webhook_secret_resumes_without_registering_again(): void
+    {
+        Http::fake([
+            'gateway.test/api/v1/webhooks' => Http::response(['success' => true, 'data' => ['id' => 'w1', 'secret' => 'secret-uji']], 201),
+        ]);
+
+        $setting = app(WhatsappGatewayProvisioningService::class)->ensure($this->setting([
+            'gateway_tenant_key' => 'tenant-uji',
+            'gateway_api_key' => 'api-uji',
+        ]));
+
+        $this->assertSame('secret-uji', $setting->gateway_webhook_secret);
+        $this->assertTrue($setting->provisioned());
+
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/auth/'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api-keys'));
+        Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/webhooks'
+            && str_ends_with((string) $request['url'], '/api/whatsapp/webhook/'.$setting->gateway_webhook_token)
+            && $request['events'] === self::MESSAGE_EVENTS);
     }
 
     /**

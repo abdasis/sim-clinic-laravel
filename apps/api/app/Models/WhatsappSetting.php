@@ -72,13 +72,14 @@ class WhatsappSetting extends Model
     }
 
     /**
-     * Klinik sudah punya akun gateway beserta API key-nya. Webhook tidak
-     * termasuk syarat: fitur itu dibatalkan, jadi rahasianya tidak pernah
-     * diisi.
+     * Klinik sudah punya akun gateway, API key, dan webhook pesan masuknya.
+     * Tanpa rahasia webhook, pesan masuk tidak pernah sampai ke kotak masuk
+     * dan chatbot, jadi klinik belum dianggap siap.
      */
     public function provisioned(): bool
     {
         return filled($this->gateway_tenant_key)
-            && filled($this->gateway_api_key);
+            && filled($this->gateway_api_key)
+            && filled($this->gateway_webhook_secret);
     }
 }

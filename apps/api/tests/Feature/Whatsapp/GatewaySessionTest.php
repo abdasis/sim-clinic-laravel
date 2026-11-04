@@ -45,6 +45,7 @@ class GatewaySessionTest extends TestCase
             'session' => 'klinik-uji',
             'gateway_tenant_key' => 'tenant-uji',
             'gateway_api_key' => 'api-uji',
+            'gateway_webhook_secret' => 'secret-uji',
             'gateway_session_id' => self::SESSION_ID,
             ...$overrides,
         ]);
