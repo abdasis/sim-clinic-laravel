@@ -229,8 +229,13 @@ Route::prefix('{tenant}/clinic')
             ->only(['index', 'store', 'update', 'destroy']);
         Route::apiResource('reminder-rules', ReminderRuleController::class)
             ->only(['index', 'store', 'update', 'destroy']);
-        Route::patch('broadcasts/{broadcast}/recipients/{recipient}', [BroadcastController::class, 'updateRecipient']);
-        Route::apiResource('broadcasts', BroadcastController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+        Route::patch('broadcasts/{broadcast}/recipients/{recipient}', [BroadcastController::class, 'updateRecipient'])
+            ->whereNumber('broadcast');
+        // Id numerik saja: path seperti /broadcasts/templates tidak boleh jatuh
+        // ke route show lalu meledak saat basis data meng-cast "templates".
+        Route::apiResource('broadcasts', BroadcastController::class)
+            ->only(['index', 'store', 'show', 'update', 'destroy'])
+            ->whereNumber('broadcast');
 
         // Kotak masuk WhatsApp — utas percakapan, balasan manual, tanda dibaca
         Route::get('inbox/conversations', [InboxConversationController::class, 'index']);
