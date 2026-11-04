@@ -1,6 +1,6 @@
 import type { DataTableMeta } from "#/types/data-table.ts"
 
-export type ConversationChannel = "waha" | "cloud_api"
+export type ConversationChannel = "gateway"
 export type MessageDirection = "in" | "out"
 export type MessageStatus = "sent" | "delivered" | "read" | "failed"
 export type MessageMediaType = "document" | "image" | "video" | "audio" | "sticker"
