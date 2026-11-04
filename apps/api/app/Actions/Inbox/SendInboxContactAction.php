@@ -2,43 +2,43 @@
 
 namespace App\Actions\Inbox;
 
-use App\Concerns\EnsuresReplyWindow;
-use App\Enums\ConversationChannel;
 use App\Models\Conversation;
 use App\Models\Message;
-use App\Support\CloudApiClient;
-use App\Support\CloudApiException;
+use App\Models\WhatsappSetting;
 use App\Support\PhoneNumber;
-use App\Support\WahaClient;
-use App\Support\WahaException;
+use App\Support\WhatsappGatewayClient;
+use App\Support\WhatsappGatewayException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Kirim satu kartu kontak pada percakapan, lalu catat di utasnya.
+ * Kirim satu kontak pada percakapan, lalu catat di utasnya.
  *
- * Cloud API mengirimnya sebagai pesan bertipe `contacts`. WAHA belum punya
- * endpoint kartu kontak yang bisa dipastikan ada di semua versi, jadi di sana
- * kontak dikirim sebagai teks biasa — lihat catatan di deliver().
+ * Gateway belum punya endpoint kartu kontak, jadi kontak dikirim sebagai teks
+ * "Nama: +62…". Balasannya tetap tampil rapi di utas penerima.
  */
 class SendInboxContactAction
 {
-    use EnsuresReplyWindow;
-
     public function handle(Conversation $conversation, string $name, string $phone): Message
     {
-        $this->ensureReplyWindowOpen($conversation, 'phone');
+        $setting = $this->setting($conversation);
 
         $contactPhone = PhoneNumber::normalize($phone) ?? ltrim($phone, '+');
         $body = $name.': +'.ltrim($contactPhone, '+');
 
         try {
-            $providerMessageId = $this->deliver($conversation, $name, $contactPhone, $body);
-        } catch (CloudApiException|WahaException $e) {
-            Log::error('Gagal mengirim kontak kotak masuk WhatsApp.', [
+            $providerMessageId = app(WhatsappGatewayClient::class)->sendText(
+                $setting,
+                $conversation->contact_phone,
+                $body,
+                'inbox-'.Str::uuid(),
+            );
+        } catch (WhatsappGatewayException $e) {
+            Log::error('Gagal mengirim kontak kotak masuk WhatsApp lewat gateway.', [
                 'exception' => $e,
                 'conversation_id' => $conversation->id,
-                'channel' => $conversation->channel?->value,
+                'tenant_id' => $conversation->tenant_id,
             ]);
 
             throw ValidationException::withMessages(['phone' => __('inbox.send_failed')]);
@@ -53,30 +53,16 @@ class SendInboxContactAction
         );
     }
 
-    /** @return string|null id pesan dari penyedia, bila ia memberikannya */
-    private function deliver(Conversation $conversation, string $name, string $contactPhone, string $body): ?string
+    private function setting(Conversation $conversation): WhatsappSetting
     {
-        if ($conversation->channel === ConversationChannel::CloudApi) {
-            $client = app(CloudApiClient::class);
+        $setting = WhatsappSetting::query()
+            ->where('tenant_id', $conversation->tenant_id)
+            ->first();
 
-            if (! $client instanceof CloudApiClient) {
-                throw ValidationException::withMessages(['phone' => __('inbox.cloud_api_not_ready')]);
-            }
-
-            return $client->sendContacts($conversation->contact_phone, $name, $contactPhone);
+        if ($setting === null) {
+            throw ValidationException::withMessages(['phone' => __('inbox.gateway_not_ready')]);
         }
 
-        $client = app(WahaClient::class);
-
-        if (! $client instanceof WahaClient) {
-            throw ValidationException::withMessages(['phone' => __('inbox.waha_not_ready')]);
-        }
-
-        // shortcut: WAHA tidak punya /api/sendContact yang dijamin ada di semua
-        // versi, jadi kontak dikirim sebagai teks "Nama: +62…". Upgrade bila
-        // gateway sudah dipastikan mendukung endpoint kartu kontak.
-        $client->send($conversation->contact_phone, $body);
-
-        return null;
+        return $setting;
     }
 }

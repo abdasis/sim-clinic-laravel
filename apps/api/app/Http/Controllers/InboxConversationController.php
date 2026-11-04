@@ -7,11 +7,9 @@ use App\Http\Concerns\InteractsWithDataTable;
 use App\Http\Requests\SendInboxContactRequest;
 use App\Http\Requests\SendInboxMediaRequest;
 use App\Http\Requests\SendInboxMessageRequest;
-use App\Http\Requests\SendInboxReactionRequest;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
 use App\Models\Conversation;
-use App\Models\Message;
 use App\Services\InboxService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -111,22 +109,6 @@ class InboxConversationController extends Controller
             'data' => new MessageResource($message),
             'meta' => ['message' => __('inbox.sent')],
         ], 201);
-    }
-
-    public function storeReaction(
-        SendInboxReactionRequest $request,
-        Conversation $conversation,
-        Message $message,
-        InboxService $inbox,
-    ): JsonResponse {
-        $this->authorize('update', $conversation);
-
-        $message = $inbox->react($conversation, $message, $request->validated('emoji'));
-
-        return response()->json([
-            'data' => new MessageResource($message),
-            'meta' => [],
-        ]);
     }
 
     public function storeMedia(

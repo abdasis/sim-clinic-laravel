@@ -6,7 +6,6 @@ use App\Actions\Inbox\MarkConversationReadAction;
 use App\Actions\Inbox\SendInboxContactAction;
 use App\Actions\Inbox\SendInboxMediaAction;
 use App\Actions\Inbox\SendInboxMessageAction;
-use App\Actions\Inbox\SendInboxReactionAction;
 use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\UploadedFile;
@@ -21,11 +20,6 @@ class InboxService
     public function send(Conversation $conversation, string $body, ?int $replyToMessageId = null): Message
     {
         return app(SendInboxMessageAction::class)->handle($conversation, $body, $replyToMessageId);
-    }
-
-    public function react(Conversation $conversation, Message $message, ?string $emoji): Message
-    {
-        return app(SendInboxReactionAction::class)->handle($conversation, $message, $emoji);
     }
 
     public function sendMedia(Conversation $conversation, string $type, UploadedFile $file, ?string $caption): Message

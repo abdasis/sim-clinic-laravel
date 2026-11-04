@@ -35,6 +35,7 @@ return [
     'sent' => 'Balasan terkirim.',
     'read' => 'Percakapan ditandai sudah dibaca.',
     'send_failed' => 'Pesan gagal dikirim lewat WhatsApp. Coba lagi sebentar lagi.',
+    'gateway_not_ready' => 'Sesi WhatsApp klinik belum siap. Buka menu Koneksi WhatsApp lalu sambungkan dulu.',
     'waha_not_ready' => 'Sesi WhatsApp klinik belum siap. Buka Koneksi WhatsApp lalu sambungkan dulu.',
     'cloud_api_not_ready' => 'Cloud API Meta belum dikonfigurasi untuk klinik ini. Hubungi pengelola platform.',
     'window_expired' => 'Balasan bebas hanya bisa dikirim dalam 24 jam sejak pesan terakhir pasien. Di luar jendela itu, gunakan template pesan yang sudah disetujui Meta.',

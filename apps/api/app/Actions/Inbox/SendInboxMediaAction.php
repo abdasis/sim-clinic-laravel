@@ -2,38 +2,35 @@
 
 namespace App\Actions\Inbox;
 
-use App\Concerns\EnsuresReplyWindow;
-use App\Enums\ConversationChannel;
 use App\Models\Conversation;
 use App\Models\Message;
-use App\Support\CloudApiClient;
-use App\Support\CloudApiException;
-use App\Support\WahaClient;
-use App\Support\WahaException;
+use App\Models\WhatsappSetting;
+use App\Support\WhatsappGatewayClient;
+use App\Support\WhatsappGatewayException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Kirim satu lampiran (gambar, video, audio, dokumen, stiker) pada percakapan,
  * lalu catat di utasnya.
  *
- * Berkas disimpan dulu supaya riwayatnya bisa dibuka lagi dari kotak masuk.
- * Bila penyedia menolak setelah berkas tersimpan, berkas itu dihapus lagi:
- * lampiran yang tidak pernah terkirim tidak boleh menumpuk di disk.
+ * Berkas disimpan dulu supaya riwayatnya bisa dibuka lagi dari kotak masuk dan
+ * supaya gateway bisa mengambilnya lewat URL publik. Bila gateway menolak
+ * setelah berkas tersimpan, berkas itu dihapus lagi: lampiran yang tidak
+ * pernah terkirim tidak boleh menumpuk di disk.
  */
 class SendInboxMediaAction
 {
-    use EnsuresReplyWindow;
-
     public function handle(
         Conversation $conversation,
         string $type,
         UploadedFile $file,
         ?string $caption = null,
     ): Message {
-        $this->ensureReplyWindowOpen($conversation, 'file');
+        $setting = $this->setting($conversation);
 
         $directory = "inbox-media/{$conversation->tenant_id}/{$conversation->id}";
         $path = $file->store($directory, 'public');
@@ -44,16 +41,17 @@ class SendInboxMediaAction
 
         $mime = $file->getMimeType() ?: 'application/octet-stream';
         $filename = $file->getClientOriginalName();
+        $url = Storage::disk('public')->url($path);
 
         try {
-            $providerMessageId = $this->deliver($conversation, $type, (string) $file->getRealPath(), $mime, $filename, $caption);
-        } catch (CloudApiException|WahaException $e) {
+            $providerMessageId = $this->deliver($setting, $conversation, $type, $url, $filename, $caption);
+        } catch (WhatsappGatewayException $e) {
             Storage::disk('public')->delete($path);
 
-            Log::error('Gagal mengirim lampiran kotak masuk WhatsApp.', [
+            Log::error('Gagal mengirim lampiran kotak masuk WhatsApp lewat gateway.', [
                 'exception' => $e,
                 'conversation_id' => $conversation->id,
-                'channel' => $conversation->channel?->value,
+                'tenant_id' => $conversation->tenant_id,
                 'media_type' => $type,
             ]);
 
@@ -81,37 +79,38 @@ class SendInboxMediaAction
         );
     }
 
-    /** @return string|null id pesan dari penyedia, bila ia memberikannya */
+    /** @return string|null id pesan dari gateway, bila ia memberikannya */
     private function deliver(
+        WhatsappSetting $setting,
         Conversation $conversation,
         string $type,
-        string $absolutePath,
-        string $mime,
+        string $url,
         string $filename,
         ?string $caption,
     ): ?string {
-        $binary = (string) file_get_contents($absolutePath);
+        $client = app(WhatsappGatewayClient::class);
+        $phone = $conversation->contact_phone;
+        $key = 'inbox-'.Str::uuid();
 
-        if ($conversation->channel === ConversationChannel::CloudApi) {
-            $client = app(CloudApiClient::class);
+        return match ($type) {
+            'image' => $client->sendImage($setting, $phone, $url, $caption, $key),
+            'audio' => $client->sendAudio($setting, $phone, $url, 'false', $key),
+            // Video dan stiker ikut jalur dokumen: gateway hanya membedakan
+            // gambar, audio, dan dokumen.
+            default => $client->sendDocument($setting, $phone, $url, $filename, $caption, $key),
+        };
+    }
 
-            if (! $client instanceof CloudApiClient) {
-                throw ValidationException::withMessages(['file' => __('inbox.cloud_api_not_ready')]);
-            }
+    private function setting(Conversation $conversation): WhatsappSetting
+    {
+        $setting = WhatsappSetting::query()
+            ->where('tenant_id', $conversation->tenant_id)
+            ->first();
 
-            $mediaId = $client->uploadMedia($binary, $mime, $filename);
-
-            return $client->sendMedia($conversation->contact_phone, $type, $mediaId, $caption, $filename);
+        if ($setting === null) {
+            throw ValidationException::withMessages(['file' => __('inbox.gateway_not_ready')]);
         }
 
-        $client = app(WahaClient::class);
-
-        if (! $client instanceof WahaClient) {
-            throw ValidationException::withMessages(['file' => __('inbox.waha_not_ready')]);
-        }
-
-        $client->sendFile($conversation->contact_phone, $binary, $mime, $filename, $caption);
-
-        return null;
+        return $setting;
     }
 }

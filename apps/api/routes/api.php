@@ -248,7 +248,6 @@ Route::prefix('{tenant}/clinic')
         Route::post('inbox/conversations/{conversation}/messages', [InboxConversationController::class, 'storeMessage']);
         Route::post('inbox/conversations/{conversation}/media', [InboxConversationController::class, 'storeMedia']);
         Route::post('inbox/conversations/{conversation}/contact', [InboxConversationController::class, 'storeContact']);
-        Route::post('inbox/conversations/{conversation}/messages/{message}/reaction', [InboxConversationController::class, 'storeReaction']);
         Route::patch('inbox/conversations/{conversation}/read', [InboxConversationController::class, 'markRead']);
 
         // Promo — potongan harga layanan/produk dalam rentang tanggal
