@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\SenderIdentity;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,7 +12,10 @@ class ConversationResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'contact_phone' => $this->contact_phone,
+            // Identitas LID disimpan apa adanya agar balasan tetap sampai;
+            // operator cukup melihat angkanya.
+            'contact_phone' => SenderIdentity::display((string) $this->contact_phone),
+            'contact_is_lid' => SenderIdentity::isLid((string) $this->contact_phone),
             'contact_name' => $this->contact_name,
             'channel' => $this->channel,
             'channel_label' => $this->channel?->label(),
