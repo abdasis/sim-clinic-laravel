@@ -1,13 +1,11 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  ArrowTurnBackwardIcon,
   Copy01Icon,
   Delete02Icon,
   Forward01Icon,
   InformationCircleIcon,
   Note01Icon,
   PinIcon,
-  SmileIcon,
   StarIcon,
 } from "@hugeicons/core-free-icons"
 
@@ -32,21 +30,14 @@ const UNAVAILABLE_ITEMS = [
 
 interface MessageMenuItemsProps {
   onInfo: () => void
-  onReply: () => void
   onCopy: () => void
-  onReact: () => void
 }
 
 /**
- * Isi menu pesan. Yang tidak didukung Cloud API tetap tampil supaya pengguna
+ * Isi menu pesan. Yang tidak didukung gateway tetap tampil supaya pengguna
  * tahu fiturnya tidak hilang, dan alasannya muncul saat disorot.
  */
-export function MessageMenuItems({
-  onInfo,
-  onReply,
-  onCopy,
-  onReact,
-}: MessageMenuItemsProps) {
+export function MessageMenuItems({ onInfo, onCopy }: MessageMenuItemsProps) {
   const { t } = useTrans()
 
   return (
@@ -56,23 +47,9 @@ export function MessageMenuItems({
           <HugeiconsIcon icon={InformationCircleIcon} strokeWidth={1.8} />
           {t("inbox.message_menu.info")}
         </ContextMenuItem>
-        <ContextMenuItem data-testid="menu-reply" onSelect={onReply}>
-          <HugeiconsIcon icon={ArrowTurnBackwardIcon} strokeWidth={1.8} />
-          {t("inbox.message_menu.reply")}
-        </ContextMenuItem>
         <ContextMenuItem data-testid="menu-copy" onSelect={onCopy}>
           <HugeiconsIcon icon={Copy01Icon} strokeWidth={1.8} />
           {t("inbox.message_menu.copy")}
-        </ContextMenuItem>
-        <ContextMenuItem
-          data-testid="menu-react"
-          onSelect={(event) => {
-            event.preventDefault()
-            onReact()
-          }}
-        >
-          <HugeiconsIcon icon={SmileIcon} strokeWidth={1.8} />
-          {t("inbox.message_menu.react")}
         </ContextMenuItem>
       </div>
 

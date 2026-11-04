@@ -11,10 +11,8 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
-import type { Message } from "../types.ts"
 import { AttachmentMenu } from "./attachment-menu.tsx"
 import { ComposerEditor } from "./composer-editor.tsx"
-import { ReplyPreview } from "./reply-preview.tsx"
 
 interface ReplyBoxProps {
   tenant: string
@@ -23,11 +21,8 @@ interface ReplyBoxProps {
   isSending: boolean
   error: string | null
   disabled?: boolean
-  replyTo: Message | null
-  contactName: string
   onChange: (value: string) => void
   onSend: () => void
-  onCancelReply: () => void
   onInsertText: (text: string) => void
 }
 
@@ -43,11 +38,8 @@ export function ReplyBox({
   isSending,
   error,
   disabled,
-  replyTo,
-  contactName,
   onChange,
   onSend,
-  onCancelReply,
   onInsertText,
 }: ReplyBoxProps) {
   const { t } = useTrans()
@@ -67,16 +59,6 @@ export function ReplyBox({
       ) : null}
 
       <div className="rounded-lg bg-muted p-1.5 transition-shadow duration-150 focus-within:ring-2 focus-within:ring-ring/25">
-        {replyTo ? (
-          <div className="mb-1.5 px-0.5">
-            <ReplyPreview
-              target={replyTo}
-              contactName={contactName}
-              onCancel={onCancelReply}
-            />
-          </div>
-        ) : null}
-
         <div className="overflow-hidden rounded-md bg-card ring-1 ring-foreground/6">
           <ComposerEditor
             value={value}

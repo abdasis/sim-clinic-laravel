@@ -27,7 +27,6 @@ import type { Conversation, Message } from "../types.ts"
 import { MessageBubble } from "./message-bubble.tsx"
 
 interface MessageThreadProps {
-  tenant: string
   conversation: Conversation
   messages: Message[]
   isLoading: boolean
@@ -40,12 +39,10 @@ interface MessageThreadProps {
   onLoadOlder: () => Promise<unknown>
   onMarkRead: () => void
   onBack: () => void
-  onReply: (message: Message) => void
   footer: ReactNode
 }
 
 export function MessageThread({
-  tenant,
   conversation,
   messages,
   isLoading,
@@ -58,7 +55,6 @@ export function MessageThread({
   onLoadOlder,
   onMarkRead,
   onBack,
-  onReply,
   footer,
 }: MessageThreadProps) {
   const { t } = useTrans()
@@ -210,13 +206,7 @@ export function MessageThread({
 
                 <div className="space-y-2">
                   {day.messages.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      tenant={tenant}
-                      conversationId={conversation.id}
-                      onReply={onReply}
-                    />
+                    <MessageBubble key={message.id} message={message} />
                   ))}
                 </div>
               </div>

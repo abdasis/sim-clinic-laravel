@@ -7,8 +7,6 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Add01Icon, ArrowLeft01Icon } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 
 import {
@@ -16,20 +14,11 @@ import {
   ContextMenuContent,
   ContextMenuTrigger,
 } from "#/components/ui/context-menu.tsx"
-import { Spinner } from "#/components/ui/spinner.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { cn } from "#/lib/utils.ts"
-import { useSendReaction } from "../hooks/use-send-reaction.ts"
 import type { Message } from "../types.ts"
 import { MessageInfoDialog } from "./message-info-dialog.tsx"
 import { MessageMenuItems } from "./message-menu-items.tsx"
-
-const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"] as const
-const MORE_REACTIONS = [
-  "😁", "😅", "🙂", "😊", "😍", "😘", "😎", "🤔",
-  "😴", "😭", "😡", "🤯", "👏", "🙌", "🔥", "🎉",
-  "✅", "❌", "👌", "💪", "🤝", "🤒", "💊", "📅",
-] as const
 
 const LONG_PRESS_MS = 450
 const MOVE_CANCEL_PX = 10
@@ -72,35 +61,29 @@ async function copyText(text: string): Promise<boolean> {
 
 interface MessageContextMenuProps {
   message: Message
-  tenant: string
-  conversationId: number
   align: "start" | "end"
-  onReply: (message: Message) => void
   children: ReactNode
 }
 
 /**
- * Menu klik kanan / tekan-lama pada gelembung, mengikuti pola WhatsApp.
- * Sentuhan panjang membuka menu setelah 450 ms; geseran atau gulir
- * membatalkannya supaya menelusuri utas tidak memunculkan menu.
+ * Menu klik kanan / tekan-lama pada gelembung. Sentuhan panjang membuka menu
+ * setelah 450 ms; geseran atau gulir membatalkannya supaya menelusuri utas
+ * tidak memunculkan menu.
+ *
+ * Reaksi dan kutipan balasan tidak lagi ditawarkan: gateway internal tidak
+ * mengirim keduanya, jadi menampilkannya hanya menjanjikan yang tidak terjadi.
+ * Kutipan pada pesan lama tetap dirender oleh gelembungnya sendiri.
  */
 export function MessageContextMenu({
   message,
-  tenant,
-  conversationId,
   align,
-  onReply,
   children,
 }: MessageContextMenuProps) {
   const { t } = useTrans()
   const [open, setOpen] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
-  const [showMore, setShowMore] = useState(false)
-  const [pendingEmoji, setPendingEmoji] = useState<string | null>(null)
   const press = useRef<{ timer: number; x: number; y: number } | null>(null)
   const suppressClick = useRef(false)
-  const firstReaction = useRef<HTMLButtonElement>(null)
-  const reaction = useSendReaction(tenant, conversationId)
 
   const clearPress = () => {
     if (press.current === null) return
@@ -171,18 +154,6 @@ export function MessageContextMenu({
     )
   }
 
-  const react = (emoji: string) => {
-    // Gelembung optimistis belum punya id server; reaksinya akan 404.
-    if (message.id < 0) return
-
-    setPendingEmoji(emoji)
-    setOpen(false)
-    reaction.mutate(
-      { messageId: message.id, emoji: message.reaction === emoji ? "" : emoji },
-      { onSettled: () => setPendingEmoji(null) },
-    )
-  }
-
   const copy = () => {
     setOpen(false)
     void copyText(message.body).then((ok) => {
@@ -190,33 +161,6 @@ export function MessageContextMenu({
         t(ok ? "inbox.message_menu.copy_success" : "inbox.message_menu.copy_failed"),
       )
     })
-  }
-
-  const reactionButton = (emoji: string) => {
-    const busy = pendingEmoji === emoji
-    const active = message.reaction === emoji
-    const first = showMore
-      ? emoji === MORE_REACTIONS[0]
-      : emoji === QUICK_REACTIONS[0]
-
-    return (
-      <button
-        key={emoji}
-        ref={first ? firstReaction : undefined}
-        type="button"
-        aria-label={t("inbox.message_menu.react_with").replace(":emoji", emoji)}
-        aria-pressed={active}
-        disabled={reaction.isPending}
-        data-testid={`reaction-${emoji}`}
-        className={cn(
-          "flex size-7 items-center justify-center rounded-md text-base leading-none outline-none transition-colors hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
-          active && "bg-foreground/10",
-        )}
-        onClick={() => react(emoji)}
-      >
-        {busy ? <Spinner className="size-4" /> : emoji}
-      </button>
-    )
   }
 
   return (
@@ -243,48 +187,10 @@ export function MessageContextMenu({
           </div>
         </ContextMenuTrigger>
 
-        <ContextMenuContent className="w-60 overflow-visible p-0">
-          <div className="border-b border-border/50 p-1">
-            {showMore ? (
-              <>
-                <div className="mb-1 flex items-center justify-between px-0.5">
-                  <span className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
-                    {t("inbox.message_menu.more_reactions")}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label={t("inbox.message_menu.back")}
-                    className="flex size-6 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-ring/50"
-                    onClick={() => setShowMore(false)}
-                  >
-                    <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} className="size-3.5" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-8 gap-0.5">
-                  {MORE_REACTIONS.map(reactionButton)}
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-between">
-                {QUICK_REACTIONS.map(reactionButton)}
-                <button
-                  type="button"
-                  aria-label={t("inbox.message_menu.more")}
-                  data-testid="reaction-more"
-                  className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-ring/50"
-                  onClick={() => setShowMore(true)}
-                >
-                  <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />
-                </button>
-              </div>
-            )}
-          </div>
-
+        <ContextMenuContent className="w-60 p-1">
           <MessageMenuItems
             onInfo={() => setInfoOpen(true)}
-            onReply={() => onReply(message)}
             onCopy={copy}
-            onReact={() => firstReaction.current?.focus()}
           />
         </ContextMenuContent>
       </ContextMenu>

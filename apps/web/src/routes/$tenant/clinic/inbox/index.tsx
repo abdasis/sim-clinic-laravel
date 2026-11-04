@@ -12,7 +12,6 @@ import { useInboxConversations } from "./hooks/use-inbox-conversations.ts"
 import { useInboxRealtime } from "./hooks/use-inbox-realtime.ts"
 import { useInboxThread } from "./hooks/use-inbox-thread.ts"
 import { useMarkConversationRead } from "./hooks/use-mark-conversation-read.ts"
-import type { Message } from "./types.ts"
 
 export const Route = createFileRoute("/$tenant/clinic/inbox/")({
   component: InboxPage,
@@ -30,7 +29,6 @@ function InboxPage() {
   const deferredSearch = useDeferredValue(search)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [draft, setDraft] = useState("")
-  const [replyTarget, setReplyTarget] = useState<Message | null>(null)
   const markedRead = useRef<Set<number>>(new Set())
 
   const conversations = useInboxConversations(tenant, deferredSearch)
@@ -67,35 +65,24 @@ function InboxPage() {
 
   useEffect(() => {
     setDraft("")
-    setReplyTarget(null)
     thread.send.reset()
   }, [selectedId, thread.send.reset])
 
   const bodyError = thread.send.error?.errors?.body?.[0] ?? null
 
-  const handleReply = (message: Message) => {
-    setReplyTarget(message)
-    requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>('[data-testid="reply-textarea"]')?.focus()
-    })
-  }
-
   const handleSend = () => {
     const body = draft.trim()
     if (body === "" || thread.send.isPending || selectedId === null) return
 
-    const replyTo = replyTarget ?? undefined
-
     setDraft("")
     thread.send.mutate(
-      { body, replyTo },
+      { body },
       {
         onError: () => {
           // Kembalikan tulisannya: mengirim ulang lebih murah daripada mengetik
           // ulang, dan kegagalan biasanya soal jendela waktu, bukan isinya.
           setDraft(body)
         },
-        onSuccess: () => setReplyTarget(null),
       },
     )
   }
@@ -138,7 +125,6 @@ function InboxPage() {
         >
           {selected ? (
             <MessageThread
-              tenant={tenant}
               conversation={selected}
               messages={thread.messages}
               isLoading={thread.query.isLoading}
@@ -151,7 +137,6 @@ function InboxPage() {
               onLoadOlder={() => thread.query.fetchNextPage()}
               onMarkRead={() => markAsRead(selected.id)}
               onBack={() => setSelectedId(null)}
-              onReply={handleReply}
               footer={
                 <ReplyBox
                   tenant={tenant}
@@ -159,11 +144,8 @@ function InboxPage() {
                   value={draft}
                   isSending={thread.send.isPending}
                   error={bodyError}
-                  replyTo={replyTarget}
-                  contactName={selected.contact_name?.trim() || selected.contact_phone}
                   onChange={setDraft}
                   onSend={handleSend}
-                  onCancelReply={() => setReplyTarget(null)}
                   onInsertText={handleInsertText}
                 />
               }

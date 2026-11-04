@@ -22,7 +22,6 @@ export function threadKey(tenant: string, conversationId: number | null) {
 
 export interface SendMessagePayload {
   body: string
-  replyTo?: Message
 }
 
 /**
@@ -59,14 +58,12 @@ export function useInboxThread(tenant: string, conversationId: number | null) {
   )
 
   const send = useMutation({
-    mutationFn: ({ body, replyTo }: SendMessagePayload) =>
+    mutationFn: ({ body }: SendMessagePayload) =>
       apiPost<{ data: Message; meta: { message: string } }>(
         `/${tenant}/clinic/inbox/conversations/${conversationId}/messages`,
-        replyTo
-          ? { body, reply_to_message_id: replyTo.id }
-          : { body },
+        { body },
       ),
-    onMutate: async ({ body, replyTo }) => {
+    onMutate: async ({ body }) => {
       await qc.cancelQueries({ queryKey: key })
 
       const previous = qc.getQueryData<InfiniteData<ThreadPage, number>>(key)
@@ -83,14 +80,9 @@ export function useInboxThread(tenant: string, conversationId: number | null) {
         media_name: null,
         sent_at: new Date().toISOString(),
         reaction: null,
-        reply_to: replyTo
-          ? {
-              id: replyTo.id,
-              body: replyTo.body,
-              direction: replyTo.direction,
-              media_type: replyTo.media_type,
-            }
-          : null,
+        // Gateway tidak lagi menerima kutipan baru; pesan lama tetap
+        // menampilkan `reply_to` yang tersimpan di server.
+        reply_to: null,
       }
 
       qc.setQueryData<InfiniteData<ThreadPage, number>>(key, (old) =>

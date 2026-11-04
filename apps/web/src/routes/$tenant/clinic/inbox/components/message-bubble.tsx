@@ -17,9 +17,6 @@ import { QuotedMessage } from "./reply-preview.tsx"
 
 interface MessageBubbleProps {
   message: Message
-  tenant: string
-  conversationId: number
-  onReply: (message: Message) => void
 }
 
 /**
@@ -27,24 +24,13 @@ interface MessageBubbleProps {
  * kiri dengan latar lembut berbingkai. Status kirim hanya milik pesan keluar —
  * pesan masuk tidak punya nasib yang bisa gagal di sisi kita.
  */
-export function MessageBubble({
-  message,
-  tenant,
-  conversationId,
-  onReply,
-}: MessageBubbleProps) {
+export function MessageBubble({ message }: MessageBubbleProps) {
   const { t } = useTrans()
   const isOut = message.direction === "out"
   const hasMedia = message.media_url !== null
 
   return (
-    <MessageContextMenu
-      message={message}
-      tenant={tenant}
-      conversationId={conversationId}
-      align={isOut ? "end" : "start"}
-      onReply={onReply}
-    >
+    <MessageContextMenu message={message} align={isOut ? "end" : "start"}>
       <Bubble
         align={isOut ? "end" : "start"}
         variant={isOut ? "accent" : "secondary"}
