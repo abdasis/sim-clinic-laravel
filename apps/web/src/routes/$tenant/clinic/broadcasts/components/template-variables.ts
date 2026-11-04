@@ -51,3 +51,45 @@ export function isTemplateComplete(template: BroadcastTemplate | null): boolean 
 export function templatePayload(template: BroadcastTemplate) {
   return { body: template.body, params: template.params ?? [] }
 }
+
+/** Alias placeholder lama, sama dengan `TemplateVariables::renderNamed` di backend. */
+const LEGACY_ALIASES: Record<string, string> = {
+  nama_pasien: "nama",
+  nama_treatment: "layanan_terakhir",
+  tanggal_treatment: "tanggal_terakhir",
+  nomor_clinic: "klinik_telepon",
+}
+
+/**
+ * Broadcast lama menyimpan badan pesan di kolom `message` dengan placeholder
+ * bernama (`{nama}`, `{klinik}`), bukan `template`. Formulir sunting hanya
+ * mengenal slot bernomor, jadi ubah nama menjadi `{{n}}` + daftar parameter
+ * supaya isinya tidak kosong dan pesan tidak terkirim mentah.
+ */
+export function templateFromLegacyMessage(
+  message: string | null | undefined,
+): BroadcastTemplate | null {
+  if (!message || message.trim() === "") return null
+
+  const params: string[] = []
+  const body = message.replace(
+    /\{\{\s*([a-z_]+)\s*\}\}|\{\s*([a-z_]+)\s*\}/gi,
+    (match, double: string | undefined, single: string | undefined) => {
+      const raw = double ?? single ?? ""
+      const key = LEGACY_ALIASES[raw] ?? raw
+
+      if (!(TEMPLATE_VARIABLES as readonly string[]).includes(key)) return match
+
+      let index = params.indexOf(key)
+
+      if (index === -1) {
+        params.push(key)
+        index = params.length - 1
+      }
+
+      return `{{${index + 1}}}`
+    },
+  )
+
+  return { body, params }
+}

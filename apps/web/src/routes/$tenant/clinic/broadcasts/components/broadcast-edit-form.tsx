@@ -18,6 +18,7 @@ import {
   BODY_MAX,
   BODY_MAX_WITH_IMAGE,
   isTemplateComplete,
+  templateFromLegacyMessage,
   templatePayload,
 } from "./template-variables.ts"
 
@@ -81,7 +82,7 @@ export function BroadcastEditForm({ tenant, broadcast }: BroadcastEditFormProps)
             body: broadcast.template.body,
             params: broadcast.template.params ?? [],
           }
-        : null,
+        : templateFromLegacyMessage(broadcast.message),
     )
     setInitialized(true)
   }, [broadcast, initialized, form])
