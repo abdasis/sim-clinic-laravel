@@ -39,7 +39,6 @@ use App\Http\Controllers\StatsController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\TenantRegistrationController;
 use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WhatsappGatewayWebhookController;
@@ -50,8 +49,6 @@ use Illuminate\Support\Facades\Route;
 // =========================================================================
 // Publik (tanpa tenant prefix) — spec 001
 // =========================================================================
-Route::get('/translations', [TranslationController::class, 'index']);
-
 // Route publik yang menyentuh kredensial atau membuat data harus dibatasi
 // lajunya: tanpa itu, kata sandi bisa ditebak berulang tanpa hambatan dan
 // pendaftaran klinik bisa dibanjiri. Batasnya per IP per menit.
