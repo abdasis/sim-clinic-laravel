@@ -302,10 +302,12 @@ Kotak masuk dan chatbot dihapus, jadi tidak ada lagi konsumen webhook. Tidak ada
 
 **Files:**
 - Create: `apps/api/app/Services/WhatsappGatewayProvisioningService.php`
+- Modify: `apps/api/app/Models/WhatsappSetting.php` (`provisioned()` tidak lagi mensyaratkan webhook secret)
 - Test: `apps/api/tests/Feature/Whatsapp/GatewayProvisioningTest.php`
 
 **Interfaces:**
 - Produces: `WhatsappGatewayProvisioningService::ensure(WhatsappSetting $setting): WhatsappSetting` — idempoten dan bisa dilanjutkan.
+- Produces: `WhatsappSetting::provisioned()` = `filled(gateway_tenant_key) && filled(gateway_api_key)`. Webhook dibatalkan, jadi secret tidak pernah diisi.
 - Consumes: `WhatsappGatewayClient::register/login/createApiKey`. Tidak ada webhook.
 
 - [ ] **Step 1: Write the failing tests**
@@ -338,7 +340,7 @@ public function test_retry_after_failed_api_key_step_logs_in_instead_of_register
 
 public function test_complete_credentials_do_not_call_the_gateway(): void
 {
-    // tenant key + api key terisi → Http::assertNothingSent()
+    // tenant key + api key terisi → Http::assertNothingSent() dan provisioned() true
 }
 ```
 
