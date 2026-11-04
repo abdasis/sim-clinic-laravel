@@ -3,7 +3,6 @@
 namespace Tests\Feature\Whatsapp;
 
 use App\Enums\ConversationChannel;
-use App\Models\WhatsappGatewaySetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

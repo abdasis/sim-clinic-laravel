@@ -7,7 +7,6 @@ use App\Enums\MessageDirection;
 use App\Enums\MessageStatus;
 use App\Jobs\ProcessInboundMessageJob;
 use App\Models\Conversation;
-use App\Models\Message;
 use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
