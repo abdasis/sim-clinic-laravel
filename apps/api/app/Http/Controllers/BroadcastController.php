@@ -11,6 +11,7 @@ use App\Http\Requests\BroadcastRequest;
 use App\Http\Requests\BroadcastStatusRequest;
 use App\Http\Requests\BroadcastTestRequest;
 use App\Http\Requests\BroadcastUpdateRequest;
+use App\Http\Requests\WhatsappPairingRequest;
 use App\Http\Requests\WhatsappSessionRequest;
 use App\Http\Requests\WhatsappTemplateRequest;
 use App\Http\Resources\BroadcastRecipientResource;
@@ -20,13 +21,14 @@ use App\Models\BroadcastRecipient;
 use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use App\Services\BroadcastService;
-use App\Services\WhatsappConnectionService;
+use App\Services\WhatsappGatewaySessionService;
 use App\Services\WhatsappTemplateService;
 use App\Support\BroadcastAudienceBuilder;
 use App\Support\CloudApiClient;
 use App\Support\DailyMessageQuota;
 use App\Support\PhoneNumber;
 use App\Support\TenantCache;
+use App\Support\WhatsappGatewayException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -299,26 +301,83 @@ class BroadcastController extends Controller
     }
 
     /**
-     * Keadaan sesi WAHA klinik ini, plus QR bila belum tersambung.
+     * Keadaan sesi gateway klinik ini, plus QR bila belum tersambung.
      *
      * Hanya membaca. Layar Koneksi menanyakannya ulang tiap 4 detik supaya QR
      * yang kedaluwarsa berganti sendiri; menyalakan sesi dari sini berarti
      * memulai ulang sesinya belasan kali semenit, dan nomornya tidak pernah
      * sempat tersambung.
      */
-    public function connection(WhatsappConnectionService $connections): JsonResponse
+    public function connection(WhatsappGatewaySessionService $sessions): JsonResponse
     {
         $this->authorize('viewAny', Broadcast::class);
 
-        return response()->json(['data' => $connections->state(), 'meta' => []]);
+        return response()->json(['data' => $sessions->state(), 'meta' => []]);
     }
 
     /** Nyalakan sesinya — tindakan tersendiri, diminta admin sekali. */
-    public function prepareConnection(WhatsappConnectionService $connections): JsonResponse
+    public function prepareConnection(WhatsappGatewaySessionService $sessions): JsonResponse
     {
         $this->authorize('viewAny', Broadcast::class);
 
-        return response()->json(['data' => $connections->prepare(), 'meta' => []]);
+        return response()->json(['data' => $sessions->prepare(), 'meta' => []]);
+    }
+
+    /**
+     * Kode pairing untuk menyambungkan nomor tanpa memindai QR. Hanya berguna
+     * saat sesi belum terhubung; gateway menolaknya bila sudah.
+     */
+    public function pairing(WhatsappPairingRequest $request, WhatsappGatewaySessionService $sessions): JsonResponse
+    {
+        $this->authorize('update', Broadcast::class);
+
+        return $this->connectionAction(
+            fn (): array => $sessions->pairing($request->validated()['phone']),
+            202,
+        );
+    }
+
+    public function restartConnection(WhatsappGatewaySessionService $sessions): JsonResponse
+    {
+        $this->authorize('update', Broadcast::class);
+
+        return $this->connectionAction(fn () => $sessions->restart());
+    }
+
+    public function disconnectConnection(WhatsappGatewaySessionService $sessions): JsonResponse
+    {
+        $this->authorize('update', Broadcast::class);
+
+        return $this->connectionAction(fn () => $sessions->disconnect());
+    }
+
+    public function logoutConnection(WhatsappGatewaySessionService $sessions): JsonResponse
+    {
+        $this->authorize('update', Broadcast::class);
+
+        return $this->connectionAction(fn () => $sessions->logout());
+    }
+
+    /**
+     * Jalankan aksi sesi dan teruskan penolakan gateway apa adanya: kode
+     * statusnya membedakan sesi yang sudah terhubung dari gateway yang mati.
+     *
+     * @param  callable(): mixed  $action
+     */
+    private function connectionAction(callable $action, int $status = 200): JsonResponse
+    {
+        try {
+            $data = $action();
+        } catch (Throwable $e) {
+            Log::error('Aksi sesi gateway WhatsApp klinik gagal.', ['exception' => $e]);
+
+            return response()->json(
+                ['message' => $e->getMessage()],
+                $e instanceof WhatsappGatewayException && $e->status > 0 ? $e->status : 502,
+            );
+        }
+
+        return response()->json(['data' => $data, 'meta' => []], $status);
     }
 
     /** Ringkasan dashboard WhatsApp: koneksi, pesan hari ini, campaign aktif. */
@@ -425,8 +484,9 @@ class BroadcastController extends Controller
         $setting = WhatsappSetting::query()->firstOrNew([]);
 
         // Hanya ditimpa bila dikirim: menyimpan satu bagian tidak boleh
-        // menghapus bagian lain yang sudah diisi sebelumnya.
-        foreach (['session', 'phone_number_id', 'waba_id', 'reminder_template'] as $field) {
+        // menghapus bagian lain yang sudah diisi sebelumnya. Kolom Meta tidak
+        // lagi diterima di sini; jalur pengirimannya sudah pindah ke gateway.
+        foreach (['session', 'reminder_template'] as $field) {
             if (array_key_exists($field, $validated)) {
                 $setting->{$field} = $validated[$field];
             }

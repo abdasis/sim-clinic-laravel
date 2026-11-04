@@ -7,6 +7,7 @@ use App\Models\WhatsappSetting;
 use App\Support\TemplateVariables;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class WhatsappSessionRequest extends FormRequest
 {
@@ -24,37 +25,18 @@ class WhatsappSessionRequest extends FormRequest
         $currentId = WhatsappSetting::query()->first()?->id;
 
         return [
-            // Kosong berarti klinik ini memang belum punya sesi WAHA —
-            // chatbot dan kotak masuk memakainya, broadcast tidak lagi.
-            // Formatnya mengikuti yang diterima WAHA: huruf kecil, angka, strip.
+            // Kosong berarti klinik ini belum punya sesi gateway; mengisinya
+            // memulai alur koneksi. Formatnya mengikuti yang diterima gateway:
+            // huruf kecil, angka, strip.
             'session' => [
                 'nullable',
                 'string',
-                'max:100',
-                'regex:/^[a-z0-9-]+$/',
+                'regex:/^[a-z0-9-]{3,64}$/',
                 // Satu sesi hanya boleh dipakai satu klinik: dua klinik yang
                 // menunjuk sesi sama akan mengirim dari nomor yang sama.
                 // Tanpa aturan ini yang muncul bukan pesan galat, melainkan
                 // pelanggaran unique di basis data.
                 Rule::unique('whatsapp_settings', 'session')->ignore($currentId),
-            ],
-            // Nomor pengirim Cloud API Meta. Angka saja karena Meta memakai
-            // id numerik, dan id itu satu-satunya petunjuk klinik mana yang
-            // harus menerima pesan masuk dari webhooknya.
-            'phone_number_id' => [
-                'nullable',
-                'string',
-                'max:32',
-                'regex:/^\d+$/',
-                Rule::unique('whatsapp_settings', 'phone_number_id')->ignore($currentId),
-            ],
-            // Akun WhatsApp Business yang menampung template resmi klinik.
-            'waba_id' => [
-                'nullable',
-                'string',
-                'max:32',
-                'regex:/^\d+$/',
-                Rule::unique('whatsapp_settings', 'waba_id')->ignore($currentId),
             ],
             'reminder_template' => ['nullable', 'array'],
             'reminder_template.name' => ['required_with:reminder_template', 'string', 'max:255'],
@@ -66,12 +48,36 @@ class WhatsappSessionRequest extends FormRequest
         ];
     }
 
+    /**
+     * Slug sesi terkunci setelah sesi gateway dibuat: gateway memetakan sesi
+     * lewat slug itu, jadi menggantinya diam-diam meninggalkan sesi lama
+     * yang masih tertaut nomor klinik.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $setting = WhatsappSetting::query()->first();
+
+            if ($setting === null || blank($setting->gateway_session_id)) {
+                return;
+            }
+
+            $session = $this->input('session');
+
+            if ($this->has('session') && $session !== $setting->session) {
+                $validator->errors()->add('session', __('broadcast.session_locked'));
+            }
+        });
+    }
+
     public function attributes(): array
     {
         return [
             'session' => __('broadcast.session_label'),
-            'phone_number_id' => __('broadcast.phone_number_id_label'),
-            'waba_id' => __('broadcast.waba_id_label'),
             'reminder_template' => __('broadcast.reminder_template_label'),
         ];
     }
@@ -81,10 +87,6 @@ class WhatsappSessionRequest extends FormRequest
         return [
             'session.regex' => __('broadcast.session_format'),
             'session.unique' => __('broadcast.session_taken'),
-            'phone_number_id.regex' => __('broadcast.phone_number_id_format'),
-            'phone_number_id.unique' => __('broadcast.phone_number_id_taken'),
-            'waba_id.regex' => __('broadcast.waba_id_format'),
-            'waba_id.unique' => __('broadcast.waba_id_taken'),
         ];
     }
 }

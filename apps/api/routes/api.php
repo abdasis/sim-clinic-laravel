@@ -227,6 +227,10 @@ Route::prefix('{tenant}/clinic')
         Route::put('broadcasts/auto-reminder', [BroadcastAutoReminderController::class, 'update']);
         Route::get('broadcasts/connection', [BroadcastController::class, 'connection']);
         Route::post('broadcasts/connection/prepare', [BroadcastController::class, 'prepareConnection']);
+        Route::post('broadcasts/connection/pairing', [BroadcastController::class, 'pairing']);
+        Route::post('broadcasts/connection/restart', [BroadcastController::class, 'restartConnection']);
+        Route::post('broadcasts/connection/disconnect', [BroadcastController::class, 'disconnectConnection']);
+        Route::post('broadcasts/connection/logout', [BroadcastController::class, 'logoutConnection']);
         Route::get('broadcasts/dashboard', [BroadcastController::class, 'dashboard']);
         Route::post('broadcasts/test-message', [BroadcastController::class, 'sendTest']);
         Route::post('broadcasts/{broadcast}/send', [BroadcastController::class, 'send']);

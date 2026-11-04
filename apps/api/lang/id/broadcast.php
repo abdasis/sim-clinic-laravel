@@ -68,6 +68,7 @@ return [
     'session_hint' => 'Pengelola server mengatur WAHA di halaman platform. Tiap klinik pakai nama sesi sendiri.',
     'session_format' => 'Nama sesi hanya boleh huruf kecil, angka, dan strip. Contoh: klinik-satu.',
     'session_taken' => 'Nama sesi ini sudah dipakai klinik lain. Pilih nama lain.',
+    'session_locked' => 'Nama sesi tidak bisa diubah setelah sesi gateway dibuat. Putuskan lalu hapus sesinya bila ingin mengganti nama.',
     'session_empty' => 'Dikosongkan berarti pengiriman otomatis mati; kirim manual lewat tombol WhatsApp tetap bisa.',
     'phone_number_id_label' => 'Nomor Cloud API Meta',
     'phone_number_id_hint' => 'Diisi hanya bila klinik membalas lewat WhatsApp Cloud API Meta. Angka saja, bukan nomor telepon.',
