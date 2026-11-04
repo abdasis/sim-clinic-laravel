@@ -23,7 +23,6 @@ import {
   MessageMultiple01Icon,
   PackageIcon,
   RulerIcon,
-  SecurityLockIcon,
   Settings02Icon,
   StethoscopeIcon,
   TagsIcon,
@@ -143,8 +142,7 @@ function ClinicLayout() {
   const items: NavItem[] = [
     // Puncak — tanpa grup.
     { key: "", label: t("dashboard.title"), roles: ["admin", "doctor", "therapist", "cashier"], icon: DashboardSquare01Icon },
-    // Operasional. Daftar staf kini tinggal di Pengaturan → Pengguna.
-    { key: "roles", label: t("role.title"), permission: "role.view", roles: ["admin"], icon: SecurityLockIcon, group: "operations" },
+    // Operasional. Daftar staf dan izin peran kini tinggal di Pengaturan.
     { key: "patients", label: t("patient.title"), permission: "patient.view", roles: ["admin", "doctor", "therapist", "cashier"], icon: HeartPulseIcon, group: "operations" },
     { key: "bookings", label: t("booking.title"), permission: "booking.view", roles: ["admin", "doctor", "therapist"], icon: Calendar01Icon, group: "operations" },
     { key: "medical-records", label: t("medical_record.title"), permission: "medical_record.view", roles: ["admin", "doctor", "therapist"], icon: File02Icon, group: "operations" },

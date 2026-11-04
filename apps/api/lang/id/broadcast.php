@@ -138,6 +138,7 @@ return [
     'connected' => 'Terhubung',
     'disconnected' => 'Belum Terhubung',
     'scan_hint' => 'Buka WhatsApp di HP klinik, lalu pindai QR ini lewat Perangkat Tertaut.',
+    'start' => 'Mulai',
     'pause' => 'Jeda',
     'resume' => 'Lanjutkan',
     'cancel_campaign' => 'Batalkan',

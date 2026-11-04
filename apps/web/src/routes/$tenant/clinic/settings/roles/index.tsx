@@ -1,6 +1,7 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 
+import { useBreadcrumbTail } from "#/components/breadcrumb-tail.tsx"
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { FormAlert } from "#/components/forms/form-alert.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
@@ -9,13 +10,15 @@ import type { ApiError } from "#/lib/api.ts"
 import type { RoleMatrixResponse } from "#/types/role-matrix.ts"
 import { RoleMatrixGrid } from "./components/role-matrix-grid.tsx"
 
-export const Route = createFileRoute("/$tenant/clinic/roles/")({
+export const Route = createFileRoute("/$tenant/clinic/settings/roles/")({
   component: RolesPage,
 })
 
 function RolesPage() {
-  const { tenant } = useParams({ from: "/$tenant/clinic/roles/" })
+  const { tenant } = useParams({ from: "/$tenant/clinic/settings/roles/" })
   const { t } = useTrans()
+
+  useBreadcrumbTail(t("role.title"))
 
   const roles = useQuery({
     queryKey: ["roles", tenant],

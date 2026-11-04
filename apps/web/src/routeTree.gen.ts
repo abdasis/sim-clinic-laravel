@@ -64,7 +64,6 @@ import { Route as TenantClinicProductsIndexRouteImport } from './routes/$tenant/
 import { Route as TenantClinicProductsNewRouteImport } from './routes/$tenant/clinic/products/new'
 import { Route as TenantClinicPromosIndexRouteImport } from './routes/$tenant/clinic/promos/index'
 import { Route as TenantClinicReportsIndexRouteImport } from './routes/$tenant/clinic/reports/index'
-import { Route as TenantClinicRolesIndexRouteImport } from './routes/$tenant/clinic/roles/index'
 import { Route as TenantClinicServicesIndexRouteImport } from './routes/$tenant/clinic/services/index'
 import { Route as TenantClinicServicesNewRouteImport } from './routes/$tenant/clinic/services/new'
 import { Route as TenantClinicSettingsIndexRouteImport } from './routes/$tenant/clinic/settings/index'
@@ -85,6 +84,7 @@ import { Route as TenantClinicServicesIdEditRouteImport } from './routes/$tenant
 import { Route as TenantClinicSettingsActivityLogsIndexRouteImport } from './routes/$tenant/clinic/settings/activity-logs/index'
 import { Route as TenantClinicSettingsChatbotIndexRouteImport } from './routes/$tenant/clinic/settings/chatbot/index'
 import { Route as TenantClinicSettingsPreferencesIndexRouteImport } from './routes/$tenant/clinic/settings/preferences/index'
+import { Route as TenantClinicSettingsRolesIndexRouteImport } from './routes/$tenant/clinic/settings/roles/index'
 import { Route as TenantClinicSettingsUsersIndexRouteImport } from './routes/$tenant/clinic/settings/users/index'
 import { Route as TenantClinicSettingsWhatsappIndexRouteImport } from './routes/$tenant/clinic/settings/whatsapp/index'
 
@@ -385,11 +385,6 @@ const TenantClinicReportsIndexRoute =
     path: '/reports/',
     getParentRoute: () => TenantClinicRouteRoute,
   } as any)
-const TenantClinicRolesIndexRoute = TenantClinicRolesIndexRouteImport.update({
-  id: '/roles/',
-  path: '/roles/',
-  getParentRoute: () => TenantClinicRouteRoute,
-} as any)
 const TenantClinicServicesIndexRoute =
   TenantClinicServicesIndexRouteImport.update({
     id: '/services/',
@@ -507,6 +502,12 @@ const TenantClinicSettingsPreferencesIndexRoute =
     path: '/preferences/',
     getParentRoute: () => TenantClinicSettingsRouteRoute,
   } as any)
+const TenantClinicSettingsRolesIndexRoute =
+  TenantClinicSettingsRolesIndexRouteImport.update({
+    id: '/roles/',
+    path: '/roles/',
+    getParentRoute: () => TenantClinicSettingsRouteRoute,
+  } as any)
 const TenantClinicSettingsUsersIndexRoute =
   TenantClinicSettingsUsersIndexRouteImport.update({
     id: '/users/',
@@ -576,7 +577,6 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/products/': typeof TenantClinicProductsIndexRoute
   '/$tenant/clinic/promos/': typeof TenantClinicPromosIndexRoute
   '/$tenant/clinic/reports/': typeof TenantClinicReportsIndexRoute
-  '/$tenant/clinic/roles/': typeof TenantClinicRolesIndexRoute
   '/$tenant/clinic/services/': typeof TenantClinicServicesIndexRoute
   '/$tenant/clinic/settings/': typeof TenantClinicSettingsIndexRoute
   '/$tenant/clinic/staff/': typeof TenantClinicStaffIndexRoute
@@ -596,6 +596,7 @@ export interface FileRoutesByFullPath {
   '/$tenant/clinic/settings/activity-logs/': typeof TenantClinicSettingsActivityLogsIndexRoute
   '/$tenant/clinic/settings/chatbot/': typeof TenantClinicSettingsChatbotIndexRoute
   '/$tenant/clinic/settings/preferences/': typeof TenantClinicSettingsPreferencesIndexRoute
+  '/$tenant/clinic/settings/roles/': typeof TenantClinicSettingsRolesIndexRoute
   '/$tenant/clinic/settings/users/': typeof TenantClinicSettingsUsersIndexRoute
   '/$tenant/clinic/settings/whatsapp/': typeof TenantClinicSettingsWhatsappIndexRoute
 }
@@ -651,7 +652,6 @@ export interface FileRoutesByTo {
   '/$tenant/clinic/products': typeof TenantClinicProductsIndexRoute
   '/$tenant/clinic/promos': typeof TenantClinicPromosIndexRoute
   '/$tenant/clinic/reports': typeof TenantClinicReportsIndexRoute
-  '/$tenant/clinic/roles': typeof TenantClinicRolesIndexRoute
   '/$tenant/clinic/services': typeof TenantClinicServicesIndexRoute
   '/$tenant/clinic/settings': typeof TenantClinicSettingsIndexRoute
   '/$tenant/clinic/staff': typeof TenantClinicStaffIndexRoute
@@ -671,6 +671,7 @@ export interface FileRoutesByTo {
   '/$tenant/clinic/settings/activity-logs': typeof TenantClinicSettingsActivityLogsIndexRoute
   '/$tenant/clinic/settings/chatbot': typeof TenantClinicSettingsChatbotIndexRoute
   '/$tenant/clinic/settings/preferences': typeof TenantClinicSettingsPreferencesIndexRoute
+  '/$tenant/clinic/settings/roles': typeof TenantClinicSettingsRolesIndexRoute
   '/$tenant/clinic/settings/users': typeof TenantClinicSettingsUsersIndexRoute
   '/$tenant/clinic/settings/whatsapp': typeof TenantClinicSettingsWhatsappIndexRoute
 }
@@ -732,7 +733,6 @@ export interface FileRoutesById {
   '/$tenant/clinic/products/': typeof TenantClinicProductsIndexRoute
   '/$tenant/clinic/promos/': typeof TenantClinicPromosIndexRoute
   '/$tenant/clinic/reports/': typeof TenantClinicReportsIndexRoute
-  '/$tenant/clinic/roles/': typeof TenantClinicRolesIndexRoute
   '/$tenant/clinic/services/': typeof TenantClinicServicesIndexRoute
   '/$tenant/clinic/settings/': typeof TenantClinicSettingsIndexRoute
   '/$tenant/clinic/staff/': typeof TenantClinicStaffIndexRoute
@@ -752,6 +752,7 @@ export interface FileRoutesById {
   '/$tenant/clinic/settings/activity-logs/': typeof TenantClinicSettingsActivityLogsIndexRoute
   '/$tenant/clinic/settings/chatbot/': typeof TenantClinicSettingsChatbotIndexRoute
   '/$tenant/clinic/settings/preferences/': typeof TenantClinicSettingsPreferencesIndexRoute
+  '/$tenant/clinic/settings/roles/': typeof TenantClinicSettingsRolesIndexRoute
   '/$tenant/clinic/settings/users/': typeof TenantClinicSettingsUsersIndexRoute
   '/$tenant/clinic/settings/whatsapp/': typeof TenantClinicSettingsWhatsappIndexRoute
 }
@@ -813,7 +814,6 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/products/'
     | '/$tenant/clinic/promos/'
     | '/$tenant/clinic/reports/'
-    | '/$tenant/clinic/roles/'
     | '/$tenant/clinic/services/'
     | '/$tenant/clinic/settings/'
     | '/$tenant/clinic/staff/'
@@ -833,6 +833,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/settings/activity-logs/'
     | '/$tenant/clinic/settings/chatbot/'
     | '/$tenant/clinic/settings/preferences/'
+    | '/$tenant/clinic/settings/roles/'
     | '/$tenant/clinic/settings/users/'
     | '/$tenant/clinic/settings/whatsapp/'
   fileRoutesByTo: FileRoutesByTo
@@ -888,7 +889,6 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/products'
     | '/$tenant/clinic/promos'
     | '/$tenant/clinic/reports'
-    | '/$tenant/clinic/roles'
     | '/$tenant/clinic/services'
     | '/$tenant/clinic/settings'
     | '/$tenant/clinic/staff'
@@ -908,6 +908,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/settings/activity-logs'
     | '/$tenant/clinic/settings/chatbot'
     | '/$tenant/clinic/settings/preferences'
+    | '/$tenant/clinic/settings/roles'
     | '/$tenant/clinic/settings/users'
     | '/$tenant/clinic/settings/whatsapp'
   id:
@@ -968,7 +969,6 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/products/'
     | '/$tenant/clinic/promos/'
     | '/$tenant/clinic/reports/'
-    | '/$tenant/clinic/roles/'
     | '/$tenant/clinic/services/'
     | '/$tenant/clinic/settings/'
     | '/$tenant/clinic/staff/'
@@ -988,6 +988,7 @@ export interface FileRouteTypes {
     | '/$tenant/clinic/settings/activity-logs/'
     | '/$tenant/clinic/settings/chatbot/'
     | '/$tenant/clinic/settings/preferences/'
+    | '/$tenant/clinic/settings/roles/'
     | '/$tenant/clinic/settings/users/'
     | '/$tenant/clinic/settings/whatsapp/'
   fileRoutesById: FileRoutesById
@@ -1394,13 +1395,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicReportsIndexRouteImport
       parentRoute: typeof TenantClinicRouteRoute
     }
-    '/$tenant/clinic/roles/': {
-      id: '/$tenant/clinic/roles/'
-      path: '/roles'
-      fullPath: '/$tenant/clinic/roles/'
-      preLoaderRoute: typeof TenantClinicRolesIndexRouteImport
-      parentRoute: typeof TenantClinicRouteRoute
-    }
     '/$tenant/clinic/services/': {
       id: '/$tenant/clinic/services/'
       path: '/services'
@@ -1541,6 +1535,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantClinicSettingsPreferencesIndexRouteImport
       parentRoute: typeof TenantClinicSettingsRouteRoute
     }
+    '/$tenant/clinic/settings/roles/': {
+      id: '/$tenant/clinic/settings/roles/'
+      path: '/roles'
+      fullPath: '/$tenant/clinic/settings/roles/'
+      preLoaderRoute: typeof TenantClinicSettingsRolesIndexRouteImport
+      parentRoute: typeof TenantClinicSettingsRouteRoute
+    }
     '/$tenant/clinic/settings/users/': {
       id: '/$tenant/clinic/settings/users/'
       path: '/users'
@@ -1632,6 +1633,7 @@ interface TenantClinicSettingsRouteRouteChildren {
   TenantClinicSettingsActivityLogsIndexRoute: typeof TenantClinicSettingsActivityLogsIndexRoute
   TenantClinicSettingsChatbotIndexRoute: typeof TenantClinicSettingsChatbotIndexRoute
   TenantClinicSettingsPreferencesIndexRoute: typeof TenantClinicSettingsPreferencesIndexRoute
+  TenantClinicSettingsRolesIndexRoute: typeof TenantClinicSettingsRolesIndexRoute
   TenantClinicSettingsUsersIndexRoute: typeof TenantClinicSettingsUsersIndexRoute
   TenantClinicSettingsWhatsappIndexRoute: typeof TenantClinicSettingsWhatsappIndexRoute
 }
@@ -1645,6 +1647,7 @@ const TenantClinicSettingsRouteRouteChildren: TenantClinicSettingsRouteRouteChil
       TenantClinicSettingsChatbotIndexRoute,
     TenantClinicSettingsPreferencesIndexRoute:
       TenantClinicSettingsPreferencesIndexRoute,
+    TenantClinicSettingsRolesIndexRoute: TenantClinicSettingsRolesIndexRoute,
     TenantClinicSettingsUsersIndexRoute: TenantClinicSettingsUsersIndexRoute,
     TenantClinicSettingsWhatsappIndexRoute:
       TenantClinicSettingsWhatsappIndexRoute,
@@ -1683,7 +1686,6 @@ interface TenantClinicRouteRouteChildren {
   TenantClinicProductsIndexRoute: typeof TenantClinicProductsIndexRoute
   TenantClinicPromosIndexRoute: typeof TenantClinicPromosIndexRoute
   TenantClinicReportsIndexRoute: typeof TenantClinicReportsIndexRoute
-  TenantClinicRolesIndexRoute: typeof TenantClinicRolesIndexRoute
   TenantClinicServicesIndexRoute: typeof TenantClinicServicesIndexRoute
   TenantClinicStaffIndexRoute: typeof TenantClinicStaffIndexRoute
   TenantClinicUnitsIndexRoute: typeof TenantClinicUnitsIndexRoute
@@ -1728,7 +1730,6 @@ const TenantClinicRouteRouteChildren: TenantClinicRouteRouteChildren = {
   TenantClinicProductsIndexRoute: TenantClinicProductsIndexRoute,
   TenantClinicPromosIndexRoute: TenantClinicPromosIndexRoute,
   TenantClinicReportsIndexRoute: TenantClinicReportsIndexRoute,
-  TenantClinicRolesIndexRoute: TenantClinicRolesIndexRoute,
   TenantClinicServicesIndexRoute: TenantClinicServicesIndexRoute,
   TenantClinicStaffIndexRoute: TenantClinicStaffIndexRoute,
   TenantClinicUnitsIndexRoute: TenantClinicUnitsIndexRoute,

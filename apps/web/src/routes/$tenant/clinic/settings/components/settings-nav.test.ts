@@ -41,12 +41,18 @@ describe("visibleSettingsItems", () => {
       )
 
     expect(
-      sidebarKeysFor("admin", ["content.view", "staff.view", "activity_log.view"]),
+      sidebarKeysFor("admin", [
+        "content.view",
+        "staff.view",
+        "role.view",
+        "activity_log.view",
+      ]),
     ).toEqual([
       "settings",
       "settings/whatsapp",
       "settings/chatbot",
       "settings/users",
+      "settings/roles",
       "settings/preferences",
       "settings/activity-logs",
     ])

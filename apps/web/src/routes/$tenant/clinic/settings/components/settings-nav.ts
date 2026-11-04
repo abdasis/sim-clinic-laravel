@@ -3,6 +3,7 @@ import {
   AiChat01Icon,
   ClockIcon,
   PaintBoardIcon,
+  SecurityLockIcon,
   Store01Icon,
   UserGroupIcon,
   WhatsappIcon,
@@ -16,6 +17,7 @@ export interface SettingsNavItem {
     | "/$tenant/clinic/settings/whatsapp"
     | "/$tenant/clinic/settings/chatbot"
     | "/$tenant/clinic/settings/users"
+    | "/$tenant/clinic/settings/roles"
     | "/$tenant/clinic/settings/preferences"
     | "/$tenant/clinic/settings/activity-logs"
   labelKey: string
@@ -54,6 +56,14 @@ export const SETTINGS_ITEMS: SettingsNavItem[] = [
     icon: UserGroupIcon,
     adminOnly: true,
     permission: "staff.view",
+  },
+  {
+    match: "roles",
+    to: "/$tenant/clinic/settings/roles",
+    labelKey: "role.title",
+    icon: SecurityLockIcon,
+    adminOnly: true,
+    permission: "role.view",
   },
   {
     match: "preferences",

@@ -3,7 +3,9 @@ import type { ReactNode } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Delete02Icon,
+  PauseIcon,
   PencilEdit01Icon,
+  PlayIcon,
   SentIcon,
 } from "@hugeicons/core-free-icons"
 
@@ -69,6 +71,19 @@ export function BroadcastDetailHeader({
 }: BroadcastDetailHeaderProps) {
   const { t } = useTrans()
 
+  // Kendali jeda/mulai hanya relevan selama campaign belum berakhir.
+  const hasControls =
+    broadcast.status === "ready" ||
+    broadcast.status === "sending" ||
+    broadcast.status === "paused"
+  const canStart = broadcast.status === "ready" || broadcast.status === "paused"
+  const hasPending =
+    broadcast.recipients_pending + broadcast.recipients_failed > 0
+  const startBlocked =
+    statusPending ||
+    quotaSpent ||
+    (broadcast.status === "ready" && (!gatewayReady || !hasPending))
+
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -96,36 +111,49 @@ export function BroadcastDetailHeader({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {broadcast.status === "sending" ? (
-            <>
-              <Button variant="outline" onClick={onPause} disabled={statusPending}>
-                {t("broadcast.pause")}
-              </Button>
-              <Button
-                variant="outline"
-                className="text-destructive"
-                onClick={onCancel}
-                disabled={statusPending}
-              >
-                {t("broadcast.cancel_campaign")}
-              </Button>
-            </>
-          ) : null}
-          {broadcast.status === "paused" ? (
+          {hasControls ? (
             <>
               <QuotaHint blocked={quotaSpent} hint={t("broadcast.quota_spent_hint")}>
-                <Button onClick={onResume} disabled={statusPending || quotaSpent}>
-                  {t("broadcast.resume")}
+                <Button
+                  onClick={
+                    broadcast.status === "paused" ? onResume : onSendAll
+                  }
+                  disabled={!canStart || startBlocked}
+                  className="gap-1.5"
+                >
+                  <HugeiconsIcon
+                    icon={PlayIcon}
+                    strokeWidth={2}
+                    className="size-4"
+                  />
+                  {broadcast.status === "paused"
+                    ? t("broadcast.resume")
+                    : t("broadcast.start")}
                 </Button>
               </QuotaHint>
               <Button
                 variant="outline"
-                className="text-destructive"
-                onClick={onCancel}
-                disabled={statusPending}
+                onClick={onPause}
+                disabled={broadcast.status !== "sending" || statusPending}
+                className="gap-1.5"
               >
-                {t("broadcast.cancel_campaign")}
+                <HugeiconsIcon
+                  icon={PauseIcon}
+                  strokeWidth={2}
+                  className="size-4"
+                />
+                {t("broadcast.pause")}
               </Button>
+              {broadcast.status !== "ready" ? (
+                <Button
+                  variant="outline"
+                  className="text-destructive"
+                  onClick={onCancel}
+                  disabled={statusPending}
+                >
+                  {t("broadcast.cancel_campaign")}
+                </Button>
+              ) : null}
             </>
           ) : null}
           {/* Yang gagal ikut bisa dikirim ulang; tanpa itu campaign yang
@@ -133,6 +161,7 @@ export function BroadcastDetailHeader({
           {gatewayReady &&
           broadcast.status !== "sending" &&
           broadcast.status !== "paused" &&
+          broadcast.status !== "ready" &&
           broadcast.status !== "cancelled" &&
           (broadcast.recipients_pending > 0 || broadcast.recipients_failed > 0) ? (
             <QuotaHint blocked={quotaSpent} hint={t("broadcast.quota_spent_hint")}>

@@ -10,6 +10,7 @@ const TRANSLATIONS = {
   broadcast: {
     gateway_not_ready: "WhatsApp klinik belum terhubung ke gateway. Buka menu Koneksi WhatsApp lalu sambungkan nomornya dulu.",
     send_all: "Kirim Semua",
+    start: "Mulai",
     progress: ":sent dari :total terkirim",
     pause: "Jeda",
     resume: "Lanjutkan",
@@ -26,8 +27,8 @@ function detail(overrides: Partial<BroadcastDetail> = {}): BroadcastDetail {
     id: 1,
     title: "Promo November",
     message: "Halo semua",
-    status: "draft",
-    status_label: "Draf",
+    status: "ready",
+    status_label: "Siap dikirim",
     kind_label: "Promosi",
     audience_label: "Semua pasien",
     audience_params: null,
@@ -52,7 +53,7 @@ function renderHeader(
       <TooltipProvider>
         <BroadcastDetailHeader
           tenant="klinik-uji"
-          broadcast={detail({ status: options.status ?? "draft" })}
+          broadcast={detail({ status: options.status ?? "ready" })}
           gatewayReady={gatewayReady}
           quotaSpent={options.quotaSpent ?? false}
           templateInfo={null}
@@ -81,25 +82,26 @@ describe("BroadcastDetailHeader", () => {
     cleanup()
   })
 
-  it("menampilkan tombol kirim saat gateway siap", () => {
+  it("menampilkan tombol mulai dan jeda saat gateway siap", () => {
     renderHeader(true)
 
-    expect(screen.getByRole("button", { name: "Kirim Semua" })).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Mulai" })).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Jeda" })).toBeTruthy()
     expect(screen.queryByText(TRANSLATIONS.broadcast.gateway_not_ready)).toBeNull()
   })
 
-  it("menyembunyikan tombol kirim dan menjelaskan sebabnya saat gateway belum siap", () => {
+  it("menonaktifkan tombol mulai dan menjelaskan sebabnya saat gateway belum siap", () => {
     renderHeader(false)
 
-    expect(screen.queryByRole("button", { name: "Kirim Semua" })).toBeNull()
+    expect(button("Mulai").disabled).toBe(true)
     // Kunci lama `cloud_not_ready` tidak ada lagi; yang tampil harus versi gateway.
     expect(screen.getByText(TRANSLATIONS.broadcast.gateway_not_ready)).toBeTruthy()
   })
 
-  it("menonaktifkan tombol kirim saat jatah harian habis", () => {
+  it("menonaktifkan tombol mulai saat jatah harian habis", () => {
     renderHeader(true, { quotaSpent: true })
 
-    expect(button("Kirim Semua").disabled).toBe(true)
+    expect(button("Mulai").disabled).toBe(true)
   })
 
   it("menonaktifkan tombol lanjutkan saat jatah harian habis", () => {
@@ -111,7 +113,7 @@ describe("BroadcastDetailHeader", () => {
   it("tetap mengaktifkan tombol kirim dan lanjutkan saat jatah masih tersisa", () => {
     renderHeader(true, { quotaSpent: false })
 
-    expect(button("Kirim Semua").disabled).toBe(false)
+    expect(button("Mulai").disabled).toBe(false)
 
     cleanup()
     renderHeader(true, { quotaSpent: false, status: "paused" })
