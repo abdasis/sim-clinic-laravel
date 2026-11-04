@@ -73,7 +73,16 @@ export function BroadcastEditForm({ tenant, broadcast }: BroadcastEditFormProps)
       service_id: params.service_id ? String(params.service_id) : "",
     })
     setPatientIds(params.patient_ids ?? [])
-    setTemplate(broadcast.template ?? null)
+    // Data lama bisa datang tanpa `params`; samakan bentuknya sekali di sini
+    // supaya sisa formulir tidak perlu menebak.
+    setTemplate(
+      broadcast.template
+        ? {
+            body: broadcast.template.body,
+            params: broadcast.template.params ?? [],
+          }
+        : null,
+    )
     setInitialized(true)
   }, [broadcast, initialized, form])
 

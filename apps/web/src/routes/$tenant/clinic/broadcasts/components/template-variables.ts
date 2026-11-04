@@ -43,13 +43,11 @@ export function isTemplateComplete(template: BroadcastTemplate | null): boolean 
   if (!template || template.body.trim() === "") return false
 
   const slots = placeholderNumbers(template.body)
+  const params = template.params ?? []
 
-  return (
-    template.params.length === slots.length &&
-    template.params.every((value) => value !== "")
-  )
+  return params.length === slots.length && params.every((value) => value !== "")
 }
 
 export function templatePayload(template: BroadcastTemplate) {
-  return { body: template.body, params: template.params }
+  return { body: template.body, params: template.params ?? [] }
 }

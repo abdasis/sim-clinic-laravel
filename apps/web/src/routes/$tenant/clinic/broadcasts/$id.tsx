@@ -44,14 +44,14 @@ function BroadcastDetailPage() {
   const { data, isLoading } = useQuery({
     queryKey,
     queryFn: () =>
-      apiGet<{ data: BroadcastDetail; meta: { cloud_api_ready: boolean } }>(
+      apiGet<{ data: BroadcastDetail; meta: { gateway_ready: boolean } }>(
         `/${tenant}/clinic/broadcasts/${id}`,
       ),
   })
 
   const broadcast = data?.data
   useBreadcrumbTail(broadcast?.title)
-  const cloudReady = data?.meta.cloud_api_ready ?? false
+  const gatewayReady = data?.meta.gateway_ready ?? false
   const templateBody = broadcast?.template?.body?.trim()
   const templateInfo = templateBody
     ? templateBody.length > 60
@@ -159,7 +159,7 @@ function BroadcastDetailPage() {
       <BroadcastDetailHeader
         tenant={tenant}
         broadcast={broadcast}
-        cloudReady={cloudReady}
+        gatewayReady={gatewayReady}
         templateInfo={templateInfo}
         statusPending={changeStatus.isPending}
         sendAllPending={sendAll.isPending}

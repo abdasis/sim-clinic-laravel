@@ -99,7 +99,7 @@ export function BroadcastFormFields({
 
     setTemplate({
       ...template,
-      params: template.params.map((current, position) =>
+      params: (template.params ?? []).map((current, position) =>
         position === index ? variable : current,
       ),
     })
@@ -230,7 +230,7 @@ export function BroadcastFormFields({
                   <NativeSelect
                     id={`broadcast-param-${slot}`}
                     className="w-full [&>select]:min-h-11 sm:[&>select]:min-h-10"
-                    value={template?.params[index] ?? ""}
+                    value={template?.params?.[index] ?? ""}
                     onChange={(event) => setParam(index, event.target.value)}
                     disabled={disabled}
                     aria-required

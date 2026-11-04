@@ -18,7 +18,7 @@ import type { BroadcastDetail } from "./broadcast-types.ts"
 interface BroadcastDetailHeaderProps {
   tenant: string
   broadcast: BroadcastDetail
-  cloudReady: boolean
+  gatewayReady: boolean
   templateInfo: string | null
   statusPending: boolean
   sendAllPending: boolean
@@ -32,7 +32,7 @@ interface BroadcastDetailHeaderProps {
 export function BroadcastDetailHeader({
   tenant,
   broadcast,
-  cloudReady,
+  gatewayReady,
   templateInfo,
   statusPending,
   sendAllPending,
@@ -103,7 +103,7 @@ export function BroadcastDetailHeader({
           ) : null}
           {/* Yang gagal ikut bisa dikirim ulang; tanpa itu campaign yang
               seluruhnya gagal tidak punya jalan keluar sama sekali. */}
-          {cloudReady &&
+          {gatewayReady &&
           broadcast.status !== "sending" &&
           broadcast.status !== "paused" &&
           broadcast.status !== "cancelled" &&
@@ -152,9 +152,9 @@ export function BroadcastDetailHeader({
 
       {/* Tanpa Cloud API yang siap, tombol "Kirim Semua" tidak muncul.
           Alasannya disebutkan supaya admin tidak mengira fiturnya rusak. */}
-      {!cloudReady && broadcast.recipients_pending > 0 ? (
+      {!gatewayReady && broadcast.recipients_pending > 0 ? (
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-pretty text-amber-700 dark:text-amber-400">
-          {t("broadcast.cloud_not_ready")}
+          {t("broadcast.gateway_not_ready")}
         </p>
       ) : null}
     </>

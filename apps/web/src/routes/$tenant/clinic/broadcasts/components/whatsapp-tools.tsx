@@ -2,8 +2,22 @@ import { useEffect, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Delete02Icon } from "@hugeicons/core-free-icons"
+import {
+  Delete02Icon,
+  Logout01Icon,
+  RefreshIcon,
+} from "@hugeicons/core-free-icons"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "#/components/ui/alert-dialog.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
 import {
@@ -61,6 +75,17 @@ const LOCAL_LABELS: Record<string, string> = {
   "broadcast.pairing_request": "Minta kode pairing",
   "broadcast.pairing_code": "Kode pairing",
   "broadcast.pairing_expires": "Kode berlaku sampai :time",
+  "broadcast.disconnect": "Putuskan",
+  "broadcast.disconnect_hint": "Putuskan sambungan sekarang. Sesi gateway tetap ada dan bisa disambungkan lagi.",
+  "broadcast.restart": "Mulai ulang",
+  "broadcast.restart_hint": "Mulai ulang sesi gateway. Tunggu beberapa saat sampai QR terbit kembali.",
+  "broadcast.delete_session": "Hapus sesi",
+  "broadcast.delete_session_hint": "Hapus sesi di gateway. Nomor WhatsApp harus dipindai ulang setelahnya.",
+  "broadcast.delete_session_confirm":
+    "Sesi WhatsApp klinik di gateway akan dihapus dan nomornya perlu dipindai ulang. Lanjutkan?",
+  "broadcast.session_deleted": "Sesi WhatsApp dihapus.",
+  "broadcast.session_disconnected": "Sambungan WhatsApp diputus.",
+  "broadcast.session_restarted": "Sesi WhatsApp dimulai ulang.",
 }
 
 function localLabel(t: (key: string) => string, key: string, values?: Record<string, string>) {
@@ -91,6 +116,7 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
   const qc = useQueryClient()
   const [phone, setPhone] = useState("")
   const [pairing, setPairing] = useState<PairingCode | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const connection = useQuery({
     queryKey: ["wa-connection", tenant],
@@ -123,6 +149,47 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
     onError: (err: ApiError) => toast.error(err.message),
   })
 
+  // Tindakan sesi mengembalikan keadaan terbaru, jadi cache langsung ditimpa —
+  // tanpa menunggu tanyaan berikutnya.
+  const restart = useMutation({
+    mutationFn: () =>
+      apiPost<{ data: ConnectionState }>(
+        `/${tenant}/clinic/broadcasts/connection/restart`,
+        {},
+      ),
+    onSuccess: (result) => {
+      qc.setQueryData(["wa-connection", tenant], result)
+      toast.success(localLabel(t, "broadcast.session_restarted"))
+    },
+    onError: (err: ApiError) => toast.error(err.message),
+  })
+
+  const disconnect = useMutation({
+    mutationFn: () =>
+      apiPost<{ data: ConnectionState }>(
+        `/${tenant}/clinic/broadcasts/connection/disconnect`,
+        {},
+      ),
+    onSuccess: (result) => {
+      qc.setQueryData(["wa-connection", tenant], result)
+      toast.success(localLabel(t, "broadcast.session_disconnected"))
+    },
+    onError: (err: ApiError) => toast.error(err.message),
+  })
+
+  const removeSession = useMutation({
+    mutationFn: () => apiDelete(`/${tenant}/clinic/broadcasts/connection`),
+    onSuccess: () => {
+      toast.success(localLabel(t, "broadcast.session_deleted"))
+      setConfirmDelete(false)
+      qc.invalidateQueries({ queryKey: ["wa-connection", tenant] })
+    },
+    onError: (err: ApiError) => {
+      toast.error(err.message)
+      setConfirmDelete(false)
+    },
+  })
+
   // Sekali tiap dialog dibuka, bukan tiap tanyaan: sesi yang sedang membuka
   // WhatsApp Web butuh puluhan detik dan tidak boleh dipotong di tengah.
   useEffect(() => {
@@ -138,12 +205,34 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
     if (open) return
     setPhone("")
     setPairing(null)
+    setConfirmDelete(false)
   }, [open])
 
   const state = connection.data?.data
 
+  // Sesi yang belum pernah dibuat di gateway tidak punya apa pun untuk
+  // dihapus; tombolnya baru masuk akal setelah `provisioned`.
+  const deleteSessionButton = state?.provisioned ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label={localLabel(t, "broadcast.delete_session")}
+          className="text-muted-foreground hover:text-destructive"
+          onClick={() => setConfirmDelete(true)}
+          disabled={removeSession.isPending}
+        >
+          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{localLabel(t, "broadcast.delete_session_hint")}</TooltipContent>
+    </Tooltip>
+  ) : null
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("broadcast.connection")}</DialogTitle>
@@ -172,6 +261,32 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
             {state.name ? (
               <p className="text-xs text-muted-foreground">{state.name}</p>
             ) : null}
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-primary/20 pt-3">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-muted-foreground hover:text-destructive"
+                    onClick={() => disconnect.mutate()}
+                    disabled={disconnect.isPending}
+                  >
+                    <HugeiconsIcon
+                      icon={Logout01Icon}
+                      strokeWidth={2}
+                      className="size-4"
+                    />
+                    {disconnect.isPending
+                      ? t("general.loading")
+                      : localLabel(t, "broadcast.disconnect")}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {localLabel(t, "broadcast.disconnect_hint")}
+                </TooltipContent>
+              </Tooltip>
+              {deleteSessionButton}
+            </div>
           </div>
         ) : (
           <div className="space-y-3 text-center">
@@ -258,28 +373,80 @@ export function ConnectionDialog({ tenant, open, onOpenChange }: ToolDialogProps
             {/* Menyalakan ulang atas permintaan, bukan otomatis tiap tanyaan.
                 Ditahan 30 detik di sisi server, jadi menekannya berkali-kali
                 tidak bisa memotong sesi yang sedang bangun. */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => prepare.mutate()}
-                  disabled={prepare.isPending}
-                >
-                  {prepare.isPending
-                    ? t("general.loading")
-                    : t("broadcast.reconnect")}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("broadcast.reconnect_hint")}</TooltipContent>
-            </Tooltip>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => prepare.mutate()}
+                    disabled={prepare.isPending}
+                  >
+                    {prepare.isPending
+                      ? t("general.loading")
+                      : t("broadcast.reconnect")}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t("broadcast.reconnect_hint")}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => restart.mutate()}
+                    disabled={restart.isPending}
+                  >
+                    <HugeiconsIcon
+                      icon={RefreshIcon}
+                      strokeWidth={2}
+                      className="size-4"
+                    />
+                    {restart.isPending
+                      ? t("general.loading")
+                      : localLabel(t, "broadcast.restart")}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{localLabel(t, "broadcast.restart_hint")}</TooltipContent>
+              </Tooltip>
+              {deleteSessionButton}
+            </div>
             {state.error ? (
               <p className="text-xs text-destructive">{t("broadcast.gateway_error")}</p>
             ) : null}
           </div>
         )}
       </DialogContent>
-    </Dialog>
+      </Dialog>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {localLabel(t, "broadcast.delete_session")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {localLabel(t, "broadcast.delete_session_confirm")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removeSession.isPending}>
+              {t("general.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={removeSession.isPending}
+              onClick={(event) => {
+                event.preventDefault()
+                removeSession.mutate()
+              }}
+            >
+              {removeSession.isPending ? t("general.loading") : t("general.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 

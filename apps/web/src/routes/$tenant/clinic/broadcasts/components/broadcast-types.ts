@@ -1,7 +1,8 @@
 /** Pesan broadcast lokal: isi bebas plus pemetaan slot {{n}} ke data penerima. */
 export interface BroadcastTemplate {
   body: string
-  params: string[]
+  /** Bisa tidak ada pada data lama; pembaca wajib memakai `?? []`. */
+  params?: string[]
 }
 
 export type BroadcastAudience = "all" | "inactive" | "service" | "selected"

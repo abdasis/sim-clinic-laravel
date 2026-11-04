@@ -24,7 +24,7 @@ const TRANSLATIONS = {
     pairing_code: "Kode pairing",
     pairing_expires: "Kode berlaku sampai :time",
   },
-  general: { loading: "Memuat..." },
+  general: { loading: "Memuat...", cancel: "Batal", delete: "Hapus" },
 }
 
 function state(overrides: Partial<ConnectionState>): ConnectionState {
@@ -45,15 +45,21 @@ function state(overrides: Partial<ConnectionState>): ConnectionState {
  * masing-masing dipanggil — bukan apa jawabannya.
  */
 function mockFetch(current: ConnectionState) {
-  const calls = { poll: 0, prepare: 0, pairing: 0 }
+  const calls = { poll: 0, prepare: 0, pairing: 0, deleteSession: 0 }
 
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (input: unknown) => {
+    vi.fn(async (input: unknown, init?: RequestInit) => {
       const url = String(input)
+      const method = init?.method ?? "GET"
 
       if (url.includes("/translations")) {
         return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
+      }
+
+      if (method === "DELETE" && url.endsWith("/clinic/broadcasts/connection")) {
+        calls.deleteSession++
+        return { ok: true, status: 204, json: async () => ({}) }
       }
 
       if (url.includes("/connection/prepare")) {
@@ -178,5 +184,18 @@ describe("ConnectionDialog", () => {
       await screen.findByText(TRANSLATIONS.broadcast.gateway_error),
     ).toBeTruthy()
     expect(screen.getByRole("button", { name: "Sambungkan ulang" })).toBeTruthy()
+  })
+
+  it("meminta konfirmasi sebelum menghapus sesi", async () => {
+    const calls = open(
+      state({ connected: true, number: "628123456789", name: "Klinik Uji" }),
+    )
+
+    fireEvent.click(await screen.findByRole("button", { name: "Hapus sesi" }))
+    expect(calls.deleteSession).toBe(0)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Hapus" }))
+
+    await waitFor(() => expect(calls.deleteSession).toBe(1))
   })
 })
