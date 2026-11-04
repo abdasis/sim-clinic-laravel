@@ -25,7 +25,7 @@ export function SectionCard({
   children: React.ReactNode
 }) {
   return (
-    <Card className="border-border/50 shadow-sm">
+    <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>

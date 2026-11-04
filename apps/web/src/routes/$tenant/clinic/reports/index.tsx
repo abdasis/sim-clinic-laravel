@@ -231,7 +231,7 @@ function ReportSkeleton({ tab }: { tab: ReportTab }) {
   }
 
   return (
-    <div className="space-y-2 rounded-lg border border-border/60 p-3">
+    <div className="space-y-2 rounded-lg border border-border p-3">
       {[0, 1, 2, 3, 4].map((i) => (
         <Skeleton key={i} className="h-8 w-full" />
       ))}

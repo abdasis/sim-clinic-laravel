@@ -124,7 +124,7 @@ export function TestimonialSection({
 }
 
 /**
- * Kartu testimoni gaya Linear: ring-1 ring-foreground/10 (bukan border
+ * Kartu testimoni gaya Linear: border border-border 1px (flat, tanpa shadow)
  * tinted), rounded-2xl, latar bg-card. Tanda kutip besar sebagai jangkar
  * visual di sudut. Radius concentric — kartu rounded-2xl, avatar rounded-full.
  */
@@ -138,7 +138,7 @@ function TestimonialCard({
   quote: React.ReactNode
 }) {
   return (
-    <figure className="relative flex h-full flex-col gap-5 rounded-2xl bg-card p-7 ring-1 ring-foreground/10 shadow-sm sm:p-8">
+    <figure className="relative flex h-full flex-col gap-5 rounded-2xl border border-border bg-card p-7 sm:p-8">
       <HugeiconsIcon
         icon={QuoteUpIcon}
         aria-hidden="true"

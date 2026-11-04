@@ -4,9 +4,13 @@ namespace Tests\Feature\Broadcast;
 
 use App\Enums\BroadcastStatus;
 use App\Enums\ClinicRole;
+use App\Enums\ConversationChannel;
+use App\Enums\MessageDirection;
+use App\Enums\MessageStatus;
 use App\Enums\PaymentStatus;
 use App\Jobs\SendBroadcastRecipientJob;
 use App\Models\Broadcast;
+use App\Models\Conversation;
 use App\Models\Patient;
 use App\Models\Service;
 use App\Models\Transaction;
@@ -260,6 +264,45 @@ class BroadcastApiTest extends TestCase
         Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/messages/send'
             && $request['to'] === '6282222222222'
             && $request['text'] === 'Halo Gagal, kabar dari '.$this->tenant->name.'.');
+    }
+
+    /**
+     * Layar detail perlu tahu jatahnya sudah habis sebelum admin menekan
+     * kirim, bukan setelah campaign berhenti sendiri di tengah jalan.
+     */
+    public function test_show_reports_the_daily_quota_and_whether_it_is_spent(): void
+    {
+        $this->actingAsClinicUser();
+        config(['broadcast.daily_limit' => 2]);
+
+        $broadcastId = $this->postJson($this->tenantUrl('broadcasts'), [
+            'title' => 'Promo', 'template' => $this->template(), 'audience' => 'all',
+        ])->assertCreated()->json('data.id');
+
+        $conversation = Conversation::create([
+            'tenant_id' => $this->tenant->id,
+            'contact_phone' => '628111111111',
+            'channel' => ConversationChannel::Gateway,
+            'last_message_at' => now(),
+        ]);
+
+        foreach (range(1, 2) as $i) {
+            $conversation->messages()->create([
+                'direction' => MessageDirection::Out,
+                'body' => 'Halo '.$i,
+                'status' => MessageStatus::Sent,
+                'sent_at' => now()->subHour(),
+            ]);
+        }
+
+        $this->assertNotNull($broadcastId);
+
+        $this->getJson($this->tenantUrl("broadcasts/{$broadcastId}"))
+            ->assertOk()
+            ->assertJsonPath('meta.quota.limit', 2)
+            ->assertJsonPath('meta.quota.used', 2)
+            ->assertJsonPath('meta.quota.remaining', 0)
+            ->assertJsonPath('meta.quota_spent', true);
     }
 
     public function test_gateway_send_rejected_when_not_configured(): void

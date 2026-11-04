@@ -45,7 +45,11 @@ class SendInboxMessageAction
                 'tenant_id' => $conversation->tenant_id,
             ]);
 
-            throw ValidationException::withMessages(['body' => __('inbox.send_failed')]);
+            throw ValidationException::withMessages([
+                'body' => $e->code === 'DAILY_LIMIT_REACHED'
+                    ? __('inbox.daily_limit_reached')
+                    : __('inbox.send_failed'),
+            ]);
         }
 
         return DB::transaction(fn (): Message => app(RecordOutboundMessageAction::class)->handle(

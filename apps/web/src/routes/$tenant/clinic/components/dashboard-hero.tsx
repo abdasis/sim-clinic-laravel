@@ -32,7 +32,7 @@ export function DashboardHero({
     : t("dashboard.welcome_generic")
 
   return (
-    <section className="rise-in relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-[color-mix(in_oklab,var(--lagoon)_14%,transparent)] to-transparent p-5 shadow-sm">
+    <section className="rise-in relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-[color-mix(in_oklab,var(--lagoon)_14%,transparent)] to-transparent p-5">
       <div className="flex items-center gap-4">
         <Mascot className="hidden size-20 shrink-0 sm:block" />
 

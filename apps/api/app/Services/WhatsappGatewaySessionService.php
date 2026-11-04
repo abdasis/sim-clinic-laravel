@@ -58,12 +58,16 @@ class WhatsappGatewaySessionService
     {
         $setting = $this->setting();
 
-        if ($setting === null || ! $setting->provisioned()) {
+        if ($setting === null || ! $setting->hasGatewayCredentials()) {
             return $this->emptyState(available: false, provisioned: false);
         }
 
+        // `provisioned` tetap berarti akun + API key + webhook lengkap; UI
+        // memakainya untuk hal lain, bukan untuk gerbang sesi.
+        $provisioned = $setting->provisioned();
+
         if (blank($setting->gateway_session_id)) {
-            return $this->emptyState(available: true, provisioned: true);
+            return $this->emptyState(available: true, provisioned: $provisioned);
         }
 
         try {
@@ -89,7 +93,7 @@ class WhatsappGatewaySessionService
                 'qr' => null,
                 'number' => $status['phoneNumber'] ?? null,
                 'name' => $this->clinicName($setting),
-                'provisioned' => true,
+                'provisioned' => $provisioned,
                 'error' => false,
             ];
         }
@@ -329,21 +333,22 @@ class WhatsappGatewaySessionService
 
     /**
      * Keadaan saat penyiapan gagal, konsisten dengan `state()`: klinik yang
-     * belum punya kredensial gateway tetap dilaporkan belum tersedia.
+     * belum punya API key gateway tetap dilaporkan belum tersedia, sedangkan
+     * `provisioned` tetap berarti akun + webhook lengkap.
      *
      * @return array<string, mixed>
      */
     private function failureState(WhatsappSetting $setting): array
     {
-        $provisioned = $setting->provisioned();
+        $available = $setting->hasGatewayCredentials();
 
         return [
-            'available' => $provisioned,
+            'available' => $available,
             'connected' => false,
             'qr' => null,
             'number' => null,
-            'name' => $provisioned ? $this->clinicName($setting) : null,
-            'provisioned' => $provisioned,
+            'name' => $available ? $this->clinicName($setting) : null,
+            'provisioned' => $setting->provisioned(),
             'error' => true,
         ];
     }

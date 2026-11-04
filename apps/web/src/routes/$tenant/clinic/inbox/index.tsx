@@ -97,10 +97,10 @@ function InboxPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col p-2">
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border border-border/50 bg-card lg:grid-cols-[20rem_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border border-border bg-card lg:grid-cols-[20rem_minmax(0,1fr)]">
         <div
           className={cn(
-            "min-h-0 border-border/50 lg:border-r",
+            "min-h-0 border-border lg:border-r",
             selectedId !== null && "hidden lg:block",
           )}
         >

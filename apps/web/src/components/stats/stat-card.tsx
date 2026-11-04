@@ -61,7 +61,7 @@ export function StatCard({
         ease: [0.16, 1, 0.3, 1],
       }}
       whileHover={reduced ? undefined : { y: -2 }}
-      className="group rounded-lg border border-border/50 bg-card p-4 shadow-sm transition-colors hover:border-border focus-within:border-border"
+      className="group rounded-lg border border-border bg-card p-4 transition-colors hover:border-border focus-within:border-border"
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <span className="text-2xs leading-4 font-medium tracking-widest text-muted-foreground uppercase">

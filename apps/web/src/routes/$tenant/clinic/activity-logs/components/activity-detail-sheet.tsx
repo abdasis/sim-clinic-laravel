@@ -125,7 +125,7 @@ export function ActivityDetailSheet({
                   <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                     {t("activity_log.changes")}
                   </h3>
-                  <div className="overflow-hidden rounded-md border border-border/60">
+                  <div className="overflow-hidden rounded-md border border-border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border/60 bg-muted/40 text-xs text-muted-foreground">

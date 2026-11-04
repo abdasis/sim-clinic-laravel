@@ -118,6 +118,24 @@ class GatewayProvisioningTest extends TestCase
             && $request['password'] === 'rahasia-uji');
     }
 
+    /**
+     * API key diisi manual dari dashboard gateway, tanpa alur register:
+     * provisioning tidak boleh mendaftarkan tenant maupun membuat webhook.
+     */
+    public function test_manual_api_key_without_tenant_key_never_calls_the_gateway(): void
+    {
+        Http::fake();
+
+        $setting = app(WhatsappGatewayProvisioningService::class)->ensure($this->setting([
+            'gateway_api_key' => 'api-manual',
+        ]));
+
+        Http::assertNothingSent();
+        $this->assertSame('api-manual', $setting->gateway_api_key);
+        $this->assertNull($setting->gateway_webhook_secret);
+        $this->assertFalse($setting->provisioned());
+    }
+
     public function test_complete_credentials_do_not_call_the_gateway(): void
     {
         Http::fake();

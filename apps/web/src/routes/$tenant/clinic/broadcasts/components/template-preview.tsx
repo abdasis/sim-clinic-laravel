@@ -43,7 +43,7 @@ export function TemplatePreview({
   return (
     <section
       className={cn(
-        "rounded-lg border border-border/50 bg-card p-4 sm:p-5",
+        "rounded-lg border border-border bg-card p-4 sm:p-5",
         className,
       )}
     >
@@ -51,10 +51,10 @@ export function TemplatePreview({
         {t("broadcast.template_preview")}
       </h2>
 
-      <div className="mt-3 rounded-lg border border-border/50 bg-muted/40 p-3">
-        <div className="rounded-lg border border-border/50 bg-background p-3 text-[13px] leading-relaxed">
+      <div className="mt-3 rounded-lg border border-border bg-muted/40 p-3">
+        <div className="rounded-lg border border-border bg-background p-3 text-[13px] leading-relaxed">
           {hasImage ? (
-            <div className="mb-2 flex h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border/60 bg-muted/30 text-muted-foreground">
+            <div className="mb-2 flex h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border bg-muted/30 text-muted-foreground">
               <HugeiconsIcon
                 icon={Image01Icon}
                 strokeWidth={2}

@@ -67,7 +67,7 @@ export function MonthlyVisitsTable({
   const cell = "px-3 py-2 align-top"
 
   return (
-    <section className="overflow-hidden rounded-lg border border-border/60">
+    <section className="overflow-hidden rounded-lg border border-border">
       <header className="flex items-baseline justify-between gap-3 border-b border-border/60 bg-muted/40 px-3 py-2">
         <h3 className="text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
           {t("report.patient_rows")}

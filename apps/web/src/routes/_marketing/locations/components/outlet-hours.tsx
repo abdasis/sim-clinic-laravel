@@ -19,7 +19,7 @@ export function OutletHours({ hours }: { hours: OpeningHour[] }) {
   const isOpen = isOpenAt(hours, now)
 
   return (
-    <section className="rounded-lg border border-border/50 bg-background p-5">
+    <section className="rounded-lg border border-border bg-background p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
           <HugeiconsIcon

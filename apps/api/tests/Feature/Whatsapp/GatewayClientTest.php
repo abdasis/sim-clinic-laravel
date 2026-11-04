@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Whatsapp;
 
+use App\Enums\ConversationChannel;
+use App\Enums\MessageDirection;
+use App\Enums\MessageStatus;
+use App\Models\Conversation;
 use App\Models\WhatsappSetting;
 use App\Support\WhatsappGatewayClient;
 use App\Support\WhatsappGatewayException;
@@ -67,6 +71,28 @@ class GatewayClientTest extends TestCase
             && $request['sessionId'] === self::SESSION_ID
             && $request['to'] === '081234567890'
             && $request['text'] === 'Halo');
+    }
+
+    /**
+     * Kredensial yang diisi manual dari dashboard gateway hanya berupa API
+     * key; tanpa tenant key header itu tidak boleh ikut terkirim.
+     */
+    public function test_tenant_key_header_is_omitted_when_only_an_api_key_is_set(): void
+    {
+        Http::fake(['*' => Http::response([
+            'success' => true,
+            'data' => ['messageId' => 'manual-uji', 'status' => 'QUEUED'],
+        ], 202)]);
+
+        app(WhatsappGatewayClient::class)->sendText(
+            $this->gatewaySetting(['gateway_tenant_key' => null]),
+            '0812',
+            'Halo',
+            'inbox-manual',
+        );
+
+        Http::assertSent(fn ($request) => $request->hasHeader('X-API-Key', 'api-uji')
+            && ! $request->hasHeader('x-tenant-key'));
     }
 
     public function test_send_image_posts_url_and_caption(): void
@@ -146,6 +172,63 @@ class GatewayClientTest extends TestCase
         } catch (WhatsappGatewayException $e) {
             $this->assertSame('RATE_LIMIT_EXCEEDED', $e->code);
             $this->assertSame(17, $e->retryAfter);
+        }
+    }
+
+    /**
+     * Panduan gateway tidak membatasi format `Retry-After`; HTTP mengizinkan
+     * tanggal. Tanggal yang masih di depan diterjemahkan ke selisih detik.
+     */
+    public function test_rate_limit_accepts_retry_after_as_http_date(): void
+    {
+        Http::fake(['*' => Http::response([
+            'success' => false,
+            'message' => 'Kuota habis.',
+            'error' => ['code' => 'RATE_LIMIT_EXCEEDED'],
+        ], 429, ['Retry-After' => now()->addSeconds(60)->toRfc7231String()])]);
+
+        try {
+            app(WhatsappGatewayClient::class)
+                ->sendText($this->gatewaySetting(), '0812', 'Halo', 'inbox-uji-123');
+            $this->fail('Seharusnya melempar.');
+        } catch (WhatsappGatewayException $e) {
+            $this->assertEqualsWithDelta(60, $e->retryAfter, 2);
+        }
+    }
+
+    /** Tanggal yang sudah lewat tidak boleh menghasilkan jeda negatif. */
+    public function test_rate_limit_treats_past_http_date_as_zero(): void
+    {
+        Http::fake(['*' => Http::response([
+            'success' => false,
+            'message' => 'Kuota habis.',
+            'error' => ['code' => 'RATE_LIMIT_EXCEEDED'],
+        ], 429, ['Retry-After' => now()->subMinutes(5)->toRfc7231String()])]);
+
+        try {
+            app(WhatsappGatewayClient::class)
+                ->sendText($this->gatewaySetting(), '0812', 'Halo', 'inbox-uji-123');
+            $this->fail('Seharusnya melempar.');
+        } catch (WhatsappGatewayException $e) {
+            $this->assertSame(0, $e->retryAfter);
+        }
+    }
+
+    /** Header yang tidak bisa dibaca bukan alasan menebak; biarkan null. */
+    public function test_rate_limit_ignores_unparsable_retry_after(): void
+    {
+        Http::fake(['*' => Http::response([
+            'success' => false,
+            'message' => 'Kuota habis.',
+            'error' => ['code' => 'RATE_LIMIT_EXCEEDED'],
+        ], 429, ['Retry-After' => 'sebentar lagi'])]);
+
+        try {
+            app(WhatsappGatewayClient::class)
+                ->sendText($this->gatewaySetting(), '0812', 'Halo', 'inbox-uji-123');
+            $this->fail('Seharusnya melempar.');
+        } catch (WhatsappGatewayException $e) {
+            $this->assertNull($e->retryAfter);
         }
     }
 
@@ -293,6 +376,70 @@ class GatewayClientTest extends TestCase
             && $request->method() === 'DELETE');
         Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/sessions/'.$uuid.'/pairing-code'
             && $request['phoneNumber'] === '081234567890');
+    }
+
+    /**
+     * Pagar jatah harian berdiri sebelum request berangkat. Nomor yang sudah
+     * menyentuh batas justru paling rawan diblokir; mengirim satu pesan lagi
+     * tidak sepadan.
+     */
+    public function test_send_is_refused_without_http_once_the_daily_quota_is_spent(): void
+    {
+        Http::fake();
+        config(['broadcast.daily_limit' => 1]);
+
+        $this->outboundToday(1);
+
+        try {
+            app(WhatsappGatewayClient::class)
+                ->sendText($this->gatewaySetting(), '0812', 'Halo', 'inbox-uji-123');
+            $this->fail('Seharusnya melempar.');
+        } catch (WhatsappGatewayException $e) {
+            $this->assertSame('DAILY_LIMIT_REACHED', $e->code);
+            $this->assertSame(429, $e->status);
+            $this->assertNotNull($e->retryAfter);
+            $this->assertSame(__('broadcast.daily_limit_reached', ['limit' => 1]), $e->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    /** Selama jatahnya masih ada, pesannya tetap berangkat. */
+    public function test_send_still_goes_out_below_the_daily_quota(): void
+    {
+        Http::fake(['*' => Http::response([
+            'success' => true,
+            'data' => ['messageId' => 'masih-boleh', 'status' => 'QUEUED'],
+        ], 202)]);
+        config(['broadcast.daily_limit' => 2]);
+
+        $this->outboundToday(1);
+
+        $id = app(WhatsappGatewayClient::class)
+            ->sendText($this->gatewaySetting(), '0812', 'Halo', 'inbox-uji-123');
+
+        $this->assertSame('masih-boleh', $id);
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/messages/send'));
+    }
+
+    /** Satu pesan keluar hari ini, dari jalur mana pun. */
+    private function outboundToday(int $count): void
+    {
+        $conversation = Conversation::create([
+            'tenant_id' => $this->tenant->id,
+            'contact_phone' => '6281234567890',
+            'channel' => ConversationChannel::Gateway,
+            'last_message_at' => now(),
+        ]);
+
+        foreach (range(1, $count) as $i) {
+            $conversation->messages()->create([
+                'direction' => MessageDirection::Out,
+                'body' => 'Halo '.$i,
+                'status' => MessageStatus::Sent,
+                'sent_at' => now()->subHour(),
+            ]);
+        }
     }
 
     public function test_missing_clinic_credentials_throws_indonesian_exception(): void

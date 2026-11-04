@@ -50,6 +50,12 @@ class WhatsappGatewayProvisioningService
             return $setting;
         }
 
+        // API key sudah diisi manual dari dashboard gateway: klinik sengaja
+        // tidak melewati register, dan webhook belum dipakai.
+        if (filled($setting->gateway_api_key) && blank($setting->gateway_tenant_key)) {
+            return $setting;
+        }
+
         // Langkah dicatat sebelum dijalankan supaya kegagalan login tidak
         // tertukar dengan kegagalan pendaftaran.
         $step = blank($setting->gateway_tenant_key) ? 'register' : 'login';

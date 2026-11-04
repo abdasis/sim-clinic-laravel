@@ -41,28 +41,36 @@ function detail(overrides: Partial<BroadcastDetail> = {}): BroadcastDetail {
   }
 }
 
-function renderHeader(gatewayReady: boolean) {
+function renderHeader(
+  gatewayReady: boolean,
+  options: { quotaSpent?: boolean; status?: string } = {},
+) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   render(
     <QueryClientProvider client={client}>
       <TooltipProvider>
         <BroadcastDetailHeader
-        tenant="klinik-uji"
-        broadcast={detail()}
-        gatewayReady={gatewayReady}
-        templateInfo={null}
-        statusPending={false}
-        sendAllPending={false}
-        onPause={() => {}}
-        onResume={() => {}}
-        onCancel={() => {}}
-        onSendAll={() => {}}
-        onDelete={() => {}}
-      />
+          tenant="klinik-uji"
+          broadcast={detail({ status: options.status ?? "draft" })}
+          gatewayReady={gatewayReady}
+          quotaSpent={options.quotaSpent ?? false}
+          templateInfo={null}
+          statusPending={false}
+          sendAllPending={false}
+          onPause={() => {}}
+          onResume={() => {}}
+          onCancel={() => {}}
+          onSendAll={() => {}}
+          onDelete={() => {}}
+        />
       </TooltipProvider>
     </QueryClientProvider>,
   )
+}
+
+function button(name: string): HTMLButtonElement {
+  return screen.getByRole("button", { name }) as HTMLButtonElement
 }
 
 describe("BroadcastDetailHeader", () => {
@@ -86,5 +94,28 @@ describe("BroadcastDetailHeader", () => {
     expect(screen.queryByRole("button", { name: "Kirim Semua" })).toBeNull()
     // Kunci lama `cloud_not_ready` tidak ada lagi; yang tampil harus versi gateway.
     expect(screen.getByText(TRANSLATIONS.broadcast.gateway_not_ready)).toBeTruthy()
+  })
+
+  it("menonaktifkan tombol kirim saat jatah harian habis", () => {
+    renderHeader(true, { quotaSpent: true })
+
+    expect(button("Kirim Semua").disabled).toBe(true)
+  })
+
+  it("menonaktifkan tombol lanjutkan saat jatah harian habis", () => {
+    renderHeader(true, { quotaSpent: true, status: "paused" })
+
+    expect(button("Lanjutkan").disabled).toBe(true)
+  })
+
+  it("tetap mengaktifkan tombol kirim dan lanjutkan saat jatah masih tersisa", () => {
+    renderHeader(true, { quotaSpent: false })
+
+    expect(button("Kirim Semua").disabled).toBe(false)
+
+    cleanup()
+    renderHeader(true, { quotaSpent: false, status: "paused" })
+
+    expect(button("Lanjutkan").disabled).toBe(false)
   })
 })

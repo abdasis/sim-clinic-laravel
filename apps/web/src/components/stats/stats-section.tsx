@@ -55,7 +55,7 @@ export function StatsSection({
     return (
       <section
         className={cn(
-          "mb-6 rounded-lg border border-border/50 bg-card p-6 text-center shadow-sm",
+          "mb-6 rounded-lg border border-border bg-card p-6 text-center",
           className,
         )}
       >

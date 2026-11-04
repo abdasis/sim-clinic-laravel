@@ -39,8 +39,8 @@ function EditBroadcastPage() {
           <div className="h-4 w-24 rounded bg-muted" />
           <div className="h-7 w-56 rounded bg-muted" />
         </div>
-        <div className="h-40 w-full rounded-lg border border-border/50 bg-muted/20" />
-        <div className="h-56 w-full rounded-lg border border-border/50 bg-muted/20" />
+        <div className="h-40 w-full rounded-lg border border-border bg-muted/20" />
+        <div className="h-56 w-full rounded-lg border border-border bg-muted/20" />
       </div>
     )
   }
@@ -71,7 +71,7 @@ function EditBroadcastPage() {
       {canEdit ? (
         <BroadcastEditForm tenant={tenant} broadcast={broadcast} />
       ) : (
-        <div className="rounded-lg border border-border/50 bg-card p-4 sm:p-5">
+        <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
           <div className="flex items-start gap-2">
             <HugeiconsIcon
               icon={Alert02Icon}

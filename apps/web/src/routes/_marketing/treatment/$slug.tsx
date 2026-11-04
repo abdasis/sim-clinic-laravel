@@ -71,7 +71,7 @@ function TreatmentDetailPage() {
           />
         ) : null}
 
-        <div className="grid gap-6 rounded-lg border border-border/50 bg-background p-6 sm:grid-cols-3">
+        <div className="grid gap-6 rounded-lg border border-border bg-background p-6 sm:grid-cols-3">
           <Detail label="Durasi" value="45–60 menit" />
           <Detail label="Waktu Pulih" value="Minimal" />
           <Detail label="Konsultasi" value="Gratis kunjungan pertama" />

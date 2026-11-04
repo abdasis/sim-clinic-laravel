@@ -41,7 +41,11 @@ class SendInboxContactAction
                 'tenant_id' => $conversation->tenant_id,
             ]);
 
-            throw ValidationException::withMessages(['phone' => __('inbox.send_failed')]);
+            throw ValidationException::withMessages([
+                'phone' => $e->code === 'DAILY_LIMIT_REACHED'
+                    ? __('inbox.daily_limit_reached')
+                    : __('inbox.send_failed'),
+            ]);
         }
 
         return app(RecordOutboundMessageAction::class)->handle(

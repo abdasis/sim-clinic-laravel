@@ -44,13 +44,11 @@ export function CompanyFooter({
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1.2fr_1fr]">
         <div className="space-y-3">
           <div className="flex items-center gap-2.5">
-            {settings?.logo_url ? (
-              <img
-                src={settings.logo_url}
-                alt=""
-                className="size-9 rounded-lg object-contain"
-              />
-            ) : null}
+            <img
+              src={settings?.logo_url || "/logo192.png"}
+              alt={brand}
+              className="size-9 rounded-lg object-contain"
+            />
             <div className="min-w-0">
               <p className="text-base leading-tight font-semibold tracking-tight">
                 {brand}

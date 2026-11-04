@@ -144,7 +144,7 @@ function SummaryTile({
   accent: string
 }) {
   return (
-    <div className="relative overflow-hidden rounded-lg border border-border/60 bg-card p-3.5 transition-colors hover:border-border">
+    <div className="relative overflow-hidden rounded-lg border border-border bg-card p-3.5 transition-colors hover:border-border">
       <span
         aria-hidden
         className={cn("absolute inset-y-0 left-0 w-[3px]", accent)}

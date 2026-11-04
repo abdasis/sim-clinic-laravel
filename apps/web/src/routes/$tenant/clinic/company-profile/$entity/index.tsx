@@ -136,7 +136,7 @@ function ContentListPage() {
           description={t("company_profile.empty_section_desc")}
         />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border/50">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <Table>
             <TableHeader>
               <TableRow>

@@ -97,7 +97,7 @@ export function PosCart({
           description={t("pos.empty_cart_desc")}
         />
       ) : (
-        <ul className="divide-y divide-border/50 rounded-lg border border-border/50">
+        <ul className="divide-y divide-border rounded-lg border border-border">
           {items.map((item) => (
             <CartRow
               key={item.key}
@@ -111,7 +111,7 @@ export function PosCart({
         </ul>
       )}
 
-      <div className="space-y-1 border-t border-border/50 pt-3">
+      <div className="space-y-1 border-t border-border pt-3">
         {/* Total hemat disebut sendiri: itu kalimat yang diucapkan kasir ke
             pasien, dan menghitungnya dari selisih dua angka di layar bukan
             pekerjaan yang boleh diserahkan ke orang yang sedang melayani. */}

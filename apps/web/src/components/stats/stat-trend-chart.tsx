@@ -44,7 +44,7 @@ export function StatTrendChart({
       initial={reduced ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: reduced ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="rounded-lg border border-border/50 bg-card p-4 shadow-sm"
+      className="rounded-lg border border-border bg-card p-4"
     >
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold tracking-tight">{label}</h3>

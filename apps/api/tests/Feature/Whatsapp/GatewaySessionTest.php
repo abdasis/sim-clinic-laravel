@@ -92,6 +92,80 @@ class GatewaySessionTest extends TestCase
         Http::assertNothingSent();
     }
 
+    /**
+     * Klinik yang mengisi API key manual tidak punya tenant key maupun
+     * webhook, tetapi sesinya tetap bisa dibaca dan dinyalakan.
+     */
+    public function test_state_is_available_with_only_a_manual_api_key(): void
+    {
+        $this->setting([
+            'gateway_tenant_key' => null,
+            'gateway_webhook_secret' => null,
+        ]);
+
+        Http::fake(['*' => Http::response(['success' => true, 'data' => [
+            'sessionId' => 'klinik-uji',
+            'status' => 'CONNECTED',
+            'phoneNumber' => '628111',
+            'lastSeenAt' => null,
+        ]])]);
+
+        $this->actingAsClinicUser();
+        $this->getJson($this->tenantUrl('broadcasts/connection'))
+            ->assertOk()
+            ->assertJsonPath('data.available', true)
+            ->assertJsonPath('data.connected', true)
+            ->assertJsonPath('data.number', '628111')
+            ->assertJsonPath('data.provisioned', false);
+    }
+
+    public function test_prepare_creates_a_session_without_registering_a_gateway_account(): void
+    {
+        $this->setting([
+            'gateway_tenant_key' => null,
+            'gateway_webhook_secret' => null,
+            'gateway_session_id' => null,
+        ]);
+
+        Http::fake(function ($request) {
+            $url = $request->url();
+
+            if ($url === self::BASE.'/sessions' && $request->method() === 'GET') {
+                return Http::response(['success' => true, 'data' => [
+                    'items' => [],
+                    'meta' => ['page' => 1, 'limit' => 20, 'total' => 0, 'totalPages' => 0],
+                ]]);
+            }
+
+            if ($url === self::BASE.'/sessions' && $request->method() === 'POST') {
+                return Http::response(['success' => true, 'data' => [
+                    'id' => self::NEW_SESSION_ID,
+                    'sessionId' => 'klinik-uji',
+                    'status' => 'INITIALIZING',
+                ]], 201);
+            }
+
+            if (str_ends_with($url, '/status')) {
+                return Http::response(['success' => true, 'data' => [
+                    'sessionId' => 'klinik-uji',
+                    'status' => 'DISCONNECTED',
+                    'phoneNumber' => null,
+                    'lastSeenAt' => null,
+                ]]);
+            }
+
+            return Http::response(['success' => true, 'data' => ['status' => 'INITIALIZING']]);
+        });
+
+        $this->actingAsClinicUser();
+        $this->postJson($this->tenantUrl('broadcasts/connection/prepare'))->assertOk();
+
+        $this->assertSame(self::NEW_SESSION_ID, $this->storedSetting()->gateway_session_id);
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/auth/'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api-keys'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/webhooks'));
+    }
+
     public function test_prepare_creates_missing_session_then_returns_qr(): void
     {
         $this->setting(['gateway_session_id' => null]);

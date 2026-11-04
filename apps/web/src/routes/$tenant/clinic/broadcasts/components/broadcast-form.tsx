@@ -107,7 +107,7 @@ export function BroadcastFormFields({
 
   return (
     <div className="space-y-4">
-      <section className="rounded-lg border border-border/50 bg-card p-4 sm:p-5">
+      <section className="rounded-lg border border-border bg-card p-4 sm:p-5">
         <SectionHeader
           step={1}
           title={t("broadcast.section_details")}
@@ -124,7 +124,7 @@ export function BroadcastFormFields({
         </div>
       </section>
 
-      <section className="rounded-lg border border-border/50 bg-card p-4 sm:p-5">
+      <section className="rounded-lg border border-border bg-card p-4 sm:p-5">
         <SectionHeader
           step={2}
           title={t("broadcast.section_audience")}
@@ -185,7 +185,7 @@ export function BroadcastFormFields({
         </div>
       </section>
 
-      <section className="rounded-lg border border-border/50 bg-card p-4 sm:p-5">
+      <section className="rounded-lg border border-border bg-card p-4 sm:p-5">
         <SectionHeader
           step={3}
           title={t("broadcast.section_message")}

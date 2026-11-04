@@ -35,7 +35,7 @@ function LocationsPage() {
       description="Satu klinik, dirawat sepenuh hati. Datang untuk konsultasi, atau kabari dulu lewat pesan — kami sisakan jadwalnya untuk Anda."
     >
       {/* Blok utama: peta di kiri, alamat dan kontak di kanan. */}
-      <section className="overflow-hidden rounded-xl border border-border/50 bg-background">
+      <section className="overflow-hidden rounded-xl border border-border bg-background">
         <div className="grid gap-0 lg:grid-cols-[1.15fr_1fr]">
           <div className="order-2 flex flex-col gap-5 p-6 lg:order-1 lg:p-7">
             <div>
@@ -94,7 +94,7 @@ function LocationsPage() {
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <OutletHours hours={OUTLET.openingHours} />
 
-        <section className="rounded-lg border border-border/50 bg-background p-5">
+        <section className="rounded-lg border border-border bg-background p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-tight">
             <HugeiconsIcon
               icon={Car01Icon}

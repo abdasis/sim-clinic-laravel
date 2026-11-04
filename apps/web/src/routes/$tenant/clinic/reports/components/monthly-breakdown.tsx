@@ -43,7 +43,7 @@ function BreakdownCard({
   const peak = Math.max(1, ...rows.map((row) => Math.abs(row.value)))
 
   return (
-    <section className="flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card">
+    <section className="flex flex-col overflow-hidden rounded-lg border border-border bg-card">
       {/* Warnanya jadi latar tipis dan lencana ikon, bukan blok pekat dengan
           teks putih: oranye dan kuning kategori tidak pernah cukup kontras
           untuk teks kecil, sementara sebagai latar 12% keduanya aman. */}
@@ -82,7 +82,7 @@ function BreakdownCard({
         )}
       </dl>
 
-      <div className="flex items-baseline justify-between gap-3 border-t border-border/60 bg-muted/40 px-3 py-2">
+      <div className="flex items-baseline justify-between gap-3 border-t border-border bg-muted/40 px-3 py-2">
         <span className="text-2xs font-semibold tracking-wider uppercase">{totalLabel}</span>
         <span className="font-semibold tabular-nums">{formatCurrency(total)}</span>
       </div>

@@ -23,7 +23,7 @@ function StorePage() {
         {STORE_PRODUCTS.map((product) => (
           <article
             key={product.id}
-            className="group flex flex-col overflow-hidden rounded-lg border border-border/50 bg-background transition-[border-color,box-shadow] hover:border-border hover:shadow-sm"
+            className="group flex flex-col overflow-hidden rounded-lg border border-border bg-background transition-[border-color] hover:border-border"
           >
             <div className="aspect-square overflow-hidden bg-muted">
               <img

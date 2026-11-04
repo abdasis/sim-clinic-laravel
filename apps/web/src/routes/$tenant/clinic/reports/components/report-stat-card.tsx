@@ -38,7 +38,7 @@ export function ReportStatCard({
         "group relative overflow-hidden rounded-lg border p-4 transition-colors duration-150",
         emphasis
           ? "border-primary/60 bg-primary text-primary-foreground"
-          : "border-border/60 bg-card hover:border-border",
+          : "border-border bg-card hover:border-border",
       )}
     >
       <span

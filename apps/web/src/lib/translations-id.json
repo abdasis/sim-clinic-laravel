@@ -358,6 +358,7 @@
         "paused_by_gateway": "Pengiriman berhenti sendiri",
         "paused_by_gateway_desc": "WhatsApp klinik sedang tidak bisa mengirim, jadi sisanya ditahan supaya tidak ikut hangus. Pengiriman akan dilanjutkan sendiri begitu sambungannya pulih — tidak perlu ditunggui. Kalau tidak mau menunggu, cek menu Koneksi WhatsApp lalu tekan Lanjutkan; yang sudah terkirim tidak akan dikirim dua kali.",
         "daily_limit_reached": "Jatah kirim hari ini sudah penuh (:limit pesan). Sisanya ditahan dan akan dilanjutkan sendiri besok — batas ini yang menjaga nomor klinik tidak diblokir WhatsApp.",
+        "quota_spent_hint": "Jatah kirim hari ini sudah penuh. Pengiriman ditangguhkan dan bisa dilanjutkan besok.",
         "quota_today": "Jatah kirim hari ini",
         "quota_remaining": ":remaining dari :limit pesan tersisa",
         "resume_after": "WhatsApp sedang menahan laju kiriman, jadi pengirimannya sengaja didiamkan dulu. Dilanjutkan sendiri sekitar :time.",

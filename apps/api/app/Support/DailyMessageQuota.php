@@ -2,7 +2,8 @@
 
 namespace App\Support;
 
-use App\Models\BroadcastRecipient;
+use App\Enums\MessageDirection;
+use App\Models\Message;
 use App\Models\WhatsappSetting;
 
 /**
@@ -12,6 +13,13 @@ use App\Models\WhatsappSetting;
  * nomor WhatsApp diblokir justru volume hariannya — dan itu tidak terlihat
  * dari jeda mana pun. Beberapa campaign yang dijalankan berurutan bisa
  * mengeluarkan ratusan pesan dari satu nomor tanpa ada yang menghitung.
+ *
+ * Sumber hitungannya seluruh pesan keluar yang tercatat di kotak masuk:
+ * broadcast, balasan inbox, balasan chatbot, dan pengingat booking. Nomor
+ * yang sama dipakai semua jalur, jadi yang membuatnya diblokir adalah
+ * jumlahnya, bukan dari mana pesannya berangkat. Menghitung BroadcastRecipient
+ * saja akan melewatkan balasan manual dan pengingat — dua jalur yang justru
+ * paling sering dipakai di luar jam campaign.
  *
  * Yang dihitung pesan yang benar-benar berangkat (punya `sent_at` hari ini),
  * bukan yang diantrekan: antrean bisa dibatalkan, dijeda, atau gagal, dan
@@ -29,10 +37,15 @@ class DailyMessageQuota
         $limit = WhatsappSetting::query()->first()?->daily_message_limit
             ?: (int) config('broadcast.daily_limit');
 
-        $used = BroadcastRecipient::query()
+        $used = Message::query()
+            ->where('direction', MessageDirection::Out)
+            ->whereNotNull('sent_at')
             // Rentang antara awal dan akhir hari, bukan whereDate: kolom yang
             // dibungkus fungsi tanggal tidak bisa memakai index-nya.
             ->whereBetween('sent_at', [now()->startOfDay(), now()->endOfDay()])
+            // Conversation ber-tenant scope: pesan klinik lain tidak ikut
+            // terhitung saat tenant sedang diikat.
+            ->whereHas('conversation')
             ->count();
 
         return new self($limit, $used);

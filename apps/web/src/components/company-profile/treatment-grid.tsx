@@ -7,7 +7,7 @@ import { contentText } from "#/lib/company-locale.ts"
 import { SectionShell, type SectionTone } from "./section-shell.tsx"
 
 const CARD_CLASS =
-  "group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:border-primary/25 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+  "group flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-[transform,border-color] duration-200 hover:-translate-y-1 hover:border-primary/25 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 
 interface TreatmentGridProps {
   id?: string

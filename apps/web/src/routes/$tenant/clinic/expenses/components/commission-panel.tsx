@@ -101,7 +101,7 @@ export function CommissionPanel({ tenant, from, to, onPost }: CommissionPanelPro
   const rows = preview.data?.data.rows ?? []
 
   return (
-    <section className="space-y-4 rounded-lg border border-border/50 bg-card p-4">
+    <section className="space-y-4 rounded-lg border border-border bg-card p-4">
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
@@ -142,11 +142,11 @@ export function CommissionPanel({ tenant, from, to, onPost }: CommissionPanelPro
       {rules.isLoading ? (
         <Skeleton className="h-24 w-full" />
       ) : (rules.data?.data.length ?? 0) === 0 ? (
-        <p className="rounded-md border border-dashed border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+        <p className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
           {t("commission.empty_desc")}
         </p>
       ) : (
-        <ul className="divide-y divide-border/50 rounded-md border border-border/50">
+        <ul className="divide-y divide-border rounded-md border border-border">
           {rules.data?.data.map((rule) => (
             <li
               key={rule.id}
@@ -242,7 +242,7 @@ export function CommissionPanel({ tenant, from, to, onPost }: CommissionPanelPro
 
       <CommissionEligibleRoles tenant={tenant} />
 
-      <div className="space-y-2 border-t border-border/50 pt-4">
+      <div className="space-y-2 border-t border-border pt-4">
         <div className="flex items-baseline justify-between gap-2">
           <h3 className="text-sm font-semibold">{t("commission.preview")}</h3>
           <span className="text-xs text-muted-foreground">
@@ -253,12 +253,12 @@ export function CommissionPanel({ tenant, from, to, onPost }: CommissionPanelPro
         {preview.isLoading ? (
           <Skeleton className="h-20 w-full" />
         ) : rows.length === 0 ? (
-          <p className="rounded-md border border-dashed border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+          <p className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
             {t("commission.no_result")}
           </p>
         ) : (
           <>
-            <ul className="divide-y divide-border/50 rounded-md border border-border/50">
+            <ul className="divide-y divide-border rounded-md border border-border">
               {rows.map((row) => (
                 <li key={row.therapist_id} className="px-3 py-2">
                   <div className="flex items-baseline justify-between gap-2">

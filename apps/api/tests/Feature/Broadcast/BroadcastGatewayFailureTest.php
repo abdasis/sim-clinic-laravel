@@ -116,12 +116,13 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->assertGreaterThan(1, count(array_unique($gaps)), 'jeda antar pesan masih seragam');
 
         foreach ($gaps as $gap) {
-            $this->assertGreaterThanOrEqual(3, $gap, 'ada pesan yang menyembur terlalu rapat');
-            $this->assertLessThanOrEqual(7, $gap, 'ada jeda yang jauh lebih lama dari seharusnya');
+            $this->assertGreaterThanOrEqual(8, $gap, 'ada pesan yang menyembur terlalu rapat');
+            $this->assertLessThanOrEqual(15, $gap, 'ada jeda yang jauh lebih lama dari seharusnya');
         }
 
-        // Rata-ratanya tetap sekitar 5 detik, jadi durasi blast tidak berubah.
-        $this->assertEqualsWithDelta(5.0, array_sum($gaps) / count($gaps), 1.0);
+        // Rata-rata sekitar 11,5 detik: kira-kira 4-7 pesan per menit, masih
+        // jauh di bawah batas gateway 60 request/menit per API key.
+        $this->assertEqualsWithDelta(11.5, array_sum($gaps) / count($gaps), 2.0);
     }
 
     /**

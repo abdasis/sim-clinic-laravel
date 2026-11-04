@@ -121,10 +121,18 @@ class BroadcastController extends Controller
         $broadcast->load(['creator', 'recipients' => fn ($q) => $q->orderBy('name')])
             ->loadCount(['recipients', 'sentRecipients', 'pendingRecipients', 'failedRecipients']);
 
+        // Sekali baca untuk dua kunci: jatahnya bisa habis di tengah blast,
+        // dan tombol kirim di layar detail perlu tahu sebelum ditekan.
+        $quota = DailyMessageQuota::today();
+
         return response()->json([
             'data' => new BroadcastResource($broadcast),
             // Pesan bisa disusun tanpa nomor pengirim, tapi kirim tidak.
-            'meta' => ['gateway_ready' => $broadcasts->gatewayReady()],
+            'meta' => [
+                'gateway_ready' => $broadcasts->gatewayReady(),
+                'quota' => $quota->toArray(),
+                'quota_spent' => $quota->isSpent(),
+            ],
         ]);
     }
 

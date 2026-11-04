@@ -42,7 +42,7 @@ export function RecipientPreview({ data, isLoading }: RecipientPreviewProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-1.5 rounded-md border border-border/50 bg-muted/40 p-3">
+      <div className="space-y-1.5 rounded-md border border-border bg-muted/40 p-3">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-24 w-full" />
       </div>
@@ -52,7 +52,7 @@ export function RecipientPreview({ data, isLoading }: RecipientPreviewProps) {
   if (!data) return null
 
   return (
-    <div className="space-y-2 rounded-md border border-border/50 bg-muted/40 p-3">
+    <div className="space-y-2 rounded-md border border-border bg-muted/40 p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-xs font-medium">
           {t("broadcast.preview_count").replace(":count", String(data.count))}
@@ -82,7 +82,7 @@ export function RecipientPreview({ data, isLoading }: RecipientPreviewProps) {
           {t("broadcast.no_recipients")}
         </p>
       ) : (
-        <div className="max-h-40 overflow-y-auto rounded-sm border border-border/50 bg-background">
+        <div className="max-h-40 overflow-y-auto rounded-sm border border-border bg-background">
           <ul className="divide-y divide-border/40">
             {data.recipients.map((recipient) => (
               <li

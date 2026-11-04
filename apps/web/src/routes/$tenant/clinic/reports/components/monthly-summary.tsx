@@ -34,7 +34,7 @@ function RevenueMix({
   ]
 
   return (
-    <section className="rounded-lg border border-border/60 bg-card p-4">
+    <section className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
           {t("report.revenue_mix")}

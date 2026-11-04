@@ -66,9 +66,11 @@ export function LandingHeader({
           to="/"
           className="mr-auto flex items-center gap-2 rounded-sm no-underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
-          {settings?.logo_url ? (
-            <img src={settings.logo_url} alt={brand} className="h-7 w-auto" />
-          ) : null}
+          <img
+            src={settings?.logo_url || "/logo192.png"}
+            alt={brand}
+            className="h-7 w-7 object-contain"
+          />
           <span className="text-sm font-semibold tracking-tight text-foreground">
             {brand}
           </span>

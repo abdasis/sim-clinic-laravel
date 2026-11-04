@@ -15,7 +15,7 @@ export function QuotaCard({
   return (
     <div
       className={cn(
-        "rounded-lg border border-border/50 bg-card p-3 transition-colors",
+        "rounded-lg border border-border bg-card p-3 transition-colors",
         tight && "border-amber-500/50",
         spent && "border-destructive/50",
       )}

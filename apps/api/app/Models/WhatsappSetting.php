@@ -66,9 +66,20 @@ class WhatsappSetting extends Model
     }
 
     /**
+     * Cukup untuk memanggil gateway: sesi dan pengiriman pesan hanya butuh API
+     * key. Klinik boleh mengisinya manual dari dashboard gateway tanpa alur
+     * register maupun webhook.
+     */
+    public function hasGatewayCredentials(): bool
+    {
+        return filled($this->gateway_api_key);
+    }
+
+    /**
      * Klinik sudah punya akun gateway, API key, dan webhook pesan masuknya.
      * Tanpa rahasia webhook, pesan masuk tidak pernah sampai ke kotak masuk
-     * dan chatbot, jadi klinik belum dianggap siap.
+     * dan chatbot, jadi klinik belum dianggap siap. Panggilan keluar cukup
+     * memakai hasGatewayCredentials().
      */
     public function provisioned(): bool
     {

@@ -37,14 +37,14 @@ export function BroadcastRecipients({
 
   if (recipients.length === 0) {
     return (
-      <p className="rounded-md border border-dashed border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
+      <p className="rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
         {t("broadcast.no_recipients")}
       </p>
     )
   }
 
   return (
-    <ul className="divide-y divide-border/50 rounded-lg border border-border/50 bg-card">
+    <ul className="divide-y divide-border rounded-lg border border-border bg-card">
       {recipients.map((recipient) => (
         <li
           key={recipient.id}

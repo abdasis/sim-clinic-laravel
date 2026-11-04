@@ -14,12 +14,14 @@ return [
     |
     | ponytail: satu angka untuk semua klinik, bisa ditimpa per klinik lewat
     | kolom daily_message_limit di whatsapp_settings. Angkanya konservatif
-    | karena WhatsApp tidak pernah mengumumkan ambang aslinya; kalau ada
-    | klinik yang rutin menyentuh batas tanpa masalah, naikkan miliknya
-    | sendiri, jangan default-nya.
+    | karena nomor baru hasil pairing QR paling rawan diblokir WhatsApp —
+    | belum punya riwayat pengiriman, jadi pola kirimnya masih asing bagi
+    | sistem mereka. WhatsApp juga tidak pernah mengumumkan ambang aslinya;
+    | kalau ada klinik yang rutin menyentuh batas tanpa masalah, naikkan
+    | miliknya sendiri lewat whatsapp_settings, jangan default-nya.
     |
     */
 
-    'daily_limit' => (int) env('BROADCAST_DAILY_LIMIT', 300),
+    'daily_limit' => (int) env('BROADCAST_DAILY_LIMIT', 100),
 
 ];

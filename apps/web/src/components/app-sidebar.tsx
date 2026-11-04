@@ -1,7 +1,6 @@
 import * as React from "react"
 import { Link, useRouterState } from "@tanstack/react-router"
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
-import { SourceCodeIcon } from "@hugeicons/core-free-icons"
+import { type IconSvgElement } from "@hugeicons/react"
 
 import { NavMain } from "#/components/nav-main.tsx"
 import { NavSecondary } from "#/components/nav-secondary.tsx"
@@ -50,7 +49,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   preferencesTo?: React.ReactNode
   /** Item "Pengaturan Klinik"; hanya diisi untuk peran yang boleh mengubahnya. */
   clinicSettingsTo?: React.ReactNode
-  /** Logo klinik; bila kosong, lencana ikon bawaan yang dipakai. */
+  /** Logo klinik; bila kosong, logo default aplikasi yang dipakai. */
   brandLogoUrl?: string | null
 }
 
@@ -96,19 +95,11 @@ export function AppSidebar({
             >
               <Link to={brandTo}>
                 <div className="flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  {brandLogoUrl ? (
-                    <img
-                      src={brandLogoUrl}
-                      alt={brandTitle}
-                      className="size-full object-contain"
-                    />
-                  ) : (
-                    <HugeiconsIcon
-                      icon={SourceCodeIcon}
-                      strokeWidth={2}
-                      className="size-4"
-                    />
-                  )}
+                  <img
+                    src={brandLogoUrl || "/logo192.png"}
+                    alt={brandTitle}
+                    className="size-full object-contain"
+                  />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{brandTitle}</span>

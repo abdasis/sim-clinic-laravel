@@ -53,7 +53,7 @@ export function ChatbotDiagnostics({ tenant }: { tenant: string }) {
   const data = query.data?.data
 
   return (
-    <Card className="border-border/50 shadow-sm">
+    <Card>
       <CardContent className="space-y-3 p-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
@@ -100,7 +100,7 @@ export function ChatbotDiagnostics({ tenant }: { tenant: string }) {
                 : t("chatbot.diagnostics.unhealthy")}
             </p>
 
-            <ul className="divide-y divide-border/40 rounded-md border border-border/60">
+            <ul className="divide-y divide-border rounded-md border border-border">
               {data.checks.map((check) => (
                 <li
                   key={check.key}

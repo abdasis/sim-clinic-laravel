@@ -140,7 +140,7 @@ function BroadcastsPage() {
 
       {dashboard.data ? (
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          <div className="rounded-lg border border-border/50 bg-card p-3">
+          <div className="rounded-lg border border-border bg-card p-3">
             <p className="text-xs text-muted-foreground">{t("broadcast.today_messages")}</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
               {dashboard.data.data.today.sent}
@@ -152,7 +152,7 @@ function BroadcastsPage() {
               {dashboard.data.data.today.failed} {t("broadcast.status.failed").toLowerCase()} · {dashboard.data.data.today.pending} {t("broadcast.status.pending").toLowerCase()}
             </p>
           </div>
-          <div className="rounded-lg border border-border/50 bg-card p-3">
+          <div className="rounded-lg border border-border bg-card p-3">
             <p className="text-xs text-muted-foreground">{t("broadcast.reminders_today")}</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
               {dashboard.data.data.reminders_today.total}
@@ -161,7 +161,7 @@ function BroadcastsPage() {
               {dashboard.data.data.reminders_today.sent} {t("broadcast.status.sent").toLowerCase()} · {dashboard.data.data.reminders_today.failed} {t("broadcast.status.failed").toLowerCase()}
             </p>
           </div>
-          <div className="rounded-lg border border-border/50 bg-card p-3">
+          <div className="rounded-lg border border-border bg-card p-3">
             <p className="text-xs text-muted-foreground">{t("broadcast.active_campaigns")}</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
               {dashboard.data.data.active_campaigns}
@@ -207,7 +207,7 @@ function BroadcastsPage() {
                 <Link
                   to="/$tenant/clinic/broadcasts/$id"
                   params={{ tenant, id: String(row.id) }}
-                  className="group block rounded-lg border border-border/50 bg-card p-4 shadow-sm transition-[transform,border-color] duration-150 ease-out hover:-translate-y-0.5 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  className="group block rounded-lg border border-border bg-card p-4 transition-[transform,border-color] duration-150 ease-out hover:-translate-y-0.5 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">

@@ -232,6 +232,34 @@ class InboxGatewaySendTest extends TestCase
             && $request['text'] === 'Sari Wulandari: +6289876543210');
     }
 
+    /**
+     * Jatah harian habis: balasan ditolak dengan alasan yang bisa dibaca,
+     * bukan "gagal terkirim" yang membuat admin mencoba terus.
+     */
+    public function test_reply_is_refused_with_a_clear_message_once_the_daily_quota_is_spent(): void
+    {
+        $conversation = $this->conversation();
+        config(['broadcast.daily_limit' => 1]);
+
+        $conversation->messages()->create([
+            'direction' => MessageDirection::Out,
+            'body' => 'Sudah terkirim sebelumnya',
+            'status' => MessageStatus::Sent,
+            'sent_at' => now()->subHour(),
+        ]);
+
+        Http::preventStrayRequests();
+        Http::fake();
+
+        $this->postJson($this->tenantUrl('inbox/conversations/'.$conversation->id.'/messages'), [
+            'body' => 'Halo',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.body.0', __('inbox.daily_limit_reached'));
+
+        Http::assertNothingSent();
+    }
+
     public function test_reaction_route_no_longer_exists(): void
     {
         $conversation = $this->conversation();

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Actions\Broadcast\PauseAllSendingBroadcastsAction;
 use App\Actions\Broadcast\PauseStalledBroadcastAction;
 use App\Actions\Inbox\RecordOutboundMessageAction;
 use App\Enums\BroadcastRecipientStatus;
@@ -105,7 +106,7 @@ class SendBroadcastRecipientJob implements ShouldQueue
         // Tanpa kredensial gateway tidak ada yang bisa dikirim, dan
         // mengulanginya tidak akan berubah. Penerimanya ditandai gagal dengan
         // sebab yang bisa dibaca admin.
-        if ($setting === null || ! $setting->provisioned()) {
+        if ($setting === null || ! $setting->hasGatewayCredentials()) {
             $recipient->update([
                 'status' => BroadcastRecipientStatus::Failed,
                 'error' => __('broadcast.gateway_not_ready'),
@@ -122,8 +123,12 @@ class SendBroadcastRecipientJob implements ShouldQueue
         $quota = DailyMessageQuota::today();
 
         if ($quota->isSpent()) {
-            app(PauseStalledBroadcastAction::class)->handle(
-                $broadcast,
+            // Jatahnya milik nomor pengirim, bukan milik campaign ini saja.
+            // Semua blast yang masih jalan untuk klinik yang sama ikut
+            // ditahan; kalau hanya yang ini yang dijeda, campaign lain tetap
+            // menabrak gateway dan menghanguskan penerimanya.
+            app(PauseAllSendingBroadcastsAction::class)->handle(
+                $this->tenantId,
                 __('broadcast.daily_limit_reached', ['limit' => $quota->limit]),
                 $this->minutesUntilTomorrow(),
             );

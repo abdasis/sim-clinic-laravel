@@ -14,7 +14,8 @@ use Throwable;
  *
  * Alamat servernya satu untuk semua klinik (whatsapp_gateway_settings), tetapi
  * kredensialnya milik tiap klinik dan diserahkan per panggilan lewat
- * WhatsappSetting. Kelas ini tidak membaca database maupun memegang tenant.
+ * WhatsappSetting. Kelas ini tidak memegang tenant; satu-satunya data yang
+ * dibacanya adalah jatah pesan harian, lewat DailyMessageQuota.
  *
  * Semua jawaban dibaca sebagai envelope `{success, message, data}`; hanya isi
  * `data` yang dikembalikan. Penolakan apa pun menjadi
@@ -320,17 +321,17 @@ class WhatsappGatewayClient
     }
 
     /**
-     * Kredensial yang membuka nomor WhatsApp klinik. Bila salah satunya
-     * kosong, klinik memang belum terhubung — bukan galat sesaat.
+     * Kredensial yang membuka nomor WhatsApp klinik. API key wajib; tenant key
+     * hanya pelengkap lama — dokumentasi gateway cukup mengenal API key, dan
+     * klinik boleh mengisinya manual tanpa alur register.
      *
      * @return array<string, string>
      */
     private function clinicHeaders(WhatsappSetting $setting): array
     {
-        $tenantKey = $setting->gateway_tenant_key;
         $apiKey = $setting->gateway_api_key;
 
-        if (blank($tenantKey) || blank($apiKey)) {
+        if (blank($apiKey)) {
             throw new WhatsappGatewayException(
                 'GATEWAY_NOT_PROVISIONED',
                 0,
@@ -340,10 +341,13 @@ class WhatsappGatewayClient
             );
         }
 
-        return [
-            'x-tenant-key' => $tenantKey,
-            'X-API-Key' => $apiKey,
-        ];
+        $headers = ['X-API-Key' => $apiKey];
+
+        if (filled($setting->gateway_tenant_key)) {
+            $headers['x-tenant-key'] = $setting->gateway_tenant_key;
+        }
+
+        return $headers;
     }
 
     private function gatewaySessionId(WhatsappSetting $setting): string
@@ -417,6 +421,13 @@ class WhatsappGatewayClient
         array $headers = [],
         ?string $idempotencyKey = null,
     ): array {
+        // Seluruh endpoint /messages/* sama-sama mengeluarkan pesan dari nomor
+        // klinik, jadi jatah harian diperiksa di satu pintu ini. Panggilan sesi
+        // (status, QR, connect) tidak menghitung dan tidak ikut ditahan.
+        if (str_starts_with($path, '/messages/')) {
+            $this->assertQuotaAvailable();
+        }
+
         $url = $this->baseUrl.'/api/v1'.$path;
 
         try {
@@ -433,6 +444,41 @@ class WhatsappGatewayClient
         }
 
         return $this->envelope($response, $method.' '.$path);
+    }
+
+    /**
+     * Tahan pengiriman begitu jatah harian habis.
+     *
+     * Diperiksa tepat sebelum request berangkat, bukan saat pengiriman
+     * diantrekan: jatah yang tersisa pagi bisa habis sore karena jalur lain
+     * (balasan inbox, pengingat, campaign lain) memakai nomor yang sama.
+     */
+    private function assertQuotaAvailable(): void
+    {
+        $quota = DailyMessageQuota::today();
+
+        if (! $quota->isSpent()) {
+            return;
+        }
+
+        throw new WhatsappGatewayException(
+            'DAILY_LIMIT_REACHED',
+            429,
+            $this->secondsUntilTomorrow(),
+            ['limit' => $quota->limit, 'used' => $quota->used],
+            __('broadcast.daily_limit_reached', ['limit' => $quota->limit]),
+        );
+    }
+
+    /**
+     * Detik sampai hari berganti, saat jatah kirimnya penuh lagi.
+     *
+     * Lewat sedikit dari tengah malam, bukan tepat: hitungan hari yang
+     * sepersekian detik lebih dulu bisa masih membebani jatah kemarin.
+     */
+    private function secondsUntilTomorrow(): int
+    {
+        return (int) now()->diffInSeconds(now()->addDay()->startOfDay()) + 300;
     }
 
     /**

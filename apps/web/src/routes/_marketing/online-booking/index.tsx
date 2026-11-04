@@ -49,7 +49,7 @@ function OnlineBookingPage() {
           ))}
         </ol>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/50 bg-muted/60 p-6">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/60 p-6">
           <div className="mr-auto max-w-lg">
             <h2 className="text-base font-semibold tracking-tight">
               Kami siap kapan pun Anda siap

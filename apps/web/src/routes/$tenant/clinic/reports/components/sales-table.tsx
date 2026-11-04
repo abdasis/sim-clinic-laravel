@@ -60,7 +60,7 @@ export function SalesTable({ rows, nameLabel }: SalesTableProps) {
   }, [rows])
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border/60">
+    <div className="overflow-hidden rounded-lg border border-border">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">

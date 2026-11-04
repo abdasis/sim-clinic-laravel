@@ -37,8 +37,9 @@ class BroadcastService
      * Jaraknya bukan cuma soal tidak menyembur. Jeda yang persis sama untuk
      * ratusan pesan berturut-turut adalah irama yang tidak pernah dihasilkan
      * orang mengetik, dan justru keteraturan itu yang paling gampang dibaca
-     * sebagai bot — walau isi pesannya sah. Rata-ratanya sengaja tetap 5
-     * detik supaya durasi blast tidak berubah.
+     * sebagai bot — walau isi pesannya sah. Rentang 8-15 detik menghasilkan
+     * kira-kira 4-7 pesan per menit, jauh di bawah batas gateway 60 request
+     * per menit per API key, jadi antrean tidak pernah menabrak throttle.
      *
      * ponytail: rentang selebar ini cukup untuk ratusan pesan sekali blast.
      * Untuk daftar yang jauh lebih besar (di atas seribu), sebarannya perlu
@@ -46,9 +47,9 @@ class BroadcastService
      * rentetan pendek, meniru orang yang berhenti sejenak — bukan sekadar
      * acak seragam.
      */
-    private const MIN_SECONDS_BETWEEN_MESSAGES = 3;
+    private const MIN_SECONDS_BETWEEN_MESSAGES = 8;
 
-    private const MAX_SECONDS_BETWEEN_MESSAGES = 7;
+    private const MAX_SECONDS_BETWEEN_MESSAGES = 15;
 
     /**
      * @param  array<string, mixed>  $data
@@ -98,6 +99,8 @@ class BroadcastService
         if (! $this->gatewayConfigured()) {
             abort(422, __('broadcast.gateway_not_ready'));
         }
+
+        $this->assertPosterIsReachable($broadcast);
 
         abort_if($broadcast->template === null, 422, __('broadcast.template_required'));
 
@@ -189,14 +192,57 @@ class BroadcastService
     }
 
     /**
-     * Klinik sudah punya kredensial gateway yang lengkap. Pemeriksaan murah
-     * dari database, tanpa memanggil gateway.
+     * Klinik sudah punya API key gateway — syarat kirim pesan. Pemeriksaan
+     * murah dari database, tanpa memanggil gateway.
      */
     public function gatewayConfigured(): bool
     {
         $setting = WhatsappSetting::query()->first();
 
-        return $setting !== null && $setting->provisioned();
+        return $setting !== null && $setting->hasGatewayCredentials();
+    }
+
+    /**
+     * Poster harus bisa diambil gateway dari internet.
+     *
+     * Gateway menolak alamat lokal/internal demi keamanan (SSRF), tapi
+     * penolakan itu baru muncul saat worker mengirim — setelah ratusan job
+     * masuk antrean dan gagal satu per satu. Pemeriksaan di sini menirunya
+     * supaya admin tahu sebelum menekan kirim.
+     */
+    private function assertPosterIsReachable(Broadcast $broadcast): void
+    {
+        $url = (string) $broadcast->image_url;
+
+        if ($url === '') {
+            return;
+        }
+
+        $parts = parse_url($url);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower(trim((string) ($parts['host'] ?? ''), '[]'));
+
+        if (! in_array($scheme, ['http', 'https'], true) || $host === '' || $this->isInternalHost($host)) {
+            abort(422, __('broadcast.image_url_unreachable'));
+        }
+    }
+
+    /** Nama host lokal atau alamat IP yang tidak bisa dijangkau dari internet. */
+    private function isInternalHost(string $host): bool
+    {
+        if ($host === 'localhost' || str_ends_with($host, '.localhost')) {
+            return true;
+        }
+
+        // Host berupa nama domain lolos; hanya literal IP yang disaring.
+        if (filter_var($host, FILTER_VALIDATE_IP) === false) {
+            return false;
+        }
+
+        // Loopback, privat, link-local, dan rentang terlarang lain (0.0.0.0,
+        // 127/8, 10/8, 172.16/12, 192.168/16, 169.254/16, ::1, fc00::/7,
+        // fe80::/10) semuanya ditolak oleh dua flag ini.
+        return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }
 
     /**
@@ -223,7 +269,7 @@ class BroadcastService
     {
         $setting = WhatsappSetting::query()->first();
 
-        if ($setting === null || ! $setting->provisioned()) {
+        if ($setting === null || ! $setting->hasGatewayCredentials()) {
             abort(422, __('broadcast.gateway_not_ready'));
         }
 

@@ -106,7 +106,7 @@ function StatTile({
       // Container query mengukur kotak isi, bukan kotak luarnya: ambang
       // 10rem itu ruang teks di dalam kartu, yang berarti kartu ~194px ke
       // bawah. Terukur: 820px memendekkan, 1024px (237px per kartu) tidak.
-      className="rise-in @container/tile rounded-lg border border-border/50 bg-card p-4 shadow-sm transition-colors hover:border-border"
+      className="rise-in @container/tile rounded-lg border border-border bg-card p-4 transition-colors hover:border-border"
       style={{ animationDelay: `${index * 45}ms` }}
     >
       <div className="mb-2 flex items-center justify-between gap-2">

@@ -34,6 +34,7 @@ return [
     'sent' => 'Balasan terkirim.',
     'read' => 'Percakapan ditandai sudah dibaca.',
     'send_failed' => 'Pesan gagal dikirim lewat WhatsApp. Coba lagi sebentar lagi.',
+    'daily_limit_reached' => 'Jatah kirim WhatsApp hari ini sudah penuh. Pengiriman ditangguhkan sampai besok.',
     'gateway_not_ready' => 'Sesi WhatsApp klinik belum siap. Buka menu Koneksi WhatsApp lalu sambungkan dulu.',
     'attach' => [
         'open' => 'Lampirkan',

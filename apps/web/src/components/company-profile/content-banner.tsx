@@ -47,7 +47,7 @@ export function ContentBanner({
     >
       <div className={cn(isSplit ? "mx-auto w-full max-w-6xl px-4 sm:px-6" : "")}>
         {isSplit ? (
-          <div className="grid items-stretch overflow-hidden rounded-xl border border-border/60 bg-background md:grid-cols-2">
+          <div className="grid items-stretch overflow-hidden rounded-xl border border-border bg-background md:grid-cols-2">
             {section.image_url ? (
               <div className="relative min-h-56 overflow-hidden bg-muted md:order-last">
                 <img

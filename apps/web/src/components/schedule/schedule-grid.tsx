@@ -175,8 +175,8 @@ function ScheduleCell({ booking }: { booking: ScheduleBooking }) {
     <div
       title={`${booking.patient_name} - ${booking.service_name}`}
       className={cn(
-        "rounded-sm border border-l-2 border-border/60 bg-background p-1.5 text-xs",
-        "shadow-sm transition-colors hover:bg-muted/40",
+        "rounded-sm border border-l-2 border-border bg-background p-1.5 text-xs",
+        "transition-colors hover:bg-muted/40",
         STATUS_ACCENT[booking.status] ?? "border-l-muted-foreground/40",
       )}
     >

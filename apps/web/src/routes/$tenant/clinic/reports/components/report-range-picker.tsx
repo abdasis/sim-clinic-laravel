@@ -86,7 +86,7 @@ export function ReportRangePicker({
   }
 
   return (
-    <section className="mb-4 rounded-lg border border-border/60 bg-card p-3">
+    <section className="mb-4 rounded-lg border border-border bg-card p-3">
       <div className="flex flex-wrap items-center gap-1.5">
         <HugeiconsIcon
           icon={Calendar03Icon}
@@ -117,7 +117,7 @@ export function ReportRangePicker({
       </div>
 
       <form
-        className="mt-3 flex flex-wrap items-end gap-3 border-t border-border/50 pt-3"
+        className="mt-3 flex flex-wrap items-end gap-3 border-t border-border pt-3"
         onSubmit={(e) => {
           e.preventDefault()
           if (valid) apply(custom)

@@ -74,6 +74,7 @@ return [
     'session_none' => 'Belum ada sesi WhatsApp yang tersambung untuk dihapus.',
     // Pengiriman lewat gateway internal.
     'gateway_not_ready' => 'WhatsApp klinik belum terhubung ke gateway. Buka menu Koneksi WhatsApp lalu sambungkan nomornya dulu.',
+    'image_url_unreachable' => 'Poster harus bisa diakses publik lewat URL http atau https. Alamat lokal atau internal tidak bisa diambil gateway, jadi unggah ulang posternya.',
     'template_body_too_long' => 'Pesan terlalu panjang, maksimal :max karakter. Pesan yang disertai gambar perlu lebih ringkas karena gambarnya ikut ditampilkan.',
     'test_failed' => 'Pesan uji gagal dikirim. Periksa sambungan WhatsApp klinik, lalu coba lagi.',
     'template_section' => 'Template Pesan',

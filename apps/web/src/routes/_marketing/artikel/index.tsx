@@ -23,7 +23,7 @@ function ArticleListPage() {
         {ARTICLES.map((article) => (
           <article
             key={article.id}
-            className="group flex flex-col overflow-hidden rounded-lg border border-border/50 bg-background transition-[border-color,box-shadow] hover:border-border hover:shadow-sm"
+            className="group flex flex-col overflow-hidden rounded-lg border border-border bg-background transition-[border-color] hover:border-border"
           >
             <div className="aspect-[16/10] overflow-hidden bg-muted">
               <img

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Carbon;
 use RuntimeException;
 use Throwable;
 
@@ -70,11 +71,30 @@ class WhatsappGatewayException extends RuntimeException
         );
     }
 
+    /**
+     * `Retry-After` boleh berupa jumlah detik atau tanggal HTTP (RFC 7231).
+     * Keduanya diterjemahkan ke detik tunggu; bentuk lain dianggap tidak ada
+     * supaya pemanggil memakai jeda bawaannya sendiri.
+     */
     private static function retryAfterFrom(Response $response): ?int
     {
-        $header = $response->header('Retry-After');
+        $header = trim((string) $response->header('Retry-After'));
 
-        return is_numeric($header) ? max(0, (int) $header) : null;
+        if ($header === '') {
+            return null;
+        }
+
+        if (is_numeric($header)) {
+            return max(0, (int) $header);
+        }
+
+        try {
+            $until = Carbon::parse($header);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return max(0, (int) now()->diffInSeconds($until, false));
     }
 
     /** @return array<string, mixed> */

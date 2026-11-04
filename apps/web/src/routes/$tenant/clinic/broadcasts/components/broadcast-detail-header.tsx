@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router"
+import type { ReactNode } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Delete02Icon,
@@ -19,6 +20,7 @@ interface BroadcastDetailHeaderProps {
   tenant: string
   broadcast: BroadcastDetail
   gatewayReady: boolean
+  quotaSpent: boolean
   templateInfo: string | null
   statusPending: boolean
   sendAllPending: boolean
@@ -29,10 +31,33 @@ interface BroadcastDetailHeaderProps {
   onDelete: () => void
 }
 
+/** Tombol disabled tidak memicu tooltip Radix, jadi pembungkus span yang jadi pemicunya. */
+function QuotaHint({
+  blocked,
+  hint,
+  children,
+}: {
+  blocked: boolean
+  hint: string
+  children: ReactNode
+}) {
+  if (!blocked) return <>{children}</>
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent>{hint}</TooltipContent>
+    </Tooltip>
+  )
+}
+
 export function BroadcastDetailHeader({
   tenant,
   broadcast,
   gatewayReady,
+  quotaSpent,
   templateInfo,
   statusPending,
   sendAllPending,
@@ -88,9 +113,11 @@ export function BroadcastDetailHeader({
           ) : null}
           {broadcast.status === "paused" ? (
             <>
-              <Button onClick={onResume} disabled={statusPending}>
-                {t("broadcast.resume")}
-              </Button>
+              <QuotaHint blocked={quotaSpent} hint={t("broadcast.quota_spent_hint")}>
+                <Button onClick={onResume} disabled={statusPending || quotaSpent}>
+                  {t("broadcast.resume")}
+                </Button>
+              </QuotaHint>
               <Button
                 variant="outline"
                 className="text-destructive"
@@ -108,10 +135,16 @@ export function BroadcastDetailHeader({
           broadcast.status !== "paused" &&
           broadcast.status !== "cancelled" &&
           (broadcast.recipients_pending > 0 || broadcast.recipients_failed > 0) ? (
-            <Button onClick={onSendAll} disabled={sendAllPending} className="gap-1.5">
-              <HugeiconsIcon icon={SentIcon} strokeWidth={2} className="size-4" />
-              {sendAllPending ? t("general.loading") : t("broadcast.send_all")}
-            </Button>
+            <QuotaHint blocked={quotaSpent} hint={t("broadcast.quota_spent_hint")}>
+              <Button
+                onClick={onSendAll}
+                disabled={sendAllPending || quotaSpent}
+                className="gap-1.5"
+              >
+                <HugeiconsIcon icon={SentIcon} strokeWidth={2} className="size-4" />
+                {sendAllPending ? t("general.loading") : t("broadcast.send_all")}
+              </Button>
+            </QuotaHint>
           ) : null}
           {broadcast.can_edit ? (
             <Tooltip>

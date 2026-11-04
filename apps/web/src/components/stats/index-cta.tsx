@@ -68,7 +68,7 @@ export function IndexCta({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "cta-banner mb-6 rounded-lg px-5 py-5 shadow-sm sm:px-6",
+        "cta-banner mb-6 rounded-lg px-5 py-5 sm:px-6",
         TONE_CLASS[tone],
         className,
       )}

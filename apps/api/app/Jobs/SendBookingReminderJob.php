@@ -2,9 +2,11 @@
 
 namespace App\Jobs;
 
+use App\Actions\Inbox\RecordOutboundMessageAction;
 use App\Actions\LogAuditAction;
 use App\Enums\BookingReminderStatus;
 use App\Enums\BookingStatus;
+use App\Enums\ConversationChannel;
 use App\Models\Booking;
 use App\Models\BookingReminder;
 use App\Models\BookingReminderSetting;
@@ -132,7 +134,7 @@ class SendBookingReminderJob implements ShouldQueue
     {
         $setting = WhatsappSetting::query()->first();
 
-        if ($setting === null || ! $setting->provisioned()) {
+        if ($setting === null || ! $setting->hasGatewayCredentials()) {
             $this->markFailed($reminder, 'gateway WhatsApp belum siap');
 
             return;
@@ -159,6 +161,8 @@ class SendBookingReminderJob implements ShouldQueue
 
         $reminder->update(['status' => BookingReminderStatus::Sent, 'sent_at' => now()]);
 
+        $this->recordOutbound($reminder, $phone, $message);
+
         app(LogAuditAction::class)->handle(
             action: 'booking_reminder.sent',
             subject: $reminder,
@@ -166,6 +170,29 @@ class SendBookingReminderJob implements ShouldQueue
             description: 'Mengirim pengingat jadwal ke '
                 .($reminder->booking?->patient?->name ?? 'pasien').' lewat WhatsApp.',
         );
+    }
+
+    /**
+     * Catat pesan yang sudah berangkat ke kotak masuk, sekaligus membuatnya
+     * terhitung di jatah harian nomor klinik. Kegagalan mencatat tidak boleh
+     * mengubah pengingat yang sudah terkirim menjadi gagal.
+     */
+    private function recordOutbound(BookingReminder $reminder, string $phone, string $message): void
+    {
+        try {
+            app(RecordOutboundMessageAction::class)->handle(
+                $this->tenantId,
+                $phone,
+                $message,
+                ConversationChannel::Gateway,
+            );
+        } catch (Throwable $e) {
+            Log::error('Pengingat booking terkirim tetapi gagal dicatat ke kotak masuk.', [
+                'exception' => $e,
+                'reminder_id' => $reminder->id,
+                'tenant_id' => $this->tenantId,
+            ]);
+        }
     }
 
     /** Kegagalan yang tidak layak dicoba ulang — datanya memang tidak cukup. */

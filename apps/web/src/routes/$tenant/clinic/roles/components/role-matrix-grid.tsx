@@ -69,7 +69,7 @@ export function RoleMatrixGrid({ tenant, data }: RoleMatrixGridProps) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border/50 bg-card shadow-sm">
+    <div className="overflow-x-auto rounded-lg border border-border bg-card">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-border/50">

@@ -186,7 +186,7 @@ function CentralBackupPage() {
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border/60">
+        <div className="overflow-hidden rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/60 bg-muted/30 text-xs text-muted-foreground">

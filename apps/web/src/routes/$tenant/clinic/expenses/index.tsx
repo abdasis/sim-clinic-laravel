@@ -165,7 +165,7 @@ function ExpensesPage() {
       {summary.isLoading ? (
         <Skeleton className="h-24 w-full" />
       ) : (
-        <section className="rounded-lg border border-border/50 bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-sm font-semibold">{t("expense.summary")}</h2>
             <span className="text-xs text-muted-foreground tabular-nums">
@@ -192,7 +192,7 @@ function ExpensesPage() {
             ))}
           </dl>
 
-          <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-border/50 pt-3">
+          <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-border pt-3">
             <span className="text-sm font-medium">{t("expense.total")}</span>
             <span className="text-lg font-semibold tabular-nums">
               {formatCurrency(summary.data?.data.total ?? 0)}

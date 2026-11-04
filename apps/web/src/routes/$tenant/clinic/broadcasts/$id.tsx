@@ -44,7 +44,14 @@ function BroadcastDetailPage() {
   const { data, isLoading } = useQuery({
     queryKey,
     queryFn: () =>
-      apiGet<{ data: BroadcastDetail; meta: { gateway_ready: boolean } }>(
+      apiGet<{
+        data: BroadcastDetail
+        meta: {
+          gateway_ready: boolean
+          quota?: { limit: number; used: number; remaining: number }
+          quota_spent?: boolean
+        }
+      }>(
         `/${tenant}/clinic/broadcasts/${id}`,
       ),
   })
@@ -52,6 +59,7 @@ function BroadcastDetailPage() {
   const broadcast = data?.data
   useBreadcrumbTail(broadcast?.title)
   const gatewayReady = data?.meta.gateway_ready ?? false
+  const quotaSpent = data?.meta.quota_spent === true
   const templateBody = broadcast?.template?.body?.trim()
   const templateInfo = templateBody
     ? templateBody.length > 60
@@ -160,6 +168,7 @@ function BroadcastDetailPage() {
         tenant={tenant}
         broadcast={broadcast}
         gatewayReady={gatewayReady}
+        quotaSpent={quotaSpent}
         templateInfo={templateInfo}
         statusPending={changeStatus.isPending}
         sendAllPending={sendAll.isPending}

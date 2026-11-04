@@ -28,7 +28,7 @@ export function MonthlyUpsell({ rows }: { rows: CommissionRow[] }) {
   const total = sellers.reduce((sum, row) => sum + row.commission_amount, 0)
 
   return (
-    <section className="flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card">
+    <section className="flex flex-col overflow-hidden rounded-lg border border-border bg-card">
       <header className="flex items-center gap-2 border-b border-chart-cat-3/25 bg-chart-cat-3/12 px-3 py-2">
         <span
           aria-hidden

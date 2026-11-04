@@ -36,7 +36,7 @@ export function ProductCard({ entry, onAdd }: ProductCardProps) {
       onClick={() => onAdd(entry)}
       aria-label={`${t("pos.catalog.add")}: ${entry.name}`}
       className={cn(
-        "group flex h-full flex-col items-start gap-2 rounded-lg border border-border/50 bg-card p-3 text-left shadow-sm",
+        "group flex h-full flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-left",
         "transition-[transform,border-color,background-color] duration-150 ease-out",
         "hover:-translate-y-0.5 hover:border-border hover:bg-accent/40",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none",

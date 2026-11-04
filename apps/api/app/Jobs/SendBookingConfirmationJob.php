@@ -2,8 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Actions\Inbox\RecordOutboundMessageAction;
 use App\Actions\LogAuditAction;
 use App\Enums\BookingStatus;
+use App\Enums\ConversationChannel;
 use App\Models\Booking;
 use App\Models\BookingReminderSetting;
 use App\Models\Tenant;
@@ -86,7 +88,7 @@ class SendBookingConfirmationJob implements ShouldQueue
 
         $setting = WhatsappSetting::query()->first();
 
-        if ($setting === null || ! $setting->provisioned()) {
+        if ($setting === null || ! $setting->hasGatewayCredentials()) {
             Log::warning('Konfirmasi booking tidak dikirim: gateway WhatsApp belum siap.', [
                 'booking_id' => $booking->id,
                 'tenant_id' => $this->tenantId,
@@ -95,11 +97,13 @@ class SendBookingConfirmationJob implements ShouldQueue
             return;
         }
 
+        $message = $this->compose($booking, ClinicIdentity::displayName($tenant));
+
         try {
             app(WhatsappGatewayClient::class)->sendText(
                 $setting,
                 $phone,
-                $this->compose($booking, ClinicIdentity::displayName($tenant)),
+                $message,
                 'job-'.class_basename($this).'-'.$booking->id,
             );
         } catch (Throwable $e) {
@@ -113,6 +117,8 @@ class SendBookingConfirmationJob implements ShouldQueue
             throw $e;
         }
 
+        $this->recordOutbound($booking, $phone, $message);
+
         app(LogAuditAction::class)->handle(
             action: 'booking.confirmation_sent',
             subject: $booking,
@@ -120,6 +126,29 @@ class SendBookingConfirmationJob implements ShouldQueue
             description: 'Mengabari '.($booking->patient?->name ?? 'pasien')
                 .' lewat WhatsApp bahwa jadwalnya sudah dikonfirmasi klinik.',
         );
+    }
+
+    /**
+     * Catat pesan yang sudah berangkat ke kotak masuk, sekaligus membuatnya
+     * terhitung di jatah harian nomor klinik. Kegagalan mencatat tidak boleh
+     * membuat worker mengulang pesan yang sudah sampai ke pasien.
+     */
+    private function recordOutbound(Booking $booking, string $phone, string $message): void
+    {
+        try {
+            app(RecordOutboundMessageAction::class)->handle(
+                $this->tenantId,
+                $phone,
+                $message,
+                ConversationChannel::Gateway,
+            );
+        } catch (Throwable $e) {
+            Log::error('Konfirmasi booking terkirim tetapi gagal dicatat ke kotak masuk.', [
+                'exception' => $e,
+                'booking_id' => $booking->id,
+                'tenant_id' => $this->tenantId,
+            ]);
+        }
     }
 
     /**

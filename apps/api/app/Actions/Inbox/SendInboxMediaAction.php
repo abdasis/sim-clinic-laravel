@@ -55,7 +55,11 @@ class SendInboxMediaAction
                 'media_type' => $type,
             ]);
 
-            throw ValidationException::withMessages(['file' => __('inbox.send_failed')]);
+            throw ValidationException::withMessages([
+                'file' => $e->code === 'DAILY_LIMIT_REACHED'
+                    ? __('inbox.daily_limit_reached')
+                    : __('inbox.send_failed'),
+            ]);
         } catch (ValidationException $e) {
             Storage::disk('public')->delete($path);
 

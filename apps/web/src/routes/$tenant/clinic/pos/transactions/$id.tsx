@@ -243,7 +243,7 @@ function Summary({
   highlight?: boolean
 }) {
   return (
-    <div className="rounded-lg border border-border/50 p-4">
+    <div className="rounded-lg border border-border p-4">
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </p>

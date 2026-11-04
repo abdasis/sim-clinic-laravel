@@ -59,7 +59,7 @@ export function ReplyBox({
       ) : null}
 
       <div className="rounded-lg bg-muted p-1.5 transition-shadow duration-150 focus-within:ring-2 focus-within:ring-ring/25">
-        <div className="overflow-hidden rounded-md bg-card ring-1 ring-foreground/6">
+        <div className="overflow-hidden rounded-md border border-border bg-card">
           <ComposerEditor
             value={value}
             label={t("inbox.message_body")}

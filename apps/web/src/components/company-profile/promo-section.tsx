@@ -72,7 +72,7 @@ function PromoCard({
   return (
     <article
       className={cn(
-        "group/promo grid overflow-hidden rounded-xl border border-border/60 bg-background transition-[border-color,box-shadow] duration-200 hover:border-border hover:shadow-sm",
+        "group/promo grid overflow-hidden rounded-xl border border-border bg-background transition-[border-color] duration-200 hover:border-border",
         featured ? "md:grid-cols-[1.1fr_1fr]" : "grid-cols-1",
       )}
     >
