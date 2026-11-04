@@ -604,7 +604,7 @@ git add apps/api/app/Support/ReminderEngine.php apps/api/app/Support/AutoReminde
 **Files:**
 - Delete: `apps/api/app/Support/{WahaClient,WahaException,WahaSessionState,CloudApiClient,CloudApiException}.php`
 - Delete: `apps/api/app/Models/WahaSetting.php`
-- Delete: `apps/api/app/Http/Controllers/{MetaWhatsappWebhookController,CentralWahaSettingController}.php`
+- Delete: `apps/api/app/Http/Controllers/CentralWahaSettingController.php` (Meta controller sudah dihapus di Task 17)
 - Delete: `apps/api/config/{waha,meta_whatsapp}.php`
 - Delete: `apps/api/app/Services/{WhatsappConnectionService,WhatsappTemplateService}.php`
 - Create: `apps/api/app/Http/Controllers/CentralWhatsappGatewaySettingController.php`, `apps/api/app/Http/Requests/WhatsappGatewaySettingRequest.php`
