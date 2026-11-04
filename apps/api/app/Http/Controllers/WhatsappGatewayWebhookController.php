@@ -8,7 +8,7 @@ use App\Enums\ConversationChannel;
 use App\Enums\MessageStatus;
 use App\Jobs\ProcessInboundMessageJob;
 use App\Models\WhatsappSetting;
-use App\Support\PhoneNumber;
+use App\Support\SenderIdentity;
 use App\Support\WhatsappGatewayWebhook;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -136,16 +136,16 @@ class WhatsappGatewayWebhookController extends Controller
             return $this->respond('bukan percakapan berdua');
         }
 
-        $phone = $this->senderPhone($remoteJid, $payload['remoteJidAlt'] ?? null);
+        $phone = SenderIdentity::resolve($remoteJid, $payload['remoteJidAlt'] ?? null);
 
         if ($phone === null) {
-            Log::channel('chatbot')->warning('Pesan gateway ditolak: nomor pengirim tidak valid', [
+            Log::channel('chatbot')->warning('Pesan gateway ditolak: identitas pengirim tidak dikenali', [
                 'tenant_id' => $setting->tenant_id,
                 'remoteJid' => $remoteJid,
                 'remoteJidAlt' => $payload['remoteJidAlt'] ?? null,
             ]);
 
-            return $this->respond('nomor pengirim tidak valid');
+            return $this->respond('identitas pengirim tidak dikenali');
         }
 
         $providerMessageId = $payload['messageId'] ?? null;
@@ -256,29 +256,6 @@ class WhatsappGatewayWebhookController extends Controller
         return str_ends_with($jid, '@c.us')
             || str_ends_with($jid, '@s.whatsapp.net')
             || str_ends_with($jid, '@lid');
-    }
-
-    /**
-     * Nomor pengirim di balik JID.
-     *
-     * WhatsApp kini mengirim identitas pengguna sebagai LID ("2399@lid") alih-
-     * alih nomor telepon. LID tidak bisa dipakai membalas; nomor aslinya ada
-     * di `remoteJidAlt` ("628xx@s.whatsapp.net") dan hanya dipakai bila JID
-     * memang LID.
-     */
-    private function senderPhone(string $remoteJid, mixed $remoteJidAlt): ?string
-    {
-        $raw = str_ends_with($remoteJid, '@lid')
-            ? (is_string($remoteJidAlt) ? $remoteJidAlt : '')
-            : $remoteJid;
-
-        // Domain dibuang, begitu pula nomor perangkat di belakang ':'.
-        // Normalisasi menyapu seluruh karakter bukan angka, jadi
-        // "628xx:12@s.whatsapp.net" tanpa pemotongan berubah menjadi nomor
-        // yang tidak pernah ada.
-        $user = strtok(strtok($raw, '@') ?: '', ':') ?: '';
-
-        return PhoneNumber::normalize($user);
     }
 
     private function respond(string $reason, int $status = 200): JsonResponse

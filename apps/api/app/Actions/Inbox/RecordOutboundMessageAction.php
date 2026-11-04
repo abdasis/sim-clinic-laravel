@@ -9,7 +9,7 @@ use App\Enums\MessageDirection;
 use App\Enums\MessageStatus;
 use App\Models\Conversation;
 use App\Models\Message;
-use App\Support\PhoneNumber;
+use App\Support\SenderIdentity;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -37,7 +37,7 @@ class RecordOutboundMessageAction
         array $media = [],
         ?Message $replyTo = null,
     ): Message {
-        $contactPhone = PhoneNumber::normalize($phone);
+        $contactPhone = SenderIdentity::key($phone);
 
         if ($contactPhone === null) {
             throw new InvalidArgumentException('Nomor tujuan tidak valid: '.$phone);
