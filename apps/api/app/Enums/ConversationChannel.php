@@ -10,6 +10,7 @@ enum ConversationChannel: string
 {
     case Waha = 'waha';
     case CloudApi = 'cloud_api';
+    case Gateway = 'gateway';
 
     public function label(): string
     {

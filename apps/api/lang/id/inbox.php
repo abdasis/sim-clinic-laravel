@@ -112,6 +112,7 @@ return [
     'channel' => [
         'waha' => 'WAHA',
         'cloud_api' => 'Cloud API Meta',
+        'gateway' => 'Gateway internal',
     ],
     'direction' => [
         'in' => 'Masuk',
