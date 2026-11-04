@@ -7,8 +7,10 @@ use App\Jobs\ProcessInboundMessageJob;
 use App\Models\ChatbotSetting;
 use App\Models\ChatMessage;
 use App\Models\WhatsappSetting;
+use App\Services\ChatbotService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
@@ -133,5 +135,55 @@ class ChatbotGatewayTest extends TestCase
 
         Http::assertNothingSent();
         $this->assertSame(0, ChatMessage::query()->count());
+    }
+
+    /**
+     * Balasan kosong tetap harus memadamkan indikator: pasien yang melihat
+     * "sedang mengetik" tanpa balasan menunggu sesuatu yang tidak akan datang.
+     */
+    public function test_paused_is_sent_when_the_answer_is_null(): void
+    {
+        ChatbotSetting::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->gatewaySetting();
+
+        Http::fake(['gateway.test/*' => Http::response(['success' => true, 'data' => []], 202)]);
+
+        $this->mock(ChatbotService::class, function ($mock): void {
+            $mock->shouldReceive('isActive')->once()->andReturn(true);
+            $mock->shouldReceive('reply')->once()->andReturnNull();
+        });
+
+        $this->runJob();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/presence')
+            && $request['presence'] === 'paused');
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/messages/send'));
+    }
+
+    /** Jalur fallback saat AI melempar pun harus menutup indikator mengetik. */
+    public function test_paused_is_sent_when_the_chatbot_throws(): void
+    {
+        ChatbotSetting::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->gatewaySetting();
+
+        Http::fake([
+            'gateway.test/api/v1/sessions/*/presence' => Http::response(['success' => true, 'data' => []], 202),
+            'gateway.test/api/v1/messages/send' => Http::response(['success' => true, 'data' => [
+                'messageId' => 'fallback-uji', 'status' => 'QUEUED',
+            ]], 202),
+        ]);
+
+        $this->mock(ChatbotService::class, function ($mock): void {
+            $mock->shouldReceive('isActive')->once()->andReturn(true);
+            $mock->shouldReceive('reply')->once()->andThrow(new RuntimeException('AI mati'));
+        });
+
+        $this->runJob();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/presence')
+            && $request['presence'] === 'paused');
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/messages/send')
+            && $request['text'] === __('chatbot.fallback'));
+        $this->assertDatabaseHas('messages', ['provider_message_id' => 'fallback-uji']);
     }
 }

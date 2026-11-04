@@ -4,9 +4,11 @@ namespace App\Actions\Chatbot;
 
 use App\Actions\LogAuditAction;
 use App\Models\ChatMessage;
-use App\Support\WahaClient;
+use App\Models\WhatsappSetting;
+use App\Support\WhatsappGatewayClient;
 use App\Support\WhatsAppText;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Kirim satu pesan penutup lalu tandai percakapannya sudah ditutup.
@@ -22,12 +24,16 @@ class CloseIdleConversationAction
         private readonly LogAuditAction $audit,
     ) {}
 
-    public function handle(WahaClient $waha, string $senderPhone, string $message): ?ChatMessage
-    {
+    public function handle(
+        WhatsappGatewayClient $client,
+        WhatsappSetting $setting,
+        string $senderPhone,
+        string $message,
+    ): ?ChatMessage {
         $text = WhatsAppText::normalize($message);
 
         try {
-            $waha->send($senderPhone, $text);
+            $client->sendText($setting, $senderPhone, $text, 'chatbot-closing-'.Str::uuid());
         } catch (\Throwable $e) {
             // Satu nomor yang gagal tidak boleh menghentikan sisanya, jadi
             // kegagalannya dicatat dan dilaporkan sebagai "tidak jadi" —

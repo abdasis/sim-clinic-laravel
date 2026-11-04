@@ -3,10 +3,10 @@
 namespace Tests\Feature\Chatbot;
 
 use App\Models\ChatbotSetting;
-use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Testing\TestResponse;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
@@ -23,6 +23,12 @@ class ChatbotEndToEndTest extends TestCase
 {
     use InteractsWithTenant, RefreshDatabase;
 
+    private const TOKEN = 'token-uji';
+
+    private const SECRET = 'rahasia-uji';
+
+    private const SESSION_ID = '11111111-1111-1111-1111-111111111111';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,7 +36,7 @@ class ChatbotEndToEndTest extends TestCase
         $this->tenant = $this->createTenant();
 
         config([
-            'waha.webhook_token' => 'tok',
+            'whatsapp_gateway.base_url' => 'https://gateway.test',
             // Antrian dijalankan langsung supaya rantainya utuh dalam satu
             // permintaan; di server yang bekerja adalah proses queue:work.
             'queue.default' => 'sync',
@@ -39,46 +45,74 @@ class ChatbotEndToEndTest extends TestCase
             'services.deepseek.model' => 'model',
         ]);
 
-        WahaSetting::create(['base_url' => 'https://waha.uji', 'api_key' => 'waha-key']);
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
+        WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'session' => 'klinik-uji',
+            'gateway_tenant_key' => 'tenant-uji',
+            'gateway_api_key' => 'api-uji',
+            'gateway_webhook_token' => self::TOKEN,
+            'gateway_webhook_secret' => self::SECRET,
+            'gateway_session_id' => self::SESSION_ID,
+        ]);
     }
 
-    private function incoming(): void
+    /** Kirim pesan masuk dengan header HMAC yang sah, persis seperti gateway. */
+    private function incoming(): TestResponse
     {
-        $this->postJson('/api/whatsapp/webhook/tok', [
-            'event' => 'message',
-            'session' => 'klinik-uji',
-            'me' => ['id' => '628110000000@c.us'],
-            'payload' => [
-                'from' => '6281234567890@c.us',
-                'to' => '628110000000@c.us',
-                'body' => 'halo, berapa harga facial?',
-                'fromMe' => false,
-                'hasMedia' => false,
-            ],
-        ])->assertOk();
+        $body = json_encode([
+            'messageId' => '0f8fad5b-d9cb-469f-a165-70867728950e',
+            'sessionId' => 'klinik-uji',
+            'remoteJid' => '6281234567890@s.whatsapp.net',
+            'remoteJidAlt' => null,
+            'type' => 'TEXT',
+            'content' => 'halo, berapa harga facial?',
+        ]);
+        $timestamp = (string) time();
+        $signature = 'sha256='.hash_hmac('sha256', $timestamp.'.'.$body, self::SECRET);
+
+        $headers = $this->transformHeadersToServerVars([
+            'CONTENT_TYPE' => 'application/json',
+            'Accept' => 'application/json',
+            'X-Webhook-ID' => 'evt-uji',
+            'X-Webhook-Event' => 'message.received',
+            'X-Webhook-Timestamp' => $timestamp,
+            'X-Webhook-Signature' => $signature,
+        ]);
+
+        return $this->call('POST', '/api/whatsapp/webhook/'.self::TOKEN, [], [], [], $headers, $body);
+    }
+
+    /** @return array<string, mixed> */
+    private static function answer(string $content): array
+    {
+        return ['choices' => [[
+            'message' => ['role' => 'assistant', 'content' => $content],
+            'finish_reason' => 'stop',
+        ]]];
+    }
+
+    private function fakeGateway(string $reply): void
+    {
+        Http::fake([
+            'ai.uji/*' => Http::response(self::answer($reply)),
+            'gateway.test/api/v1/sessions/*/presence' => Http::response(['success' => true, 'data' => []], 202),
+            'gateway.test/api/v1/messages/send' => Http::response(['success' => true, 'data' => [
+                'messageId' => 'balasan-uji', 'status' => 'QUEUED',
+            ]], 202),
+        ]);
     }
 
     public function test_a_patient_message_ends_up_as_a_sent_reply(): void
     {
         ChatbotSetting::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->fakeGateway('Halo, ada yang bisa dibantu?');
 
-        Http::fake([
-            'ai.uji/*' => Http::response(['choices' => [[
-                'message' => ['role' => 'assistant', 'content' => 'Halo, ada yang bisa dibantu?'],
-                'finish_reason' => 'stop',
-            ]]]),
-            'waha.uji/*' => Http::response(['ok' => true]),
-        ]);
-
-        $this->incoming();
+        $this->incoming()->assertOk();
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'ai.uji/chat/completions'));
-        Http::assertSent(function ($request): bool {
-            return str_contains($request->url(), 'waha.uji/api/sendText')
-                && $request->data()['text'] === 'Halo, ada yang bisa dibantu?'
-                && $request->data()['chatId'] === '6281234567890@c.us';
-        });
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'gateway.test/api/v1/messages/send')
+            && $request['text'] === 'Halo, ada yang bisa dibantu?'
+            && $request['to'] === '6281234567890');
 
         $this->assertDatabaseHas('chat_messages', ['direction' => 'out', 'content' => 'Halo, ada yang bisa dibantu?']);
     }
@@ -90,34 +124,24 @@ class ChatbotEndToEndTest extends TestCase
     public function test_the_typing_indicator_wraps_the_whole_reply(): void
     {
         ChatbotSetting::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->fakeGateway('Halo, ada yang bisa dibantu?');
 
-        Http::fake([
-            'ai.uji/*' => Http::response(['choices' => [[
-                'message' => ['role' => 'assistant', 'content' => 'Halo, ada yang bisa dibantu?'],
-                'finish_reason' => 'stop',
-            ]]]),
-            'waha.uji/*' => Http::response(['ok' => true]),
-        ]);
+        $this->incoming()->assertOk();
 
-        $this->incoming();
+        $recorded = Http::recorded();
 
-        $paths = collect(Http::recorded())
-            ->map(fn ($pair) => parse_url((string) $pair[0]->url(), PHP_URL_PATH))
-            ->values()
-            ->all();
+        $at = fn (callable $match) => $recorded->search(fn (array $pair) => $match($pair[0]));
 
-        $this->assertContains('/api/startTyping', $paths);
-        $this->assertContains('/api/stopTyping', $paths);
-        $this->assertLessThan(
-            array_search('/api/sendText', $paths, true),
-            array_search('/api/startTyping', $paths, true),
-            'Indikator harus menyala sebelum balasan dikirim.',
-        );
-        $this->assertGreaterThan(
-            array_search('/api/sendText', $paths, true),
-            array_search('/api/stopTyping', $paths, true),
-            'Indikator baru padam setelah balasan dikirim.',
-        );
+        $composingAt = $at(fn ($request) => str_contains($request->url(), '/presence')
+            && $request['presence'] === 'composing');
+        $pausedAt = $at(fn ($request) => str_contains($request->url(), '/presence')
+            && $request['presence'] === 'paused');
+        $sendAt = $at(fn ($request) => str_contains($request->url(), '/messages/send'));
+
+        $this->assertNotFalse($composingAt, 'Indikator mengetik harus menyala.');
+        $this->assertNotFalse($pausedAt, 'Indikator mengetik harus padam.');
+        $this->assertLessThan($sendAt, $composingAt, 'Indikator harus menyala sebelum balasan dikirim.');
+        $this->assertGreaterThan($sendAt, $pausedAt, 'Indikator baru padam setelah balasan dikirim.');
     }
 
     /** Chatbot mati berarti AI tidak dipanggil sama sekali, bukan sekadar tidak dibalas. */
@@ -126,7 +150,7 @@ class ChatbotEndToEndTest extends TestCase
         ChatbotSetting::factory()->inactive()->create(['tenant_id' => $this->tenant->id]);
         Http::fake();
 
-        $this->incoming();
+        $this->incoming()->assertOk();
 
         Http::assertNothingSent();
     }
@@ -138,6 +162,11 @@ class ChatbotEndToEndTest extends TestCase
     public function test_the_doctor_command_tells_ready_from_not_ready(): void
     {
         $setting = ChatbotSetting::factory()->create(['tenant_id' => $this->tenant->id]);
+
+        Http::fake(['gateway.test/api/v1/sessions/*/status' => Http::response([
+            'success' => true,
+            'data' => ['sessionId' => 'klinik-uji', 'status' => 'CONNECTED'],
+        ])]);
 
         $this->artisan('chatbot:doctor')->assertSuccessful();
 

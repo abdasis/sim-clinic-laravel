@@ -8,8 +8,9 @@ use App\Actions\Chatbot\FindPatientByPhoneAction;
 use App\Models\ChatbotSetting;
 use App\Models\ChatMessage;
 use App\Models\CompanyProfileSetting;
+use App\Models\WhatsappSetting;
 use App\Support\ClinicIdentity;
-use App\Support\WahaClient;
+use App\Support\WhatsappGatewayClient;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -50,11 +51,13 @@ class IdleChatClosingService
             return 0;
         }
 
-        $waha = app(WahaClient::class);
+        $whatsapp = WhatsappSetting::query()->first();
 
-        if ($waha === null) {
+        if ($whatsapp === null || ! $whatsapp->provisioned() || blank($whatsapp->gateway_session_id)) {
             return 0;
         }
+
+        $client = app(WhatsappGatewayClient::class);
 
         // Pesan penutup tengah malam terbaca sebagai gangguan, bukan layanan.
         // Klinik yang belum mengisi jam operasionalnya dianggap selalu buka,
@@ -66,7 +69,7 @@ class IdleChatClosingService
         $closed = 0;
 
         foreach ($this->finder->handle($idleMinutes, $now) as $last) {
-            $sent = $this->closer->handle($waha, $last->sender_phone, $this->compose($setting, $last));
+            $sent = $this->closer->handle($client, $whatsapp, $last->sender_phone, $this->compose($setting, $last));
 
             if ($sent !== null) {
                 $closed++;

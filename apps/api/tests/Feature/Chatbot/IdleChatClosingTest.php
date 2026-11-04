@@ -7,7 +7,6 @@ use App\Models\ChatbotSetting;
 use App\Models\ChatMessage;
 use App\Models\CompanyProfileSetting;
 use App\Models\Patient;
-use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -37,10 +36,22 @@ class IdleChatClosingTest extends TestCase
             'closing_idle_minutes' => 10,
         ]);
 
-        WahaSetting::create(['base_url' => 'https://waha.uji', 'api_key' => 'rahasia']);
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
+        config(['whatsapp_gateway.base_url' => 'https://gateway.test']);
 
-        Http::fake(['waha.uji/*' => Http::response(['id' => 'true_628@c.us'])]);
+        WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'session' => 'klinik-uji',
+            'gateway_tenant_key' => 'tenant-uji',
+            'gateway_api_key' => 'api-uji',
+            'gateway_webhook_token' => 'token-uji',
+            'gateway_webhook_secret' => 'secret-uji',
+            'gateway_session_id' => '11111111-1111-1111-1111-111111111111',
+        ]);
+
+        Http::fake(['gateway.test/*' => Http::response([
+            'success' => true,
+            'data' => ['messageId' => 'penutup-uji', 'status' => 'QUEUED'],
+        ], 202)]);
     }
 
     /**

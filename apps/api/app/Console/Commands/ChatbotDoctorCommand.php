@@ -2,10 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\ChatbotSetting;
 use App\Models\Tenant;
-use App\Models\WahaSetting;
-use App\Models\WhatsappSetting;
+use App\Support\ChatbotDiagnostics;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -13,16 +11,17 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Periksa satu per satu apa yang dibutuhkan chatbot agar bisa membalas.
  *
- * Rantainya panjang — token, sesi, antrian, kunci AI, saklar per klinik — dan
- * tiap mata rantai yang putus menghasilkan gejala yang sama persis: pesan
- * masuk, tidak ada balasan, log bersih. Perintah ini yang menyebutkan mata
- * rantai mana yang sebenarnya putus, supaya tidak perlu ditebak satu-satu.
+ * Rantainya panjang — kunci AI, gateway, sesi, webhook, antrian, saklar per
+ * klinik — dan tiap mata rantai yang putus menghasilkan gejala yang sama
+ * persis: pesan masuk, tidak ada balasan, log bersih. Perintah ini memakai
+ * pemeriksaan yang sama dengan halaman diagnosa supaya laporan terminal dan
+ * layar tidak pernah berbeda.
  */
 class ChatbotDoctorCommand extends Command
 {
     protected $signature = 'chatbot:doctor';
 
-    protected $description = 'Periksa kesiapan chatbot WhatsApp: token, gateway, antrian, kunci AI, dan saklar tiap klinik';
+    protected $description = 'Periksa kesiapan chatbot WhatsApp: gateway, sesi, webhook, antrian, kunci AI, dan saklar tiap klinik';
 
     private bool $blocked = false;
 
@@ -31,7 +30,11 @@ class ChatbotDoctorCommand extends Command
         $this->info('Memeriksa kesiapan chatbot WhatsApp...');
         $this->newLine();
 
-        $this->checkPlatform();
+        if (! $this->tablesExist()) {
+            return self::FAILURE;
+        }
+
+        $this->checkQueue();
         $this->newLine();
         $this->checkTenants();
         $this->newLine();
@@ -42,42 +45,23 @@ class ChatbotDoctorCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info('Semua siap. Kalau pesan masih tidak dibalas, periksa apakah webhook sudah terdaftar di gateway (php artisan chatbot:setup-webhook) dan lihat log setelah pasien mengirim pesan.');
+        $this->info('Semua siap. Kalau pesan masih tidak dibalas, pastikan webhook sudah terdaftar di gateway dan lihat log setelah pasien mengirim pesan.');
 
         return self::SUCCESS;
     }
 
-    /** Hal-hal yang berlaku untuk seluruh klinik sekaligus. */
-    private function checkPlatform(): void
+    private function tablesExist(): bool
     {
-        $this->line('<comment>Platform</comment>');
+        $ready = Schema::hasTable('chatbot_settings')
+            && Schema::hasTable('chat_messages')
+            && Schema::hasTable('whatsapp_settings');
 
-        $this->check(
-            'Token webhook (WAHA_WEBHOOK_TOKEN)',
-            filled(config('waha.webhook_token')),
-            'kosong — webhook menolak semua pesan masuk dengan 404',
-        );
+        if (! $ready) {
+            $this->blocked = true;
+            $this->line('<fg=red>GAGAL</>     Tabel chatbot belum dimigrasi — jalankan php artisan migrate');
+        }
 
-        $this->check(
-            'Kunci AI (DEEPSEEK_API_KEY)',
-            filled(config('services.deepseek.api_key')),
-            'kosong — chatbot tidak akan menjawab apa pun',
-        );
-
-        $this->check(
-            'Tabel chatbot sudah dimigrasi',
-            Schema::hasTable('chatbot_settings') && Schema::hasTable('chat_messages'),
-            'belum ada — jalankan php artisan migrate',
-        );
-
-        $server = WahaSetting::query()->first();
-        $this->check(
-            'Server gateway WhatsApp tersetel',
-            $server !== null && $server->isConfigured(),
-            'alamat atau API key belum diisi di panel platform',
-        );
-
-        $this->checkQueue();
+        return $ready;
     }
 
     /**
@@ -108,7 +92,7 @@ class ChatbotDoctorCommand extends Command
         }
     }
 
-    /** Saklar dan sesi milik tiap klinik. */
+    /** Saklar, kredensial gateway, sesi, dan webhook milik tiap klinik. */
     private function checkTenants(): void
     {
         $this->line('<comment>Per klinik</comment>');
@@ -124,41 +108,21 @@ class ChatbotDoctorCommand extends Command
         foreach ($tenants as $tenant) {
             app()->instance('tenant', $tenant);
 
-            $session = WhatsappSetting::query()->first();
-            $chatbot = ChatbotSetting::query()->first();
+            $report = app(ChatbotDiagnostics::class)->run();
+            $broken = collect($report['checks'])->where('ok', false);
 
-            $problems = [];
-
-            if ($session === null || ! $session->isConfigured()) {
-                $problems[] = 'nama sesi gateway belum diisi';
-            }
-
-            if ($chatbot === null) {
-                $problems[] = 'chatbot belum pernah disetel';
-            } elseif (! $chatbot->is_active) {
-                $problems[] = 'chatbot masih dimatikan';
-            }
-
-            if ($problems === []) {
-                $this->line('  <fg=green>OK</>        '.$tenant->slug.' — sesi "'.$session->session.'", chatbot aktif');
+            if ($broken->isEmpty()) {
+                $this->line('  <fg=green>OK</>        '.$tenant->slug);
 
                 continue;
             }
 
             $this->blocked = true;
-            $this->line('  <fg=red>GAGAL</>     '.$tenant->slug.' — '.implode('; ', $problems));
+            $reasons = $broken
+                ->map(fn (array $check) => $check['key'].': '.$check['hint'])
+                ->implode('; ');
+
+            $this->line('  <fg=red>GAGAL</>     '.$tenant->slug.' — '.$reasons);
         }
-    }
-
-    private function check(string $label, bool $passed, string $failure): void
-    {
-        if ($passed) {
-            $this->line('  <fg=green>OK</>        '.$label);
-
-            return;
-        }
-
-        $this->blocked = true;
-        $this->line('  <fg=red>GAGAL</>     '.$label.': '.$failure);
     }
 }

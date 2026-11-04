@@ -46,7 +46,7 @@ class ProcessInboundMessageJob implements ShouldQueue
         public readonly int $tenantId,
         public readonly string $senderPhone,
         public readonly string $body,
-        public readonly ConversationChannel $channel = ConversationChannel::Waha,
+        public readonly ConversationChannel $channel = ConversationChannel::Gateway,
     ) {}
 
     public function handle(): void

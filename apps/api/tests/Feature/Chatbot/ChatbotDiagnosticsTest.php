@@ -219,7 +219,7 @@ class ChatbotDiagnosticsTest extends TestCase
 
         config(['services.deepseek.api_key' => 'kunci-uji']);
 
-        // Tanpa setelan WAHA sama sekali: gateway belum siap.
+        // Tanpa setelan gateway sama sekali: balasan tidak akan sampai.
         Http::fake();
 
         (new ProcessInboundMessageJob($this->tenant->id, '6281234567890', 'halo'))->handle();
