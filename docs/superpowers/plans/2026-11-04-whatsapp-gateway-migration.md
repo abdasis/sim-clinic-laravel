@@ -2,13 +2,23 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Mengganti WAHA dan Meta Cloud API dengan gateway WhatsApp internal (`wacloud`), termasuk sesi per klinik, webhook bertanda tangan, kotak masuk, chatbot, broadcast, dan pengingat.
+**Goal:** Mengganti WAHA dan Meta Cloud API dengan gateway WhatsApp internal (`wacloud`) untuk broadcast, pengingat, dan konfirmasi booking. Kotak masuk dan chatbot dihapus.
 
-**Architecture:** Satu klien HTTP (`WhatsappGatewayClient`) dengan kredensial per klinik. Webhook per klinik memakai URL bertoken dan HMAC. Broadcast menyimpan teks lokal yang sudah dirender per penerima; gambar dikirim lewat URL disk `public`.
+**Architecture:** Satu klien HTTP (`WhatsappGatewayClient`) dengan kredensial per klinik. Sesi per klinik dikelola lewat QR/pairing gateway. Broadcast menyimpan teks lokal yang sudah dirender per penerima; gambar dikirim lewat URL disk `public`. Tidak ada webhook masuk, tidak ada penyimpanan percakapan.
 
 **Tech Stack:** Laravel 13 / PHP 8.3 (SQLite untuk test, PostgreSQL untuk rilis), TanStack Start + React 19, gateway NestJS + Prisma + worker Baileys.
 
 **Spec:** `docs/superpowers/specs/2026-11-04-whatsapp-gateway-migration-design.md`
+
+## Perubahan lingkup 2026-11-04
+
+Setelah Task 1-3 selesai, user memutuskan kotak masuk dan chatbot tidak dibutuhkan lagi dan harus dihapus. Tabel `conversations`, `messages`, `chat_messages`, dan `chatbot_settings` **dibiarkan** (tanpa drop) atas permintaan user; kode, route, izin, dan UI-nya dihapus (Task 17). Konsekuensinya:
+
+- Tidak ada webhook masuk. Task 5 dibatalkan. Provisioning tidak membuat webhook.
+- Task 8 (kirim kotak masuk) dan Task 9 (chatbot) dibatalkan.
+- Broadcast tidak lagi mencatat pesan ke kotak masuk.
+- Perubahan yang sudah terlanjur dibuat di repo gateway (Task 1 secret webhook, Task 2 `remoteJidAlt` + pemetaan `message.received`) dibiarkan: tidak berefek selama tidak ada webhook terdaftar, dan berguna bila fitur itu dibutuhkan lagi.
+- Kolom `gateway_webhook_token` dan `gateway_webhook_secret` di-drop di Task 12 karena tidak dipakai.
 
 ## Global Constraints
 
@@ -21,15 +31,15 @@
 - Suite PostgreSQL wajib sebelum rilis: `php artisan test -c phpunit.pgsql.xml` setelah `createdb sim_clinic_laravel_test`.
 - Gateway: jangan mengarang endpoint/field di luar `docs` integrasi dan source di `/home/abdasis/orca/whatsapp-gateway`. Base URL dari `whatsapp_gateway_settings.base_url`, fallback `config('whatsapp_gateway.base_url')`.
 - Gateway menerima `x-tenant-key` + `X-API-Key`; envelope `{success, data, error}`; `Idempotency-Key` 8–128 karakter `[A-Za-z0-9_-]`.
-- Webhook gateway: `X-Webhook-Event`, `X-Webhook-Timestamp` (detik), `X-Webhook-Signature` = `sha256=HMAC(secret, timestamp.".".rawBody)`, tolak timestamp > 5 menit, bandingkan constant-time, balas 200 cepat.
+- Kotak masuk dan chatbot dihapus. Tabel `conversations`, `messages`, `chat_messages`, `chatbot_settings` tidak di-drop; model dan seluruh kode yang memakainya dihapus.
 
 ## Review Focus
 
-1. Webhook yang sama datang dua kali (retry gateway) tidak boleh menambah pesan, penghitung belum dibaca, atau notifikasi kedua.
-2. Tanda tangan salah, timestamp basi, atau token klinik tidak dikenal tidak boleh memproses pesan dan tidak boleh membocorkan klinik mana pun.
-3. Media yang gagal dikirim tidak meninggalkan berkas yatim; URL media harus benar-benar publik (bukan `localhost`) atau pengiriman ditolak dengan pesan jelas.
-4. 429/503 di tengah blast tidak boleh menandai penerima sukses; campaign harus berhenti dengan alasan yang terbaca admin, lalu bisa dilanjutkan tanpa hasil cache idempotensi lama.
-5. Nomor pengirim yang tidak bisa dipastikan (JID `@lid` tanpa alt) tidak boleh membuat percakapan dengan nomor palsu; sesi yang belum tersambung harus tampil sebagai keadaan jelas di layar, bukan galat mentah.
+1. Penghapusan kotak masuk/chatbot tidak boleh menyisakan referensi yang membuat boot, route, atau scheduler gagal (model, job, event, izin, lang key, nav).
+2. Tabel percakapan/pesan tetap ada dan tidak tersentuh migrasi; tidak boleh ada migrasi yang men-drop tabel atau kolomnya.
+3. 429/503 di tengah blast tidak boleh menandai penerima sukses; campaign harus berhenti dengan alasan yang terbaca admin, lalu bisa dilanjutkan tanpa hasil cache idempotensi lama.
+4. Media yang gagal dikirim tidak meninggalkan berkas yatim; URL media harus benar-benar publik (bukan `localhost`) atau pengiriman ditolak dengan pesan jelas.
+5. Sesi yang belum tersambung harus tampil sebagai keadaan jelas di layar, bukan galat mentah; broadcast yang dijalankan sebelum sesi tersambung harus dijeda, bukan menandai penerima gagal.
 
 ---
 
@@ -203,10 +213,9 @@ git add apps/api/database/migrations apps/api/app/Models apps/api/app/Enums/Conv
   `register(string $name, string $organization, string $email, string $password): array` → `{tenant_key, access_token, refresh_token}`;
   `login(string $email, string $password): array` (bentuk sama);
   `createApiKey(string $tenantKey, string $accessToken, string $name): string`;
-  `createWebhook(string $tenantKey, string $apiKey, string $url, array $events): array` → `{id, secret}`;
   `sessionStatus(WhatsappSetting $s): array`, `listSessions(WhatsappSetting $s): array`, `createSession(WhatsappSetting $s, string $name, string $slug): array`, `connectSession(WhatsappSetting $s): array`, `qrCode(WhatsappSetting $s): array`, `pairingCode(WhatsappSetting $s, string $phone): array`, `restartSession(WhatsappSetting $s): void`, `disconnectSession(WhatsappSetting $s): void`, `logoutSession(WhatsappSetting $s): void`, `deleteSession(WhatsappSetting $s): void`;
-  `sendText(WhatsappSetting $s, string $phone, string $text, string $idempotencyKey): ?string`, `sendImage(WhatsappSetting $s, string $phone, string $url, ?string $caption, string $idempotencyKey): ?string`, `sendDocument(WhatsappSetting $s, string $phone, string $url, ?string $filename, ?string $caption, string $idempotencyKey): ?string`, `sendAudio(WhatsappSetting $s, string $phone, string $url, string $idempotencyKey): ?string` (return `data.messageId`);
-  `presence(WhatsappSetting $s, string $presence, ?string $phone = null): void` (tidak pernah melempar; log saat gagal).
+  `sendText(WhatsappSetting $s, string $phone, string $text, string $idempotencyKey): ?string`, `sendImage(WhatsappSetting $s, string $phone, string $url, ?string $caption, string $idempotencyKey): ?string` (return `data.messageId`).
+- Tidak ada method webhook, presence, document, atau audio: fitur yang memakainya dihapus.
 - Produces: `WhatsappGatewayException` dengan `code: string`, `status: int`, `retryAfter: ?int`, `details: array`, `static fromResponse(Response $response): self`, `static network(Throwable $e): self`.
 - Produces: `config/whatsapp_gateway.php` → `'base_url' => env('WHATSAPP_GATEWAY_BASE_URL', 'http://localhost:5173')`, `'account_domain' => env('WHATSAPP_GATEWAY_ACCOUNT_DOMAIN', 'gateway.local')`.
 
@@ -283,96 +292,9 @@ git add apps/api/app/Support/WhatsappGateway*.php apps/api/config/whatsapp_gatew
 
 ---
 
-### Task 5: Webhook gateway — verifikasi, pesan masuk, status
+### Task 5: DIBATALKAN (2026-11-04) — webhook pesan masuk
 
-**Files:**
-- Create: `apps/api/app/Support/WhatsappGatewayWebhook.php`
-- Create: `apps/api/app/Http/Controllers/WhatsappGatewayWebhookController.php`
-- Modify: `apps/api/routes/api.php` (tambah `Route::post('/whatsapp/webhook/{token}', ...)` di grup publik)
-- Test: `apps/api/tests/Feature/Whatsapp/GatewayWebhookTest.php`
-
-**Interfaces:**
-- Produces: `WhatsappGatewayWebhook::signatureIsValid(string $secret, string $timestamp, string $rawBody, ?string $signature): bool` (tolak timestamp bukan angka atau selisih > 300 detik).
-- Produces route `POST /api/whatsapp/webhook/{token}`; `token` = `whatsapp_settings.gateway_webhook_token` (cari dengan `withoutGlobalScopes()`).
-- Consumes: `RecordInboundMessageAction`, `ProcessInboundMessageJob`, `UpdateMessageStatusAction` dengan `ConversationChannel::Gateway`.
-
-- [ ] **Step 1: Write the failing tests**
-
-```php
-public function test_valid_signature_records_inbound_and_dispatches_job(): void
-{
-    Queue::fake();
-    $this->postJson('/api/whatsapp/webhook/'.$this->token, [
-        'messageId' => '0f8fad5b-d9cb-469f-a165-70867728950e',
-        'sessionId' => 'klinik-uji',
-        'remoteJid' => '6281234567890@s.whatsapp.net',
-        'type' => 'TEXT',
-        'content' => 'Halo dari pelanggan',
-        'at' => '2026-11-04T10:00:00.000Z',
-    ], $this->signedHeaders())->assertOk();
-
-    $this->assertDatabaseHas('messages', ['provider_message_id' => '0f8fad5b-d9cb-469f-a165-70867728950e']);
-    Queue::assertPushed(ProcessInboundMessageJob::class);
-}
-
-public function test_stale_timestamp_is_rejected(): void
-{
-    // header timestamp 10 menit lalu → 403, tidak ada pesan tercatat
-}
-
-public function test_lid_sender_uses_remote_jid_alt(): void
-{
-    // remoteJid '2399@lid', remoteJidAlt '6281234567890@s.whatsapp.net'
-    // → conversations.contact_phone = '6281234567890'
-}
-
-public function test_lid_without_alt_is_dropped_without_conversation(): void
-{
-    // remoteJid '2399@lid' tanpa alt → 200, conversations kosong, Log::channel('chatbot') warning
-}
-
-public function test_group_message_is_ignored(): void
-{
-    // remoteJid '1203630@g.us' → 200, tidak ada conversations
-}
-
-public function test_status_event_advances_message(): void
-{
-    // pesan outbound provider_message_id sama; event message.read → status read
-}
-
-public function test_replayed_received_event_does_not_duplicate_message(): void
-{
-    // kirim payload yang sama dua kali → jumlah messages dan unread_count tidak berubah
-}
-
-public function test_unknown_token_returns_404(): void
-{
-    $this->postJson('/api/whatsapp/webhook/tidak-dikenal', [])->assertNotFound();
-}
-```
-
-`signedHeaders()` membuat header `X-Webhook-Event`, `X-Webhook-Timestamp` = detik sekarang, dan `X-Webhook-Signature` dari HMAC secret setting.
-
-- [ ] **Step 2: Run tests to verify they fail**
-
-Run: `cd apps/api && php artisan test --filter=GatewayWebhookTest`
-Expected: FAIL — route 404.
-
-- [ ] **Step 3: Implementasikan verifier dan controller**
-
-Alur: cari setting by token → 404 bila tidak ada; verifikasi → 403 dan `Log::channel('chatbot')->warning`; baca `X-Webhook-Event`; `message.received` abaikan `type !== 'TEXT'` dan non-DM, pilih nomor `remoteJidAlt` bila `remoteJid` berakhir `@lid`, log warning lalu 200 bila nomor tidak bisa dipastikan; status: petakan `message.sent → Sent`, `delivered → Delivered`, `read → Read`, `failed → Failed` lewat `UpdateMessageStatusAction`. Selalu balas `['data' => ['status' => $reason], 'meta' => []]`.
-
-- [ ] **Step 4: Run tests**
-
-Run: `php artisan test --filter=GatewayWebhookTest`
-Expected: PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add apps/api/app/Support/WhatsappGatewayWebhook.php apps/api/app/Http/Controllers/WhatsappGatewayWebhookController.php apps/api/routes/api.php apps/api/tests/Feature/Whatsapp/GatewayWebhookTest.php && git commit -m "feat(whatsapp): terima webhook gateway dengan verifikasi HMAC"
-```
+Kotak masuk dan chatbot dihapus, jadi tidak ada lagi konsumen webhook. Tidak ada route webhook yang dibuat. Task ini tidak dieksekusi.
 
 ---
 
@@ -384,12 +306,12 @@ git add apps/api/app/Support/WhatsappGatewayWebhook.php apps/api/app/Http/Contro
 
 **Interfaces:**
 - Produces: `WhatsappGatewayProvisioningService::ensure(WhatsappSetting $setting): WhatsappSetting` — idempoten dan bisa dilanjutkan.
-- Consumes: `WhatsappGatewayClient::register/login/createApiKey/createWebhook`.
+- Consumes: `WhatsappGatewayClient::register/login/createApiKey`. Tidak ada webhook.
 
 - [ ] **Step 1: Write the failing tests**
 
 ```php
-public function test_first_provisioning_registers_tenant_api_key_and_webhook(): void
+public function test_first_provisioning_registers_tenant_and_api_key(): void
 {
     Http::fake([
         'gateway.test/api/v1/auth/register' => Http::response(['success' => true, 'data' => [
@@ -398,27 +320,25 @@ public function test_first_provisioning_registers_tenant_api_key_and_webhook(): 
             'user' => [],
         ]], 201),
         'gateway.test/api/v1/api-keys' => Http::response(['success' => true, 'data' => ['id' => 'k1', 'key' => 'api-uji']], 201),
-        'gateway.test/api/v1/webhooks' => Http::response(['success' => true, 'data' => ['id' => 'w1', 'secret' => 'secret-uji']], 201),
     ]);
 
     $setting = app(WhatsappGatewayProvisioningService::class)->ensure($this->setting());
 
     $this->assertSame('tenant-uji', $setting->gateway_tenant_key);
     $this->assertSame('api-uji', $setting->gateway_api_key);
-    $this->assertSame('secret-uji', $setting->gateway_webhook_secret);
     $this->assertNull($setting->gateway_password);
-    Http::assertSent(fn ($r) => str_ends_with($r['url'], '/api/whatsapp/webhook/'.$setting->gateway_webhook_token));
+    Http::assertNotSent(fn ($r) => str_contains($r->url(), '/webhooks'));
 }
 
 public function test_retry_after_failed_api_key_step_logs_in_instead_of_registering_again(): void
 {
     // setting punya gateway_tenant_key + gateway_password, api_key null
-    // → hanya /auth/login, /api-keys, /webhooks yang dipanggil
+    // → hanya /auth/login dan /api-keys yang dipanggil
 }
 
 public function test_complete_credentials_do_not_call_the_gateway(): void
 {
-    // sudah lengkap → Http::assertNothingSent()
+    // tenant key + api key terisi → Http::assertNothingSent()
 }
 ```
 
@@ -429,7 +349,7 @@ Expected: FAIL — kelas belum ada.
 
 - [ ] **Step 3: Implementasikan `ensure()`**
 
-Urutan: buat `gateway_webhook_token` bila kosong (`Str::random(40)`); register bila tenant key kosong (email `tenant-{id}@{account_domain}`, password `Str::password(24)`, nama klinik dari relasi tenant; simpan key + password terenkripsi); bila api key kosong, login (`gateway_password`) untuk access token bila register tidak baru; buat API key dan simpan; buat webhook dengan event `message.received`, `message.sent`, `message.delivered`, `message.read`, `message.failed`; simpan secret webhook; kosongkan password. Setiap kegagalan: `Log::error` dengan konteks, biarkan exception naik.
+Urutan: register bila tenant key kosong (email `tenant-{id}@{account_domain}`, password `Str::password(24)`, nama klinik dari relasi tenant; simpan key + password terenkripsi); bila api key kosong, login (`gateway_password`) untuk access token bila register tidak baru; buat API key dan simpan; kosongkan password. Setiap kegagalan: `Log::error` dengan konteks, biarkan exception naik.
 
 - [ ] **Step 4: Run tests**
 
@@ -521,148 +441,15 @@ git add apps/api/app/Services/WhatsappGatewaySessionService.php apps/api/app/Htt
 
 ---
 
-### Task 8: Kirim kotak masuk lewat gateway
+### Task 8: DIBATALKAN (2026-11-04) — kirim kotak masuk
 
-**Files:**
-- Modify: `apps/api/app/Actions/Inbox/SendInboxMessageAction.php`
-- Modify: `apps/api/app/Actions/Inbox/SendInboxMediaAction.php`
-- Modify: `apps/api/app/Actions/Inbox/SendInboxContactAction.php`
-- Delete: `apps/api/app/Actions/Inbox/SendInboxReactionAction.php`
-- Modify: `apps/api/app/Services/InboxService.php`, `apps/api/routes/api.php` (hapus route reaksi)
-- Modify: `apps/api/app/Actions/Inbox/*` (hapus trait `EnsuresReplyWindow`; file trait dihapus di Task 12)
-- Test: `apps/api/tests/Feature/Inbox/InboxGatewaySendTest.php`
-
-**Interfaces:**
-- Consumes: `WhatsappGatewayClient` (Task 4).
-- Produces: tidak ada perubahan signature publik `InboxService::send/sendMedia/sendContact`; `react()` dihapus; `reply_to_message_id` tidak lagi dikirim ke gateway.
-- Media: URL dari `Storage::disk('public')->url($path)`; `image` → `sendImage`, `audio` → `sendAudio`, selain itu → `sendDocument`.
-
-- [ ] **Step 1: Write the failing tests**
-
-```php
-public function test_text_reply_sends_to_gateway_and_stores_provider_id(): void
-{
-    Http::fake(['*' => Http::response(['success' => true, 'data' => [
-        'messageId' => 'uuid-pesan', 'status' => 'QUEUED',
-    ]], 202)]);
-
-    $this->postJson($this->tenantUrl("inbox/conversations/{$conversation->id}/messages"), ['body' => 'Halo'])
-        ->assertCreated();
-
-    $this->assertDatabaseHas('messages', ['body' => 'Halo', 'provider_message_id' => 'uuid-pesan']);
-}
-
-public function test_image_reply_uses_public_url_and_cleans_file_on_failure(): void
-{
-    Storage::fake('public');
-    config(['app.url' => 'https://app.test']);
-    Http::fake(['*' => Http::response(['success' => false, 'error' => [
-        'code' => 'MEDIA_URL_BLOCKED',
-    ]], 422)]);
-
-    $this->postJson(..., ['file' => UploadedFile::fake()->image('foto.jpg')])
-        ->assertStatus(422);
-
-    $this->assertEmpty(Storage::disk('public')->allFiles('inbox-media'));
-}
-
-public function test_media_payload_sends_public_url_not_local_path(): void
-{
-    Storage::fake('public');
-    config(['app.url' => 'https://app.test']);
-    Http::fake(['*' => Http::response(['success' => true, 'data' => [
-        'messageId' => 'uuid-media', 'status' => 'QUEUED',
-    ]], 202)]);
-
-    $this->postJson(..., ['file' => UploadedFile::fake()->image('foto.jpg')])->assertCreated();
-
-    Http::assertSent(fn ($r) => str_starts_with((string) $r['url'], 'https://app.test/storage/inbox-media/'));
-}
-
-public function test_audio_reply_uses_audio_endpoint(): void
-{
-    // Http::assertSent ke /messages/audio
-}
-
-public function test_reaction_route_no_longer_exists(): void
-{
-    $this->postJson(...'/reaction', ['emoji' => '👍'])->assertNotFound();
-}
-```
-
-- [ ] **Step 2: Run tests to verify they fail**
-
-Run: `cd apps/api && php artisan test --filter=InboxGatewaySendTest`
-Expected: FAIL.
-
-- [ ] **Step 3: Ganti transport dan hapus reaksi/kutipan**
-
-Teks: `sendText($setting, $phone, $body, 'inbox-'.Str::uuid())`. Kontak tetap teks `Nama: +62…`. Media: simpan → URL → endpoint sesuai tipe. Hapus `EnsuresReplyWindow` dari ketiga action (gateway tidak punya jendela 24 jam), hapus `SendInboxReactionAction`, method `react()` pada `InboxService`, dan route reaksi. `reply_to_message_id` tetap divalidasi untuk data lama tetapi tidak diteruskan ke gateway.
-
-- [ ] **Step 4: Run tests**
-
-Run: `php artisan test --filter=InboxGatewaySendTest`
-Expected: PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add apps/api/app/Actions/Inbox apps/api/app/Services/InboxService.php apps/api/routes/api.php apps/api/tests/Feature/Inbox/InboxGatewaySendTest.php && git rm apps/api/app/Concerns/EnsuresReplyWindow.php && git commit -m "feat(inbox): kirim balasan lewat gateway internal"
-```
+Kotak masuk dihapus. Tidak ada action kirim teks/media/kontak, tidak ada route reaksi. Task ini tidak dieksekusi.
 
 ---
 
-### Task 9: Chatbot dan diagnostik memakai gateway
+### Task 9: DIBATALKAN (2026-11-04) — chatbot dan diagnostik
 
-**Files:**
-- Modify: `apps/api/app/Jobs/ProcessInboundMessageJob.php`
-- Modify: `apps/api/app/Support/ChatbotDiagnostics.php`
-- Modify: `apps/api/app/Console/Commands/*` yang masih menyebut Waha (cek `grep -rn "WahaClient" app`)
-- Test: `apps/api/tests/Feature/Chatbot/ChatbotGatewayTest.php`, `apps/api/tests/Feature/Chatbot/ChatbotDiagnosticsTest.php`
-
-**Interfaces:**
-- Produces: job memakai `WhatsappGatewayClient`; typing = `presence($setting, 'composing', $phone)` lalu `presence($setting, 'paused', $phone)` di `finally`.
-- Produces: `ChatbotDiagnostics` checks `chatbot_active`, `ai_configured`, `gateway_configured` (`provisioned()` + `base_url`), `session_connected` (status gateway), `webhook_configured` (`filled(gateway_webhook_secret)`).
-
-- [ ] **Step 1: Write the failing test**
-
-```php
-public function test_chatbot_shows_typing_and_sends_reply_via_gateway(): void
-{
-    Http::fake([
-        'gateway.test/api/v1/sessions/*/presence' => Http::response(['success' => true, 'data' => []], 202),
-        'gateway.test/api/v1/messages/send' => Http::response(['success' => true, 'data' => [
-            'messageId' => 'uuid-balasan', 'status' => 'QUEUED',
-        ]], 202),
-    ]);
-
-    (new ProcessInboundMessageJob($this->tenant->id, '628123', 'Halo', ConversationChannel::Gateway))->handle();
-
-    Http::assertSent(fn ($r) => str_contains($r->url(), '/presence') && $r['presence'] === 'composing');
-    Http::assertSent(fn ($r) => str_contains($r->url(), '/presence') && $r['presence'] === 'paused');
-    $this->assertDatabaseHas('messages', ['provider_message_id' => 'uuid-balasan']);
-}
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cd apps/api && php artisan test --filter=ChatbotGatewayTest`
-Expected: FAIL.
-
-- [ ] **Step 3: Implementasikan transport dan diagnostik**
-
-Hapus cabang `CloudApiClient`; `gateway()` mengembalikan klien + setting klinik yang sudah provisioned, atau `null` dengan log. `send()` memakai `sendText` dan menyimpan `provider_message_id`. `ChatbotDiagnostics::webhookConfigured` membaca secret gateway; `sessionConnected` memakai `sessionStatus`.
-
-- [ ] **Step 4: Run tests**
-
-Run: `php artisan test --filter=Chatbot`
-Expected: PASS (perbarui test lama yang memalsukan WAHA di task ini juga).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add apps/api/app/Jobs/ProcessInboundMessageJob.php apps/api/app/Support/ChatbotDiagnostics.php apps/api/app/Console apps/api/tests/Feature/Chatbot && git commit -m "feat(chatbot): balas lewat gateway dan perbarui diagnostik"
-```
+Chatbot dihapus, termasuk job pesan masuk, diagnostik, dan command webhook. Task ini tidak dieksekusi.
 
 ---
 
@@ -728,6 +515,11 @@ public function test_template_endpoints_are_gone(): void
     $this->actingAsClinicUser();
     $this->getJson($this->tenantUrl('broadcasts/templates'))->assertNotFound();
 }
+
+public function test_broadcast_no_longer_records_to_inbox(): void
+{
+    // setelah job sukses, tabel conversations dan messages tidak bertambah
+}
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -737,7 +529,7 @@ Expected: FAIL.
 
 - [ ] **Step 3: Implementasikan pengiriman dan bentuk payload baru**
 
-Job: ambil setting klinik; `SESSION_NOT_CONNECTED`/`SESSION_NOT_FOUND` → `PauseStalledBroadcastAction` + recipient tetap `Pending` + log; `RATE_LIMIT_EXCEEDED` → `$this->release($e->retryAfter ?? 60)`; sukses → recipient `Sent` + `RecordOutboundMessageAction(Gateway, messageId)`. `sendTest` memakai klien langsung. Perbarui FormRequest dan controller (hapus empat method template). `CreateBroadcastAction`/`UpdateBroadcastAction` menyimpan `{body, params}` dan merender `message` seperti sekarang.
+Job: ambil setting klinik; `SESSION_NOT_CONNECTED`/`SESSION_NOT_FOUND` → `PauseStalledBroadcastAction` + recipient tetap `Pending` + log; `RATE_LIMIT_EXCEEDED` → `$this->release($e->retryAfter ?? 60)`; sukses → recipient `Sent` saja (tidak ada pencatatan ke kotak masuk, tidak ada `RecordOutboundMessageAction`). `sendTest` memakai klien langsung. Perbarui FormRequest dan controller (hapus empat method template). `CreateBroadcastAction`/`UpdateBroadcastAction` menyimpan `{body, params}` dan merender `message` seperti sekarang.
 
 - [ ] **Step 4: Run tests**
 
@@ -811,18 +603,16 @@ git add apps/api/app/Support/ReminderEngine.php apps/api/app/Support/AutoReminde
 - Delete: `apps/api/app/Support/{WahaClient,WahaException,WahaSessionState,CloudApiClient,CloudApiException}.php`
 - Delete: `apps/api/app/Models/WahaSetting.php`
 - Delete: `apps/api/app/Http/Controllers/{MetaWhatsappWebhookController,CentralWahaSettingController}.php`
-- Delete: `apps/api/app/Console/Commands/SetupChatbotWebhookCommand.php`
 - Delete: `apps/api/config/{waha,meta_whatsapp}.php`
 - Delete: `apps/api/app/Services/{WhatsappConnectionService,WhatsappTemplateService}.php`
-- Delete: `apps/api/app/Concerns/EnsuresReplyWindow.php`
 - Create: `apps/api/app/Http/Controllers/CentralWhatsappGatewaySettingController.php`, `apps/api/app/Http/Requests/WhatsappGatewaySettingRequest.php`
 - Create: `apps/api/database/migrations/2026_11_04_090300_drop_legacy_whatsapp_columns.php`
-- Modify: `apps/api/app/Enums/ConversationChannel.php` (hapus `Waha`/`CloudApi`), `apps/api/app/Providers/AppServiceProvider.php`, `apps/api/routes/api.php`, `apps/api/lang/id/*`, `.env.example`
+- Modify: `apps/api/app/Providers/AppServiceProvider.php`, `apps/api/routes/api.php`, `apps/api/lang/id/*`, `.env.example`
 - Test: `apps/api/tests/Feature/Whatsapp/LegacyRemovalTest.php`
 
 **Interfaces:**
 - Produces: `GET/PUT /central/whatsapp-gateway` dengan `{base_url}` (platform admin).
-- Produces: migrasi drop `waha_settings`, `whatsapp_settings.{phone_number_id,waba_id,reminder_template}`, `broadcast_recipients.template_values`; `UPDATE conversations SET channel='gateway'`; jeda semua broadcast `sending` (`status='paused'`, `paused_reason='Migrasi ke gateway WhatsApp.')`.
+- Produces: migrasi drop `waha_settings`, `whatsapp_settings.{phone_number_id,waba_id,reminder_template,gateway_webhook_token,gateway_webhook_secret}`, `broadcast_recipients.template_values`; jeda semua broadcast `sending` (`status='paused'`, `paused_reason='Migrasi ke gateway WhatsApp.')`. Tabel `conversations`, `messages`, `chat_messages`, `chatbot_settings` TIDAK di-drop dan kolom `conversations.channel` tidak diubah (data dibiarkan).
 - Produces: `config/whatsapp_gateway.php` satu-satunya konfigurasi gateway.
 
 - [ ] **Step 1: Write the failing test**
@@ -962,44 +752,79 @@ git add -A apps/web/src/routes/\$tenant/clinic/broadcasts && git commit -m "feat
 
 ---
 
-### Task 15: Frontend — hapus reaksi dan kutipan di kotak masuk
+### Task 15: DIBATALKAN (2026-11-04) — hapus reaksi dan kutipan di kotak masuk
+
+Seluruh frontend kotak masuk dihapus di Task 17, bukan sekadar reaksi dan kutipannya. Task ini tidak dieksekusi.
+
+---
+
+### Task 17: Hapus kotak masuk dan chatbot (backend + frontend)
+
+Dijalankan setelah Task 7, sebelum Task 10. Tabel `conversations`, `messages`, `chat_messages`, `chatbot_settings` tetap ada di database; yang dihapus hanya kode, route, izin, lang key, dan UI.
 
 **Files:**
-- Delete: `apps/web/src/routes/$tenant/clinic/inbox/hooks/use-send-reaction.ts`
-- Modify: `apps/web/src/routes/$tenant/clinic/inbox/components/message-context-menu.tsx`
-- Modify: `apps/web/src/routes/$tenant/clinic/inbox/index.tsx`, `hooks/use-inbox-thread.ts`, `inbox-thread.ts`, `types.ts`
-- Test: `apps/web/src/routes/$tenant/clinic/inbox/inbox-thread.test.ts`, test komponen konteks menu bila ada
+- Delete: `apps/api/app/Actions/Inbox/**`
+- Delete: `apps/api/app/Actions/Chatbot/**`
+- Delete: `apps/api/app/Jobs/ProcessInboundMessageJob.php`
+- Delete: `apps/api/app/Services/{InboxService,ChatbotService,ChatbotSettingService,IdleChatClosingService}.php`
+- Delete: `apps/api/app/Http/Controllers/{InboxConversationController,InboundMessageController,ChatbotSettingController,MetaWhatsappWebhookController}.php`
+- Delete: `apps/api/app/Http/Requests/{SendInbox*,Chatbot*}.php`, `apps/api/app/Http/Resources/{ConversationResource,ChatbotSettingResource}.php`
+- Delete: `apps/api/app/Models/{Conversation,Message,ChatMessage,ChatbotSetting}.php`
+- Delete: `apps/api/app/Concerns/{BroadcastsInboxMessage,EnsuresReplyWindow}.php`
+- Delete: `apps/api/app/Enums/{ConversationChannel,MessageStatus,MessageDirection}.php`
+- Delete: `apps/api/app/Events/{InboxMessageCreated,InboxMessageStatusUpdated}.php`
+- Delete: `apps/api/app/Policies/{ConversationPolicy,ChatbotSettingPolicy}.php`
+- Delete: `apps/api/app/Console/Commands/{ChatbotDoctorCommand,SetupChatbotWebhookCommand}.php`
+- Delete: `apps/api/app/Support/{ChatbotDiagnostics,DeepSeekClient}.php` (DeepSeek hanya dipakai chatbot)
+- Delete: `apps/api/tests/Feature/{Inbox,Chatbot}/**`
+- Delete: `apps/web/src/routes/$tenant/clinic/inbox/**`, `apps/web/src/routes/$tenant/clinic/chatbot/**`
+- Modify: `apps/api/routes/api.php` (hapus route inbox, chatbot, whatsapp webhook)
+- Modify: `apps/api/app/Providers/AppServiceProvider.php` (hapus morph map `Conversation`, `ChatMessage`, `ChatbotSetting`; hapus binding `DeepSeekClient` / `ChatbotService` bila ada)
+- Modify: `apps/api/app/Services/ClinicPermission.php` (hapus modul `inbox`, `chatbot`), policy/permission terkait
+- Modify: `apps/api/lang/id/{inbox,chatbot}.php` (hapus file), `apps/api/config/services.php` (hapus `deepseek` bila hanya dipakai chatbot)
+- Modify: `apps/web/src/routes/$tenant/clinic/route.tsx` (hapus nav `inbox`, `chatbot/settings`, `isFullBleed` untuk inbox), `apps/web/src/routeTree.gen.ts` (regenerate)
+- Test: `apps/api/tests/Feature/Whatsapp/InboxChatbotRemovalTest.php`
 
 **Interfaces:**
-- `use-inbox-thread.ts` mutation hanya `{ body }`; optimistic message tanpa `reply_to`.
-- `message-context-menu.tsx` hanya aksi Salin, Info, Hapus-kutipan-bila-masih-dipakai; tidak memanggil endpoint reaksi.
+- Produces: route `/api/{tenant}/clinic/inbox*` dan `/chatbot*` → 404; model `Conversation`, `Message`, `ChatMessage`, `ChatbotSetting` tidak ada; tabel tetap ada dan tidak tersentuh migrasi.
+- Produces: tidak ada referensi `ChatbotService`/`InboxService` dari job, command, atau broadcast.
 
-- [ ] **Step 1: Patch failing test**
+- [ ] **Step 1: Write the failing test**
 
-```ts
-it('tidak lagi mengirim reaction atau reply_to_message_id', async () => {
-  // mutation { body: 'Halo' } → body request hanya { body: 'Halo' }
-})
+```php
+public function test_inbox_and_chatbot_are_removed_but_tables_remain(): void
+{
+    $this->assertFileDoesNotExist(app_path('Services/InboxService.php'));
+    $this->assertFileDoesNotExist(app_path('Services/ChatbotService.php'));
+    $this->assertFileDoesNotExist(app_path('Models/Conversation.php'));
+
+    $this->actingAsClinicUser();
+    $this->getJson($this->tenantUrl('inbox/conversations'))->assertNotFound();
+    $this->getJson($this->tenantUrl('chatbot/settings'))->assertNotFound();
+
+    $this->assertTrue(Schema::hasTable('conversations'));
+    $this->assertTrue(Schema::hasTable('messages'));
+}
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd apps/web && bun run test inbox-thread`
+Run: `cd apps/api && php artisan test --filter=InboxChatbotRemovalTest`
 Expected: FAIL.
 
-- [ ] **Step 3: Hapus alur reaksi dan kutipan yang tidak didukung gateway**
+- [ ] **Step 3: Hapus kode, route, izin, nav, dan lang**
 
-Buang `replyTarget` dari composer dan `reply_to` dari payload; pertahankan tampilan `reply_to` pada pesan lama. Hapus menu reaksi beserta hook-nya.
+Hapus semua file di daftar. Pertahankan file migrasi lama apa adanya (riwayat), jangan membuat migrasi drop. Setelah itu `grep -rn "Conversation\|ChatMessage\|Chatbot\|Inbox" apps/api/app apps/api/routes apps/api/config` harus kosong atau hanya menyebut nama tabel di file migrasi lama; `grep -rn "inbox\|chatbot" apps/web/src` harus kosong kecuali teks pemasaran di company profile. Jalankan `bun run generate-routes` setelah route dihapus.
 
 - [ ] **Step 4: Run test and typecheck**
 
-Run: `cd apps/web && bun run test inbox && npx tsc --noEmit --incremental`
-Expected: PASS.
+Run: `cd apps/api && php artisan test --filter=InboxChatbotRemovalTest && cd ../web && npx tsc --noEmit --incremental`
+Expected: PASS setelah test lama yang memakai model atau service terhapus ikut dihapus/diperbarui.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add -A apps/web/src/routes/\$tenant/clinic/inbox && git commit -m "refactor(inbox): hapus reaksi dan kutipan yang tidak didukung gateway"
+git add -A apps/api apps/web && git commit -m "refactor: hapus kotak masuk dan chatbot"
 ```
 
 ---

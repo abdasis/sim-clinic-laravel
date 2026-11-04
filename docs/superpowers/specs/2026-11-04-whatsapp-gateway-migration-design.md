@@ -219,3 +219,15 @@ Admin isi body + params + gambar opsional → `CreateBroadcastAction` merender `
 3. Tiap klinik menekan "Hubungkan WhatsApp": tenant gateway dibuat otomatis, sesi dibuat, QR tampil, admin memindai sekali.
 4. Webhook per klinik sudah terdaftar otomatis saat provisioning.
 5. Fitur template Meta dihapus dari navigasi; broadcast lama tetap menyimpan `message` hasil render sehingga riwayatnya terbaca, dan dapat dilanjutkan setelah sesi tersambung.
+
+## Perubahan lingkup 2026-11-04
+
+Kotak masuk dan chatbot diputuskan tidak dibutuhkan lagi setelah Task 1-3 berjalan. Keduanya dihapus beserta seluruh kode, route, izin, lang key, dan UI-nya. Tabel `conversations`, `messages`, `chat_messages`, dan `chatbot_settings` tetap ada di database atas permintaan user; tidak ada migrasi yang men-drop tabel atau kolomnya.
+
+Konsekuensi:
+
+- Webhook masuk tidak ada. Verifikasi HMAC, pemetaan pesan masuk, dan pembaruan status pesan dibatalkan seluruhnya.
+- Provisioning gateway hanya mendaftarkan tenant dan membuat API key; tidak membuat webhook.
+- Broadcast tidak lagi mencatat pesan keluar ke kotak masuk.
+- Perubahan gateway yang sudah dibuat (secret webhook sekali, `remoteJidAlt`, pemetaan `message.received`) dibiarkan dan tidak berefek selama tidak ada webhook terdaftar.
+- Kolom `gateway_webhook_token` dan `gateway_webhook_secret` di-drop pada task pembersihan karena tidak dipakai.
