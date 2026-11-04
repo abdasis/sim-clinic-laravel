@@ -18,7 +18,6 @@ use App\Http\Controllers\CompanyContentController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
-use App\Http\Controllers\InboundMessageController;
 use App\Http\Controllers\InboxConversationController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
@@ -44,6 +43,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WhatsappGatewayWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -73,9 +73,9 @@ Route::middleware('throttle:10,1')->group(function (): void {
 });
 
 // Pesan masuk WhatsApp. Di luar grup {tenant} karena gateway tidak mengenal
-// slug klinik; kliniknya ditentukan dari nama sesi pada payload, dan token
-// ruas URL yang memisahkan panggilan sah dari panggilan sembarangan.
-Route::post('/whatsapp/webhook/{token}', [InboundMessageController::class, 'store']);
+// slug klinik; kliniknya ditentukan dari token pada ruas URL, lalu kiriman
+// dibuktikan dengan tanda tangan HMAC atas isi permintaan.
+Route::post('/whatsapp/webhook/{token}', [WhatsappGatewayWebhookController::class, 'store']);
 
 // Pesan masuk WhatsApp Cloud API (Meta). Tanpa token di URL: yang membuktikan
 // kiriman itu benar dari Meta adalah tanda tangan HMAC pada isi permintaan.
