@@ -288,6 +288,56 @@ class BroadcastUpdateTest extends TestCase
             ->assertJsonValidationErrors('template.params');
     }
 
+    /**
+     * Penanda yang melompat tidak bisa dirender: `render()` mengisi slot
+     * berdasarkan urutannya, jadi {{2}} sendirian mencari nilai kedua yang
+     * tidak pernah ada dan lolos apa adanya ke pasien.
+     */
+    public function test_placeholders_must_be_contiguous_from_one(): void
+    {
+        $this->actingAsClinicUser();
+
+        $broadcast = $this->createBroadcast();
+
+        foreach ([
+            ['Halo {{2}}', ['nama']],
+            ['Halo {{1}} {{3}}', ['nama', 'klinik']],
+        ] as [$body, $params]) {
+            $this->putJson($this->tenantUrl("broadcasts/{$broadcast->id}"), $this->updatePayload([
+                'template' => $this->template($body, $params),
+            ]))
+                ->assertStatus(422)
+                ->assertJsonValidationErrors('template.params');
+        }
+    }
+
+    public function test_contiguous_placeholders_are_accepted(): void
+    {
+        $this->actingAsClinicUser();
+
+        $broadcast = $this->createBroadcast();
+
+        $this->putJson($this->tenantUrl("broadcasts/{$broadcast->id}"), $this->updatePayload([
+            'template' => $this->template('Halo {{1}} dari {{2}}', ['nama', 'klinik']),
+        ]))->assertOk();
+    }
+
+    /** Kunci `params` tetap ada walau body tidak punya penanda. */
+    public function test_template_params_are_stored_even_when_empty(): void
+    {
+        $this->actingAsClinicUser();
+
+        $broadcast = $this->createBroadcast();
+
+        $this->putJson($this->tenantUrl("broadcasts/{$broadcast->id}"), $this->updatePayload([
+            'template' => ['body' => 'Halo semua pasien'],
+        ]))
+            ->assertOk()
+            ->assertJsonPath('data.template.params', []);
+
+        $this->assertSame([], $broadcast->fresh()->template['params']);
+    }
+
     /** Kunci audience_params di luar formulir tidak boleh hilang saat disunting. */
     public function test_extra_audience_params_are_preserved(): void
     {

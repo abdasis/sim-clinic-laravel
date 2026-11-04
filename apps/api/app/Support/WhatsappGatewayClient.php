@@ -462,10 +462,32 @@ class WhatsappGatewayClient
 
         $json = $response->json();
 
-        if (! $response->successful() || ! is_array($json) || ($json['success'] ?? false) !== true) {
+        if (! $response->successful()) {
             $exception = WhatsappGatewayException::fromResponse($response);
 
             Log::error('Gateway WhatsApp menolak permintaan.', [
+                'request' => $what,
+                'status' => $response->status(),
+                'code' => $exception->code,
+            ]);
+
+            throw $exception;
+        }
+
+        if (! is_array($json) || ($json['success'] ?? false) !== true) {
+            // 2xx tanpa envelope (halaman proxy, badan terpotong) bukan
+            // keberhasilan, tapi juga bukan penolakan yang bisa dibaca.
+            // Statusnya dipetakan ke 502: membiarkannya 200 membuat pemanggil
+            // menyangka pesannya berangkat.
+            $exception = new WhatsappGatewayException(
+                'INVALID_RESPONSE',
+                502,
+                null,
+                [],
+                'Gateway WhatsApp membalas tanpa envelope yang bisa dibaca (HTTP '.$response->status().').',
+            );
+
+            Log::error('Gateway WhatsApp membalas di luar kontrak envelope.', [
                 'request' => $what,
                 'status' => $response->status(),
                 'code' => $exception->code,

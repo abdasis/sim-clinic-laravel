@@ -52,8 +52,8 @@ class BroadcastDeliveryTruthTest extends TestCase
         return [
             '*' => Http::response([
                 'success' => false,
-                'message' => 'Recipient not registered',
-                'error' => ['code' => 'INVALID_RECIPIENT'],
+                'message' => 'Nomor tidak valid.',
+                'error' => ['code' => 'INVALID_PHONE_NUMBER'],
             ], 422),
         ];
     }
@@ -134,8 +134,8 @@ class BroadcastDeliveryTruthTest extends TestCase
                 ], 202)
                 : Http::response([
                     'success' => false,
-                    'message' => 'Recipient not registered',
-                    'error' => ['code' => 'INVALID_RECIPIENT'],
+                    'message' => 'Nomor tidak valid.',
+                    'error' => ['code' => 'INVALID_PHONE_NUMBER'],
                 ], 422);
         });
 

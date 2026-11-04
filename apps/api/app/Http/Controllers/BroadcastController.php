@@ -236,7 +236,10 @@ class BroadcastController extends Controller
     /** Nyalakan sesinya — tindakan tersendiri, diminta admin sekali. */
     public function prepareConnection(WhatsappGatewaySessionService $sessions): JsonResponse
     {
-        $this->authorize('viewAny', Broadcast::class);
+        // Menyalakan sesi mengubah keadaan gateway, bukan sekadar membaca
+        // seperti `connection`. Peran yang hanya boleh melihat tidak boleh
+        // memicunya.
+        $this->authorize('update', Broadcast::class);
 
         return response()->json(['data' => $sessions->prepare(), 'meta' => []]);
     }
@@ -278,6 +281,30 @@ class BroadcastController extends Controller
     }
 
     /**
+     * Hapus sesi gateway klinik. Nama sesinya tetap disimpan supaya bisa
+     * disambungkan ulang tanpa mengisi pengaturan lagi.
+     */
+    public function deleteConnection(WhatsappGatewaySessionService $sessions): JsonResponse
+    {
+        $this->authorize('update', Broadcast::class);
+
+        try {
+            $result = $sessions->delete();
+        } catch (Throwable $e) {
+            return $this->connectionFailure('delete', $e);
+        }
+
+        return response()->json([
+            'data' => $result['state'],
+            'meta' => [
+                'message' => $result['deleted']
+                    ? __('broadcast.session_deleted')
+                    : __('broadcast.session_none'),
+            ],
+        ]);
+    }
+
+    /**
      * Jalankan aksi sesi. Hanya penolakan gateway yang pesannya bisa dibaca
      * admin — itu pun diteruskan dengan status aslinya (409/422/429). Galat
      * lain bisa membocorkan detail internal, jadi diganti pesan umum.
@@ -289,25 +316,34 @@ class BroadcastController extends Controller
         try {
             $data = $action();
         } catch (Throwable $e) {
-            $tenant = app()->bound('tenant') ? app('tenant') : null;
-
-            Log::error('Aksi sesi gateway WhatsApp klinik gagal.', [
-                'exception' => $e,
-                'tenant_id' => $tenant?->id,
-                'action' => $name,
-            ]);
-
-            if ($e instanceof WhatsappGatewayException) {
-                return response()->json(
-                    ['message' => $e->getMessage()],
-                    $e->status > 0 ? $e->status : 502,
-                );
-            }
-
-            return response()->json(['message' => __('broadcast.gateway_error')], 502);
+            return $this->connectionFailure($name, $e);
         }
 
         return response()->json(['data' => $data, 'meta' => []], $status);
+    }
+
+    /**
+     * Balasan galat aksi sesi. Hanya penolakan gateway yang pesannya bisa
+     * dibaca admin; galat lain bisa membocorkan detail internal.
+     */
+    private function connectionFailure(string $name, Throwable $e): JsonResponse
+    {
+        $tenant = app()->bound('tenant') ? app('tenant') : null;
+
+        Log::error('Aksi sesi gateway WhatsApp klinik gagal.', [
+            'exception' => $e,
+            'tenant_id' => $tenant?->id,
+            'action' => $name,
+        ]);
+
+        if ($e instanceof WhatsappGatewayException) {
+            return response()->json(
+                ['message' => $e->getMessage()],
+                $e->status > 0 ? $e->status : 502,
+            );
+        }
+
+        return response()->json(['message' => __('broadcast.gateway_error')], 502);
     }
 
     /** Ringkasan dashboard WhatsApp: koneksi, pesan hari ini, campaign aktif. */

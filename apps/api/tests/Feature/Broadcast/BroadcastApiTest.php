@@ -240,8 +240,8 @@ class BroadcastApiTest extends TestCase
         Http::fake([
             '*' => Http::response([
                 'success' => false,
-                'message' => 'Recipient not registered',
-                'error' => ['code' => 'INVALID_RECIPIENT'],
+                'message' => 'Nomor tidak valid.',
+                'error' => ['code' => 'INVALID_PHONE_NUMBER'],
             ], 422),
         ]);
 
@@ -255,7 +255,7 @@ class BroadcastApiTest extends TestCase
 
         $fresh = $recipient->fresh();
         $this->assertSame('failed', $fresh->status->value);
-        $this->assertStringContainsString('Recipient not registered', (string) $fresh->error);
+        $this->assertStringContainsString('Nomor tidak valid', (string) $fresh->error);
 
         Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/messages/send'
             && $request['to'] === '6282222222222'
@@ -305,5 +305,48 @@ class BroadcastApiTest extends TestCase
         $this->postJson($this->tenantUrl('broadcasts'), [
             'title' => 'x', 'template' => $this->template(), 'audience' => 'all',
         ])->assertForbidden();
+    }
+
+    /** Kunci `params` disimpan walau body tidak punya penanda. */
+    public function test_creation_stores_empty_params_when_the_body_has_no_placeholders(): void
+    {
+        $this->actingAsClinicUser();
+        $this->patient('Ani', '081111111111');
+
+        $this->postJson($this->tenantUrl('broadcasts'), [
+            'title' => 'Pengumuman',
+            'template' => ['body' => 'Klinik tutup hari Minggu.'],
+            'audience' => 'all',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.template.params', []);
+    }
+
+    /** Penanda yang melompat ditolak sebelum kampanye terbentuk. */
+    public function test_creation_rejects_non_contiguous_placeholders(): void
+    {
+        $this->actingAsClinicUser();
+
+        $this->postJson($this->tenantUrl('broadcasts'), [
+            'title' => 'Promo',
+            'template' => ['body' => 'Halo {{2}}', 'params' => ['nama']],
+            'audience' => 'all',
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('template.params');
+    }
+
+    /** Jalur pesan uji memakai aturan penanda yang sama. */
+    public function test_test_message_rejects_non_contiguous_placeholders(): void
+    {
+        $this->actingAsClinicUser();
+        $this->gatewayConfigured();
+
+        $this->postJson($this->tenantUrl('broadcasts/test-message'), [
+            'phone' => '081234567890',
+            'template' => ['body' => 'Halo {{1}} {{3}}', 'params' => ['nama', 'klinik']],
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('template.params');
     }
 }

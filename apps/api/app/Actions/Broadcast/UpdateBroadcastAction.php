@@ -48,7 +48,7 @@ class UpdateBroadcastAction
         );
         $template = (array) $data['template'];
         $templateBody = (string) $template['body'];
-        $templateParams = (array) ($template['params'] ?? []);
+        $templateParams = array_values((array) ($template['params'] ?? []));
 
         $built = app(BroadcastAudienceBuilder::class)->build(
             $audience,
@@ -62,7 +62,9 @@ class UpdateBroadcastAction
         $broadcast->update([
             'title' => $data['title'],
             'message' => app(BuildBroadcastRecipientsAction::class)->snapshot($templateBody, $templateParams),
-            'template' => $template,
+            // `params` selalu ada walau kosong: layar campaign membacanya
+            // untuk memetakan slot, dan kunci yang hilang membuatnya gagal.
+            'template' => ['body' => $templateBody, 'params' => $templateParams],
             'image_path' => $imagePath,
             'audience' => $audience,
             'audience_params' => $params,

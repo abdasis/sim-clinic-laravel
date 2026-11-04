@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Whatsapp;
 
+use App\Enums\ClinicRole;
 use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
@@ -208,10 +210,108 @@ class GatewaySessionTest extends TestCase
 
         $this->assertSame(self::NEW_SESSION_ID, $this->storedSetting()->gateway_session_id);
 
-        Http::assertSent(fn ($request) => $request->url() === self::BASE.'/sessions/'.self::NEW_SESSION_ID.'/connect'
-            && $request->method() === 'POST');
+        // Sesi yang sudah minta QR tidak dinyalakan ulang: connect memulai
+        // proses dari awal dan QR yang sudah terbit hilang dari layar.
+        Http::assertNotSent(fn ($request) => str_ends_with($request->url(), '/connect'));
 
         Http::assertNotSent(fn ($request) => $request->url() === self::BASE.'/sessions'
+            && $request->method() === 'POST');
+    }
+
+    /**
+     * Menyalakan ulang sesi yang masih berjalan hanya menunda QR-nya.
+     */
+    public function test_prepare_does_not_reconnect_a_session_that_is_already_working(): void
+    {
+        $this->setting();
+        $this->actingAsClinicUser();
+
+        $current = 'INITIALIZING';
+
+        Http::fake(function ($request) use (&$current) {
+            if (str_ends_with($request->url(), '/status')) {
+                return Http::response(['success' => true, 'data' => [
+                    'sessionId' => 'klinik-uji',
+                    'status' => $current,
+                    'phoneNumber' => null,
+                    'lastSeenAt' => null,
+                ]]);
+            }
+
+            if (str_ends_with($request->url(), '/qr')) {
+                return Http::response(['success' => true, 'data' => [
+                    'sessionId' => 'klinik-uji',
+                    'status' => 'QR_REQUIRED',
+                    'qr' => 'data:image/png;base64,AAAA',
+                    'expiresAt' => null,
+                ]]);
+            }
+
+            return Http::response(['success' => true, 'data' => []]);
+        });
+
+        foreach (['INITIALIZING', 'QR_REQUIRED'] as $status) {
+            // Jendela cooldown prepare berlaku per klinik; dibersihkan agar
+            // kedua keadaan diuji sungguhan, bukan yang pertama saja.
+            Cache::flush();
+            $current = $status;
+
+            $this->postJson($this->tenantUrl('broadcasts/connection/prepare'))->assertOk();
+        }
+
+        Http::assertNotSent(fn ($request) => str_ends_with($request->url(), '/connect'));
+    }
+
+    /**
+     * Dialog Koneksi tidak boleh menyuruh admin membuka menu yang sama untuk
+     * membuat baris pengaturannya. Barisnya dibuat saat prepare, lalu
+     * provisioning tetap berjalan.
+     */
+    public function test_prepare_creates_the_setting_row_instead_of_returning_early(): void
+    {
+        Http::fake(['*' => Http::response([
+            'success' => false,
+            'message' => 'Gateway belum siap.',
+            'error' => ['code' => 'UNAVAILABLE'],
+        ], 503)]);
+
+        $this->actingAsClinicUser();
+
+        $this->postJson($this->tenantUrl('broadcasts/connection/prepare'))->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_settings', [
+            'tenant_id' => $this->tenant->id,
+            'session' => $this->tenant->slug,
+        ]);
+
+        // Provisioning benar-benar dicoba, bukan keluar lebih awal.
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/api/v1/auth/'));
+    }
+
+    /**
+     * Status lain (mis. DISCONNECTED) memang perlu dinyalakan.
+     */
+    public function test_prepare_connects_a_disconnected_session(): void
+    {
+        $this->setting();
+
+        Http::fake(function ($request) {
+            if (str_ends_with($request->url(), '/status')) {
+                return Http::response(['success' => true, 'data' => [
+                    'sessionId' => 'klinik-uji',
+                    'status' => 'DISCONNECTED',
+                    'phoneNumber' => null,
+                    'lastSeenAt' => null,
+                ]]);
+            }
+
+            return Http::response(['success' => true, 'data' => ['status' => 'INITIALIZING']]);
+        });
+
+        $this->actingAsClinicUser();
+        $this->postJson($this->tenantUrl('broadcasts/connection/prepare'))->assertOk();
+
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/connect')
             && $request->method() === 'POST');
     }
 
@@ -327,6 +427,87 @@ class GatewaySessionTest extends TestCase
         // isian, bukan hanya yang berubah.
         $this->putJson($this->tenantUrl('broadcasts/settings'), ['session' => 'klinik-uji'])
             ->assertOk();
+    }
+
+    /**
+     * Peran yang hanya boleh melihat keadaan tidak boleh menyalakan sesi.
+     * Membaca layar Koneksi cukup `viewAny`; menekan "Sambungkan ulang"
+     * mengubah keadaan gateway dan butuh `update`.
+     */
+    public function test_view_only_role_can_read_but_not_prepare_the_session(): void
+    {
+        $this->setting();
+        Http::fake();
+
+        $user = $this->actingAsClinicUser(ClinicRole::Cashier);
+        $user->givePermissionTo('broadcast.view');
+
+        $this->getJson($this->tenantUrl('broadcasts/connection'))->assertOk();
+        $this->postJson($this->tenantUrl('broadcasts/connection/prepare'))->assertForbidden();
+    }
+
+    public function test_view_only_role_cannot_delete_the_session(): void
+    {
+        $this->setting();
+        Http::fake();
+
+        $user = $this->actingAsClinicUser(ClinicRole::Cashier);
+        $user->givePermissionTo('broadcast.view');
+
+        $this->deleteJson($this->tenantUrl('broadcasts/connection'))->assertForbidden();
+
+        Http::assertNothingSent();
+    }
+
+    public function test_delete_connection_calls_gateway_and_clears_the_session_id(): void
+    {
+        $this->setting();
+        Http::fake([self::BASE.'/sessions/'.self::SESSION_ID => Http::response('', 204)]);
+
+        $this->actingAsClinicUser();
+
+        $this->deleteJson($this->tenantUrl('broadcasts/connection'))
+            ->assertOk()
+            ->assertJsonPath('meta.message', __('broadcast.session_deleted'));
+
+        Http::assertSent(fn ($request) => $request->url() === self::BASE.'/sessions/'.self::SESSION_ID
+            && $request->method() === 'DELETE');
+
+        $stored = $this->storedSetting();
+        $this->assertNull($stored->gateway_session_id);
+        // Nama sesi tetap disimpan supaya tinggal disambungkan ulang.
+        $this->assertSame('klinik-uji', $stored->session);
+    }
+
+    /** Sesi yang sudah tidak ada di gateway sama saja dengan sudah dihapus. */
+    public function test_delete_connection_treats_a_missing_gateway_session_as_success(): void
+    {
+        $this->setting();
+        Http::fake(['*' => Http::response([
+            'success' => false,
+            'message' => 'Sesi tidak ditemukan.',
+            'error' => ['code' => 'SESSION_NOT_FOUND'],
+        ], 404)]);
+
+        $this->actingAsClinicUser();
+
+        $this->deleteJson($this->tenantUrl('broadcasts/connection'))->assertOk();
+
+        $this->assertNull($this->storedSetting()->gateway_session_id);
+    }
+
+    public function test_delete_connection_without_a_session_is_still_ok(): void
+    {
+        $this->setting(['gateway_session_id' => null]);
+        Http::fake();
+
+        $this->actingAsClinicUser();
+
+        $this->deleteJson($this->tenantUrl('broadcasts/connection'))
+            ->assertOk()
+            ->assertJsonPath('meta.message', __('broadcast.session_none'));
+
+        Http::assertNothingSent();
     }
 
     public function test_connection_actions_reach_their_gateway_endpoints(): void

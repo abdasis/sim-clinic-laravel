@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Actions\Whatsapp\ClearGatewaySessionAction;
 use App\Actions\Whatsapp\StoreGatewaySessionAction;
+use App\Actions\Whatsapp\StoreGatewaySettingAction;
+use App\Models\Tenant;
 use App\Models\WhatsappSetting;
 use App\Support\WhatsappGatewayClient;
 use App\Support\WhatsappGatewayException;
@@ -26,10 +29,24 @@ class WhatsappGatewaySessionService
 
     private const STATUS_QR_REQUIRED = 'QR_REQUIRED';
 
+    private const STATUS_INITIALIZING = 'INITIALIZING';
+
+    /**
+     * Keadaan yang sudah "sedang berjalan": memanggil connect lagi hanya
+     * memulai ulang sesinya dan menunda QR yang sebenarnya sudah terbit.
+     */
+    private const STATUS_SELF_DRIVEN = [
+        self::STATUS_CONNECTED,
+        self::STATUS_INITIALIZING,
+        self::STATUS_QR_REQUIRED,
+    ];
+
     public function __construct(
         private readonly WhatsappGatewayClient $client,
         private readonly WhatsappGatewayProvisioningService $provisioning,
         private readonly StoreGatewaySessionAction $storeSession,
+        private readonly StoreGatewaySettingAction $storeSetting,
+        private readonly ClearGatewaySessionAction $clearSession,
     ) {}
 
     /**
@@ -97,8 +114,18 @@ class WhatsappGatewaySessionService
     {
         $setting = $this->setting();
 
+        // Klinik yang belum pernah mengisi pengaturan tetap bisa menyiapkan
+        // sesi: barisnya dibuat di sini, lalu provisioning berjalan seperti
+        // biasa. Layar Koneksi tidak perlu menyuruh admin membuka menu yang
+        // sama untuk membuat baris itu lebih dulu.
         if ($setting === null) {
-            return $this->state();
+            $tenant = app()->bound('tenant') ? app('tenant') : null;
+
+            if (! $tenant instanceof Tenant) {
+                return $this->state();
+            }
+
+            $setting = $this->storeSetting->handle($tenant);
         }
 
         // Gerbang cooldown dipasang sebelum provisioning: dua permintaan yang
@@ -115,7 +142,12 @@ class WhatsappGatewaySessionService
                 $this->ensureSession($setting);
             }
 
-            if ($this->statusOf($setting) !== self::STATUS_CONNECTED) {
+            // Sesi yang sedang INITIALIZING atau sudah minta QR tidak boleh
+            // dinyalakan ulang: permintaan connect memulai proses dari awal
+            // dan QR yang sudah terbit hilang dari layar.
+            $status = $this->statusOf($setting);
+
+            if ($status === null || ! in_array($status, self::STATUS_SELF_DRIVEN, true)) {
                 $this->client->connectSession($setting);
             }
         } catch (Throwable $e) {
@@ -143,6 +175,42 @@ class WhatsappGatewaySessionService
             'pairing_code' => $data['pairingCode'] ?? null,
             'expires_at' => $data['expiresAt'] ?? null,
         ];
+    }
+
+    /**
+     * Hapus sesi klinik di gateway, lalu lepaskan tautannya di pengaturan.
+     *
+     * Sesi yang sudah tidak ada di gateway (404) diperlakukan sebagai sudah
+     * terhapus: tujuan akhirnya sama, dan membiarkan id lama menempel justru
+     * membuat layar Koneksi terus menanyakan sesi yang tidak ada.
+     *
+     * @return array{deleted: bool, state: array<string, mixed>}
+     */
+    public function delete(): array
+    {
+        $setting = $this->setting();
+
+        if ($setting === null || blank($setting->gateway_session_id)) {
+            return ['deleted' => false, 'state' => $this->state()];
+        }
+
+        try {
+            $this->client->deleteSession($setting);
+        } catch (WhatsappGatewayException $e) {
+            Log::error('Gagal menghapus sesi gateway WhatsApp klinik.', [
+                'exception' => $e,
+                'tenant_id' => $setting->tenant_id,
+                'status' => $e->status,
+            ]);
+
+            if ($e->status !== 404) {
+                throw $e;
+            }
+        }
+
+        $this->clearSession->handle($setting);
+
+        return ['deleted' => true, 'state' => $this->state()];
     }
 
     public function restart(): void

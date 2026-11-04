@@ -159,7 +159,7 @@ class AutoReminderEngine
             'kind' => BroadcastKind::Reminder,
             'status' => BroadcastStatus::Ready,
             'message' => $body,
-            'template' => ['body' => $body],
+            'template' => ['body' => $body, 'params' => []],
             'audience' => BroadcastAudience::All,
             // Penanda `auto` inilah yang membedakan broadcast ini dari
             // pengingat per-layanan, baik untuk anti-duplikat maupun untuk

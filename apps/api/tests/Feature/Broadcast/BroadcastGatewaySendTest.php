@@ -133,7 +133,7 @@ class BroadcastGatewaySendTest extends TestCase
             ? Http::response([
                 'success' => false,
                 'message' => 'Nomor tidak terdaftar di WhatsApp.',
-                'error' => ['code' => 'INVALID_RECIPIENT'],
+                'error' => ['code' => 'INVALID_PHONE_NUMBER'],
             ], 422)
             : Http::response($this->sentEnvelope(), 202));
 

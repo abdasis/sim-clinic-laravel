@@ -292,9 +292,31 @@ class GatewayWebhookTest extends TestCase
         Queue::assertNothingPushed();
     }
 
-    public function test_unknown_token_returns_404(): void
+    /**
+     * Token asing diakui dengan 200, bukan 404.
+     *
+     * Gateway mengirim ulang apa pun yang tidak dibalas 200; membalas 404
+     * hanya membuatnya mencoba lagi tanpa henti. Payload-nya tidak diproses,
+     * dan tokennya tidak dicatat utuh di log.
+     */
+    public function test_unknown_token_is_acknowledged_without_processing(): void
     {
+        Log::spy();
+        Log::shouldReceive('channel')->with('chatbot')->andReturnSelf();
+
         $this->sendWebhook($this->receivedPayload(), token: 'tidak-dikenal')
-            ->assertNotFound();
+            ->assertOk()
+            ->assertJsonPath('data.status', 'token tidak dikenal');
+
+        $this->assertDatabaseCount('messages', 0);
+        $this->assertDatabaseCount('conversations', 0);
+        Queue::assertNothingPushed();
+
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->withArgs(function (string $message, array $context): bool {
+                return ! array_key_exists('token', $context)
+                    && isset($context['token_prefix'], $context['token_hash']);
+            });
     }
 }

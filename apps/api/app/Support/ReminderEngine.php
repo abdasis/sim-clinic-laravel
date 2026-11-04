@@ -138,7 +138,7 @@ class ReminderEngine
             'kind' => BroadcastKind::Reminder,
             'status' => BroadcastStatus::Ready,
             'message' => $body,
-            'template' => ['body' => $body],
+            'template' => ['body' => $body, 'params' => []],
             'audience' => BroadcastAudience::Service,
             'audience_params' => ['service_id' => $rule->service_id, 'reminder_rule_id' => $rule->id],
         ]);

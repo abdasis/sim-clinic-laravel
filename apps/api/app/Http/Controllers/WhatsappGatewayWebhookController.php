@@ -45,11 +45,18 @@ class WhatsappGatewayWebhookController extends Controller
         // Token kosong di basis data tidak mungkin cocok dengan ruas URL yang
         // tidak kosong, jadi kasus itu sudah tertutup oleh pencarian di atas.
         if ($setting === null) {
+            // Token utuh adalah rahasia yang membuka pintu klinik: cukup
+            // awalan pendek dan sidik jarinya untuk menelusuri asalnya.
+            // Balasannya tetap 200 — gateway akan mengirim ulang apa pun yang
+            // tidak dibalas 200, dan token asing tidak akan menjadi dikenal
+            // karena diulang.
             Log::channel('chatbot')->warning('Webhook gateway ditolak: token tidak dikenal', [
-                'token' => $token,
+                'token_prefix' => mb_substr($token, 0, 6),
+                'token_hash' => hash('sha256', $token),
+                'alasan' => 'tidak ada pengaturan klinik dengan token ini',
             ]);
 
-            return $this->respond('token tidak dikenal', 404);
+            return $this->respond('token tidak dikenal');
         }
 
         $rawBody = $request->getContent();

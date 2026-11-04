@@ -98,6 +98,11 @@ class BroadcastRequest extends FormRequest
                     'params' => count($params),
                 ]),
             );
+        } elseif (! TemplateVariables::numbersAreContiguous($body)) {
+            $validator->errors()->add(
+                'template.params',
+                __('broadcast.template_placeholders_not_contiguous'),
+            );
         }
 
         $max = $this->hasImage() ? self::BODY_MAX_WITH_IMAGE : self::BODY_MAX;

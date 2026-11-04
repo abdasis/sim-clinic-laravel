@@ -70,6 +70,8 @@ return [
     'session_taken' => 'Nama sesi ini sudah dipakai klinik lain. Pilih nama lain.',
     'session_locked' => 'Nama sesi tidak bisa diubah setelah sesi gateway dibuat. Putuskan lalu hapus sesinya bila ingin mengganti nama.',
     'session_empty' => 'Dikosongkan berarti pengiriman otomatis mati; kirim manual lewat tombol WhatsApp tetap bisa.',
+    'session_deleted' => 'Sesi WhatsApp sudah dihapus. Nama sesi tetap disimpan, jadi tinggal disambungkan ulang.',
+    'session_none' => 'Belum ada sesi WhatsApp yang tersambung untuk dihapus.',
     // Pengiriman lewat gateway internal.
     'gateway_not_ready' => 'WhatsApp klinik belum terhubung ke gateway. Buka menu Koneksi WhatsApp lalu sambungkan nomornya dulu.',
     'template_body_too_long' => 'Pesan terlalu panjang, maksimal :max karakter. Pesan yang disertai gambar perlu lebih ringkas karena gambarnya ikut ditampilkan.',
@@ -89,6 +91,7 @@ return [
     'template_body_preview' => 'Bunyi pesan',
     'template_test_image_unsupported' => 'Template bergambar belum bisa diuji lewat pesan uji. Coba tanpa gambar, atau kirim broadcast sungguhan setelah posternya diunggah.',
     'template_params_mismatch' => 'Jumlah bagian yang diisi (:params) tidak sama dengan jumlah penanda di template (:placeholders).',
+    'template_placeholders_not_contiguous' => 'Penanda pesan harus berurutan mulai dari {{1}} tanpa nomor yang melompat. Contoh: {{1}} {{2}}.',
     'template_image_required' => 'Template ini memakai gambar header, jadi posternya wajib diunggah.',
     'template_variable_nama' => 'Nama pasien',
     'template_variable_klinik' => 'Nama klinik',

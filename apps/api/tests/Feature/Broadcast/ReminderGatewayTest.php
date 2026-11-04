@@ -129,7 +129,10 @@ class ReminderGatewayTest extends TestCase
 
         (new ReminderEngine)->run();
 
-        $recipient = Broadcast::query()->where('kind', 'reminder')->firstOrFail()->recipients()->firstOrFail();
+        $broadcast = Broadcast::query()->where('kind', 'reminder')->firstOrFail();
+        $this->assertSame([], $broadcast->template['params']);
+
+        $recipient = $broadcast->recipients()->firstOrFail();
 
         $this->assertStringContainsString('Desi', $recipient->message);
         $this->assertStringContainsString('Facial', $recipient->message);

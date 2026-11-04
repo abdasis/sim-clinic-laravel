@@ -9,6 +9,7 @@ use App\Models\Broadcast;
 use App\Models\Patient;
 use Illuminate\Contracts\Queue\Job as JobContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
@@ -134,7 +135,7 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        $this->rejection(['message' => 'Recipient not registered', 'code' => 'INVALID_RECIPIENT'], 422);
+        $this->rejection(['message' => 'Nomor tidak valid.', 'code' => 'INVALID_PHONE_NUMBER'], 422);
 
         $broadcast = $this->makeBroadcast(1);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -143,7 +144,7 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->runAttempt($recipient->id);
 
         $this->assertStringContainsString(
-            'Recipient not registered',
+            'Nomor tidak valid',
             (string) $recipient->fresh()->error,
             'alasan penolakan gateway tidak tersimpan; yang tersisa cuma kode status',
         );
@@ -259,26 +260,121 @@ class BroadcastGatewayFailureTest extends TestCase
     }
 
     /**
-     * Gangguan yang bukan soal sesi hanya menghanguskan nomor yang sedang
-     * dikirim; nomor lain tidak ikut menunggu.
+     * 5xx bukan penolakan nomor: gateway belum sempat menilai penerimanya.
+     * Menandainya gagal menghabiskan seluruh antrean karena satu gangguan
+     * yang sama, jadi campaign dijeda dan sisanya tetap menunggu.
      */
-    public function test_a_server_error_marks_only_that_recipient_failed(): void
+    public function test_a_server_error_pauses_the_campaign_instead_of_burning_recipients(): void
     {
         $this->actingAsClinicUser();
         $this->configured();
-        $this->rejection(['message' => 'Upstream service temporarily unavailable.', 'code' => 'HTTP_500'], 500);
+        $http500 = ['message' => 'Upstream service temporarily unavailable.', 'code' => 'HTTP_500'];
+        $this->rejection($http500, 500);
 
         $broadcast = $this->makeBroadcast(3);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
-        $recipient = $broadcast->recipients()->orderBy('id')->first();
 
-        $this->runAttempt($recipient->id);
+        $this->runAttempt($broadcast->recipients()->orderBy('id')->first()->id);
 
-        $this->assertSame(BroadcastRecipientStatus::Failed, $recipient->fresh()->status);
+        $broadcast->refresh();
+
+        $this->assertSame(BroadcastStatus::Paused, $broadcast->status);
+        $this->assertStringContainsString(
+            'Upstream service temporarily unavailable',
+            (string) $broadcast->paused_reason,
+            'alasan jeda tidak terbaca admin',
+        );
         $this->assertSame(
-            BroadcastStatus::Sending,
-            $broadcast->fresh()->status,
-            'satu kiriman gagal menghentikan seluruh blast',
+            3,
+            $broadcast->recipients()->where('status', BroadcastRecipientStatus::Pending)->count(),
+            'penerima hangus padahal gateway yang bermasalah',
+        );
+    }
+
+    /**
+     * Jaringan yang tidak pernah sampai ke gateway juga bukan salah nomor.
+     * Dulu timeout menandai penerima gagal satu per satu sampai antreannya
+     * habis tanpa satu pun pesan berangkat.
+     */
+    public function test_a_network_timeout_pauses_the_campaign_and_keeps_recipients_pending(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+        Http::fake(fn () => throw new ConnectionException('Koneksi habis waktu.'));
+
+        $broadcast = $this->makeBroadcast(2);
+        $broadcast->update(['status' => BroadcastStatus::Sending]);
+
+        $this->runAttempt($broadcast->recipients()->orderBy('id')->first()->id);
+
+        $this->assertSame(BroadcastStatus::Paused, $broadcast->fresh()->status);
+        $this->assertStringContainsString('Koneksi habis waktu.', (string) $broadcast->fresh()->paused_reason);
+        $this->assertSame(
+            2,
+            $broadcast->recipients()->where('status', BroadcastRecipientStatus::Pending)->count(),
+        );
+    }
+
+    /**
+     * Kredensial yang ditolak (401/403) berlaku untuk seluruh antrean.
+     * Menghanguskan penerima satu per satu menyembunyikan bahwa yang perlu
+     * diperbaiki adalah sambungannya.
+     */
+    public function test_unauthorized_and_forbidden_pause_the_campaign(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+
+        $status = 401;
+        $message = 'API key tidak sah.';
+        $code = 'UNAUTHORIZED';
+
+        Http::fake(function () use (&$status, &$message, &$code) {
+            return Http::response([
+                'success' => false,
+                'message' => $message,
+                'error' => ['code' => $code],
+            ], $status);
+        });
+
+        foreach ([
+            [401, 'API key tidak sah.', 'UNAUTHORIZED'],
+            [403, 'Klinik tidak berhak mengirim.', 'FORBIDDEN'],
+        ] as [$status, $message, $code]) {
+            $broadcast = $this->makeBroadcast(2);
+            $broadcast->update(['status' => BroadcastStatus::Sending]);
+
+            $this->runAttempt($broadcast->recipients()->orderBy('id')->first()->id);
+
+            $this->assertSame(BroadcastStatus::Paused, $broadcast->fresh()->status, $code.' tidak menjeda campaign');
+            $this->assertStringContainsString($message, (string) $broadcast->fresh()->paused_reason);
+            $this->assertSame(
+                2,
+                $broadcast->recipients()->where('status', BroadcastRecipientStatus::Pending)->count(),
+                $code.' menghanguskan penerima',
+            );
+        }
+    }
+
+    /**
+     * Galat yang belum dikenal pun tidak boleh menghanguskan nomor: penyebab
+     * paling mungkin ada di gateway, bukan di daftar penerima.
+     */
+    public function test_an_unclassified_error_pauses_the_campaign(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+        $this->rejection(['message' => 'Something odd happened.', 'code' => 'SOMETHING_ODD'], 422);
+
+        $broadcast = $this->makeBroadcast(2);
+        $broadcast->update(['status' => BroadcastStatus::Sending]);
+
+        $this->runAttempt($broadcast->recipients()->orderBy('id')->first()->id);
+
+        $this->assertSame(BroadcastStatus::Paused, $broadcast->fresh()->status);
+        $this->assertSame(
+            2,
+            $broadcast->recipients()->where('status', BroadcastRecipientStatus::Pending)->count(),
         );
     }
 
@@ -293,7 +389,7 @@ class BroadcastGatewayFailureTest extends TestCase
     {
         $this->actingAsClinicUser();
         $this->configured();
-        $this->rejection(['message' => 'Recipient not registered', 'code' => 'INVALID_RECIPIENT'], 422);
+        $this->rejection(['message' => 'Nomor tidak valid.', 'code' => 'INVALID_PHONE_NUMBER'], 422);
 
         $broadcast = $this->makeBroadcast(3);
         $broadcast->update(['status' => BroadcastStatus::Sending]);
@@ -302,7 +398,7 @@ class BroadcastGatewayFailureTest extends TestCase
         $this->runAttempt($recipient->id);
 
         $this->assertSame(BroadcastRecipientStatus::Failed, $recipient->fresh()->status);
-        $this->assertStringContainsString('Recipient not registered', (string) $recipient->fresh()->error);
+        $this->assertStringContainsString('Nomor tidak valid', (string) $recipient->fresh()->error);
         $this->assertSame(BroadcastStatus::Sending, $broadcast->fresh()->status, 'satu nomor mati menghentikan seluruh blast');
     }
 
@@ -343,13 +439,14 @@ class BroadcastGatewayFailureTest extends TestCase
     }
 
     /**
-     * Job yang mati di luar handle() tidak boleh meninggalkan penerima
-     * menunggu selamanya.
+     * Percobaan yang habis tidak boleh meninggalkan campaign menggantung di
+     * "sedang mengirim" — tapi juga tidak boleh menghanguskan penerimanya.
      *
      * Dua penerima di laporan tersangkut "menunggu" dan campaign-nya tidak
-     * pernah menutup — worker berhenti, dan tidak ada yang menandai sisanya.
+     * pernah menutup. Yang benar: campaign dijeda dan penerimanya tetap
+     * menunggu, siap dilanjutkan setelah gatewaynya pulih.
      */
-    public function test_a_job_that_dies_outside_handle_still_marks_the_recipient(): void
+    public function test_exhausted_retries_pause_the_campaign_and_keep_the_recipient_pending(): void
     {
         $this->actingAsClinicUser();
         $this->configured();
@@ -358,17 +455,16 @@ class BroadcastGatewayFailureTest extends TestCase
         $recipient = $broadcast->recipients()->first();
 
         (new SendBroadcastRecipientJob($recipient->id, $this->tenant->id))
-            ->failed(new \RuntimeException('worker mati'));
+            ->failed(new \RuntimeException('Gateway tidak menjawab.'));
+
+        $broadcast->refresh();
 
         $this->assertSame(
-            BroadcastRecipientStatus::Failed,
+            BroadcastRecipientStatus::Pending,
             $recipient->fresh()->status,
-            'penerima tersangkut menunggu setelah job-nya mati',
+            'penerima dihanguskan padahal belum tentu nomornya yang salah',
         );
-        $this->assertNotSame(
-            BroadcastStatus::Sending,
-            $broadcast->fresh()->status,
-            'campaign tersangkut "sedang mengirim" tanpa ada yang menutup',
-        );
+        $this->assertSame(BroadcastStatus::Paused, $broadcast->status);
+        $this->assertStringContainsString('Gateway tidak menjawab.', (string) $broadcast->paused_reason);
     }
 }

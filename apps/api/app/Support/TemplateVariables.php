@@ -103,12 +103,40 @@ class TemplateVariables
         return strtr(self::render($body, $numbered), $replacements);
     }
 
-    /** Jumlah placeholder bernomor unik di dalam body. */
-    public static function placeholderCount(string $body): int
+    /**
+     * Nomor placeholder unik di dalam body, urut menaik.
+     *
+     * Dipakai bersama oleh penghitung slot dan validasi: render mengisi slot
+     * berdasarkan posisinya, jadi nomor yang melompat (`{{1}} {{3}}`) akan
+     * mencari nilai kedua yang tidak pernah ada dan lolos apa adanya.
+     *
+     * @return array<int, int>
+     */
+    public static function numbers(string $body): array
     {
         preg_match_all('/\{\{\s*(\d+)\s*\}\}/', $body, $matches);
 
-        return count(array_unique($matches[1]));
+        $numbers = array_values(array_unique(array_map('intval', $matches[1])));
+        sort($numbers);
+
+        return $numbers;
+    }
+
+    /** Jumlah placeholder bernomor unik di dalam body. */
+    public static function placeholderCount(string $body): int
+    {
+        return count(self::numbers($body));
+    }
+
+    /**
+     * Penanda bernomor harus berurutan dari {{1}} tanpa lompatan, karena
+     * `render()` mengisi slot berdasarkan urutan nilainya.
+     */
+    public static function numbersAreContiguous(string $body): bool
+    {
+        $numbers = self::numbers($body);
+
+        return $numbers === [] || $numbers === range(1, count($numbers));
     }
 
     /**

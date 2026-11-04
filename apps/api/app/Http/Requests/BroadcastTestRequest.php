@@ -38,7 +38,8 @@ class BroadcastTestRequest extends FormRequest
                 return;
             }
 
-            $placeholders = TemplateVariables::placeholderCount((string) ($template['body'] ?? ''));
+            $body = (string) ($template['body'] ?? '');
+            $placeholders = TemplateVariables::placeholderCount($body);
             $params = (array) ($template['params'] ?? []);
 
             if ($placeholders !== count($params)) {
@@ -48,6 +49,11 @@ class BroadcastTestRequest extends FormRequest
                         'placeholders' => $placeholders,
                         'params' => count($params),
                     ]),
+                );
+            } elseif (! TemplateVariables::numbersAreContiguous($body)) {
+                $validator->errors()->add(
+                    'template.params',
+                    __('broadcast.template_placeholders_not_contiguous'),
                 );
             }
         });

@@ -112,6 +112,25 @@ class GatewayClientTest extends TestCase
         }
     }
 
+    /**
+     * Balasan 2xx yang bukan envelope bukan keberhasilan. Dulu pemanggilnya
+     * menerima exception berstatus 200 — status yang justru menandakan
+     * "berhasil" di seluruh lapisan di atasnya.
+     */
+    public function test_successful_response_without_an_envelope_is_mapped_to_bad_gateway(): void
+    {
+        Http::fake(['*' => Http::response('<html>proxy</html>', 200)]);
+
+        try {
+            app(WhatsappGatewayClient::class)
+                ->sendText($this->gatewaySetting(), '0812', 'Halo', 'inbox-uji-123');
+            $this->fail('Seharusnya melempar.');
+        } catch (WhatsappGatewayException $e) {
+            $this->assertSame('INVALID_RESPONSE', $e->code);
+            $this->assertSame(502, $e->status);
+        }
+    }
+
     public function test_rate_limit_carries_retry_after(): void
     {
         Http::fake(['*' => Http::response([

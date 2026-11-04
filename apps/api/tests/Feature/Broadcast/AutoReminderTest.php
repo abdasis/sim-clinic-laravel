@@ -296,6 +296,7 @@ class AutoReminderTest extends TestCase
 
         $broadcast = Broadcast::query()->first();
         $this->assertSame($template->body, $broadcast->template['body']);
+        $this->assertSame([], $broadcast->template['params']);
 
         $recipient = $broadcast->recipients()->first();
         $this->assertSame($patient->id, $recipient->patient_id);

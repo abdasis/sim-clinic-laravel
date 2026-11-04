@@ -35,6 +35,13 @@ class ResumeStalledBroadcasts extends Command
      */
     private const MAX_AUTO_RESUMES = 5;
 
+    /**
+     * Alasan jeda yang dipasang migrasi ke gateway. Gateway baru butuh QR
+     * dipindai orang lebih dulu; melanjutkannya otomatis hanya mengulang
+     * kegagalan yang sama dan menutupi bahwa ada yang perlu dikerjakan.
+     */
+    public const MIGRATION_PAUSED_REASON = 'Migrasi ke gateway WhatsApp.';
+
     public function handle(BroadcastService $broadcasts): int
     {
         Tenant::query()->where('status', 'active')->each(function (Tenant $tenant) use ($broadcasts): void {
@@ -61,6 +68,7 @@ class ResumeStalledBroadcasts extends Command
         $stalled = Broadcast::query()
             ->where('status', BroadcastStatus::Paused)
             ->whereNotNull('paused_reason')
+            ->where('paused_reason', '!=', self::MIGRATION_PAUSED_REASON)
             ->where('auto_resumes', '<', self::MAX_AUTO_RESUMES)
             // Masa diam dihormati apa adanya. Campaign yang berhenti karena
             // WhatsApp menahan laju kiriman tidak boleh dilanjutkan lima menit

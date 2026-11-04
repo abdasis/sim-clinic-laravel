@@ -117,6 +117,30 @@ class ResumeStalledBroadcastsTest extends TestCase
     }
 
     /**
+     * Campaign yang dijeda oleh migrasi menunggu orang, bukan penjadwal.
+     *
+     * Gateway baru belum punya sesi tersambung. Melanjuutkannya otomatis
+     * hanya mengulang penolakan yang sama sampai jatah percobaannya habis,
+     * lalu menyembunyikan bahwa QR-nya memang perlu dipindai lebih dulu.
+     */
+    public function test_a_campaign_paused_by_the_migration_waits_for_a_person(): void
+    {
+        $this->actingAsClinicUser();
+        $this->configured();
+
+        $broadcast = $this->stalled(2, [
+            'paused_reason' => 'Migrasi ke gateway WhatsApp.',
+        ]);
+
+        Queue::fake();
+
+        $this->artisan('clinic:resume-broadcasts')->assertSuccessful();
+
+        $this->assertSame(BroadcastStatus::Paused, $broadcast->fresh()->status);
+        Queue::assertNothingPushed();
+    }
+
+    /**
      * Gateway yang putus-nyambung terus tidak digedor selamanya.
      *
      * Setelah sekian percobaan, campaign-nya dibiarkan menunggu orang —

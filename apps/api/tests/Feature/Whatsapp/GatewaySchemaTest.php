@@ -119,6 +119,21 @@ class GatewaySchemaTest extends TestCase
         $this->assertSame(0, (int) $attempt['default']);
     }
 
+    /**
+     * Kolom jalur lama (driver/api_url/api_token) sudah dibuang migrasi
+     * WAHA. Bila salah satunya muncul lagi, ada dua sumber kebenaran
+     * koneksi dan yang satu akan diam-diam diabaikan.
+     */
+    public function test_legacy_connection_columns_are_gone(): void
+    {
+        foreach (['driver', 'api_url', 'api_token'] as $column) {
+            $this->assertFalse(
+                Schema::hasColumn('whatsapp_settings', $column),
+                $column.' seharusnya sudah tidak ada di whatsapp_settings.',
+            );
+        }
+    }
+
     public function test_gateway_channel_is_a_valid_conversation_channel(): void
     {
         $this->assertSame('gateway', ConversationChannel::Gateway->value);

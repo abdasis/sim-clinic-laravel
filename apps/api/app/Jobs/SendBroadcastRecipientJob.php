@@ -51,6 +51,25 @@ class SendBroadcastRecipientJob implements ShouldQueue
     /** Detik diam bawaan bila gateway menahan laju tanpa menyebut angkanya. */
     private const DEFAULT_THROTTLE_SECONDS = 60;
 
+    /**
+     * Kode yang berarti sesi WhatsApp klinik yang hilang, bukan nomor yang
+     * salah. Seluruh sisa antrean akan ditolak dengan cara yang sama.
+     */
+    private const SESSION_GONE_CODES = [
+        'SESSION_NOT_CONNECTED',
+        'SESSION_NOT_FOUND',
+        'SESSION_NOT_CONFIGURED',
+    ];
+
+    /**
+     * Kode yang benar-benar menolak nomor penerimanya. Hanya ini yang layak
+     * menghanguskan satu penerima; sisanya bukan salah nomor.
+     */
+    private const RECIPIENT_REJECTED_CODES = [
+        'INVALID_PHONE_NUMBER',
+        'VALIDATION_ERROR',
+    ];
+
     public function __construct(
         public readonly int $recipientId,
         public readonly int $tenantId,
@@ -129,7 +148,7 @@ class SendBroadcastRecipientJob implements ShouldQueue
             // ditolak dengan cara yang sama. Campaign dijeda agar sisanya tetap
             // menunggu dan bisa dilanjutkan setelah WhatsApp tersambung lagi.
             if ($e instanceof WhatsappGatewayException && $this->sessionIsGone($e)) {
-                app(PauseStalledBroadcastAction::class)->handle($broadcast, $e->getMessage());
+                $this->pause($broadcast, $this->pauseReason($e));
 
                 return;
             }
@@ -137,7 +156,8 @@ class SendBroadcastRecipientJob implements ShouldQueue
             // Ditahan laju: pesan ini belum tentu ditolak, hanya harus
             // didiamkan dulu. Dikembalikan ke antrean tanpa menghanguskan
             // penerimanya; kunci idempotensi yang sama mencegah kiriman ganda
-            // bila ternyata pesan sebelumnya sempat berangkat.
+            // bila ternyata pesan sebelumnya sempat berangkat. Bila percobaan
+            // benar-benar habis, failed() yang menjeda campaign-nya.
             if ($e instanceof WhatsappGatewayException && $this->isThrottled($e)) {
                 if ($this->job !== null) {
                     $this->release($e->retryAfter ?? self::DEFAULT_THROTTLE_SECONDS);
@@ -146,15 +166,23 @@ class SendBroadcastRecipientJob implements ShouldQueue
                 return;
             }
 
-            // 4xx lain berarti gateway paham permintaannya dan tetap menolak —
-            // nomor tidak terdaftar, misalnya. Penolakan begini menjawab sama
-            // persis tiap kali, jadi nomornya ditandai gagal dan nomor lain
-            // jalan terus.
-            $recipient->update([
-                'status' => BroadcastRecipientStatus::Failed,
-                'error' => mb_substr($e->getMessage(), 0, 250),
-            ]);
-            $this->finishIfDrained($broadcast);
+            // Hanya penolakan nomor yang menjawab sama persis tiap kali.
+            // Nomor itu ditandai gagal dan nomor lain jalan terus.
+            if ($e instanceof WhatsappGatewayException && $this->recipientIsRejected($e)) {
+                $recipient->update([
+                    'status' => BroadcastRecipientStatus::Failed,
+                    'error' => mb_substr($e->getMessage(), 0, 250),
+                ]);
+                $this->finishIfDrained($broadcast);
+
+                return;
+            }
+
+            // Jaringan putus, 5xx, 401/403, atau galat yang belum dikenal:
+            // gateway belum sempat menilai nomornya. Menandai penerima gagal
+            // di sini menghabiskan seluruh antrean karena satu gangguan yang
+            // sama — campaign dijeda dan sisanya tetap menunggu.
+            $this->pause($broadcast, $this->pauseReason($e));
 
             return;
         }
@@ -228,17 +256,36 @@ class SendBroadcastRecipientJob implements ShouldQueue
     /** Sesi WhatsApp klinik tidak tersedia di gateway. */
     private function sessionIsGone(WhatsappGatewayException $e): bool
     {
-        return in_array($e->code, [
-            'SESSION_NOT_CONNECTED',
-            'SESSION_NOT_FOUND',
-            'SESSION_NOT_CONFIGURED',
-        ], true);
+        return in_array($e->code, self::SESSION_GONE_CODES, true);
     }
 
     /** Gateway menahan laju kiriman (HTTP 429). */
     private function isThrottled(WhatsappGatewayException $e): bool
     {
         return $e->status === 429 || $e->code === 'RATE_LIMIT_EXCEEDED';
+    }
+
+    /** Nomor penerima memang ditolak gateway, bukan sekadar gangguannya. */
+    private function recipientIsRejected(WhatsappGatewayException $e): bool
+    {
+        return in_array($e->code, self::RECIPIENT_REJECTED_CODES, true);
+    }
+
+    /**
+     * Alasan jeda yang bisa dibaca admin. Pesan gateway dipakai apa adanya;
+     * galat tanpa pesan diberi kalimat pengganti, bukan teks kosong.
+     */
+    private function pauseReason(Throwable $e): string
+    {
+        $message = trim($e->getMessage());
+
+        return $message !== '' ? $message : __('broadcast.job_died');
+    }
+
+    /** Jeda campaign lewat satu pintu agar alasannya selalu tercatat. */
+    private function pause(Broadcast $broadcast, string $reason): void
+    {
+        app(PauseStalledBroadcastAction::class)->handle($broadcast, $reason);
     }
 
     /**
@@ -257,10 +304,11 @@ class SendBroadcastRecipientJob implements ShouldQueue
      * Dipanggil saat job mati di luar handle(): percobaan habis, worker
      * dihentikan, atau timeout.
      *
-     * Tanpa ini penerimanya tertinggal "menunggu" selamanya dan campaign-nya
-     * tidak pernah menutup — dua penerima di isu #320 tersangkut begitu,
-     * dan statusnya berhenti di "sedang mengirim" walau workernya sudah lama
-     * berhenti.
+     * Percobaan yang habis bukan bukti nomornya ditolak: bisa jadi gateway
+     * yang berulang kali tidak menjawab. Penerimanya dibiarkan menunggu dan
+     * campaign-nya dijeda, supaya bisa dilanjutkan setelah sambungannya
+     * pulih. Menandainya gagal justru menghapus jejak siapa yang belum
+     * dikabari — persis yang terjadi pada isu #320.
      */
     public function failed(?Throwable $e): void
     {
@@ -278,12 +326,17 @@ class SendBroadcastRecipientJob implements ShouldQueue
             return;
         }
 
-        $recipient->update([
-            'status' => BroadcastRecipientStatus::Failed,
-            'error' => mb_substr($e?->getMessage() ?: __('broadcast.job_died'), 0, 250),
+        Log::error('Percobaan mengirim broadcast habis; campaign dijeda.', [
+            'exception' => $e,
+            'broadcast_id' => $recipient->broadcast_id,
+            'recipient_id' => $recipient->id,
+            'attempts' => $recipient->attempts,
         ]);
 
-        $this->finishIfDrained($recipient->broadcast);
+        $this->pause(
+            $recipient->broadcast,
+            $e === null ? __('broadcast.job_died') : $this->pauseReason($e),
+        );
     }
 
     /**

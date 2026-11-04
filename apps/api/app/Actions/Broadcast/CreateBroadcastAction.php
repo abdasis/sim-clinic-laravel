@@ -27,7 +27,7 @@ class CreateBroadcastAction
         $kind = BroadcastKind::from($data['kind'] ?? 'promo');
         $template = (array) $data['template'];
         $templateBody = (string) $template['body'];
-        $templateParams = (array) ($template['params'] ?? []);
+        $templateParams = array_values((array) ($template['params'] ?? []));
 
         $built = app(BroadcastAudienceBuilder::class)->build(
             $audience,
@@ -43,7 +43,9 @@ class CreateBroadcastAction
             // Snapshot pesan dirender dari body template supaya layar
             // campaign bisa menampilkan bunyi pesannya tanpa memanggil Meta.
             'message' => $recipients->snapshot($templateBody, $templateParams),
-            'template' => $template,
+            // `params` selalu ada walau kosong: layar campaign membacanya
+            // untuk memetakan slot, dan kunci yang hilang membuatnya gagal.
+            'template' => ['body' => $templateBody, 'params' => $templateParams],
             'image_path' => $this->storeImage($data['image'] ?? null),
             'audience' => $audience,
             'audience_params' => $params,

@@ -221,6 +221,7 @@ Route::prefix('{tenant}/clinic')
         Route::post('broadcasts/connection/restart', [BroadcastController::class, 'restartConnection']);
         Route::post('broadcasts/connection/disconnect', [BroadcastController::class, 'disconnectConnection']);
         Route::post('broadcasts/connection/logout', [BroadcastController::class, 'logoutConnection']);
+        Route::delete('broadcasts/connection', [BroadcastController::class, 'deleteConnection']);
         Route::get('broadcasts/dashboard', [BroadcastController::class, 'dashboard']);
         Route::post('broadcasts/test-message', [BroadcastController::class, 'sendTest']);
         Route::post('broadcasts/{broadcast}/send', [BroadcastController::class, 'send']);
