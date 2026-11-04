@@ -37,6 +37,8 @@ class WhatsappSessionRequest extends FormRequest
                 // pelanggaran unique di basis data.
                 Rule::unique('whatsapp_settings', 'session')->ignore($currentId),
             ],
+            // Kosong berarti tanpa batas harian.
+            'daily_message_limit' => ['nullable', 'integer', 'min:1', 'max:10000'],
         ];
     }
 

@@ -25,6 +25,12 @@ class WhatsappSessionTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.session', 'klinik-satu');
 
+        // Batas harian tetap bisa diatur; kosong berarti tanpa batas.
+        $this->putJson($this->tenantUrl('broadcasts/settings'), ['daily_message_limit' => 250])
+            ->assertOk()
+            ->assertJsonPath('data.daily_message_limit', 250)
+            ->assertJsonPath('data.session', 'klinik-satu');
+
         $this->getJson($this->tenantUrl('broadcasts/settings'))
             ->assertOk()
             ->assertJsonPath('data.session', 'klinik-satu')

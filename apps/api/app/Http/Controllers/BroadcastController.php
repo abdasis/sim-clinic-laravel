@@ -386,6 +386,7 @@ class BroadcastController extends Controller
         return response()->json([
             'data' => [
                 'session' => $setting?->session,
+                'daily_message_limit' => $setting?->daily_message_limit,
                 // Klinik tidak bisa berbuat apa-apa sampai pengelola platform
                 // mengisi alamat servernya, jadi keadaannya ikut disebut.
                 'gateway_available' => WhatsappGatewaySetting::query()->first()?->isConfigured() ?? false,
@@ -412,11 +413,16 @@ class BroadcastController extends Controller
             $setting->session = $validated['session'];
         }
 
+        if (array_key_exists('daily_message_limit', $validated)) {
+            $setting->daily_message_limit = $validated['daily_message_limit'];
+        }
+
         $setting->save();
 
         return response()->json([
             'data' => [
                 'session' => $setting->session,
+                'daily_message_limit' => $setting->daily_message_limit,
             ],
             'meta' => ['message' => __('broadcast.settings_saved')],
         ]);
