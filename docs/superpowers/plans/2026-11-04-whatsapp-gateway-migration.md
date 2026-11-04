@@ -1033,3 +1033,117 @@ Nyalakan gateway + aplikasi sendiri (jangan lewat agen), lalu: buka dialog konek
 git status --short  # pastikan hanya perubahan yang disengaja
 git add -A && git commit -m "chore(whatsapp): rapikan sisa migrasi gateway"
 ```
+
+---
+
+### Task 18: Lengkapi method klien untuk inbox dan chatbot
+
+Dijalankan setelah Task 7, sebelum Task 5. Task 4 selesai dengan method minimal; inbox dan chatbot memerlukan empat method tambahan.
+
+**Files:**
+- Modify: `apps/api/app/Support/WhatsappGatewayClient.php`
+- Test: `apps/api/tests/Feature/Whatsapp/GatewayClientTest.php`
+
+**Interfaces:**
+- `createWebhook(string $tenantKey, string $apiKey, string $url, array $events): array` → `{id, secret}`; `POST /webhooks` body `{name, url, events}`.
+- `presence(WhatsappSetting $setting, string $presence, ?string $phone = null): void`; `POST /sessions/{uuid}/presence` body `{presence}` + `to` bila nomor diisi. Tidak pernah melempar; gagal dicatat `Log::warning`.
+- `sendDocument(WhatsappSetting $setting, string $phone, string $url, ?string $filename, ?string $caption, string $idempotencyKey): ?string`; `POST /messages/document`.
+- `sendAudio(WhatsappSetting $setting, string $phone, string $url, string $voiceNote, string $idempotencyKey): ?string`; `POST /messages/audio`.
+
+- [ ] **Step 1: Write the failing tests**
+
+```php
+public function test_create_webhook_returns_id_and_secret(): void
+{
+    // POST /webhooks {name,url,events} + x-tenant-key + X-API-Key
+    // data {id:'w1', secret:'secret-uji'} → ['id'=>'w1','secret'=>'secret-uji']
+}
+
+public function test_presence_posts_composing_with_target_phone(): void
+{
+    // POST /sessions/{uuid}/presence {presence:'composing', to:'628123'}
+}
+
+public function test_presence_failure_is_logged_and_swallowed(): void
+{
+    // 422 → tidak melempar; Log::warning terpanggil
+}
+
+public function test_document_and_audio_use_their_endpoints(): void
+{
+    // /messages/document {url, filename, caption}; /messages/audio {url, voiceNote}
+}
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd apps/api && php artisan test --filter=GatewayClientTest`
+Expected: FAIL — method belum ada.
+
+- [ ] **Step 3: Implementasikan empat method**
+
+Ikuti pola `sendImage`/`request` yang sudah ada; `presence` memakai try/catch sendiri dan tidak memakai jalur throw. `createWebhook` mengirim header klinik dan mengembalikan `data`.
+
+- [ ] **Step 4: Run tests**
+
+Run: `php artisan test --filter=GatewayClientTest`
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/api/app/Support/WhatsappGatewayClient.php apps/api/tests/Feature/Whatsapp/GatewayClientTest.php && git commit -m "feat(whatsapp): lengkapi klien untuk webhook, presence, dan media"
+```
+
+---
+
+### Task 19: Provisioning membuat webhook gateway
+
+Dijalankan tepat setelah Task 18. Kotak masuk dan chatbot membutuhkan webhook `message.received` dan status pesan.
+
+**Files:**
+- Modify: `apps/api/app/Services/WhatsappGatewayProvisioningService.php`
+- Modify: `apps/api/app/Models/WhatsappSetting.php` (`provisioned()` kembali mensyaratkan webhook secret)
+- Create: `apps/api/app/Actions/Whatsapp/StoreGatewayWebhookAction.php`
+- Test: `apps/api/tests/Feature/Whatsapp/GatewayProvisioningTest.php`
+
+**Interfaces:**
+- `provisioned()` = `filled(gateway_tenant_key) && filled(gateway_api_key) && filled(gateway_webhook_secret)`.
+- `ensure()` setelah API key: buat `gateway_webhook_token` (`Str::random(40)`) bila kosong; `POST /webhooks` ke `rtrim(config('app.url'), '/').'/api/whatsapp/webhook/'.$token` dengan event `message.received`, `message.sent`, `message.delivered`, `message.read`, `message.failed`; simpan `gateway_webhook_secret` lewat `StoreGatewayWebhookAction`.
+- Bila tenant key + api key sudah ada tetapi secret kosong, hanya langkah webhook yang dijalankan (tidak ada register/login ulang).
+
+- [ ] **Step 1: Write the failing tests**
+
+```php
+public function test_webhook_is_created_after_api_key_with_message_events(): void
+{
+    // fake register + api-keys + webhooks
+    // assert gateway_webhook_secret tersimpan, URL berakhiran '/api/whatsapp/webhook/'.$token,
+    // events memuat message.received..message.failed
+}
+
+public function test_missing_webhook_secret_resumes_without_registering_again(): void
+{
+    // tenant key + api key terisi, secret kosong → hanya POST /webhooks, provisioned() true setelahnya
+}
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `cd apps/api && php artisan test --filter=GatewayProvisioningTest`
+Expected: FAIL.
+
+- [ ] **Step 3: Implementasikan langkah webhook**
+
+Tambahkan `createWebhook` ke alur `ensure()` dan Action penyimpanan; jangan menaruh nilai secret di log.
+
+- [ ] **Step 4: Run tests**
+
+Run: `php artisan test --filter=GatewayProvisioningTest`
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/api/app/Services/WhatsappGatewayProvisioningService.php apps/api/app/Models/WhatsappSetting.php apps/api/app/Actions/Whatsapp/StoreGatewayWebhookAction.php apps/api/tests/Feature/Whatsapp/GatewayProvisioningTest.php && git commit -m "feat(whatsapp): provisioning webhook pesan masuk"
+```
