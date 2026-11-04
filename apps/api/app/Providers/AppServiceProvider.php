@@ -43,10 +43,12 @@ use App\Models\TreatmentRecord;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\WahaSetting;
+use App\Models\WhatsappGatewaySetting;
 use App\Models\WhatsappSetting;
 use App\Support\CloudApiClient;
 use App\Support\DeepSeekClient;
 use App\Support\WahaClient;
+use App\Support\WhatsappGatewayClient;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -149,6 +151,16 @@ class AppServiceProvider extends ServiceProvider
                 (string) ($setting?->phone_number_id ?? ''),
                 $setting?->waba_id,
             );
+        });
+
+        // Alamat gateway satu untuk semua klinik. Kredensialnya milik klinik
+        // dan diserahkan per panggilan, jadi klien ini tidak membaca database
+        // selain untuk alamat servernya.
+        $this->app->bind(WhatsappGatewayClient::class, function (): WhatsappGatewayClient {
+            $baseUrl = WhatsappGatewaySetting::query()->value('base_url')
+                ?: config('whatsapp_gateway.base_url');
+
+            return new WhatsappGatewayClient((string) $baseUrl);
         });
 
         // Sama seperti WahaClient: belum disetel bukan galat, cuma "belum bisa
