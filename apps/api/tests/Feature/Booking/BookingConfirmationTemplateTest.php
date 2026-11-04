@@ -10,8 +10,6 @@ use App\Models\CompanyProfileSetting;
 use App\Models\MessageTemplate;
 use App\Models\Patient;
 use App\Models\Service;
-use App\Models\WahaSetting;
-use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Spatie\Permission\PermissionRegistrar;
@@ -33,14 +31,15 @@ class BookingConfirmationTemplateTest extends TestCase
 {
     use InteractsWithTenant, RefreshDatabase;
 
-    private function wahaConnected(): void
+    private function gatewayConnected(): void
     {
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
+        $this->configureWhatsappGateway();
 
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/*' => Http::response(['id' => 'true_628@c.us'], 201),
+            'gateway.test/*' => Http::response([
+                'success' => true,
+                'data' => ['messageId' => 'uuid-konfirmasi', 'status' => 'QUEUED'],
+            ], 202),
         ]);
     }
 
@@ -83,7 +82,7 @@ class BookingConfirmationTemplateTest extends TestCase
         $text = null;
 
         Http::assertSent(function ($request) use (&$text) {
-            if (str_contains($request->url(), '/api/sendText')) {
+            if (str_contains($request->url(), '/api/v1/messages/send')) {
                 $text = $request['text'];
             }
 
@@ -102,7 +101,7 @@ class BookingConfirmationTemplateTest extends TestCase
     public function test_the_clinic_template_replaces_the_built_in_text(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->gatewayConnected();
 
         BookingReminderSetting::create([
             'tenant_id' => $this->tenant->id,
@@ -129,7 +128,7 @@ class BookingConfirmationTemplateTest extends TestCase
     public function test_the_clinic_name_placeholder_is_filled_from_settings(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->gatewayConnected();
         CompanyProfileSetting::create([
             'tenant_id' => $this->tenant->id,
             'site_name' => ['id' => 'Meba Clinic Aesthetic'],
@@ -156,7 +155,7 @@ class BookingConfirmationTemplateTest extends TestCase
     public function test_a_clinic_without_a_choice_still_gets_the_built_in_text(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->gatewayConnected();
 
         BookingReminderSetting::create([
             'tenant_id' => $this->tenant->id,
@@ -176,7 +175,7 @@ class BookingConfirmationTemplateTest extends TestCase
     public function test_the_reminder_template_is_not_used_for_confirmations(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->gatewayConnected();
 
         BookingReminderSetting::create([
             'tenant_id' => $this->tenant->id,
@@ -194,7 +193,7 @@ class BookingConfirmationTemplateTest extends TestCase
     public function test_deleting_the_template_falls_back_instead_of_sending_nothing(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->gatewayConnected();
 
         $template = $this->template('Halo :pasien.');
         BookingReminderSetting::create([

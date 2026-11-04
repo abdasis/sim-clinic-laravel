@@ -6,14 +6,13 @@ use App\Enums\BroadcastStatus;
 use App\Models\Broadcast;
 use App\Models\Tenant;
 use App\Services\BroadcastService;
-use App\Support\CloudApiClient;
 use App\Support\ReminderEngine;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Dijalankan scheduler tiap pagi: susun broadcast pengingat perawatan untuk
- * tiap tenant. Bila Cloud API siap dan templatenya sudah dipilih, langsung
+ * tiap tenant. Bila gateway WhatsApp klinik sudah terhubung, langsung
  * diantrekan; bila belum, broadcast menunggu admin di menu Broadcast WA.
  */
 class SendTreatmentReminders extends Command
@@ -36,7 +35,7 @@ class SendTreatmentReminders extends Command
 
                 $this->info("{$tenant->slug}: {$result['created']} pengingat, {$result['recipients']} penerima.");
 
-                if (app(CloudApiClient::class) instanceof CloudApiClient) {
+                if (app(BroadcastService::class)->gatewayConfigured()) {
                     $this->queueTodaysReminders($tenant);
                 }
             } catch (\Throwable $e) {
@@ -54,9 +53,9 @@ class SendTreatmentReminders extends Command
     }
 
     /**
-     * Broadcast tanpa template Cloud API dilewati: mengantrekannya hanya
-     * berujung penerima gagal satu per satu, dan abort 422-nya bisa
-     * menjatuhkan sisa putaran command.
+     * Broadcast tanpa teks pesan dilewati: mengantrekannya hanya berujung
+     * penerima gagal satu per satu, dan abort 422-nya bisa menjatuhkan sisa
+     * putaran command.
      */
     private function queueTodaysReminders(Tenant $tenant): void
     {
@@ -66,7 +65,7 @@ class SendTreatmentReminders extends Command
             ->whereDate('created_at', today())
             ->each(function (Broadcast $broadcast) use ($tenant): void {
                 if ($broadcast->template === null) {
-                    Log::warning('Pengingat perawatan dilewati karena template Cloud API belum dipilih.', [
+                    Log::warning('Pengingat perawatan dilewati karena teks pesannya belum tersusun.', [
                         'broadcast_id' => $broadcast->id,
                         'tenant' => $tenant->slug,
                     ]);

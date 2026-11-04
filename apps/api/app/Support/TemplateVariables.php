@@ -63,6 +63,49 @@ class TemplateVariables
         return $rendered ?? $body;
     }
 
+    /**
+     * Render body template lokal klinik: placeholder bernama `{nama}` maupun
+     * kurung ganda `{{nama}}`, termasuk alias lama seperti `{{nama_pasien}}`.
+     * Placeholder bernomor `{{1}}` tetap dikenali mengikuti urutan KEYS.
+     *
+     * @param  array<string, string>  $variables
+     */
+    public static function renderNamed(string $body, array $variables): string
+    {
+        $full = $variables + [
+            'klinik' => ClinicIdentity::displayName(),
+            'klinik_telepon' => (string) (app()->bound('tenant') ? app('tenant')->phone : ''),
+        ];
+
+        $numbered = array_map(
+            fn (string $key): string => (string) ($full[$key] ?? ''),
+            self::KEYS,
+        );
+
+        $replacements = [];
+
+        foreach ($full as $key => $value) {
+            $replacements['{'.$key.'}'] = (string) $value;
+            $replacements['{{'.$key.'}}'] = (string) $value;
+        }
+
+        $aliases = [
+            'nama_pasien' => 'nama',
+            'nama_treatment' => 'layanan_terakhir',
+            'tanggal_treatment' => 'tanggal_terakhir',
+            'nomor_clinic' => 'klinik_telepon',
+        ];
+
+        foreach ($aliases as $alias => $key) {
+            if (isset($full[$key])) {
+                $replacements['{'.$alias.'}'] = (string) $full[$key];
+                $replacements['{{'.$alias.'}}'] = (string) $full[$key];
+            }
+        }
+
+        return strtr(self::render($body, $numbered), $replacements);
+    }
+
     /** Jumlah placeholder bernomor unik di dalam body. */
     public static function placeholderCount(string $body): int
     {

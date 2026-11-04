@@ -8,7 +8,6 @@ use App\Enums\BroadcastRecipientStatus;
 use App\Enums\BroadcastStatus;
 use App\Models\Broadcast;
 use App\Models\ReminderRule;
-use App\Models\WhatsappSetting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -95,15 +94,9 @@ class ReminderEngine
         $built = $builder->build(BroadcastAudience::All, [], marketing: false);
         $byPatient = $built['recipients']->keyBy('patient_id');
 
-        // Template Cloud API milik klinik menang atas templat teks bebas:
-        // pengiriman lewat Meta wajib template resmi yang sudah disetujui.
-        //
-        // ponytail: satu reminder_template per klinik, belum per aturan
-        // pengingat. Kalau tiap layanan perlu bunyi berbeda, pindahkan
-        // template ke ReminderRule saat Meta mengizinkannya per aturan.
-        $cloudTemplate = WhatsappSetting::query()->first()?->reminder_template;
-        $body = $cloudTemplate['body'] ?? ($rule->template?->body ?? self::DEFAULT_TEMPLATE);
-        $templateParams = (array) ($cloudTemplate['params'] ?? []);
+        // Teks dipilih klinik per aturan pengingat; yang belum memilih tetap
+        // dapat kalimat bawaan yang layak, bukan pesan kosong.
+        $body = $rule->template?->body ?? self::DEFAULT_TEMPLATE;
         $clinicName = ClinicIdentity::displayName();
         $clinicPhone = app('tenant')->phone ?? '';
         $now = now();
@@ -127,18 +120,11 @@ class ReminderEngine
                 'reminder_rule_id' => $rule->id,
                 'name' => $recipient['name'],
                 'phone' => $recipient['phone'],
-                'message' => strtr($body, $this->replacements($variables)),
+                'message' => TemplateVariables::renderNamed($body, $variables),
                 'status' => BroadcastRecipientStatus::Pending->value,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
-
-            if ($cloudTemplate !== null) {
-                $values = TemplateVariables::resolve($templateParams, $variables);
-                $row['message'] = TemplateVariables::render($body, $values);
-                // insert() massal tidak melewati cast, jadi dienkode sendiri.
-                $row['template_values'] = json_encode($values);
-            }
 
             $rows[] = $row;
         }
@@ -152,7 +138,7 @@ class ReminderEngine
             'kind' => BroadcastKind::Reminder,
             'status' => BroadcastStatus::Ready,
             'message' => $body,
-            'template' => $cloudTemplate,
+            'template' => ['body' => $body],
             'audience' => BroadcastAudience::Service,
             'audience_params' => ['service_id' => $rule->service_id, 'reminder_rule_id' => $rule->id],
         ]);
@@ -163,35 +149,5 @@ class ReminderEngine
         ));
 
         return $broadcast;
-    }
-
-    /**
-     * @param  array<string, string>  $variables
-     * @return array<string, string>
-     */
-    private function replacements(array $variables): array
-    {
-        $aliases = [
-            'nama_pasien' => 'nama',
-            'nama_treatment' => 'layanan_terakhir',
-            'tanggal_treatment' => 'tanggal_terakhir',
-            'nomor_clinic' => 'klinik_telepon',
-        ];
-
-        $replacements = [];
-
-        foreach ($variables as $key => $value) {
-            $replacements['{'.$key.'}'] = $value;
-            $replacements['{{'.$key.'}}'] = $value;
-        }
-
-        foreach ($aliases as $alias => $key) {
-            if (isset($variables[$key])) {
-                $replacements['{{'.$alias.'}}'] = $variables[$key];
-                $replacements['{'.$alias.'}'] = $variables[$key];
-            }
-        }
-
-        return $replacements;
     }
 }

@@ -58,30 +58,14 @@ class SendAutoRemindersCommandTest extends TestCase
         ]);
     }
 
-    /**
-     * Cloud API siap sekaligus template pengingatnya dipilih. Tanpa template,
-     * command sengaja melewati broadcast dan hanya mencatat peringatan.
-     */
-    private function cloudReady(Tenant $tenant): void
+    /** Gateway klinik sudah diprovisioning: pengiriman otomatis boleh antre. */
+    private function gatewayConfigured(): void
     {
-        config([
-            'meta_whatsapp.access_token' => 'token-uji',
-            'meta_whatsapp.api_version' => 'v21.0',
-            'meta_whatsapp.base_url' => 'https://graph.test',
-        ]);
-
-        $this->configureWhatsappGateway([
-            'reminder_template' => [
-                'name' => 'pengingat_perawatan',
-                'language' => 'id',
-                'body' => 'Halo {{1}}, sudah {{2}} hari sejak {{3}}.',
-                'params' => ['nama', 'hari_sejak_kunjungan', 'layanan_terakhir'],
-            ],
-        ]);
+        $this->configureWhatsappGateway();
     }
 
-    /** Tanpa Cloud API broadcast-nya tetap tersusun, menunggu dikirim manual. */
-    public function test_broadcast_stays_ready_when_cloud_api_is_not_configured(): void
+    /** Tanpa gateway broadcast-nya tetap tersusun, menunggu dikirim manual. */
+    public function test_broadcast_stays_ready_when_gateway_is_not_configured(): void
     {
         Queue::fake();
         $this->tenant = $this->createTenant();
@@ -96,14 +80,14 @@ class SendAutoRemindersCommandTest extends TestCase
         Queue::assertNothingPushed();
     }
 
-    public function test_broadcast_is_queued_when_cloud_api_is_ready(): void
+    public function test_broadcast_is_queued_when_gateway_is_ready(): void
     {
         Queue::fake();
         $this->tenant = $this->createTenant();
         $this->activate($this->tenant);
         $this->duePatient($this->tenant);
 
-        $this->cloudReady($this->tenant);
+        $this->gatewayConfigured();
 
         $this->artisan('clinic:send-auto-reminders')->assertSuccessful();
 

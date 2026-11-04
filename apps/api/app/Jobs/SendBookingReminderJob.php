@@ -9,10 +9,11 @@ use App\Models\Booking;
 use App\Models\BookingReminder;
 use App\Models\BookingReminderSetting;
 use App\Models\Tenant;
+use App\Models\WhatsappSetting;
 use App\Support\BookingMessage;
 use App\Support\ClinicIdentity;
 use App\Support\PhoneNumber;
-use App\Support\WahaClient;
+use App\Support\WhatsappGatewayClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -129,16 +130,21 @@ class SendBookingReminderJob implements ShouldQueue
 
     private function send(BookingReminder $reminder, string $phone, string $message): void
     {
-        $client = app(WahaClient::class);
+        $setting = WhatsappSetting::query()->first();
 
-        if (! $client instanceof WahaClient) {
+        if ($setting === null || ! $setting->provisioned()) {
             $this->markFailed($reminder, 'gateway WhatsApp belum siap');
 
             return;
         }
 
         try {
-            $client->send($phone, $message);
+            app(WhatsappGatewayClient::class)->sendText(
+                $setting,
+                $phone,
+                $message,
+                'job-'.class_basename($this).'-'.$reminder->id,
+            );
         } catch (Throwable $e) {
             Log::error('Pengingat booking gagal dikirim.', [
                 'exception' => $e,

@@ -14,8 +14,6 @@ use App\Models\BookingReminderSetting;
 use App\Models\Patient;
 use App\Models\Service;
 use App\Models\User;
-use App\Models\WahaSetting;
-use App\Models\WhatsappSetting;
 use App\Services\BookingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -213,9 +211,13 @@ class BookingReminderTest extends TestCase
     public function test_the_job_sends_a_message_with_the_booking_details(): void
     {
         $this->activate();
-        WahaSetting::create(['base_url' => 'https://waha.uji', 'api_key' => 'kunci']);
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        Http::fake(['waha.uji/*' => Http::response(['ok' => true])]);
+        $this->configureWhatsappGateway();
+        Http::fake([
+            'gateway.test/*' => Http::response([
+                'success' => true,
+                'data' => ['messageId' => 'uuid-pengingat', 'status' => 'QUEUED'],
+            ], 202),
+        ]);
 
         $booking = $this->book();
         $reminder = BookingReminder::query()->firstOrFail();
@@ -243,9 +245,13 @@ class BookingReminderTest extends TestCase
     public function test_a_retried_job_does_not_send_twice(): void
     {
         $this->activate();
-        WahaSetting::create(['base_url' => 'https://waha.uji', 'api_key' => 'kunci']);
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        Http::fake(['waha.uji/*' => Http::response(['ok' => true])]);
+        $this->configureWhatsappGateway();
+        Http::fake([
+            'gateway.test/*' => Http::response([
+                'success' => true,
+                'data' => ['messageId' => 'uuid-pengingat', 'status' => 'QUEUED'],
+            ], 202),
+        ]);
 
         $this->book();
         $reminder = BookingReminder::query()->firstOrFail();
@@ -264,9 +270,13 @@ class BookingReminderTest extends TestCase
     public function test_a_stale_job_stops_after_the_booking_was_rescheduled(): void
     {
         $this->activate();
-        WahaSetting::create(['base_url' => 'https://waha.uji', 'api_key' => 'kunci']);
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        Http::fake(['waha.uji/*' => Http::response(['ok' => true])]);
+        $this->configureWhatsappGateway();
+        Http::fake([
+            'gateway.test/*' => Http::response([
+                'success' => true,
+                'data' => ['messageId' => 'uuid-pengingat', 'status' => 'QUEUED'],
+            ], 202),
+        ]);
 
         $booking = $this->book();
         $reminder = BookingReminder::query()->firstOrFail();

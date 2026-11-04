@@ -7,15 +7,13 @@ use App\Models\Broadcast;
 use App\Models\Tenant;
 use App\Services\BroadcastService;
 use App\Support\AutoReminderEngine;
-use App\Support\CloudApiClient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Dijalankan scheduler tiap pagi: susun follow-up otomatis untuk tiap klinik
- * yang mengaktifkannya. Bila Cloud API siap dan templatenya sudah dipilih,
- * langsung diantrekan; bila belum, broadcast-nya menunggu admin di menu
- * Broadcast WA.
+ * yang mengaktifkannya. Bila gateway WhatsApp klinik sudah terhubung, langsung
+ * diantrekan; bila belum, broadcast-nya menunggu admin di menu Broadcast WA.
  *
  * Terpisah dari clinic:send-reminders yang bekerja per-layanan. Keduanya
  * dijadwalkan berjarak supaya beban pengirimannya tidak menumpuk.
@@ -40,7 +38,7 @@ class SendAutoReminders extends Command
 
                 $this->info("{$tenant->slug}: {$result['recipients']} pasien di-follow-up.");
 
-                if (app(CloudApiClient::class) instanceof CloudApiClient) {
+                if (app(BroadcastService::class)->gatewayConfigured()) {
                     $this->queueTodaysAutoBroadcasts($tenant);
                 }
             } catch (\Throwable $e) {
@@ -62,9 +60,9 @@ class SendAutoReminders extends Command
      * `auto`, pengingat per-layanan yang masih menunggu kiriman manual ikut
      * terkirim oleh command ini.
      *
-     * Broadcast tanpa template Cloud API dilewati: mengantrekannya hanya
-     * berujung penerima gagal satu per satu, dan abort 422-nya bisa
-     * menjatuhkan sisa putaran command.
+     * Broadcast tanpa teks pesan dilewati: mengantrekannya hanya berujung
+     * penerima gagal satu per satu, dan abort 422-nya bisa menjatuhkan sisa
+     * putaran command.
      */
     private function queueTodaysAutoBroadcasts(Tenant $tenant): void
     {
@@ -74,7 +72,7 @@ class SendAutoReminders extends Command
             ->whereDate('created_at', today())
             ->each(function (Broadcast $broadcast) use ($tenant): void {
                 if ($broadcast->template === null) {
-                    Log::warning('Follow-up otomatis dilewati karena template Cloud API belum dipilih.', [
+                    Log::warning('Follow-up otomatis dilewati karena teks pesannya belum tersusun.', [
                         'broadcast_id' => $broadcast->id,
                         'tenant' => $tenant->slug,
                     ]);

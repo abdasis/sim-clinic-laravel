@@ -9,8 +9,6 @@ use App\Models\Booking;
 use App\Models\CompanyProfileSetting;
 use App\Models\Patient;
 use App\Models\Service;
-use App\Models\WahaSetting;
-use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -31,14 +29,15 @@ class BookingConfirmationNotifyTest extends TestCase
 {
     use InteractsWithTenant, RefreshDatabase;
 
-    private function wahaConnected(): void
+    private function gatewayConnected(): void
     {
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
+        $this->configureWhatsappGateway();
 
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => 'WORKING'], 200),
-            'waha.test/*' => Http::response(['id' => 'true_628@c.us'], 201),
+            'gateway.test/*' => Http::response([
+                'success' => true,
+                'data' => ['messageId' => 'uuid-konfirmasi', 'status' => 'QUEUED'],
+            ], 202),
         ]);
     }
 
@@ -107,7 +106,7 @@ class BookingConfirmationNotifyTest extends TestCase
     public function test_the_message_says_the_schedule_is_confirmed(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->gatewayConnected();
         CompanyProfileSetting::create([
             'tenant_id' => $this->tenant->id,
             'site_name' => ['id' => 'Meba Clinic Aesthetic'],
@@ -118,11 +117,11 @@ class BookingConfirmationNotifyTest extends TestCase
         (new SendBookingConfirmationJob($this->tenant->id, $booking->id))->handle();
 
         Http::assertSent(function ($request) {
-            if (! str_contains($request->url(), '/api/sendText')) {
+            if (! str_contains($request->url(), '/api/v1/messages/send')) {
                 return false;
             }
 
-            return $request['chatId'] === '6281234567890@c.us'
+            return $request['to'] === '6281234567890'
                 && str_contains($request['text'], 'Ani Lestari')
                 && str_contains($request['text'], 'konfirmasi')
                 && str_contains($request['text'], 'Meba Clinic Aesthetic')
@@ -135,12 +134,12 @@ class BookingConfirmationNotifyTest extends TestCase
     public function test_the_message_never_mentions_the_end_time(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->gatewayConnected();
         $booking = $this->makeBooking(BookingStatus::Confirmed);
 
         (new SendBookingConfirmationJob($this->tenant->id, $booking->id))->handle();
 
-        Http::assertSent(fn ($request) => ! str_contains($request->url(), '/api/sendText')
+        Http::assertSent(fn ($request) => ! str_contains($request->url(), '/api/v1/messages/send')
             || (! str_contains($request['text'], '11:00') && ! str_contains($request['text'], 'menit')));
     }
 
@@ -152,12 +151,12 @@ class BookingConfirmationNotifyTest extends TestCase
     public function test_a_booking_no_longer_confirmed_is_not_announced(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->gatewayConnected();
         $booking = $this->makeBooking(BookingStatus::Cancelled);
 
         (new SendBookingConfirmationJob($this->tenant->id, $booking->id))->handle();
 
-        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api/sendText'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api/v1/messages/send'));
     }
 
     /**
@@ -167,12 +166,12 @@ class BookingConfirmationNotifyTest extends TestCase
     public function test_a_patient_with_an_unusable_number_is_skipped(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->gatewayConnected();
         $booking = $this->makeBooking(BookingStatus::Confirmed, whatsapp: '-');
 
         (new SendBookingConfirmationJob($this->tenant->id, $booking->id))->handle();
 
-        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api/sendText'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api/v1/messages/send'));
     }
 
     /**
@@ -196,7 +195,7 @@ class BookingConfirmationNotifyTest extends TestCase
     public function test_a_sent_confirmation_is_recorded_in_the_audit_log(): void
     {
         $this->actingAsClinicUser();
-        $this->wahaConnected();
+        $this->gatewayConnected();
         $booking = $this->makeBooking(BookingStatus::Confirmed);
 
         (new SendBookingConfirmationJob($this->tenant->id, $booking->id))->handle();

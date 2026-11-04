@@ -11,7 +11,6 @@ use App\Models\MedicalRecord;
 use App\Models\MessageTemplate;
 use App\Models\Patient;
 use App\Models\TreatmentRecord;
-use App\Models\WhatsappSetting;
 use App\Support\AutoReminderEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\InteractsWithTenant;
@@ -275,38 +274,33 @@ class AutoReminderTest extends TestCase
     }
 
     /**
-     * Pasien klinik lain tidak boleh ikut terjaring — nomornya milik klinik
-     * lain, dan pesannya akan datang atas nama klinik yang salah.
+     * Sumber teks satu-satunya adalah MessageTemplate klinik. Template resmi
+     * Meta tidak lagi dibaca, dan body itu disimpan sebagai snapshot supaya
+     * command pengirim tidak lagi menunggu template Cloud API.
      */
-    public function test_the_cloud_template_is_used_when_configured(): void
+    public function test_the_clinic_template_is_the_only_message_source(): void
     {
         $this->actingAsClinicUser();
-        $this->activateSetting(30);
 
-        WhatsappSetting::create([
+        $template = MessageTemplate::create([
             'tenant_id' => $this->tenant->id,
-            'reminder_template' => [
-                'name' => 'pengingat_perawatan',
-                'language' => 'id',
-                'body' => 'Halo {{1}}, sudah {{2}} hari sejak {{3}}.',
-                'params' => ['nama', 'hari_sejak_kunjungan', 'layanan_terakhir'],
-            ],
+            'name' => 'Ajakan kembali',
+            'body' => 'Halo {{1}}, sudah {{6}} hari sejak {{4}}.',
         ]);
+
+        $this->activateSetting(30, $template);
 
         $patient = $this->patientTreated(now()->subDays(45)->toDateTimeString(), 'Peeling');
 
         (new AutoReminderEngine)->run();
 
         $broadcast = Broadcast::query()->first();
-        $this->assertSame('pengingat_perawatan', $broadcast->template['name']);
+        $this->assertSame($template->body, $broadcast->template['body']);
 
         $recipient = $broadcast->recipients()->first();
         $this->assertSame($patient->id, $recipient->patient_id);
-        $this->assertSame(
-            [$patient->name, '45', 'Peeling'],
-            $recipient->template_values,
-        );
         $this->assertSame('Halo '.$patient->name.', sudah 45 hari sejak Peeling.', $recipient->message);
+        $this->assertNull($recipient->template_values);
     }
 
     public function test_other_clinics_patients_are_never_included(): void
