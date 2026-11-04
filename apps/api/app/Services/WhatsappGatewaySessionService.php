@@ -73,6 +73,7 @@ class WhatsappGatewaySessionService
                 'number' => $status['phoneNumber'] ?? null,
                 'name' => $this->clinicName($setting),
                 'provisioned' => true,
+                'error' => false,
             ];
         }
 
@@ -83,6 +84,7 @@ class WhatsappGatewaySessionService
             'number' => null,
             'name' => $this->clinicName($setting),
             'provisioned' => true,
+            'error' => false,
         ];
     }
 
@@ -99,19 +101,21 @@ class WhatsappGatewaySessionService
             return $this->state();
         }
 
+        // Gerbang cooldown dipasang sebelum provisioning: dua permintaan yang
+        // datang hampir bersamaan tidak boleh sama-sama mendaftarkan tenant
+        // gateway. Satu tindakan per klinik per jendela, sisanya hanya dibaca.
+        if (! $this->mayAct($setting)) {
+            return $this->state();
+        }
+
         try {
             $this->provisioning->ensure($setting);
 
-            // Satu tindakan per klinik per jendela: menyalakan sesi butuh
-            // puluhan detik, dan permintaan yang lebih rapat pasti memotong
-            // percobaan yang sedang berjalan.
-            $mayAct = $this->mayAct($setting);
-
-            if ($mayAct && blank($setting->gateway_session_id)) {
+            if (blank($setting->gateway_session_id)) {
                 $this->ensureSession($setting);
             }
 
-            if ($mayAct && $this->statusOf($setting) !== self::STATUS_CONNECTED) {
+            if ($this->statusOf($setting) !== self::STATUS_CONNECTED) {
                 $this->client->connectSession($setting);
             }
         } catch (Throwable $e) {
@@ -120,10 +124,7 @@ class WhatsappGatewaySessionService
                 'tenant_id' => $setting->tenant_id,
             ]);
 
-            return [
-                ...$this->emptyState(available: true, provisioned: $setting->provisioned()),
-                'error' => true,
-            ];
+            return $this->failureState($setting);
         }
 
         return $this->state();
@@ -222,7 +223,7 @@ class WhatsappGatewaySessionService
 
             return is_string($qr) ? $qr : null;
         } catch (Throwable $e) {
-            Log::error('QR gateway WhatsApp klinik belum tersedia.', [
+            Log::warning('QR gateway WhatsApp klinik belum tersedia.', [
                 'exception' => $e,
                 'tenant_id' => $setting->tenant_id,
             ]);
@@ -259,6 +260,27 @@ class WhatsappGatewaySessionService
     }
 
     /**
+     * Keadaan saat penyiapan gagal, konsisten dengan `state()`: klinik yang
+     * belum punya kredensial gateway tetap dilaporkan belum tersedia.
+     *
+     * @return array<string, mixed>
+     */
+    private function failureState(WhatsappSetting $setting): array
+    {
+        $provisioned = $setting->provisioned();
+
+        return [
+            'available' => $provisioned,
+            'connected' => false,
+            'qr' => null,
+            'number' => null,
+            'name' => $provisioned ? $this->clinicName($setting) : null,
+            'provisioned' => $provisioned,
+            'error' => true,
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function emptyState(bool $available, bool $provisioned): array
@@ -270,6 +292,7 @@ class WhatsappGatewaySessionService
             'number' => null,
             'name' => null,
             'provisioned' => $provisioned,
+            'error' => false,
         ];
     }
 }

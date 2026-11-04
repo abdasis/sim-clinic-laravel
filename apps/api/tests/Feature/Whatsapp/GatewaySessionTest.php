@@ -71,7 +71,8 @@ class GatewaySessionTest extends TestCase
         $this->getJson($this->tenantUrl('broadcasts/connection'))
             ->assertOk()
             ->assertJsonPath('data.connected', true)
-            ->assertJsonPath('data.number', '628111');
+            ->assertJsonPath('data.number', '628111')
+            ->assertJsonPath('data.error', false);
     }
 
     public function test_state_reports_unprovisioned_clinic_without_calling_the_gateway(): void
@@ -179,9 +180,18 @@ class GatewaySessionTest extends TestCase
             if (str_ends_with($url, '/status')) {
                 return Http::response(['success' => true, 'data' => [
                     'sessionId' => 'klinik-uji',
-                    'status' => 'DISCONNECTED',
+                    'status' => 'QR_REQUIRED',
                     'phoneNumber' => null,
                     'lastSeenAt' => null,
+                ]]);
+            }
+
+            if (str_ends_with($url, '/qr')) {
+                return Http::response(['success' => true, 'data' => [
+                    'sessionId' => 'klinik-uji',
+                    'status' => 'QR_REQUIRED',
+                    'qr' => 'data:image/png;base64,ADOPTED',
+                    'expiresAt' => null,
                 ]]);
             }
 
@@ -189,12 +199,82 @@ class GatewaySessionTest extends TestCase
         });
 
         $this->actingAsClinicUser();
-        $this->postJson($this->tenantUrl('broadcasts/connection/prepare'))->assertOk();
+        $response = $this->postJson($this->tenantUrl('broadcasts/connection/prepare'))
+            ->assertOk()
+            ->assertJsonPath('data.connected', false);
+
+        $this->assertStringStartsWith('data:image/png;base64,', $response->json('data.qr'));
 
         $this->assertSame(self::NEW_SESSION_ID, $this->storedSetting()->gateway_session_id);
 
+        Http::assertSent(fn ($request) => $request->url() === self::BASE.'/sessions/'.self::NEW_SESSION_ID.'/connect'
+            && $request->method() === 'POST');
+
         Http::assertNotSent(fn ($request) => $request->url() === self::BASE.'/sessions'
             && $request->method() === 'POST');
+    }
+
+    public function test_prepare_twice_within_the_cooldown_connects_once(): void
+    {
+        $this->setting();
+
+        Http::fake(function ($request) {
+            if (str_ends_with($request->url(), '/status')) {
+                return Http::response(['success' => true, 'data' => [
+                    'sessionId' => 'klinik-uji',
+                    'status' => 'DISCONNECTED',
+                    'phoneNumber' => null,
+                    'lastSeenAt' => null,
+                ]]);
+            }
+
+            return Http::response(['success' => true, 'data' => ['status' => 'INITIALIZING']]);
+        });
+
+        $this->actingAsClinicUser();
+
+        $this->postJson($this->tenantUrl('broadcasts/connection/prepare'))->assertOk();
+        $this->postJson($this->tenantUrl('broadcasts/connection/prepare'))->assertOk();
+
+        $connects = Http::recorded(fn ($request) => str_ends_with($request->url(), '/connect'))->count();
+
+        $this->assertSame(1, $connects, 'double-submit menyalakan sesi lebih dari sekali');
+    }
+
+    public function test_polling_state_never_touches_the_session(): void
+    {
+        $this->setting();
+
+        Http::fake(['*' => Http::response(['success' => true, 'data' => [
+            'sessionId' => 'klinik-uji',
+            'status' => 'ERROR',
+            'phoneNumber' => null,
+            'lastSeenAt' => null,
+        ]])]);
+
+        $this->actingAsClinicUser();
+
+        foreach (range(1, 5) as $ignored) {
+            $this->getJson($this->tenantUrl('broadcasts/connection'))->assertOk();
+        }
+
+        $mutations = Http::recorded(fn ($request) => $request->method() !== 'GET')->count();
+
+        $this->assertSame(0, $mutations, 'polling ikut menyalakan atau memulai ulang sesi');
+    }
+
+    public function test_state_reports_error_instead_of_throwing_when_gateway_is_down(): void
+    {
+        $this->setting();
+
+        Http::fake(['*' => Http::response(['message' => 'gateway mati'], 503)]);
+
+        $this->actingAsClinicUser();
+        $this->getJson($this->tenantUrl('broadcasts/connection'))
+            ->assertOk()
+            ->assertJsonPath('data.available', true)
+            ->assertJsonPath('data.connected', false)
+            ->assertJsonPath('data.error', true);
     }
 
     public function test_pairing_code_is_returned_to_the_admin(): void

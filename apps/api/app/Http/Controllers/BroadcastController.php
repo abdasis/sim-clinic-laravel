@@ -332,6 +332,7 @@ class BroadcastController extends Controller
         $this->authorize('update', Broadcast::class);
 
         return $this->connectionAction(
+            'pairing',
             fn (): array => $sessions->pairing($request->validated()['phone']),
             202,
         );
@@ -341,40 +342,51 @@ class BroadcastController extends Controller
     {
         $this->authorize('update', Broadcast::class);
 
-        return $this->connectionAction(fn () => $sessions->restart());
+        return $this->connectionAction('restart', fn () => $sessions->restart());
     }
 
     public function disconnectConnection(WhatsappGatewaySessionService $sessions): JsonResponse
     {
         $this->authorize('update', Broadcast::class);
 
-        return $this->connectionAction(fn () => $sessions->disconnect());
+        return $this->connectionAction('disconnect', fn () => $sessions->disconnect());
     }
 
     public function logoutConnection(WhatsappGatewaySessionService $sessions): JsonResponse
     {
         $this->authorize('update', Broadcast::class);
 
-        return $this->connectionAction(fn () => $sessions->logout());
+        return $this->connectionAction('logout', fn () => $sessions->logout());
     }
 
     /**
-     * Jalankan aksi sesi dan teruskan penolakan gateway apa adanya: kode
-     * statusnya membedakan sesi yang sudah terhubung dari gateway yang mati.
+     * Jalankan aksi sesi. Hanya penolakan gateway yang pesannya bisa dibaca
+     * admin — itu pun diteruskan dengan status aslinya (409/422/429). Galat
+     * lain bisa membocorkan detail internal, jadi diganti pesan umum.
      *
      * @param  callable(): mixed  $action
      */
-    private function connectionAction(callable $action, int $status = 200): JsonResponse
+    private function connectionAction(string $name, callable $action, int $status = 200): JsonResponse
     {
         try {
             $data = $action();
         } catch (Throwable $e) {
-            Log::error('Aksi sesi gateway WhatsApp klinik gagal.', ['exception' => $e]);
+            $tenant = app()->bound('tenant') ? app('tenant') : null;
 
-            return response()->json(
-                ['message' => $e->getMessage()],
-                $e instanceof WhatsappGatewayException && $e->status > 0 ? $e->status : 502,
-            );
+            Log::error('Aksi sesi gateway WhatsApp klinik gagal.', [
+                'exception' => $e,
+                'tenant_id' => $tenant?->id,
+                'action' => $name,
+            ]);
+
+            if ($e instanceof WhatsappGatewayException) {
+                return response()->json(
+                    ['message' => $e->getMessage()],
+                    $e->status > 0 ? $e->status : 502,
+                );
+            }
+
+            return response()->json(['message' => __('broadcast.gateway_error')], 502);
         }
 
         return response()->json(['data' => $data, 'meta' => []], $status);

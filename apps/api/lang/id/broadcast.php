@@ -197,6 +197,7 @@ return [
     'reconnect_hint' => 'Nyalakan ulang sesi WhatsApp klinik. Butuh sekitar setengah menit; QR-nya muncul sendiri kalau perlu dipindai lagi.',
     'session_needs_start' => 'Sesi WhatsApp klinik sedang mati. Tekan Sambungkan ulang, lalu tunggu QR-nya terbit.',
     'waha_error' => 'Server WAHA tidak merespons. Coba lagi sebentar, atau hubungi pengelola platform.',
+    'gateway_error' => 'Server gateway WhatsApp tidak merespons. Coba lagi sebentar, atau hubungi pengelola platform.',
     'connected' => 'Terhubung',
     'disconnected' => 'Belum Terhubung',
     'scan_hint' => 'Buka WhatsApp di HP klinik, lalu pindai QR ini lewat Perangkat Tertaut.',
