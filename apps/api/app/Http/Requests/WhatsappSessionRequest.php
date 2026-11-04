@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use App\Models\Broadcast;
 use App\Models\WhatsappSetting;
-use App\Support\TemplateVariables;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -38,13 +37,6 @@ class WhatsappSessionRequest extends FormRequest
                 // pelanggaran unique di basis data.
                 Rule::unique('whatsapp_settings', 'session')->ignore($currentId),
             ],
-            'reminder_template' => ['nullable', 'array'],
-            'reminder_template.name' => ['required_with:reminder_template', 'string', 'max:255'],
-            'reminder_template.language' => ['required_with:reminder_template', 'string', 'max:20'],
-            'reminder_template.body' => ['required_with:reminder_template', 'string', 'max:4000'],
-            'reminder_template.header_type' => ['nullable', Rule::in(TemplateVariables::HEADER_TYPES)],
-            'reminder_template.params' => ['nullable', 'array', 'max:10'],
-            'reminder_template.params.*' => ['string', Rule::in(TemplateVariables::KEYS)],
         ];
     }
 
@@ -78,7 +70,6 @@ class WhatsappSessionRequest extends FormRequest
     {
         return [
             'session' => __('broadcast.session_label'),
-            'reminder_template' => __('broadcast.reminder_template_label'),
         ];
     }
 

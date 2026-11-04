@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Kotak Masuk',
-    'subtitle' => 'Percakapan WhatsApp dengan pasien, dari kanal mana pun.',
+    'subtitle' => 'Percakapan WhatsApp dengan pasien lewat gateway klinik.',
     'empty' => 'Belum ada percakapan',
     'empty_hint' => 'Percakapan muncul begitu ada pesan masuk dari pasien.',
     'search_placeholder' => 'Cari nama atau nomor',
@@ -25,7 +25,6 @@ return [
     'reply_to' => 'Pesan yang dibalas',
     'reply_not_found' => 'Pesan yang ingin dibalas tidak ada di percakapan ini.',
     'reaction' => 'Reaksi',
-    'reaction_unavailable' => 'Pesan ini belum punya id dari WhatsApp, jadi belum bisa diberi reaksi.',
     'media_type' => 'Jenis lampiran',
     'media_file' => 'Berkas lampiran',
     'media_caption' => 'Keterangan lampiran',
@@ -36,9 +35,6 @@ return [
     'read' => 'Percakapan ditandai sudah dibaca.',
     'send_failed' => 'Pesan gagal dikirim lewat WhatsApp. Coba lagi sebentar lagi.',
     'gateway_not_ready' => 'Sesi WhatsApp klinik belum siap. Buka menu Koneksi WhatsApp lalu sambungkan dulu.',
-    'waha_not_ready' => 'Sesi WhatsApp klinik belum siap. Buka Koneksi WhatsApp lalu sambungkan dulu.',
-    'cloud_api_not_ready' => 'Cloud API Meta belum dikonfigurasi untuk klinik ini. Hubungi pengelola platform.',
-    'window_expired' => 'Balasan bebas hanya bisa dikirim dalam 24 jam sejak pesan terakhir pasien. Di luar jendela itu, gunakan template pesan yang sudah disetujui Meta.',
     'attach' => [
         'open' => 'Lampirkan',
         'title' => 'Lampirkan',
@@ -56,7 +52,7 @@ return [
             'order' => 'Order',
         ],
         'disabled' => [
-            'unsupported' => 'Tidak didukung WhatsApp Cloud API.',
+            'unsupported' => 'Tidak didukung gateway WhatsApp.',
             'catalog' => 'Katalog belum dihubungkan.',
             'order' => 'Butuh pembayaran WhatsApp Business.',
         ],
@@ -111,8 +107,6 @@ return [
         'open' => 'Buka media',
     ],
     'channel' => [
-        'waha' => 'WAHA',
-        'cloud_api' => 'Cloud API Meta',
         'gateway' => 'Gateway internal',
     ],
     'direction' => [
@@ -159,7 +153,7 @@ return [
             'pin' => 'Sematkan hanya tersedia untuk obrolan grup.',
             'star' => 'Beri bintang hanya ada di aplikasi WhatsApp pribadi.',
             'note' => 'Catatan pribadi tidak tersedia di kotak masuk klinik.',
-            'delete' => 'Cloud API tidak menyediakan hapus pesan.',
+            'delete' => 'Gateway WhatsApp tidak menyediakan hapus pesan.',
         ],
     ],
 ];

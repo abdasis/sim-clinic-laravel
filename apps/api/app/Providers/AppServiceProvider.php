@@ -42,12 +42,9 @@ use App\Models\TransactionItem;
 use App\Models\TreatmentRecord;
 use App\Models\Unit;
 use App\Models\User;
-use App\Models\WahaSetting;
 use App\Models\WhatsappGatewaySetting;
 use App\Models\WhatsappSetting;
-use App\Support\CloudApiClient;
 use App\Support\DeepSeekClient;
-use App\Support\WahaClient;
 use App\Support\WhatsappGatewayClient;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Route;
@@ -109,51 +106,8 @@ class AppServiceProvider extends ServiceProvider
         'whatsapp_setting' => WhatsappSetting::class,
     ];
 
-    /**
-     * Klien WAHA disusun dari dua sumber: alamat dan API key milik platform,
-     * nama sesi milik klinik yang sedang aktif. Bila salah satunya belum
-     * diisi, yang diberikan null — pemanggilnya memperlakukan itu sebagai
-     * "belum siap kirim", bukan galat.
-     */
     public function register(): void
     {
-        $this->app->bind(WahaClient::class, function (): ?WahaClient {
-            $server = WahaSetting::query()->first();
-
-            if ($server === null || ! $server->isConfigured()) {
-                return null;
-            }
-
-            $tenant = WhatsappSetting::query()->first();
-
-            if ($tenant === null || ! $tenant->isConfigured()) {
-                return null;
-            }
-
-            return new WahaClient($server->base_url, $server->api_key, $tenant->session);
-        });
-
-        // Cloud API Meta: token milik platform; nomor pengirim dan WABA milik
-        // klinik. Tanpa nomor, template tetap bisa dikelola — hanya kirim yang
-        // belum mungkin, dan itu diputuskan lewat canSend().
-        $this->app->bind(CloudApiClient::class, function (): ?CloudApiClient {
-            $token = (string) config('meta_whatsapp.access_token');
-
-            if ($token === '') {
-                return null;
-            }
-
-            $setting = WhatsappSetting::query()->first();
-
-            return new CloudApiClient(
-                (string) config('meta_whatsapp.base_url'),
-                (string) config('meta_whatsapp.api_version'),
-                $token,
-                (string) ($setting?->phone_number_id ?? ''),
-                $setting?->waba_id,
-            );
-        });
-
         // Alamat gateway satu untuk semua klinik. Kredensialnya milik klinik
         // dan diserahkan per panggilan, jadi klien ini tidak membaca database
         // selain untuk alamat servernya.
@@ -164,8 +118,8 @@ class AppServiceProvider extends ServiceProvider
             return new WhatsappGatewayClient((string) $baseUrl);
         });
 
-        // Sama seperti WahaClient: belum disetel bukan galat, cuma "belum bisa
-        // dipakai". Yang memanggil memutuskan sendiri apa artinya.
+        // Belum disetel bukan galat, cuma "belum bisa dipakai". Yang memanggil
+        // memutuskan sendiri apa artinya.
         $this->app->bind(DeepSeekClient::class, function (): ?DeepSeekClient {
             $key = config('services.deepseek.api_key');
 

@@ -10,9 +10,9 @@ use Throwable;
 /**
  * Klien AI untuk chatbot, bicara lewat API bergaya OpenAI.
  *
- * Alamat, kunci, dan nama modelnya diserahkan saat pembuatan — sama seperti
- * WahaClient — jadi kelas ini tidak tahu-menahu soal config maupun tenant, dan
- * bisa diarahkan ke penyedia lain tanpa disentuh.
+ * Alamat, kunci, dan nama modelnya diserahkan saat pembuatan, jadi kelas ini
+ * tidak tahu-menahu soal config maupun tenant dan bisa diarahkan ke penyedia
+ * lain tanpa disentuh.
  *
  * Sengaja tanpa SDK: yang dibutuhkan hanya satu POST JSON, dan menambah
  * dependensi untuk itu tidak sepadan.

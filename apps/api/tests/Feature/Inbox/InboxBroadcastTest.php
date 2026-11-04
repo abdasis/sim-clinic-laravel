@@ -116,7 +116,7 @@ class InboxBroadcastTest extends TestCase
             $this->tenant->id,
             '081234567890',
             'Halo, masih buka?',
-            ConversationChannel::Waha,
+            ConversationChannel::Gateway,
             'wamid-1',
         )['message'];
 
@@ -129,7 +129,7 @@ class InboxBroadcastTest extends TestCase
             $this->tenant->id,
             '081234567890',
             'Halo, masih buka?',
-            ConversationChannel::Waha,
+            ConversationChannel::Gateway,
             'wamid-1',
         );
 
@@ -147,7 +147,7 @@ class InboxBroadcastTest extends TestCase
             $this->tenant->id,
             '081234567890',
             'Masih buka sampai jam lima.',
-            ConversationChannel::Waha,
+            ConversationChannel::Gateway,
         );
 
         Event::assertDispatched(InboxMessageCreated::class, fn (InboxMessageCreated $event): bool => $event->tenantId === $this->tenant->id

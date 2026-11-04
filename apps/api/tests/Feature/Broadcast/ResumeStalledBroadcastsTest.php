@@ -53,7 +53,7 @@ class ResumeStalledBroadcastsTest extends TestCase
         $broadcast = Broadcast::find($id);
         $broadcast->update([
             'status' => BroadcastStatus::Paused,
-            'paused_reason' => 'Cloud API Meta menolak pengiriman: HTTP 503 — Upstream unavailable',
+            'paused_reason' => 'Gateway menolak pengiriman: HTTP 503 — Upstream unavailable',
             ...$overrides,
         ]);
 
@@ -151,7 +151,7 @@ class ResumeStalledBroadcastsTest extends TestCase
         $this->configured();
 
         $broadcast = $this->stalled(2, [
-            'paused_reason' => 'Cloud API Meta menolak pengiriman: HTTP 429 — Too many requests',
+            'paused_reason' => 'Gateway menolak pengiriman: HTTP 429 — Too many requests',
             'resume_after' => now()->addMinutes(25),
         ]);
 
@@ -170,7 +170,7 @@ class ResumeStalledBroadcastsTest extends TestCase
         $this->configured();
 
         $broadcast = $this->stalled(2, [
-            'paused_reason' => 'Cloud API Meta menolak pengiriman: HTTP 429 — Too many requests',
+            'paused_reason' => 'Gateway menolak pengiriman: HTTP 429 — Too many requests',
             'resume_after' => now()->subMinute(),
         ]);
 

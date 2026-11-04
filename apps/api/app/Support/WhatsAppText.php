@@ -11,8 +11,8 @@ namespace App\Support;
  * adanya. Jaring pengaman ini deterministik, tidak bergantung pada kepatuhan
  * model.
  *
- * Dipasang di jalur chatbot saja, bukan di WahaClient: broadcast dan pengingat
- * memakai template yang ditulis manusia dan sudah benar formatnya.
+ * Dipasang di jalur chatbot saja: broadcast dan pengingat memakai template
+ * yang ditulis manusia dan sudah benar formatnya.
  *
  * ponytail: hanya menangani format satu tingkat. Format bersarang rumit dan
  * kutipan `>` (yang sebenarnya dikenal WhatsApp) dibiarkan lewat apa adanya —

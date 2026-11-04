@@ -8,11 +8,7 @@ use App\Enums\MessageDirection;
 use App\Enums\MessageStatus;
 use App\Models\Conversation;
 use App\Models\Message;
-use App\Models\WahaSetting;
-use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\Http;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
@@ -39,7 +35,7 @@ class InboxApiTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'contact_phone' => '6281234567890',
             'contact_name' => 'Budi',
-            'channel' => ConversationChannel::Waha,
+            'channel' => ConversationChannel::Gateway,
             'last_message_at' => now(),
             ...$attributes,
         ]);
@@ -111,34 +107,6 @@ class InboxApiTest extends TestCase
             ->assertJsonPath('meta.last_page', 2);
     }
 
-    public function test_a_reply_is_sent_through_waha_and_recorded(): void
-    {
-        $conversation = $this->conversation();
-
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-
-        Http::fake([
-            'https://waha.test/api/sendText' => Http::response(['ok' => true], 201),
-        ]);
-
-        $this->postJson($this->tenantUrl('inbox/conversations/'.$conversation->id.'/messages'), [
-            'body' => 'Halo Budi, facial mulai 150 ribu ya.',
-        ])
-            ->assertCreated()
-            ->assertJsonPath('data.direction', MessageDirection::Out->value)
-            ->assertJsonPath('data.body', 'Halo Budi, facial mulai 150 ribu ya.');
-
-        Http::assertSent(fn (Request $request) => str_contains($request->url(), '/api/sendText')
-            && $request['text'] === 'Halo Budi, facial mulai 150 ribu ya.');
-
-        $this->assertDatabaseHas('messages', [
-            'conversation_id' => $conversation->id,
-            'direction' => MessageDirection::Out->value,
-            'body' => 'Halo Budi, facial mulai 150 ribu ya.',
-        ]);
-    }
-
     public function test_marking_a_conversation_read_clears_the_unread_count(): void
     {
         $conversation = $this->conversation(['unread_count' => 3]);
@@ -157,7 +125,7 @@ class InboxApiTest extends TestCase
         $foreign = Conversation::withoutGlobalScopes()->create([
             'tenant_id' => $other->id,
             'contact_phone' => '628777777777',
-            'channel' => ConversationChannel::Waha,
+            'channel' => ConversationChannel::Gateway,
             'last_message_at' => now(),
         ]);
 

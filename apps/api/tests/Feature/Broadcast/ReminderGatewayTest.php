@@ -26,7 +26,7 @@ use Tests\TestCase;
  * Tidak ada lagi template resmi Meta yang harus disetujui lebih dulu: isi
  * pesan diambil dari MessageTemplate milik klinik (atau teks bawaan), lalu
  * dirender per penerima. Yang dijaga di sini: pesan tetap terisi walau klinik
- * belum pernah memilih template Cloud API, dan konfirmasi booking benar-benar
+ * belum pernah memilih template Meta, dan konfirmasi booking benar-benar
  * berangkat ke endpoint gateway.
  */
 class ReminderGatewayTest extends TestCase
@@ -100,7 +100,7 @@ class ReminderGatewayTest extends TestCase
             $recipient->message,
         );
 
-        // Tidak ada satu pun panggilan ke Meta Cloud API.
+        // Tidak ada satu pun panggilan ke jalur pengiriman lama.
         Http::assertNothingSent();
     }
 

@@ -183,7 +183,7 @@ class BookingConfirmationNotifyTest extends TestCase
         $this->actingAsClinicUser();
         $booking = $this->makeBooking();
 
-        // Tidak ada setelan WAHA sama sekali: gateway belum siap.
+        // Tidak ada kredensial gateway sama sekali: pengiriman belum siap.
         $this->confirm($booking);
 
         $this->assertSame(BookingStatus::Confirmed, $booking->fresh()->status);

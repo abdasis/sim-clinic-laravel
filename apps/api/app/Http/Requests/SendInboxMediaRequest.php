@@ -25,8 +25,8 @@ class SendInboxMediaRequest extends FormRequest
     }
 
     /**
-     * Batas ukuran mengikuti batas Cloud API Meta per jenis media. Satuan
-     * `max` untuk berkas adalah kilobyte.
+     * Batas ukuran mengikuti batas gateway per jenis media. Satuan `max`
+     * untuk berkas adalah kilobyte.
      *
      * @return array<int, string>
      */

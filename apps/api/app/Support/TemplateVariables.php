@@ -5,9 +5,9 @@ namespace App\Support;
 use Illuminate\Support\Carbon;
 
 /**
- * Pemetaan key variabel template Cloud API ke nilai penerima.
+ * Pemetaan key variabel template ke nilai penerima.
  *
- * Template resmi Meta memakai placeholder bernomor ({{1}}, {{2}}), sedangkan
+ * Template pesan memakai placeholder bernomor ({{1}}, {{2}}), sedangkan
  * aplikasi ini menyimpan nama variabel yang bisa dibaca manusia. Satu
  * resolver dipakai bersama oleh pembuatan broadcast, mesin pengingat, dan
  * pesan uji supaya urutan nilainya tidak pernah berbeda antar jalur.
@@ -23,9 +23,6 @@ class TemplateVariables
         'tanggal_terakhir',
         'hari_sejak_kunjungan',
     ];
-
-    /** @var array<int, string> */
-    public const HEADER_TYPES = ['TEXT', 'IMAGE', 'DOCUMENT', 'VIDEO'];
 
     /**
      * Nilai sesuai urutan params, siap dikirim sebagai body parameters.

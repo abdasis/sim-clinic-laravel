@@ -10,7 +10,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CentralAuthController;
 use App\Http\Controllers\CentralBackupController;
 use App\Http\Controllers\CentralStatsController;
-use App\Http\Controllers\CentralWahaSettingController;
+use App\Http\Controllers\CentralWhatsappGatewaySettingController;
 use App\Http\Controllers\ChatbotSettingController;
 use App\Http\Controllers\ClinicIdentityController;
 use App\Http\Controllers\CommissionRuleController;
@@ -24,7 +24,6 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LoyaltySettingController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\MessageTemplateController;
-use App\Http\Controllers\MetaWhatsappWebhookController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PlatformTenantController;
@@ -77,11 +76,6 @@ Route::middleware('throttle:10,1')->group(function (): void {
 // dibuktikan dengan tanda tangan HMAC atas isi permintaan.
 Route::post('/whatsapp/webhook/{token}', [WhatsappGatewayWebhookController::class, 'store']);
 
-// Pesan masuk WhatsApp Cloud API (Meta). Tanpa token di URL: yang membuktikan
-// kiriman itu benar dari Meta adalah tanda tangan HMAC pada isi permintaan.
-Route::get('/whatsapp/meta/webhook', [MetaWhatsappWebhookController::class, 'verify']);
-Route::post('/whatsapp/meta/webhook', [MetaWhatsappWebhookController::class, 'receive']);
-
 Route::get('/user', fn (Request $request) => $request->user())->middleware('auth:sanctum');
 
 // Otorisasi langganan WebSocket (Reverb). Kanal klinik bersifat privat, jadi
@@ -104,9 +98,9 @@ Route::middleware(['auth:sanctum', 'permission.team'])->prefix('central')->group
     Route::get('/backups/{filename}/download', [CentralBackupController::class, 'download']);
     Route::delete('/backups/{filename}', [CentralBackupController::class, 'destroy']);
 
-    // Server WAHA dipakai bersama seluruh klinik, jadi pengaturannya di sini.
-    Route::get('/waha', [CentralWahaSettingController::class, 'show']);
-    Route::put('/waha', [CentralWahaSettingController::class, 'update']);
+    // Alamat gateway dipakai bersama seluruh klinik, jadi pengaturannya di sini.
+    Route::get('/whatsapp-gateway', [CentralWhatsappGatewaySettingController::class, 'show']);
+    Route::put('/whatsapp-gateway', [CentralWhatsappGatewaySettingController::class, 'update']);
 });
 
 // =========================================================================

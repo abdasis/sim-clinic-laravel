@@ -8,12 +8,10 @@ use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Bagian pengaturan WhatsApp yang memang milik tiap klinik: nama sesi WAHA
- * dan kredensial gateway internal.
+ * Bagian pengaturan WhatsApp yang memang milik tiap klinik: nama sesi dan
+ * kredensial gateway internal.
  *
- * Alamat server dan kredensial platform-nya central (WahaSetting,
- * WhatsappGatewaySetting). Kolom Meta dibiarkan sampai jalur Cloud API
- * benar-benar dilepas.
+ * Alamat server dan kredensial platform-nya central (WhatsappGatewaySetting).
  */
 #[ScopedBy([TenantScope::class])]
 class WhatsappSetting extends Model
@@ -23,9 +21,6 @@ class WhatsappSetting extends Model
     protected $fillable = [
         'tenant_id',
         'session',
-        'phone_number_id',
-        'waba_id',
-        'reminder_template',
         'daily_message_limit',
         'gateway_tenant_key',
         'gateway_api_key',
@@ -51,7 +46,6 @@ class WhatsappSetting extends Model
     protected function casts(): array
     {
         return [
-            'reminder_template' => 'array',
             // Kredensial gateway membuka nomor WhatsApp klinik; hanya aplikasi
             // (pemegang APP_KEY) yang boleh membacanya kembali.
             'gateway_tenant_key' => 'encrypted',

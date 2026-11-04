@@ -276,7 +276,7 @@ class AutoReminderTest extends TestCase
     /**
      * Sumber teks satu-satunya adalah MessageTemplate klinik. Template resmi
      * Meta tidak lagi dibaca, dan body itu disimpan sebagai snapshot supaya
-     * command pengirim tidak lagi menunggu template Cloud API.
+     * command pengirim tidak lagi menunggu template Meta.
      */
     public function test_the_clinic_template_is_the_only_message_source(): void
     {
@@ -300,7 +300,6 @@ class AutoReminderTest extends TestCase
         $recipient = $broadcast->recipients()->first();
         $this->assertSame($patient->id, $recipient->patient_id);
         $this->assertSame('Halo '.$patient->name.', sudah 45 hari sejak Peeling.', $recipient->message);
-        $this->assertNull($recipient->template_values);
     }
 
     public function test_other_clinics_patients_are_never_included(): void

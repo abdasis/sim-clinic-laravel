@@ -2,16 +2,16 @@
 
 namespace Tests\Feature\Broadcast;
 
-use App\Models\WahaSetting;
+use App\Models\WhatsappGatewaySetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\InteractsWithTenant;
 use Tests\TestCase;
 
 /**
- * Yang diatur klinik dari WAHA hanya satu: nama sesinya. Nama itu menentukan
- * nomor WhatsApp mana yang dipakai mengirim, jadi salah isi berarti pesan
- * keluar dari nomor klinik lain.
+ * Yang diatur klinik dari pengaturan pengiriman hanya satu: nama sesinya.
+ * Nama itu menentukan nomor WhatsApp mana yang dipakai mengirim, jadi salah
+ * isi berarti pesan keluar dari nomor klinik lain.
  */
 class WhatsappSessionTest extends TestCase
 {
@@ -30,15 +30,15 @@ class WhatsappSessionTest extends TestCase
             ->assertJsonPath('data.session', 'klinik-satu')
             // Selama pengelola platform belum mengisi servernya, klinik tidak
             // bisa berbuat apa-apa dengan nama sesi ini.
-            ->assertJsonPath('data.waha_available', false);
+            ->assertJsonPath('data.gateway_available', false);
 
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
+        WhatsappGatewaySetting::create(['base_url' => 'https://gateway.test']);
 
         $this->getJson($this->tenantUrl('broadcasts/settings'))
-            ->assertJsonPath('data.waha_available', true);
+            ->assertJsonPath('data.gateway_available', true);
     }
 
-    public function test_session_name_rejects_characters_waha_does_not_accept(): void
+    public function test_session_name_rejects_characters_the_gateway_does_not_accept(): void
     {
         $this->actingAsClinicUser();
 
@@ -85,15 +85,15 @@ class WhatsappSessionTest extends TestCase
         $this->actingAsClinicUser();
 
         WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-satu']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
+        WhatsappGatewaySetting::create(['base_url' => 'https://gateway.test']);
 
         $this->putJson($this->tenantUrl('broadcasts/settings'), ['session' => null])
             ->assertOk()
             ->assertJsonPath('data.session', null);
 
-        // Broadcast tidak lagi bergantung pada sesi WAHA: jalurnya gateway
-        // internal. Tanpa kredensial gateway, pesan uji ditolak dengan pesan
-        // yang jelas alih-alih gagal diam-diam di worker.
+        // Broadcast tidak lagi bergantung pada nama sesi saja: jalurnya
+        // gateway internal. Tanpa kredensial gateway, pesan uji ditolak dengan
+        // pesan yang jelas alih-alih gagal diam-diam di worker.
         $this->postJson($this->tenantUrl('broadcasts/test-message'), [
             'phone' => '081234567890',
             'template' => [
@@ -102,26 +102,5 @@ class WhatsappSessionTest extends TestCase
             ],
         ])->assertStatus(422)
             ->assertJsonPath('message', __('broadcast.gateway_not_ready'));
-    }
-
-    public function test_clinic_saves_reminder_template(): void
-    {
-        $this->actingAsClinicUser();
-
-        $template = [
-            'name' => 'pengingat_perawatan',
-            'language' => 'id',
-            'body' => 'Halo {{1}}, sudah {{2}} hari.',
-            'params' => ['nama', 'hari_sejak_kunjungan'],
-        ];
-
-        $this->putJson($this->tenantUrl('broadcasts/settings'), [
-            'reminder_template' => $template,
-        ])->assertOk()
-            ->assertJsonPath('data.reminder_template.name', 'pengingat_perawatan');
-
-        $this->getJson($this->tenantUrl('broadcasts/settings'))
-            ->assertOk()
-            ->assertJsonPath('data.reminder_template.body', 'Halo {{1}}, sudah {{2}} hari.');
     }
 }

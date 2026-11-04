@@ -41,8 +41,6 @@ class BuildBroadcastRecipientsAction
                 'name' => $recipient['name'],
                 'phone' => $recipient['phone'],
                 'message' => TemplateVariables::render($templateBody, $values),
-                // insert() massal tidak melewati cast, jadi dienkode sendiri.
-                'template_values' => json_encode($values),
                 'status' => 'pending',
                 'created_at' => $now,
                 'updated_at' => $now,

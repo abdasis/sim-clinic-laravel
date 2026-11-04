@@ -17,7 +17,7 @@ use App\Http\Resources\BroadcastRecipientResource;
 use App\Http\Resources\BroadcastResource;
 use App\Models\Broadcast;
 use App\Models\BroadcastRecipient;
-use App\Models\WahaSetting;
+use App\Models\WhatsappGatewaySetting;
 use App\Models\WhatsappSetting;
 use App\Services\BroadcastService;
 use App\Services\WhatsappGatewaySessionService;
@@ -386,16 +386,9 @@ class BroadcastController extends Controller
         return response()->json([
             'data' => [
                 'session' => $setting?->session,
-                // Nomor Cloud API Meta yang dipakai membalas lewat jalur itu.
-                'phone_number_id' => $setting?->phone_number_id,
-                // Akun WhatsApp Business tempat template resmi klinik
-                // bernaung; kosong berarti pemilih template belum bisa diisi.
-                'waba_id' => $setting?->waba_id,
-                // Template yang dipakai pengingat otomatis.
-                'reminder_template' => $setting?->reminder_template,
                 // Klinik tidak bisa berbuat apa-apa sampai pengelola platform
                 // mengisi alamat servernya, jadi keadaannya ikut disebut.
-                'waha_available' => WahaSetting::query()->first()?->isConfigured() ?? false,
+                'gateway_available' => WhatsappGatewaySetting::query()->first()?->isConfigured() ?? false,
             ],
             'meta' => [],
         ]);
@@ -414,12 +407,9 @@ class BroadcastController extends Controller
         $setting = WhatsappSetting::query()->firstOrNew([]);
 
         // Hanya ditimpa bila dikirim: menyimpan satu bagian tidak boleh
-        // menghapus bagian lain yang sudah diisi sebelumnya. Kolom Meta tidak
-        // lagi diterima di sini; jalur pengirimannya sudah pindah ke gateway.
-        foreach (['session', 'reminder_template'] as $field) {
-            if (array_key_exists($field, $validated)) {
-                $setting->{$field} = $validated[$field];
-            }
+        // menghapus bagian lain yang sudah diisi sebelumnya.
+        if (array_key_exists('session', $validated)) {
+            $setting->session = $validated['session'];
         }
 
         $setting->save();
@@ -427,9 +417,6 @@ class BroadcastController extends Controller
         return response()->json([
             'data' => [
                 'session' => $setting->session,
-                'phone_number_id' => $setting->phone_number_id,
-                'waba_id' => $setting->waba_id,
-                'reminder_template' => $setting->reminder_template,
             ],
             'meta' => ['message' => __('broadcast.settings_saved')],
         ]);

@@ -124,7 +124,6 @@ class BroadcastUpdateTest extends TestCase
         // klinik yang terisi; pesan per penerima tetap utuh.
         $this->assertStringContainsString('dari '.$this->tenant->name, $broadcast->message);
         $this->assertSame('Hai Budi dari '.$this->tenant->name, $recipient->message);
-        $this->assertSame(['Budi', $this->tenant->name], $recipient->template_values);
     }
 
     public function test_editing_is_rejected_once_the_sending_has_started(): void

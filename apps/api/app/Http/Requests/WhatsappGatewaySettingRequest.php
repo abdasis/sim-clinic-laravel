@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class WahaSettingRequest extends FormRequest
+class WhatsappGatewaySettingRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,17 +15,13 @@ class WahaSettingRequest extends FormRequest
     {
         return [
             'base_url' => ['required', 'url', 'max:255'],
-            // Kosong berarti pertahankan kunci yang tersimpan: menyimpan
-            // ulang alamatnya saja tidak boleh diam-diam mencabut kredensial.
-            'api_key' => ['nullable', 'string', 'max:255'],
         ];
     }
 
     public function attributes(): array
     {
         return [
-            'base_url' => __('waha.base_url'),
-            'api_key' => __('waha.api_key'),
+            'base_url' => __('whatsapp_gateway.base_url'),
         ];
     }
 }

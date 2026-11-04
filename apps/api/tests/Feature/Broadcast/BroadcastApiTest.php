@@ -110,10 +110,6 @@ class BroadcastApiTest extends TestCase
         $this->assertStringContainsString('Halo Dessy Natalia, sudah 40 hari', $recipient->message);
         $this->assertStringContainsString('Salam, '.$this->tenant->name.'!', $recipient->message);
         $this->assertStringNotContainsString('{{', $recipient->message);
-        $this->assertCount(4, $recipient->template_values);
-        $this->assertSame('Dessy Natalia', $recipient->template_values[0]);
-        $this->assertSame('40', $recipient->template_values[1]);
-        $this->assertSame($this->tenant->name, $recipient->template_values[3]);
     }
 
     /**
@@ -291,11 +287,11 @@ class BroadcastApiTest extends TestCase
         $this->assertSame('klinik-satu', WhatsappSetting::first()->session);
     }
 
-    public function test_settings_reject_a_session_name_waha_cannot_use(): void
+    public function test_settings_reject_a_session_name_the_gateway_cannot_use(): void
     {
         $this->actingAsClinicUser();
 
-        // WAHA hanya menerima huruf kecil, angka, dan strip.
+        // Gateway hanya menerima huruf kecil, angka, dan strip.
         $this->putJson($this->tenantUrl('broadcasts/settings'), [
             'session' => 'Klinik Satu!',
         ])->assertStatus(422)->assertJsonValidationErrors('session');
