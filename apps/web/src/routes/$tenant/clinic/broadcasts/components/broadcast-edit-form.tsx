@@ -10,11 +10,16 @@ import { applyServerErrors, useForm } from "#/components/forms/use-form.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
 import { apiGet, apiPut, apiUpload } from "#/lib/api.ts"
 import type { ApiError } from "#/lib/api.ts"
-import { BroadcastFormFields, broadcastSchema, templatePayload, type BroadcastValues } from "./broadcast-form.tsx"
+import { BroadcastFormFields, broadcastSchema, type BroadcastValues } from "./broadcast-form.tsx"
 import { BroadcastGuide } from "./broadcast-guide.tsx"
-import type { BroadcastDetail } from "./broadcast-types.ts"
+import type { BroadcastDetail, BroadcastTemplate } from "./broadcast-types.ts"
 import type { AudiencePreview } from "./recipient-preview.tsx"
-import { isTemplateComplete, type BroadcastTemplate } from "./template-picker.tsx"
+import {
+  BODY_MAX,
+  BODY_MAX_WITH_IMAGE,
+  isTemplateComplete,
+  templatePayload,
+} from "./template-variables.ts"
 
 interface BroadcastEditFormProps {
   tenant: string
@@ -162,10 +167,7 @@ export function BroadcastEditForm({ tenant, broadcast }: BroadcastEditFormProps)
       selectedPatients?.forEach((patientId) => {
         fd.append("audience_params[patient_ids][]", String(patientId))
       })
-      fd.append("template[name]", body.name)
-      fd.append("template[language]", body.language)
       fd.append("template[body]", body.body)
-      fd.append("template[header_type]", body.header_type ?? "")
       body.params.forEach((param, index) => {
         fd.append(`template[params][${index}]`, param)
       })
@@ -195,7 +197,11 @@ export function BroadcastEditForm({ tenant, broadcast }: BroadcastEditFormProps)
   const titleFilled = title.trim().length > 0
   const slotsFilled = isTemplateComplete(template)
   const recipientsReady = (preview.data?.data?.count ?? 0) > 0
-  const canSubmit = titleFilled && audienceReady && slotsFilled
+  const imageSelected =
+    Boolean(image) || Boolean(broadcast.image_url && !removeExistingImage)
+  const bodyFits =
+    (template?.body.length ?? 0) <= (imageSelected ? BODY_MAX_WITH_IMAGE : BODY_MAX)
+  const canSubmit = titleFilled && audienceReady && slotsFilled && bodyFits
 
   return (
     <Form {...form}>
@@ -230,7 +236,6 @@ export function BroadcastEditForm({ tenant, broadcast }: BroadcastEditFormProps)
                 setImage(null)
                 setRemoveExistingImage(true)
               }}
-              onResetExistingImage={() => setRemoveExistingImage(false)}
             />
           </div>
 

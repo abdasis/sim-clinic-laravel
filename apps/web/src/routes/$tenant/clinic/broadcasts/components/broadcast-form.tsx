@@ -1,17 +1,27 @@
 import type { UseFormReturn } from "react-hook-form"
 import { z } from "zod"
 
+import { Label } from "#/components/ui/label.tsx"
+import { NativeSelect, NativeSelectOption } from "#/components/ui/native-select.tsx"
+import { Textarea } from "#/components/ui/textarea.tsx"
 import { FormInput } from "#/components/forms/form-input.tsx"
 import { FormSelect } from "#/components/forms/form-select.tsx"
 import type { SelectOption } from "#/components/forms/form-select.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { BroadcastImageField } from "./broadcast-image-field.tsx"
+import type { BroadcastTemplate } from "./broadcast-types.ts"
 import { ContactPicker } from "./contact-picker.tsx"
 import { RecipientPreview } from "./recipient-preview.tsx"
 import type { AudiencePreview } from "./recipient-preview.tsx"
 import { SectionHeader } from "./section-header.tsx"
-import { TemplateImageField } from "./template-image-field.tsx"
-import { TemplatePicker } from "./template-picker.tsx"
-import type { BroadcastTemplate } from "./template-picker.tsx"
+import {
+  BODY_MAX,
+  BODY_MAX_WITH_IMAGE,
+  TEMPLATE_VARIABLES,
+  placeholderNumbers,
+  syncParams,
+} from "./template-variables.ts"
+import { TemplatePreview } from "./template-preview.tsx"
 
 export const broadcastSchema = z.object({
   title: z.string().min(1),
@@ -27,11 +37,6 @@ export const BROADCAST_DEFAULTS: BroadcastValues = {
   audience: "all",
   days: 30,
   service_id: "",
-}
-
-export function templatePayload(template: BroadcastTemplate) {
-  const { name, language, body, header_type, params } = template
-  return { name, language, body, header_type, params }
 }
 
 interface BroadcastFormFieldsProps {
@@ -52,7 +57,6 @@ interface BroadcastFormFieldsProps {
   existingImageUrl?: string | null
   removeExistingImage?: boolean
   onRemoveExistingImage?: () => void
-  onResetExistingImage?: () => void
 }
 
 /**
@@ -76,21 +80,29 @@ export function BroadcastFormFields({
   existingImageUrl = null,
   removeExistingImage = false,
   onRemoveExistingImage,
-  onResetExistingImage,
 }: BroadcastFormFieldsProps) {
   const { t } = useTrans()
   const audience = form.watch("audience")
-  const needsImage = template?.header_type === "IMAGE"
+  const body = template?.body ?? ""
+  const slots = placeholderNumbers(body)
+  // Caption yang disertai gambar lebih pendek di WhatsApp, jadi batasnya ikut
+  // menyesuaikan poster yang sedang dipakai.
+  const imageSelected = Boolean(image) || Boolean(existingImageUrl && !removeExistingImage)
+  const bodyLimit = imageSelected ? BODY_MAX_WITH_IMAGE : BODY_MAX
 
-  /** Ganti template berarti slot dan berkas gambar lama tidak berlaku lagi. */
-  const changeTemplate = (next: BroadcastTemplate | null) => {
-    const identityChanged =
-      next?.name !== template?.name || next?.language !== template?.language
-    setTemplate(next)
-    if (identityChanged) {
-      setImage(null)
-      onResetExistingImage?.()
-    }
+  const changeBody = (next: string) => {
+    setTemplate({ body: next, params: syncParams(next, template?.params ?? []) })
+  }
+
+  const setParam = (index: number, variable: string) => {
+    if (!template) return
+
+    setTemplate({
+      ...template,
+      params: template.params.map((current, position) =>
+        position === index ? variable : current,
+      ),
+    })
   }
 
   return (
@@ -180,27 +192,74 @@ export function BroadcastFormFields({
           hint={t("broadcast.section_message_hint")}
         />
         <div className="mt-4 space-y-3">
-          <TemplatePicker
-            tenant={tenant}
-            value={template}
-            onChange={changeTemplate}
-            enabled={!disabled}
-            idPrefix="broadcast-template"
-          />
-          {needsImage ? (
-            <TemplateImageField
-              file={image}
-              onChange={setImage}
-              existingUrl={existingImageUrl}
-              removeExisting={removeExistingImage}
-              onRemoveExisting={onRemoveExistingImage}
-              hint={
-                image
-                  ? t("broadcast.image_hint")
-                  : t("broadcast.template_header_image_hint")
-              }
+          <div className="space-y-1.5">
+            <Label htmlFor="broadcast-message-body" className="text-sm font-medium">
+              {t("broadcast.message")}
+            </Label>
+            <Textarea
+              id="broadcast-message-body"
+              rows={6}
+              value={body}
+              maxLength={bodyLimit}
+              disabled={disabled}
+              aria-describedby="broadcast-message-count"
+              onChange={(event) => changeBody(event.target.value)}
+              className="resize-y"
             />
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <span className="text-pretty">{t("broadcast.template_body_hint")}</span>
+              <span id="broadcast-message-count" className="shrink-0 tabular-nums">
+                {body.length} / {bodyLimit}
+              </span>
+            </div>
+          </div>
+
+          {slots.length > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {slots.map((slot, index) => (
+                <div key={slot} className="space-y-1">
+                  <Label
+                    htmlFor={`broadcast-param-${slot}`}
+                    className="text-xs font-medium"
+                  >
+                    {t("broadcast.template_param_slot").replace(
+                      ":number",
+                      String(slot),
+                    )}
+                  </Label>
+                  <NativeSelect
+                    id={`broadcast-param-${slot}`}
+                    className="w-full [&>select]:min-h-11 sm:[&>select]:min-h-10"
+                    value={template?.params[index] ?? ""}
+                    onChange={(event) => setParam(index, event.target.value)}
+                    disabled={disabled}
+                    aria-required
+                  >
+                    <NativeSelectOption value="">—</NativeSelectOption>
+                    {TEMPLATE_VARIABLES.map((variable) => (
+                      <NativeSelectOption key={variable} value={variable}>
+                        {t(`broadcast.template_variable_${variable}`)}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                </div>
+              ))}
+            </div>
           ) : null}
+
+          <BroadcastImageField
+            file={image}
+            onChange={setImage}
+            existingUrl={existingImageUrl}
+            removeExisting={removeExistingImage}
+            onRemoveExisting={onRemoveExistingImage}
+          />
+
+          <TemplatePreview
+            body={body}
+            params={template?.params ?? []}
+            hasImage={imageSelected}
+          />
         </div>
       </section>
     </div>

@@ -52,11 +52,12 @@ function BroadcastDetailPage() {
   const broadcast = data?.data
   useBreadcrumbTail(broadcast?.title)
   const cloudReady = data?.meta.cloud_api_ready ?? false
-  const templateInfo = broadcast?.template_name
-    ? [broadcast.template_name, broadcast.template_language].filter(Boolean).join(" · ")
-    : broadcast?.template
-      ? [broadcast.template.name, broadcast.template.language].filter(Boolean).join(" · ")
-      : null
+  const templateBody = broadcast?.template?.body?.trim()
+  const templateInfo = templateBody
+    ? templateBody.length > 60
+      ? `${templateBody.slice(0, 60)}…`
+      : templateBody
+    : null
 
   const mark = useMutation({
     mutationFn: ({ recipient, status }: { recipient: number; status: string }) =>

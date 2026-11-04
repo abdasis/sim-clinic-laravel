@@ -4,14 +4,14 @@ import { Image01Icon } from "@hugeicons/core-free-icons"
 
 import { useTrans } from "#/hooks/use-trans.ts"
 import { cn } from "#/lib/utils.ts"
-import { TEMPLATE_VARIABLES } from "./template-picker.tsx"
+import { placeholderNumbers } from "./template-variables.ts"
 
 const SLOT = /(\{\{\s*\d+\s*\}\})/
 
 interface TemplatePreviewProps {
-  headerType: string
-  headerText: string
   body: string
+  params: string[]
+  hasImage?: boolean
   className?: string
 }
 
@@ -22,16 +22,18 @@ interface TemplatePreviewProps {
  * "[Nama pasien]" membuat hasil akhirnya langsung terbaca.
  */
 export function TemplatePreview({
-  headerType,
-  headerText,
   body,
+  params,
+  hasImage = false,
   className,
 }: TemplatePreviewProps) {
   const { t } = useTrans()
+  const slots = placeholderNumbers(body)
 
   const sample = (part: string) => {
     const number = Number(part.replace(/[^\d]/g, ""))
-    const variable = TEMPLATE_VARIABLES[number - 1]
+    const index = slots.indexOf(number)
+    const variable = index >= 0 ? params[index] : undefined
 
     return variable
       ? `[${t(`broadcast.template_variable_${variable}`)}]`
@@ -46,12 +48,12 @@ export function TemplatePreview({
       )}
     >
       <h2 className="text-sm font-semibold tracking-tight">
-        {t("broadcast.template_preview_label")}
+        {t("broadcast.template_preview")}
       </h2>
 
       <div className="mt-3 rounded-lg border border-border/50 bg-muted/40 p-3">
         <div className="rounded-lg border border-border/50 bg-background p-3 text-[13px] leading-relaxed">
-          {headerType === "IMAGE" ? (
+          {hasImage ? (
             <div className="mb-2 flex h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border/60 bg-muted/30 text-muted-foreground">
               <HugeiconsIcon
                 icon={Image01Icon}
@@ -59,12 +61,8 @@ export function TemplatePreview({
                 className="size-5"
                 aria-hidden
               />
-              <span className="text-xs">{t("broadcast.template_header_image")}</span>
+              <span className="text-xs">{t("broadcast.image")}</span>
             </div>
-          ) : null}
-
-          {headerType === "TEXT" && headerText.trim() ? (
-            <p className="mb-1.5 font-semibold text-pretty">{headerText}</p>
           ) : null}
 
           {body.trim() ? (
@@ -84,7 +82,7 @@ export function TemplatePreview({
             </p>
           ) : (
             <p className="text-xs text-pretty text-muted-foreground">
-              {t("broadcast.template_section_body_hint")}
+              {t("broadcast.template_body_hint")}
             </p>
           )}
         </div>

@@ -17,15 +17,17 @@ import {
   BROADCAST_DEFAULTS,
   BroadcastFormFields,
   broadcastSchema,
-  templatePayload,
   type BroadcastValues,
 } from "./components/broadcast-form.tsx"
 import { BroadcastGuide } from "./components/broadcast-guide.tsx"
+import type { BroadcastTemplate } from "./components/broadcast-types.ts"
 import type { AudiencePreview } from "./components/recipient-preview.tsx"
 import {
+  BODY_MAX,
+  BODY_MAX_WITH_IMAGE,
   isTemplateComplete,
-  type BroadcastTemplate,
-} from "./components/template-picker.tsx"
+  templatePayload,
+} from "./components/template-variables.ts"
 
 export const Route = createFileRoute("/$tenant/clinic/broadcasts/new")({
   component: NewBroadcastPage,
@@ -132,10 +134,7 @@ function NewBroadcastPage() {
       selectedPatients?.forEach((id) => {
         fd.append("audience_params[patient_ids][]", String(id))
       })
-      fd.append("template[name]", body.name)
-      fd.append("template[language]", body.language)
       fd.append("template[body]", body.body)
-      fd.append("template[header_type]", body.header_type ?? "")
       body.params.forEach((param, index) => {
         fd.append(`template[params][${index}]`, param)
       })
@@ -169,7 +168,8 @@ function NewBroadcastPage() {
   const titleFilled = title.trim().length > 0
   const slotsFilled = isTemplateComplete(template)
   const recipientsReady = (preview.data?.data?.count ?? 0) > 0
-  const canSubmit = titleFilled && audienceReady && slotsFilled
+  const bodyFits = (template?.body.length ?? 0) <= (image ? BODY_MAX_WITH_IMAGE : BODY_MAX)
+  const canSubmit = titleFilled && audienceReady && slotsFilled && bodyFits
 
   useBreadcrumbTail(t("broadcast.new_title"))
 

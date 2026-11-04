@@ -25,7 +25,6 @@ import { formatDateTime } from "#/lib/format.ts"
 import { AutoReminderDialog } from "./components/auto-reminder-dialog.tsx"
 import { BroadcastSettingsDialog } from "./components/broadcast-settings-dialog.tsx"
 import { QuotaCard } from "./components/quota-card.tsx"
-import { WhatsappTemplateManageButton } from "./components/whatsapp-template-manager.tsx"
 import {
   ConnectionDialog,
   RemindersDialog,
@@ -91,11 +90,6 @@ function BroadcastsPage() {
             <HugeiconsIcon icon={Link01Icon} strokeWidth={2} className="size-3.5" />
             {t("broadcast.connection")}
           </Button>
-          <WhatsappTemplateManageButton
-            tenant={tenant}
-            variant="outline"
-            className="min-h-11 sm:min-h-7"
-          />
           <Button variant="outline" size="sm" onClick={() => setRemindersOpen(true)}>
             {t("broadcast.reminders")}
           </Button>

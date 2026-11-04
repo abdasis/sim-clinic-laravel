@@ -1,4 +1,8 @@
-import type { BroadcastTemplate } from "./template-picker.tsx"
+/** Pesan broadcast lokal: isi bebas plus pemetaan slot {{n}} ke data penerima. */
+export interface BroadcastTemplate {
+  body: string
+  params: string[]
+}
 
 export type BroadcastAudience = "all" | "inactive" | "service" | "selected"
 
@@ -6,20 +10,6 @@ export interface BroadcastAudienceParams {
   days?: number | null
   service_id?: number | null
   patient_ids?: number[] | null
-}
-
-/** Satu template resmi Meta dari endpoint kelola (status apa pun). */
-export interface ManagedTemplate {
-  id: string | null
-  name: string
-  language: string
-  category: string
-  status: string
-  rejected_reason: string | null
-  body: string
-  header_type: "TEXT" | "IMAGE" | null
-  header_text: string | null
-  body_params_count: number
 }
 
 export interface Recipient {
@@ -42,8 +32,6 @@ export interface BroadcastDetail {
   paused_reason?: string | null
   resume_after?: string | null
   kind_label?: string | null
-  template_name?: string | null
-  template_language?: string | null
   template?: BroadcastTemplate | null
   audience?: BroadcastAudience | null
   audience_label: string

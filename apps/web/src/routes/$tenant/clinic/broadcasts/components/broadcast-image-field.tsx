@@ -14,30 +14,30 @@ import {
 } from "#/components/ui/tooltip.tsx"
 import { useTrans } from "#/hooks/use-trans.ts"
 
-interface TemplateImageFieldProps {
+interface BroadcastImageFieldProps {
   file: File | null
   onChange: (file: File | null) => void
   hint?: string
-  /** Gambar yang sudah tersimpan di broadcast; tetap dipakai bila tidak diganti. */
+  /** Poster yang sudah tersimpan di broadcast; tetap dipakai bila tidak diganti. */
   existingUrl?: string | null
-  /** Gambar lama ditandai untuk dihapus saat disimpan. */
+  /** Poster lama ditandai untuk dihapus saat disimpan. */
   removeExisting?: boolean
   onRemoveExisting?: () => void
 }
 
 /**
- * Berkas header gambar untuk template Cloud API. Hanya dirender saat template
- * terpilih memang memakai header IMAGE; berkas lama ikut dibuang begitu
- * template berganti supaya gambar promo tidak terkirim dengan template lain.
+ * Poster promo opsional untuk broadcast. Berkas yang dipilih hanya dipegang
+ * di memori sampai formulir dikirim; mengganti atau menghapusnya tidak
+ * menyentuh poster lama di server.
  */
-export function TemplateImageField({
+export function BroadcastImageField({
   file,
   onChange,
   hint,
   existingUrl = null,
   removeExisting = false,
   onRemoveExisting,
-}: TemplateImageFieldProps) {
+}: BroadcastImageFieldProps) {
   const { t } = useTrans()
   const id = useId()
   const inputRef = useRef<HTMLInputElement>(null)
