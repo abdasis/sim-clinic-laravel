@@ -71,11 +71,14 @@ class WhatsappSetting extends Model
         return filled($this->session) && filled($this->gateway_session_id);
     }
 
-    /** Klinik sudah punya akun gateway beserta API key dan webhook-nya. */
+    /**
+     * Klinik sudah punya akun gateway beserta API key-nya. Webhook tidak
+     * termasuk syarat: fitur itu dibatalkan, jadi rahasianya tidak pernah
+     * diisi.
+     */
     public function provisioned(): bool
     {
         return filled($this->gateway_tenant_key)
-            && filled($this->gateway_api_key)
-            && filled($this->gateway_webhook_secret);
+            && filled($this->gateway_api_key);
     }
 }
