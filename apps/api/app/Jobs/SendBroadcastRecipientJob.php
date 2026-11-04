@@ -67,7 +67,6 @@ class SendBroadcastRecipientJob implements ShouldQueue
      */
     private const RECIPIENT_REJECTED_CODES = [
         'INVALID_PHONE_NUMBER',
-        'VALIDATION_ERROR',
     ];
 
     public function __construct(
