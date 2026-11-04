@@ -212,7 +212,7 @@ class MetaWhatsappWebhookController extends Controller
         $providerMessageId = $message['id'] ?? null;
         $contactName = data_get($message, 'profile.name');
 
-        app(RecordInboundMessageAction::class)->handle(
+        $recorded = app(RecordInboundMessageAction::class)->handle(
             $setting->tenant_id,
             $phone,
             trim($body),
@@ -220,6 +220,11 @@ class MetaWhatsappWebhookController extends Controller
             is_string($providerMessageId) && $providerMessageId !== '' ? $providerMessageId : null,
             is_string($contactName) && $contactName !== '' ? $contactName : null,
         );
+
+        // Kiriman ulang tidak boleh memicu balasan chatbot kedua kali.
+        if (! $recorded['created']) {
+            return;
+        }
 
         ProcessInboundMessageJob::dispatch(
             $setting->tenant_id,

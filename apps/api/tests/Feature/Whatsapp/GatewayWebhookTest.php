@@ -94,7 +94,10 @@ class GatewayWebhookTest extends TestCase
 
     public function test_valid_signature_records_inbound_and_dispatches_job(): void
     {
-        $this->sendWebhook($this->receivedPayload())->assertOk();
+        $this->sendWebhook($this->receivedPayload())
+            ->assertOk()
+            ->assertJsonPath('data.status', 'diterima')
+            ->assertJsonStructure(['data' => ['status'], 'meta']);
 
         $this->assertDatabaseHas('messages', [
             'provider_message_id' => '0f8fad5b-d9cb-469f-a165-70867728950e',
@@ -217,9 +220,50 @@ class GatewayWebhookTest extends TestCase
             'sessionId' => 'klinik-uji',
             'status' => 'read',
             'at' => '2026-11-04T10:01:00.000Z',
-        ], 'message.read')->assertOk();
+        ], 'message.read')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'status diperbarui')
+            ->assertJsonStructure(['data' => ['status'], 'meta']);
 
         $this->assertSame(MessageStatus::Read, $message->fresh()->status);
+    }
+
+    public function test_failed_status_marks_message_failed(): void
+    {
+        $conversation = Conversation::create([
+            'tenant_id' => $this->tenant->id,
+            'contact_phone' => '6281234567890',
+            'channel' => ConversationChannel::Gateway,
+        ]);
+
+        $message = $conversation->messages()->create([
+            'direction' => MessageDirection::Out,
+            'body' => 'Balasan klinik',
+            'provider_message_id' => 'wamid-keluar-2',
+            'status' => MessageStatus::Sent,
+            'sent_at' => now(),
+        ]);
+
+        $this->sendWebhook([
+            'messageId' => 'wamid-keluar-2',
+            'sessionId' => 'klinik-uji',
+            'status' => 'failed',
+            'at' => '2026-11-04T10:01:00.000Z',
+        ], 'message.failed')->assertOk();
+
+        $this->assertSame(MessageStatus::Failed, $message->fresh()->status);
+    }
+
+    public function test_status_for_unknown_message_is_acknowledged_with_accurate_reason(): void
+    {
+        $this->sendWebhook([
+            'messageId' => 'wamid-tidak-ada',
+            'sessionId' => 'klinik-uji',
+            'status' => 'read',
+            'at' => '2026-11-04T10:01:00.000Z',
+        ], 'message.read')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'pesan tidak ditemukan');
     }
 
     public function test_replayed_received_event_does_not_duplicate_message(): void
@@ -227,13 +271,18 @@ class GatewayWebhookTest extends TestCase
         $payload = $this->receivedPayload();
 
         $this->sendWebhook($payload)->assertOk();
-        $this->sendWebhook($payload)->assertOk();
+        $this->sendWebhook($payload)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'sudah diterima');
 
         $this->assertDatabaseCount('messages', 1);
         $this->assertDatabaseHas('conversations', [
             'contact_phone' => '6281234567890',
             'unread_count' => 1,
         ]);
+
+        // Kiriman ulang tidak boleh memicu balasan chatbot kedua kali.
+        Queue::assertPushed(ProcessInboundMessageJob::class, 1);
     }
 
     public function test_unknown_event_is_acknowledged_without_processing(): void

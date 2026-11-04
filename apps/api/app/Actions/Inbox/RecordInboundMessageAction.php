@@ -18,12 +18,16 @@ use InvalidArgumentException;
  *
  * Idempoten terhadap `provider_message_id`: gateway yang tidak dibalas 200
  * akan mengirim ulang pesannya, dan pengulangan itu tidak boleh menambah
- * penghitung belum dibaca dua kali.
+ * penghitung belum dibaca dua kali. Pemanggil memakai `created` untuk tahu
+ * apakah pesan ini baru; kiriman ulang tidak boleh memicu balasan kedua.
  */
 class RecordInboundMessageAction
 {
     use BroadcastsInboxMessage;
 
+    /**
+     * @return array{message: Message, created: bool}
+     */
     public function handle(
         int $tenantId,
         string $phone,
@@ -31,14 +35,14 @@ class RecordInboundMessageAction
         ConversationChannel $channel,
         ?string $providerMessageId = null,
         ?string $contactName = null,
-    ): Message {
+    ): array {
         $contactPhone = PhoneNumber::normalize($phone);
 
         if ($contactPhone === null) {
             throw new InvalidArgumentException('Nomor pengirim tidak valid: '.$phone);
         }
 
-        /** @var array{0: Message, 1: bool} $result */
+        /** @var array{message: Message, created: bool} $result */
         $result = DB::transaction(function () use ($tenantId, $contactPhone, $body, $channel, $providerMessageId, $contactName): array {
             $conversation = Conversation::query()->firstOrCreate(
                 ['tenant_id' => $tenantId, 'contact_phone' => $contactPhone],
@@ -54,7 +58,7 @@ class RecordInboundMessageAction
                 // Kiriman ulang gateway bukan pesan baru: tidak boleh menambah
                 // penghitung maupun menyiarkan notifikasi kedua kalinya.
                 if ($existing !== null) {
-                    return [$existing, false];
+                    return ['message' => $existing, 'created' => false];
                 }
             }
 
@@ -98,15 +102,13 @@ class RecordInboundMessageAction
                 ),
             );
 
-            return [$message, true];
+            return ['message' => $message, 'created' => true];
         });
 
-        [$message, $created] = $result;
-
-        if ($created) {
-            $this->broadcastInboxMessage($message, $tenantId);
+        if ($result['created']) {
+            $this->broadcastInboxMessage($result['message'], $tenantId);
         }
 
-        return $message;
+        return $result;
     }
 }

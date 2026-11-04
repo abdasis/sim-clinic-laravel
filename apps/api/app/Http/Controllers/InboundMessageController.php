@@ -134,7 +134,7 @@ class InboundMessageController extends Controller
         $providerMessageId = data_get($payload, 'id');
         $contactName = data_get($payload, 'pushName');
 
-        app(RecordInboundMessageAction::class)->handle(
+        $recorded = app(RecordInboundMessageAction::class)->handle(
             $setting->tenant_id,
             $phone,
             trim($body),
@@ -142,6 +142,11 @@ class InboundMessageController extends Controller
             is_string($providerMessageId) && $providerMessageId !== '' ? $providerMessageId : null,
             is_string($contactName) && $contactName !== '' ? $contactName : null,
         );
+
+        // Kiriman ulang tidak boleh memicu balasan chatbot kedua kali.
+        if (! $recorded['created']) {
+            return $this->accepted('sudah diterima');
+        }
 
         ProcessInboundMessageJob::dispatch(
             $setting->tenant_id,

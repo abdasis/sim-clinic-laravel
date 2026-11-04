@@ -144,13 +144,7 @@ class WhatsappGatewayWebhookController extends Controller
         $providerMessageId = $payload['messageId'] ?? null;
         $body = trim($body);
 
-        Log::channel('chatbot')->info('Pesan gateway diterima, job di-dispatch', [
-            'tenant_id' => $setting->tenant_id,
-            'from' => $phone,
-            'body' => $body,
-        ]);
-
-        app(RecordInboundMessageAction::class)->handle(
+        $recorded = app(RecordInboundMessageAction::class)->handle(
             $setting->tenant_id,
             $phone,
             $body,
@@ -158,12 +152,30 @@ class WhatsappGatewayWebhookController extends Controller
             is_string($providerMessageId) && $providerMessageId !== '' ? $providerMessageId : null,
         );
 
+        // Kiriman ulang tidak boleh memicu balasan chatbot kedua kali.
+        if (! $recorded['created']) {
+            Log::channel('chatbot')->debug('Pesan gateway dilewati: sudah pernah diterima', [
+                'tenant_id' => $setting->tenant_id,
+                'from' => $phone,
+                'message_id' => $providerMessageId,
+            ]);
+
+            return $this->respond('sudah diterima');
+        }
+
         ProcessInboundMessageJob::dispatch(
             $setting->tenant_id,
             $phone,
             $body,
             ConversationChannel::Gateway,
         );
+
+        // Isi pesan pasien tidak ikut dicatat di level info; cukup metadatanya.
+        Log::channel('chatbot')->info('Pesan gateway diterima, job di-dispatch', [
+            'tenant_id' => $setting->tenant_id,
+            'from' => $phone,
+            'message_id' => $providerMessageId,
+        ]);
 
         return $this->respond('diterima');
     }
@@ -187,13 +199,15 @@ class WhatsappGatewayWebhookController extends Controller
             return $this->respond('id pesan tidak ada');
         }
 
-        app(UpdateMessageStatusAction::class)->handle(
+        $message = app(UpdateMessageStatusAction::class)->handle(
             $setting->tenant_id,
             $messageId,
             self::STATUS_BY_EVENT[$event],
         );
 
-        return $this->respond('status diperbarui');
+        // Status untuk pesan yang tidak ada di kotak masuk bukan kegagalan
+        // gateway; cukup diakui, tetapi alasannya harus akurat.
+        return $this->respond($message === null ? 'pesan tidak ditemukan' : 'status diperbarui');
     }
 
     /**

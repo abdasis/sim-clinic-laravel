@@ -32,7 +32,7 @@ class UpdateMessageStatusAction
             ->first();
 
         if ($message === null) {
-            Log::debug('Status pesan Meta diabaikan: pesan tidak ditemukan.', [
+            Log::debug('Status pesan gateway diabaikan: pesan tidak ditemukan.', [
                 'tenant_id' => $tenantId,
                 'provider_message_id' => $providerMessageId,
                 'status' => $status->value,

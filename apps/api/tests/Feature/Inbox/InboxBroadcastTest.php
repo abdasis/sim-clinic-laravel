@@ -118,7 +118,7 @@ class InboxBroadcastTest extends TestCase
             'Halo, masih buka?',
             ConversationChannel::Waha,
             'wamid-1',
-        );
+        )['message'];
 
         Event::assertDispatched(InboxMessageCreated::class, fn (InboxMessageCreated $event): bool => $event->tenantId === $this->tenant->id
             && $event->conversationId === (int) $message->conversation_id
@@ -133,7 +133,8 @@ class InboxBroadcastTest extends TestCase
             'wamid-1',
         );
 
-        $this->assertSame($message->id, $replay->id);
+        $this->assertFalse($replay['created']);
+        $this->assertSame($message->id, $replay['message']->id);
         Event::assertDispatchedTimes(InboxMessageCreated::class, 1);
     }
 
