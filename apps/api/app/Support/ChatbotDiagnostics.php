@@ -74,7 +74,7 @@ class ChatbotDiagnostics
 
         return $this->check(
             'gateway_configured',
-            filled($baseUrl) && $setting !== null && $setting->provisioned(),
+            filled($baseUrl) && $setting !== null && $setting->hasGatewayCredentials(),
         );
     }
 

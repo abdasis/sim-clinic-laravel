@@ -134,6 +134,15 @@ class ChatbotDiagnosticsTest extends TestCase
         $this->assertFalse($this->checks()['gateway_configured']);
     }
 
+    /** Klinik mode manual tidak punya tenant key, jadi itu bukan tanda putus. */
+    public function test_manual_mode_without_tenant_key_is_configured(): void
+    {
+        $this->everythingConnected();
+        WhatsappSetting::query()->update(['gateway_tenant_key' => null]);
+
+        $this->assertTrue($this->checks()['gateway_configured']);
+    }
+
     /** Sesi yang terputus adalah sebab yang paling sulit ditebak sendiri. */
     public function test_a_disconnected_session_is_named(): void
     {

@@ -53,7 +53,13 @@ class IdleChatClosingService
 
         $whatsapp = WhatsappSetting::query()->first();
 
-        if ($whatsapp === null || ! $whatsapp->provisioned() || blank($whatsapp->gateway_session_id)) {
+        // Mode manual tidak punya tenant key, jadi cukup API key + rahasia
+        // webhook: penutup hanya masuk akal untuk percakapan yang datang
+        // lewat webhook terverifikasi.
+        if ($whatsapp === null
+            || ! $whatsapp->hasGatewayCredentials()
+            || blank($whatsapp->gateway_webhook_secret)
+            || blank($whatsapp->gateway_session_id)) {
             return 0;
         }
 

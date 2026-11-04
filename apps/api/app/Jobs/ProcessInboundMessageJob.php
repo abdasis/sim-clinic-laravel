@@ -167,7 +167,13 @@ class ProcessInboundMessageJob implements ShouldQueue
     {
         $setting = WhatsappSetting::query()->first();
 
-        if ($setting === null || ! $setting->provisioned() || blank($setting->gateway_session_id)) {
+        // Tenant key tidak diperlukan: mode manual cukup API key. Rahasia
+        // webhook wajib karena hanya pesan yang datang lewat webhook terverifikasi
+        // yang boleh dibalas; tanpanya job ini tidak mungkin terpicu.
+        if ($setting === null
+            || ! $setting->hasGatewayCredentials()
+            || blank($setting->gateway_webhook_secret)
+            || blank($setting->gateway_session_id)) {
             Log::error('Balasan chatbot tidak terkirim: gateway WhatsApp klinik belum siap.', [
                 'tenant_id' => $this->tenantId,
                 'sender_phone' => $this->senderPhone,

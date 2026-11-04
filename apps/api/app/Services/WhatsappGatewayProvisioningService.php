@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Actions\Whatsapp\RegisterGatewayWebhookAction;
 use App\Actions\Whatsapp\StoreGatewayApiKeyAction;
 use App\Actions\Whatsapp\StoreGatewayRegistrationAction;
 use App\Actions\Whatsapp\StoreGatewayWebhookAction;
@@ -23,20 +24,12 @@ use Throwable;
  */
 class WhatsappGatewayProvisioningService
 {
-    /** Peristiwa gateway yang dibutuhkan kotak masuk dan chatbot. */
-    private const MESSAGE_EVENTS = [
-        'message.received',
-        'message.sent',
-        'message.delivered',
-        'message.read',
-        'message.failed',
-    ];
-
     public function __construct(
         private readonly WhatsappGatewayClient $client,
         private readonly StoreGatewayRegistrationAction $storeRegistration,
         private readonly StoreGatewayApiKeyAction $storeApiKey,
         private readonly StoreGatewayWebhookAction $storeWebhook,
+        private readonly RegisterGatewayWebhookAction $registerWebhook,
     ) {}
 
     /**
@@ -51,8 +44,18 @@ class WhatsappGatewayProvisioningService
         }
 
         // API key sudah diisi manual dari dashboard gateway: klinik sengaja
-        // tidak melewati register, dan webhook belum dipakai.
+        // tidak melewati register. Webhook tetap didaftarkan supaya pesan
+        // masuk sampai, tetapi kegagalannya tidak boleh membatalkan sesi.
         if (filled($setting->gateway_api_key) && blank($setting->gateway_tenant_key)) {
+            try {
+                $this->registerWebhook->handle($setting);
+            } catch (Throwable $e) {
+                Log::error('Pendaftaran webhook mode manual gagal; sesi tetap dipakai.', [
+                    'exception' => $e,
+                    'tenant_id' => $setting->tenant_id,
+                ]);
+            }
+
             return $setting;
         }
 
@@ -104,7 +107,7 @@ class WhatsappGatewayProvisioningService
             (string) $setting->gateway_tenant_key,
             (string) $setting->gateway_api_key,
             rtrim((string) config('app.url'), '/').'/api/whatsapp/webhook/'.$token,
-            self::MESSAGE_EVENTS,
+            RegisterGatewayWebhookAction::MESSAGE_EVENTS,
         );
 
         $this->storeWebhook->handle($setting, $token, $webhook['secret']);

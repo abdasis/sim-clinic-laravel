@@ -486,6 +486,51 @@ class GatewayClientTest extends TestCase
             && $request['events'] === ['message.received', 'message.failed']);
     }
 
+    /**
+     * Mode manual tidak punya tenant key; header itu tidak boleh ikut
+     * terkirim kosong karena gateway bisa menganggapnya kredensial lain.
+     */
+    public function test_create_webhook_without_tenant_key_sends_api_key_only(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake(['gateway.test/api/v1/webhooks' => Http::response([
+            'success' => true,
+            'message' => 'OK',
+            'data' => ['id' => 'w1', 'secret' => 'secret-uji'],
+        ], 201)]);
+
+        app(WhatsappGatewayClient::class)->createWebhook(
+            null,
+            'api-uji',
+            'https://app.test/api/whatsapp/webhook/token-uji',
+            ['message.received'],
+        );
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://gateway.test/api/v1/webhooks'
+            && $request->hasHeader('X-API-Key', 'api-uji')
+            && ! $request->hasHeader('x-tenant-key'));
+    }
+
+    public function test_create_webhook_with_tenant_key_still_sends_it(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake(['gateway.test/api/v1/webhooks' => Http::response([
+            'success' => true,
+            'message' => 'OK',
+            'data' => ['id' => 'w1', 'secret' => 'secret-uji'],
+        ], 201)]);
+
+        app(WhatsappGatewayClient::class)->createWebhook(
+            'tenant-uji',
+            'api-uji',
+            'https://app.test/api/whatsapp/webhook/token-uji',
+            ['message.received'],
+        );
+
+        Http::assertSent(fn ($request) => $request->hasHeader('X-API-Key', 'api-uji')
+            && $request->hasHeader('x-tenant-key', 'tenant-uji'));
+    }
+
     public function test_presence_posts_composing_with_target_phone(): void
     {
         Http::fake(['*' => Http::response(['success' => true, 'data' => ['queued' => true]], 202)]);

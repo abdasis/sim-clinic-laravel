@@ -283,6 +283,7 @@
         "session_deleted": "Sesi WhatsApp sudah dihapus. Nama sesi tetap disimpan, jadi tinggal disambungkan ulang.",
         "session_none": "Belum ada sesi WhatsApp yang tersambung untuk dihapus.",
         "gateway_not_ready": "WhatsApp klinik belum terhubung ke gateway. Buka menu Koneksi WhatsApp lalu sambungkan nomornya dulu.",
+        "gateway_server_unconfigured": "Pengelola platform belum mengatur alamat gateway WhatsApp. Hubungi pengelola untuk menyambungkannya.",
         "template_body_too_long": "Pesan terlalu panjang, maksimal :max karakter. Pesan yang disertai gambar perlu lebih ringkas karena gambarnya ikut ditampilkan.",
         "test_failed": "Pesan uji gagal dikirim. Periksa sambungan WhatsApp klinik, lalu coba lagi.",
         "template_section": "Template Pesan",

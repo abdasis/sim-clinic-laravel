@@ -291,19 +291,24 @@ class WhatsappGatewayClient
      * Daftarkan webhook pesan masuk. Rahasianya hanya dikembalikan gateway
      * sekali saat pembuatan; pemanggil wajib menyimpannya.
      *
+     * Tenant key opsional: klinik mode manual hanya punya API key.
+     *
      * @param  array<int, string>  $events
      * @return array{id: string, secret: string}
      */
-    public function createWebhook(string $tenantKey, string $apiKey, string $url, array $events): array
+    public function createWebhook(?string $tenantKey, string $apiKey, string $url, array $events): array
     {
+        $headers = ['X-API-Key' => $apiKey];
+
+        if (filled($tenantKey)) {
+            $headers['x-tenant-key'] = $tenantKey;
+        }
+
         $data = $this->send('post', '/webhooks', [
             'name' => (string) config('app.name'),
             'url' => $url,
             'events' => array_values($events),
-        ], [
-            'x-tenant-key' => $tenantKey,
-            'X-API-Key' => $apiKey,
-        ]);
+        ], $headers);
 
         $secret = $data['secret'] ?? null;
 

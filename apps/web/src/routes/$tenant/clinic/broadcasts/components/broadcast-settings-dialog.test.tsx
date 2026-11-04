@@ -14,7 +14,8 @@ const TRANSLATIONS = {
       "Nama sesi hanya boleh huruf kecil, angka, dan strip. Contoh: klinik-satu.",
     session_empty: "Dikosongkan berarti pengiriman otomatis mati.",
     session_locked: "Nama sesi tidak bisa diubah setelah sesi gateway dibuat. Putuskan lalu hapus sesinya bila ingin mengganti nama.",
-    gateway_not_ready: "WhatsApp klinik belum terhubung ke gateway. Buka menu Koneksi WhatsApp lalu sambungkan nomornya dulu.",
+    gateway_server_unconfigured:
+      "Pengelola platform belum mengatur alamat gateway WhatsApp. Hubungi pengelola untuk menyambungkannya.",
   },
   general: { save: "Simpan" },
 }
@@ -152,12 +153,24 @@ describe("BroadcastSettingsDialog", () => {
     })
   })
 
-  it("memberi tahu saat gateway belum disiapkan pengelola", async () => {
+  it("memberi tahu saat alamat gateway belum diatur pengelola", async () => {
     open({ session: "klinik-satu", gateway_available: false }, false)
 
     expect(
-      await screen.findByText(TRANSLATIONS.broadcast.gateway_not_ready),
+      await screen.findByText(
+        TRANSLATIONS.broadcast.gateway_server_unconfigured,
+      ),
     ).toBeTruthy()
+  })
+
+  it("tidak menampilkan peringatan gateway saat alamatnya sudah diatur", async () => {
+    open({ session: "klinik-satu", gateway_available: true }, false)
+
+    await screen.findByLabelText("Nama Sesi WhatsApp")
+
+    expect(
+      screen.queryByText(TRANSLATIONS.broadcast.gateway_server_unconfigured),
+    ).toBeNull()
   })
 
   it("menolak nama sesi berhuruf besar dan berspasi sebelum dikirim", async () => {

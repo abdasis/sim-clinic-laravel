@@ -124,6 +124,30 @@ class ChatbotGatewayTest extends TestCase
         $this->assertSame(0, ChatMessage::query()->count());
     }
 
+    /**
+     * Mode manual: API key, sesi, dan rahasia webhook cukup. Tenant key hanya
+     * pelengkap alur register yang tidak dijalani klinik ini.
+     */
+    public function test_manual_mode_without_tenant_key_still_replies(): void
+    {
+        ChatbotSetting::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->gatewaySetting(['gateway_tenant_key' => null]);
+
+        Http::fake([
+            'ai.uji/*' => Http::response(self::answer('Halo, ada yang bisa dibantu?')),
+            'gateway.test/api/v1/sessions/*/presence' => Http::response(['success' => true, 'data' => []], 202),
+            'gateway.test/api/v1/messages/send' => Http::response(['success' => true, 'data' => [
+                'messageId' => 'uuid-manual', 'status' => 'QUEUED',
+            ]], 202),
+        ]);
+
+        $this->runJob();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/messages/send')
+            && $request['text'] === 'Halo, ada yang bisa dibantu?');
+        $this->assertDatabaseHas('messages', ['provider_message_id' => 'uuid-manual']);
+    }
+
     /** Tanpa baris pengaturan sama sekali pun gateway dianggap belum siap. */
     public function test_no_ai_call_is_made_without_any_gateway_setting(): void
     {

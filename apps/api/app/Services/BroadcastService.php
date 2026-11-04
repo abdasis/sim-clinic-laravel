@@ -17,6 +17,7 @@ use App\Models\BroadcastRecipient;
 use App\Models\BroadcastReminderSetting;
 use App\Models\WhatsappSetting;
 use App\Support\DailyMessageQuota;
+use App\Support\PublicUrl;
 use App\Support\TemplateVariables;
 use App\Support\WhatsappGatewayClient;
 use Illuminate\Support\Facades\Auth;
@@ -214,35 +215,9 @@ class BroadcastService
     {
         $url = (string) $broadcast->image_url;
 
-        if ($url === '') {
-            return;
-        }
-
-        $parts = parse_url($url);
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        $host = strtolower(trim((string) ($parts['host'] ?? ''), '[]'));
-
-        if (! in_array($scheme, ['http', 'https'], true) || $host === '' || $this->isInternalHost($host)) {
+        if ($url !== '' && ! PublicUrl::isGatewayReachable($url)) {
             abort(422, __('broadcast.image_url_unreachable'));
         }
-    }
-
-    /** Nama host lokal atau alamat IP yang tidak bisa dijangkau dari internet. */
-    private function isInternalHost(string $host): bool
-    {
-        if ($host === 'localhost' || str_ends_with($host, '.localhost')) {
-            return true;
-        }
-
-        // Host berupa nama domain lolos; hanya literal IP yang disaring.
-        if (filter_var($host, FILTER_VALIDATE_IP) === false) {
-            return false;
-        }
-
-        // Loopback, privat, link-local, dan rentang terlarang lain (0.0.0.0,
-        // 127/8, 10/8, 172.16/12, 192.168/16, 169.254/16, ::1, fc00::/7,
-        // fe80::/10) semuanya ditolak oleh dua flag ini.
-        return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }
 
     /**
