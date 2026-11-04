@@ -3,13 +3,12 @@ import { cleanup, render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { TooltipProvider } from "#/components/ui/tooltip.tsx"
-import { setTranslations } from "#/utils/trans.ts"
 import { BroadcastDetailHeader } from "./broadcast-detail-header.tsx"
 import type { BroadcastDetail } from "./broadcast-types.ts"
 
 const TRANSLATIONS = {
   broadcast: {
-    gateway_not_ready: "WhatsApp klinik belum terhubung ke gateway.",
+    gateway_not_ready: "WhatsApp klinik belum terhubung ke gateway. Buka menu Koneksi WhatsApp lalu sambungkan nomornya dulu.",
     send_all: "Kirim Semua",
     progress: ":sent dari :total terkirim",
     pause: "Jeda",
@@ -68,7 +67,6 @@ function renderHeader(gatewayReady: boolean) {
 
 describe("BroadcastDetailHeader", () => {
   beforeEach(() => {
-    setTranslations(TRANSLATIONS)
   })
 
   afterEach(() => {

@@ -1,7 +1,7 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import type { CompanyValueProp } from "#/hooks/use-company-profile.ts"
-import { useContentText } from "./locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { SectionShell, type SectionTone } from "./section-shell.tsx"
 import { valuePropIcon } from "./value-prop-icons.ts"
 
@@ -24,7 +24,7 @@ export function ValuePropsSection({
   items,
   className,
 }: ValuePropsSectionProps) {
-  const text = useContentText()
+  const text = contentText
 
   if (items.length === 0) return null
 

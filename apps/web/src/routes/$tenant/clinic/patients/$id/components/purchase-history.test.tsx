@@ -3,19 +3,9 @@ import { describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { PurchaseHistory } from "./purchase-history.tsx"
 import type { PurchaseRow } from "./record-types.ts"
 
-setTranslations({
-  general: { loading: "Memuat..." },
-  medical_record: {
-    load_older_purchases: "Muat pembelian sebelumnya",
-    purchase_standalone: "Tanpa kunjungan",
-    purchases_empty: "Belum ada pembelian produk",
-    purchases_empty_desc: "Produk yang ditebus pasien akan terkumpul di sini.",
-  },
-})
 
 function renderWithProviders(ui: ReactElement) {
   const client = new QueryClient({

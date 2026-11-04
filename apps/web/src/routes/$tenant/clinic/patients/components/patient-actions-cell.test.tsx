@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import {
   PatientActionsCell,
   type PatientActionsRow,
@@ -11,8 +10,8 @@ import {
 const TRANSLATIONS = {
   patient: {
     delete: "Hapus",
-    delete_confirm: "Data pasien ini dihapus permanen.",
-    archive_confirm: "Pasien ini sudah punya riwayat kunjungan, jadi datanya diarsipkan.",
+    delete_confirm: "Data pasien ini dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+    archive_confirm: "Pasien ini sudah punya riwayat kunjungan, jadi datanya tidak dihapus permanen — hanya diarsipkan supaya rekam medis dan notanya tetap utuh.",
   },
   general: { edit: "Ubah", actions: "Aksi", cancel: "Batal" },
 }
@@ -46,7 +45,6 @@ const base: PatientActionsRow = { id: 3, name: "Ani Wijaya", can_delete: true }
 
 describe("PatientActionsCell", () => {
   beforeEach(() => {
-    setTranslations(TRANSLATIONS)
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -78,7 +76,7 @@ describe("PatientActionsCell", () => {
     fireEvent.click(screen.getByText("Hapus"))
 
     await waitFor(() =>
-      expect(screen.getByText("Data pasien ini dihapus permanen.")).toBeTruthy(),
+      expect(screen.getByText("Data pasien ini dihapus permanen. Tindakan ini tidak bisa dibatalkan.")).toBeTruthy(),
     )
   })
 
@@ -92,7 +90,7 @@ describe("PatientActionsCell", () => {
     await waitFor(() =>
       expect(
         screen.getByText(
-          "Pasien ini sudah punya riwayat kunjungan, jadi datanya diarsipkan.",
+          "Pasien ini sudah punya riwayat kunjungan, jadi datanya tidak dihapus permanen — hanya diarsipkan supaya rekam medis dan notanya tetap utuh.",
         ),
       ).toBeTruthy(),
     )

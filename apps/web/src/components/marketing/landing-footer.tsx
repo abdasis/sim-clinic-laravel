@@ -11,12 +11,11 @@ import {
   TiktokIcon,
 } from "@hugeicons/core-free-icons"
 
-import { useContentText } from "#/components/company-profile/locale-context.tsx"
 import type {
   CompanyNavItem,
   CompanySettings,
 } from "#/hooks/use-company-profile.ts"
-import type { ContentLocale } from "#/lib/company-locale.ts"
+import { contentText } from "#/lib/company-locale.ts"
 import { GOOGLE_MAPS_URL } from "#/lib/landing-content.ts"
 
 /** Ikon per platform; yang tidak dikenal memakai ikon tautan biasa. */
@@ -29,12 +28,10 @@ const SOCIAL_ICONS: Record<string, IconSvgElement> = {
 interface LandingFooterProps {
   settings: CompanySettings | null
   items: CompanyNavItem[]
-  locale: ContentLocale
 }
 
-export function LandingFooter({ settings, items, locale }: LandingFooterProps) {
-  const text = useContentText()
-  const isEnglish = locale === "en"
+export function LandingFooter({ settings, items }: LandingFooterProps) {
+  const text = contentText
 
   const socials = settings?.social_links ?? []
   const marketplaces = settings?.marketplace_links ?? []
@@ -47,9 +44,8 @@ export function LandingFooter({ settings, items, locale }: LandingFooterProps) {
             {text(settings?.site_name)}
           </p>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            {isEnglish
-              ? "Beauty, laser, and hair removal clinic with certified doctors."
-              : "Klinik kecantikan, laser, dan hair removal dengan dokter bersertifikasi."}
+            Klinik kecantikan, laser, dan hair removal dengan dokter
+            bersertifikasi.
           </p>
 
           <ul className="space-y-2 pt-1">
@@ -70,9 +66,7 @@ export function LandingFooter({ settings, items, locale }: LandingFooterProps) {
                 className="mt-0.5 size-4 shrink-0 text-muted-foreground"
               />
               <span className="text-sm leading-relaxed text-muted-foreground">
-                {isEnglish
-                  ? "Daily, 10.00 – 18.00"
-                  : "Setiap hari, 10.00 – 18.00"}
+                Setiap hari, 10.00 – 18.00
               </span>
             </li>
           </ul>
@@ -88,20 +82,16 @@ export function LandingFooter({ settings, items, locale }: LandingFooterProps) {
               strokeWidth={2}
               className="size-3.5"
             />
-            {isEnglish ? "View on Google Maps" : "Lihat di Google Maps"}
+            Lihat di Google Maps
           </a>
         </div>
 
-        <FooterColumn heading={isEnglish ? "Talk To Us" : "Hubungi Kami"}>
+        <FooterColumn heading="Hubungi Kami">
           {items.map((item) =>
             item.url ? (
               <li key={item.id}>
                 <a
-                  href={
-                    item.link_type === "external"
-                      ? item.url
-                      : `${item.url}?lang=${locale}`
-                  }
+                  href={item.url}
                   {...(item.link_type === "external"
                     ? { target: "_blank", rel: "noreferrer noopener" }
                     : {})}
@@ -114,7 +104,7 @@ export function LandingFooter({ settings, items, locale }: LandingFooterProps) {
           )}
         </FooterColumn>
 
-        <FooterColumn heading={isEnglish ? "Social Media" : "Media Sosial"}>
+        <FooterColumn heading="Media Sosial">
           {socials.map((social) => (
             <li key={social.platform}>
               <IconLink
@@ -154,7 +144,7 @@ export function LandingFooter({ settings, items, locale }: LandingFooterProps) {
               strokeWidth={2}
               className="size-3.5"
             />
-            {isEnglish ? "Back to top" : "Kembali ke atas"}
+            Kembali ke atas
           </button>
         </div>
       </div>

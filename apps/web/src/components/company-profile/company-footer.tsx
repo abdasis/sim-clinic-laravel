@@ -7,7 +7,7 @@ import type {
   OperatingHour,
 } from "#/hooks/use-company-profile.ts"
 import { internalHref } from "./cta-link.tsx"
-import { useContentText } from "./locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { SocialLinks } from "./social-links.tsx"
 
 interface FooterLabels {
@@ -31,7 +31,7 @@ export function CompanyFooter({
   items,
   labels,
 }: CompanyFooterProps) {
-  const text = useContentText()
+  const text = contentText
   const brand = text(settings?.site_name) ?? tenant
   const socials = settings?.social_links ?? []
   const hours = summarizeHours(settings?.operating_hours ?? null, labels.closed)
@@ -170,7 +170,7 @@ function FooterColumn({
 }
 
 function FooterLink({ tenant, item }: { tenant: string; item: CompanyNavItem }) {
-  const text = useContentText()
+  const text = contentText
 
   if (!item.url) return null
 

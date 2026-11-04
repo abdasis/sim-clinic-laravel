@@ -3,18 +3,8 @@ import { describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 
-const TRANSLATIONS = {
-  broadcast: {
-    pick_contacts_hint: "Cari nama pasien, lalu tekan untuk memilihnya.",
-    clear_selection: "Kosongkan pilihan",
-    search_patients: "Cari nama atau nomor pasien",
-    no_patient_match: "Tidak ada pasien yang cocok.",
-  },
-}
 
-setTranslations(TRANSLATIONS)
 
 const patients = [
   { id: 1, name: "Ani Lestari", whatsapp: "081100000001" },
@@ -23,9 +13,7 @@ const patients = [
 ]
 
 vi.mock("#/lib/api.ts", () => ({
-  apiGet: vi.fn((url: string, params?: { search?: string }) => {
-    if (url.includes("/translations")) return Promise.resolve({ data: TRANSLATIONS })
-
+  apiGet: vi.fn((_url: string, params?: { search?: string }) => {
     const search = params?.search?.toLowerCase()
 
     return Promise.resolve({

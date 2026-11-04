@@ -3,19 +3,8 @@ import { describe, expect, it } from "vitest"
 import { render } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { RevenueSummary } from "./revenue-summary.tsx"
 
-setTranslations({
-  report: {
-    total_revenue: "Total Omzet",
-    total_revenue_hint: "Nilai seluruh transaksi lunas",
-    paid_transactions: "Transaksi Lunas",
-    paid_transactions_count: "Jumlah transaksi lunas",
-    average_transaction: "Rata-rata per Transaksi",
-    average_transaction_hint: "Omzet dibagi jumlah transaksi",
-  },
-})
 
 function renderWithProviders(ui: ReactElement) {
   const client = new QueryClient({

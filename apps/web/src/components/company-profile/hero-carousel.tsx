@@ -11,7 +11,7 @@ import {
 import { cn } from "#/lib/utils.ts"
 import type { CompanySlide } from "#/hooks/use-company-profile.ts"
 import { CtaLink } from "./cta-link.tsx"
-import { useContentText } from "./locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 
 const ROTATE_MS = 6000
 
@@ -25,7 +25,7 @@ interface HeroCarouselProps {
  * slide yang lompat saat sedang dibaca lebih mengganggu daripada membantu.
  */
 export function HeroCarousel({ tenant, slides }: HeroCarouselProps) {
-  const text = useContentText()
+  const text = contentText
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
   const [paused, setPaused] = useState(false)

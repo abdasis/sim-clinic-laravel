@@ -3,26 +3,8 @@ import { describe, expect, it, vi } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 
-const TRANSLATIONS = {
-  patient: {
-    history: "Riwayat Kunjungan",
-    history_empty: "Belum ada riwayat kunjungan",
-    history_empty_desc: "Riwayat akan terkumpul setelah kunjungan pertamanya.",
-    history_type: { booking: "Booking", treatment: "Treatment" },
-  },
-  clinic: {
-    booking_status: {
-      pending: "Menunggu",
-      confirmed: "Dikonfirmasi",
-      done: "Selesai",
-      cancelled: "Dibatalkan",
-    },
-  },
-}
 
-setTranslations(TRANSLATIONS)
 
 const entries = [
   {
@@ -41,13 +23,10 @@ const entries = [
   },
 ]
 
-// useTrans menembak /translations lewat apiGet yang sama, jadi mocknya harus
-// membedakan alamat — kalau tidak, store terjemahan tertimpa data riwayat dan
-// seluruh label jatuh kembali ke nama kuncinya.
 vi.mock("#/lib/api.ts", () => ({
-  apiGet: vi.fn((url: string) =>
+  apiGet: vi.fn(() =>
     Promise.resolve({
-      data: url.includes("/translations") ? TRANSLATIONS : entries,
+      data: entries,
     }),
   ),
 }))

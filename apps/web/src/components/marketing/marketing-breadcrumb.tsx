@@ -8,7 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "#/components/ui/breadcrumb.tsx"
-import { useContentLocale } from "#/components/company-profile/locale-context.tsx"
 
 export interface MarketingCrumb {
   label: string
@@ -21,17 +20,12 @@ export interface MarketingCrumb {
  * cukup menyebut sisanya.
  */
 export function MarketingBreadcrumb({ items }: { items: MarketingCrumb[] }) {
-  const locale = useContentLocale()
-  const home = locale === "en" ? "Home" : "Beranda"
-
   return (
     <Breadcrumb className="mb-6">
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/" search={{ lang: locale }}>
-              {home}
-            </Link>
+            <Link to="/">Beranda</Link>
           </BreadcrumbLink>
           <BreadcrumbSeparator />
         </BreadcrumbItem>
@@ -46,7 +40,7 @@ export function MarketingBreadcrumb({ items }: { items: MarketingCrumb[] }) {
               ) : (
                 <>
                   <BreadcrumbLink asChild>
-                    <a href={`${item.href}?lang=${locale}`}>{item.label}</a>
+                    <a href={item.href}>{item.label}</a>
                   </BreadcrumbLink>
                   <BreadcrumbSeparator />
                 </>

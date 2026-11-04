@@ -7,12 +7,9 @@ import {
   Navigation03Icon,
 } from "@hugeicons/core-free-icons"
 
-import {
-  useContentLocale,
-  useContentText,
-} from "#/components/company-profile/locale-context.tsx"
 import { MarketingPage } from "#/components/marketing/marketing-breadcrumb.tsx"
 import { Button } from "#/components/ui/button.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { OUTLET } from "#/lib/clinic-outlet.ts"
 import { OutletContact } from "./components/outlet-contact.tsx"
 import { OutletHours } from "./components/outlet-hours.tsx"
@@ -28,28 +25,21 @@ export const Route = createFileRoute("/_marketing/locations/")({
  * Kembalikan ke bentuk daftar saat outlet kedua benar-benar dibuka.
  */
 function LocationsPage() {
-  const text = useContentText()
-  const isEnglish = useContentLocale() === "en"
+  const text = contentText
   const directions = text(OUTLET.gettingHere) ?? []
 
   return (
     <MarketingPage
-      crumbs={[{ label: isEnglish ? "Location" : "Lokasi" }]}
-      title={isEnglish ? "Where to find us" : "Tempat kami berada"}
-      description={
-        isEnglish
-          ? "One clinic, looked after properly. Come in for a consultation, or send a message first — we will hold a slot for you."
-          : "Satu klinik, dirawat sepenuh hati. Datang untuk konsultasi, atau kabari dulu lewat pesan — kami sisakan jadwalnya untuk Anda."
-      }
+      crumbs={[{ label: "Lokasi" }]}
+      title="Tempat kami berada"
+      description="Satu klinik, dirawat sepenuh hati. Datang untuk konsultasi, atau kabari dulu lewat pesan — kami sisakan jadwalnya untuk Anda."
     >
       {/* Blok utama: peta di kiri, alamat dan kontak di kanan. */}
       <section className="overflow-hidden rounded-xl border border-border/50 bg-background">
         <div className="grid gap-0 lg:grid-cols-[1.15fr_1fr]">
           <div className="order-2 flex flex-col gap-5 p-6 lg:order-1 lg:p-7">
             <div>
-              <p className="island-kicker mb-2">
-                {isEnglish ? "Our clinic" : "Klinik kami"}
-              </p>
+              <p className="island-kicker mb-2">Klinik kami</p>
               <h2 className="display-title text-2xl font-bold tracking-tight text-balance">
                 {OUTLET.name}
               </h2>
@@ -65,13 +55,13 @@ function LocationsPage() {
                 asChild
                 className="transition-transform duration-150 ease-out hover:-translate-y-px"
               >
-                <Link to="/online-booking" search={{ lang: undefined }}>
+                <Link to="/online-booking">
                   <HugeiconsIcon
                     icon={Calendar01Icon}
                     strokeWidth={2}
                     className="size-4"
                   />
-                  {isEnglish ? "Book a visit" : "Buat janji"}
+                  Buat janji
                 </Link>
               </Button>
               <Button asChild variant="outline">
@@ -85,7 +75,7 @@ function LocationsPage() {
                     strokeWidth={2}
                     className="size-4"
                   />
-                  {isEnglish ? "Get directions" : "Petunjuk arah"}
+                  Petunjuk arah
                 </a>
               </Button>
             </div>
@@ -111,7 +101,7 @@ function LocationsPage() {
               strokeWidth={2}
               className="size-4 text-muted-foreground"
             />
-            {isEnglish ? "Getting here" : "Cara ke sini"}
+            Cara ke sini
           </h2>
 
           {directions.length > 0 ? (
@@ -131,9 +121,8 @@ function LocationsPage() {
             </ul>
           ) : (
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {isEnglish
-                ? "Open the map for turn-by-turn directions from wherever you are. Call us if the entrance is hard to spot — someone will guide you in."
-                : "Buka petanya untuk rute langsung dari posisi Anda. Telepon saja kalau pintu masuknya sulit terlihat, nanti kami pandu."}
+              Buka petanya untuk rute langsung dari posisi Anda. Telepon saja
+              kalau pintu masuknya sulit terlihat, nanti kami pandu.
             </p>
           )}
         </section>

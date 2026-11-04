@@ -2,20 +2,8 @@ import { afterEach, describe, expect, it } from "vitest"
 import { cleanup, render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { DashboardKpiRow } from "./dashboard-kpis.tsx"
 
-setTranslations({
-  dashboard: {
-    kpi: {
-      revenue_today: "Omzet hari ini",
-      bookings_today: "Booking hari ini",
-      new_patients: "Pasien baru",
-      outstanding: "Sisa tagihan",
-      low_stock: "Stok menipis",
-    },
-  },
-})
 
 const KPIS = {
   revenue_today: 12_450_000,

@@ -5,15 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { FormCombobox } from "./form-combobox.tsx"
 import { Form } from "#/components/ui/form.tsx"
-import { setTranslations } from "#/utils/trans.ts"
 
-setTranslations({
-  general: {
-    loading: "Memuat...",
-    load_failed: "Data gagal dimuat",
-    no_data: "Tidak ada data",
-  },
-})
 
 const OPTIONS = [
   { label: "Ibu Sinta", value: "1" },

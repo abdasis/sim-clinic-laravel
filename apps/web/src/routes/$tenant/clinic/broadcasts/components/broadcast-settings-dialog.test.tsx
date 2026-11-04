@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { BroadcastSettingsDialog } from "./broadcast-settings-dialog.tsx"
 
 const TRANSLATIONS = {
@@ -14,8 +13,8 @@ const TRANSLATIONS = {
     session_format:
       "Nama sesi hanya boleh huruf kecil, angka, dan strip. Contoh: klinik-satu.",
     session_empty: "Dikosongkan berarti pengiriman otomatis mati.",
-    session_locked: "Nama sesi tidak bisa diubah setelah sesi gateway dibuat.",
-    gateway_not_ready: "Gateway WhatsApp belum siap.",
+    session_locked: "Nama sesi tidak bisa diubah setelah sesi gateway dibuat. Putuskan lalu hapus sesinya bila ingin mengganti nama.",
+    gateway_not_ready: "WhatsApp klinik belum terhubung ke gateway. Buka menu Koneksi WhatsApp lalu sambungkan nomornya dulu.",
   },
   general: { save: "Simpan" },
 }
@@ -25,18 +24,10 @@ interface Settings {
   gateway_available: boolean
 }
 
-/**
- * `useTrans` ikut memanggil /translations. Kalau jawabannya tidak dipisahkan,
- * kamusnya tertimpa dan label berubah jadi kunci mentah — test lalu gagal
- * karena alasan yang berbeda dari yang diuji.
- */
 function mockFetch(settings: Settings, provisioned = true) {
   const mock = vi.fn(async (input: unknown, init?: RequestInit) => {
     const url = String(input)
 
-    if (url.includes("/translations")) {
-      return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
-    }
 
     if (url.endsWith("/broadcasts/connection")) {
       return {
@@ -88,7 +79,6 @@ function open(settings: Settings, provisioned = true) {
 describe("BroadcastSettingsDialog", () => {
   beforeEach(() => {
     window.localStorage.setItem("clinic_token", "tok")
-    setTranslations(TRANSLATIONS)
   })
 
   afterEach(() => {

@@ -1,10 +1,8 @@
+import translations from "#/lib/translations-id.json"
+
 export type TranslationGroups = Record<string, Record<string, unknown>>
 
-let store: TranslationGroups = {}
-
-export function setTranslations(groups: TranslationGroups) {
-  store = groups
-}
+const store = translations as TranslationGroups
 
 /**
  * Ambil terjemahan berdasarkan key bertitik: t('staff.name').
@@ -22,76 +20,4 @@ export function translate(key: string): string {
     }
   }
   return typeof value === "string" ? value : key
-}
-
-/**
- * Salinan terjemahan di peramban, supaya shell admin tidak menunggu 71KB
- * JSON tiap kali halaman dimuat ulang.
- *
- * Cuma pemercepat tampilan, bukan pengganti pengambilan datanya: tiap kali
- * aplikasi dibuka, versi terbarunya tetap diambil di latar dan salinan ini
- * ditimpa kalau isinya sudah berganti. Jadi salinan basi paling lama bertahan
- * sampai permintaan itu selesai, bukan sampai ada yang membersihkannya.
- */
-const CACHE_KEY = "clinic_translations"
-
-interface CachedTranslations {
-  locale: string
-  version: string
-  groups: TranslationGroups
-}
-
-/**
- * Semua akses dibungkus try/catch: mode penyamaran, kuota penuh, dan
- * peramban yang memblokir penyimpanan situs sama-sama melempar di sini, dan
- * tidak satu pun layak menjatuhkan seluruh halaman hanya karena pemercepat.
- */
-/**
- * Versi salinan yang sekarang tersimpan untuk locale ini, atau `null` bila
- * belum ada salinannya.
- *
- * Dipakai untuk memutuskan apakah jawaban yang baru datang perlu ditulis
- * ulang. Menulis 71KB JSON ke localStorage itu sinkron dan memblokir utas
- * utama — murah di laptop, terasa di tablet klinik — dan tiap kali halaman
- * dimuat ulang ia dilakukan lagi untuk isi yang sama persis.
- */
-export function cachedTranslationVersion(locale: string): string | null {
-  return readCachedTranslations(locale)?.version ?? null
-}
-
-export function readCachedTranslations(locale: string): CachedTranslations | null {
-  if (typeof window === "undefined") return null
-
-  try {
-    const raw = window.localStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-
-    const parsed = JSON.parse(raw) as CachedTranslations
-
-    // Locale berbeda berarti salinan ini milik bahasa lain; membiarkannya
-    // terpakai membuat halaman publik tampil dalam bahasa yang salah.
-    if (parsed?.locale !== locale || typeof parsed.groups !== "object") return null
-
-    return parsed
-  } catch {
-    return null
-  }
-}
-
-export function cacheTranslations(
-  locale: string,
-  version: string,
-  groups: TranslationGroups,
-): void {
-  if (typeof window === "undefined") return
-
-  try {
-    window.localStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({ locale, version, groups } satisfies CachedTranslations),
-    )
-  } catch {
-    // Tidak bisa menyimpan berarti kembali ke perilaku lama: menunggu
-    // pengambilan tiap kali. Lambat, tapi benar.
-  }
 }

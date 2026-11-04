@@ -47,7 +47,7 @@ describe("BeforeAfterGallery", () => {
     expect(inputs).toHaveLength(1)
 
     const addSlots = Array.from(container.querySelectorAll("button")).filter(
-      (button) => button.textContent?.includes("photo_add_after"),
+      (button) => button.textContent?.includes("Tambah foto sesudah"),
     )
     expect(addSlots.length).toBeGreaterThan(0)
   })
@@ -67,8 +67,8 @@ describe("BeforeAfterGallery", () => {
         const label = button.getAttribute("aria-label") ?? ""
 
         return (
-          label === "medical_record.photo_delete" ||
-          label.startsWith("medical_record.photo_add")
+          label === "Hapus foto ini" ||
+          label.startsWith("Tambah foto")
         )
       },
     )
@@ -84,7 +84,7 @@ describe("BeforeAfterGallery", () => {
     expect(container.querySelector('input[type="file"]')).toBeNull()
     expect(
       Array.from(container.querySelectorAll("button")).some((button) =>
-        button.textContent?.includes("photo_add"),
+        button.textContent?.includes("Tambah foto"),
       ),
     ).toBe(false)
   })
@@ -96,7 +96,7 @@ describe("BeforeAfterGallery", () => {
     )
 
     const buttons = Array.from(container.querySelectorAll("button")).filter(
-      (button) => button.getAttribute("aria-label") === "medical_record.photo_delete",
+      (button) => button.getAttribute("aria-label") === "Hapus foto ini",
     )
 
     expect(buttons).toHaveLength(3)
@@ -109,7 +109,7 @@ describe("BeforeAfterGallery", () => {
       <BeforeAfterGallery photos={[]} />,
     )
 
-    expect(getByText("medical_record.no_photos")).toBeTruthy()
+    expect(getByText("Belum ada foto yang diunggah.")).toBeTruthy()
     expect(container.querySelectorAll("img")).toHaveLength(0)
   })
 })

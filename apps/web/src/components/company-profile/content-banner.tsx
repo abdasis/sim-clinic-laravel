@@ -2,7 +2,7 @@ import type { CompanyContentSection } from "#/hooks/use-company-profile.ts"
 import { renderRichText } from "#/lib/tiptap-render.tsx"
 import { cn } from "#/lib/utils.ts"
 import { CtaLink } from "./cta-link.tsx"
-import { useContentText } from "./locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 
 interface ContentBannerProps {
   id?: string
@@ -29,7 +29,7 @@ export function ContentBanner({
   emphasis,
   className,
 }: ContentBannerProps) {
-  const text = useContentText()
+  const text = contentText
 
   if (!section) return null
 

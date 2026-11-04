@@ -5,7 +5,7 @@ import {
   AccordionTrigger,
 } from "#/components/ui/accordion.tsx"
 import type { CompanyFaq } from "#/hooks/use-company-profile.ts"
-import { useContentText } from "./locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { SectionShell, type SectionTone } from "./section-shell.tsx"
 
 interface FaqSectionProps {
@@ -33,7 +33,7 @@ export function FaqSection({
   tone,
   items,
 }: FaqSectionProps) {
-  const text = useContentText()
+  const text = contentText
 
   if (items.length === 0) return null
 

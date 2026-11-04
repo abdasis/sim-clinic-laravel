@@ -3,7 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Link } from "@tanstack/react-router"
 
 import type { CompanyTreatment } from "#/hooks/use-company-profile.ts"
-import { useContentLocale, useContentText } from "./locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { SectionShell, type SectionTone } from "./section-shell.tsx"
 
 const CARD_CLASS =
@@ -40,8 +40,6 @@ export function TreatmentGrid({
   basePath,
   className,
 }: TreatmentGridProps) {
-  const locale = useContentLocale()
-
   if (items.length === 0) return null
 
   return (
@@ -63,7 +61,6 @@ export function TreatmentGrid({
               key={treatment.id}
               to="/treatment/$slug"
               params={{ slug: treatment.slug }}
-              search={{ lang: locale }}
               className={CARD_CLASS}
             >
               <TreatmentCard treatment={treatment} readMoreLabel={readMoreLabel} />
@@ -73,7 +70,6 @@ export function TreatmentGrid({
               key={treatment.id}
               to="/$tenant/treatment/$slug"
               params={{ tenant, slug: treatment.slug }}
-              search={{ lang: locale }}
               className={CARD_CLASS}
             >
               <TreatmentCard treatment={treatment} readMoreLabel={readMoreLabel} />
@@ -92,7 +88,7 @@ function TreatmentCard({
   treatment: CompanyTreatment
   readMoreLabel: string
 }) {
-  const text = useContentText()
+  const text = contentText
   const title = text(treatment.title)
   const description = text(treatment.description)
 

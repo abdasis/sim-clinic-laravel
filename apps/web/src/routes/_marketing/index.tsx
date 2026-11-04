@@ -7,7 +7,6 @@ import { PromoSection } from "#/components/company-profile/promo-section.tsx"
 import { TestimonialSection } from "#/components/company-profile/testimonial-section.tsx"
 import { TreatmentGrid } from "#/components/company-profile/treatment-grid.tsx"
 import { ValuePropsSection } from "#/components/company-profile/value-props-section.tsx"
-import { useContentLocale } from "#/components/company-profile/locale-context.tsx"
 import { LANDING_CONTENT } from "#/lib/landing-content.ts"
 
 export const Route = createFileRoute("/_marketing/")({
@@ -19,26 +18,8 @@ export const Route = createFileRoute("/_marketing/")({
  * dengan yang dipakai halaman tenant — hanya sumber datanya yang berbeda.
  */
 function LandingPage() {
-  const locale = useContentLocale()
-  const isEnglish = locale === "en"
   const data = LANDING_CONTENT
   const sections = data.content_sections
-
-  const copy = isEnglish
-    ? {
-        valueProps: "Why choose us",
-        treatments: "Featured treatments",
-        promos: "Running promos",
-        testimonials: "What our patients say",
-        readMore: "Details",
-      }
-    : {
-        valueProps: "Kenapa memilih kami",
-        treatments: "Treatment pilihan",
-        promos: "Promo berjalan",
-        testimonials: "Kata pasien kami",
-        readMore: "Selengkapnya",
-      }
 
   return (
     <main>
@@ -47,7 +28,7 @@ function LandingPage() {
       {/* Pola latar diselang-seling supaya halaman panjang tidak terasa rata. */}
       <ValuePropsSection
         id="kenapa"
-        heading={copy.valueProps}
+        heading="Kenapa memilih kami"
         items={data.value_props}
         className="bg-dot-grid"
       />
@@ -55,14 +36,14 @@ function LandingPage() {
         id="treatment"
         tenant=""
         basePath="/treatment"
-        heading={copy.treatments}
-        readMoreLabel={copy.readMore}
+        heading="Treatment pilihan"
+        readMoreLabel="Selengkapnya"
         items={data.treatments}
       />
       <PromoSection
         id="promo"
         tenant=""
-        heading={copy.promos}
+        heading="Promo berjalan"
         items={data.promos}
         className="bg-line-grid"
       />
@@ -70,10 +51,8 @@ function LandingPage() {
       <BookingCta tenant="" section={sections.booking_cta} />
       <TestimonialSection
         id="testimoni"
-        heading={copy.testimonials}
-        sinceTemplate={
-          isEnglish ? "Patient since :year" : "Pelanggan sejak :year"
-        }
+        heading="Kata pasien kami"
+        sinceTemplate="Pelanggan sejak :year"
         items={data.testimonials}
       />
     </main>

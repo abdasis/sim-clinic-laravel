@@ -1,6 +1,6 @@
 import { Button } from "#/components/ui/button.tsx"
 import type { Translatable } from "#/lib/company-locale.ts"
-import { useContentText } from "./locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 
 type ButtonProps = React.ComponentProps<typeof Button>
 
@@ -27,7 +27,7 @@ export function CtaLink({
   size,
   className,
 }: CtaLinkProps) {
-  const text = useContentText()
+  const text = contentText
   const caption = text(label)
 
   if (!caption || !url) return null

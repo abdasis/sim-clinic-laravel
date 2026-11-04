@@ -9,32 +9,16 @@ import {
 } from "@tanstack/react-router"
 
 import { TooltipProvider } from "#/components/ui/tooltip.tsx"
-import { setTranslations } from "#/utils/trans.ts"
 import {
   TransactionActionsCell,
   type TransactionActionsRow,
 } from "./transaction-actions-cell.tsx"
 
-const TRANSLATIONS = {
-  pos: {
-    delete: "Hapus Transaksi",
-    delete_confirm: "Transaksi ini hilang dari daftar dan dari laporan.",
-    deleted: "Transaksi berhasil dihapus.",
-    cancel_action: "Batalkan Transaksi",
-    cancel_confirm: "Stok produk pada transaksi ini dikembalikan.",
-    cancelled: "Transaksi berhasil dibatalkan.",
-  },
-  invoice: { title: "Nota" },
-  general: { actions: "Aksi", cancel: "Batal", loading: "Memuat..." },
-}
 
 function mockFetch(response: { ok: boolean; status: number; body: unknown }) {
-  const mock = vi.fn(async (input: unknown, init?: RequestInit) => {
+  const mock = vi.fn(async (_input: unknown, init?: RequestInit) => {
     void init
 
-    if (String(input).includes("/translations")) {
-      return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
-    }
 
     return {
       ok: response.ok,
@@ -100,7 +84,6 @@ const LIVE: TransactionActionsRow = {
 describe("TransactionActionsCell", () => {
   beforeEach(() => {
     window.localStorage.setItem("clinic_token", "tok")
-    setTranslations(TRANSLATIONS)
   })
 
   afterEach(cleanup)
@@ -123,7 +106,7 @@ describe("TransactionActionsCell", () => {
     fireEvent.click(await screen.findByText("Hapus Transaksi"))
 
     expect(
-      await screen.findByText("Transaksi ini hilang dari daftar dan dari laporan."),
+      await screen.findByText("Transaksi ini hilang dari daftar dan dari laporan. Riwayatnya tetap tercatat di log audit dan nomor notanya tidak dipakai ulang."),
     ).toBeTruthy()
 
     // Belum ada yang terkirim sampai konfirmasinya ditekan.

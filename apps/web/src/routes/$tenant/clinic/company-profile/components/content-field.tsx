@@ -15,7 +15,6 @@ import { useTrans } from "#/hooks/use-trans.ts"
 import type { Translatable } from "#/lib/company-locale.ts"
 import type { RichTextDoc } from "#/lib/tiptap-render.tsx"
 import type { FieldSchema } from "./entity-schema.ts"
-import { LocaleTabs } from "./locale-tabs.tsx"
 import { MediaField } from "./media-field.tsx"
 
 interface ContentFieldProps {
@@ -97,11 +96,6 @@ function FieldControl({
 
       return (
         <div className="space-y-1.5">
-          <LocaleTabs
-            locale={translatable.locale}
-            filled={translatable.filledLocales(map)}
-            onChange={translatable.setLocale}
-          />
           <Textarea
             id={id}
             rows={2}
@@ -120,11 +114,6 @@ function FieldControl({
 
       return (
         <div className="space-y-1.5">
-          <LocaleTabs
-            locale={translatable.locale}
-            filled={translatable.filledLocales(map)}
-            onChange={translatable.setLocale}
-          />
           <TiptapEditor
             disabled={disabled}
             value={translatable.read(map) ?? null}

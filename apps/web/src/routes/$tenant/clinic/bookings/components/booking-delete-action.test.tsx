@@ -4,7 +4,6 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { TooltipProvider } from "#/components/ui/tooltip.tsx"
-import { setTranslations } from "#/utils/trans.ts"
 
 const TRANSLATIONS = {
   general: { cancel: "Batal", loading: "Memuat..." },
@@ -16,7 +15,6 @@ const TRANSLATIONS = {
   },
 }
 
-setTranslations(TRANSLATIONS)
 
 const apiDelete = vi.fn((_path: string) => Promise.resolve({}))
 

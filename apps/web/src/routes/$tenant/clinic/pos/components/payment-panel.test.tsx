@@ -2,19 +2,8 @@ import { describe, expect, it, vi } from "vitest"
 import { fireEvent, render } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { PaymentPanel, type PaymentData } from "./payment-panel.tsx"
 
-setTranslations({
-  pos: {
-    payment: "Pembayaran",
-    method: "Metode",
-    amount: "Jumlah Bayar",
-    total: "Total",
-    paid_amount: "Sudah Dibayar",
-    outstanding: "Sisa Bayar",
-  },
-})
 
 function renderPanel(total: number, onChange = vi.fn()) {
   const client = new QueryClient({ defaultOptions: { queries: { enabled: false } } })

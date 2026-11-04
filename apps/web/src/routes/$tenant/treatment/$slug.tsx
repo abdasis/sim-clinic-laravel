@@ -9,7 +9,6 @@ import {
 import { CompanyFooter } from "#/components/company-profile/company-footer.tsx"
 import { CompanyHeader } from "#/components/company-profile/company-header.tsx"
 import { FaqSection } from "#/components/company-profile/faq-section.tsx"
-import { CompanyLocaleProvider } from "#/components/company-profile/locale-context.tsx"
 import { TreatmentGrid } from "#/components/company-profile/treatment-grid.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
@@ -17,40 +16,35 @@ import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useCompanyTreatment } from "#/hooks/use-company-profile.ts"
 import type { CompanySettings } from "#/hooks/use-company-profile.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
+import { DEFAULT_LOCALE, pickTranslatable } from "#/lib/company-locale.ts"
 import { formatCurrency } from "#/lib/format.ts"
-import { normalizeLocale, pickTranslatable } from "#/lib/company-locale.ts"
 
 export const Route = createFileRoute("/$tenant/treatment/$slug")({
   component: TreatmentDetailPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    lang: search.lang ? String(search.lang) : undefined,
-  }),
 })
 
 function TreatmentDetailPage() {
   const { tenant, slug } = useParams({ from: "/$tenant/treatment/$slug" })
-  const { lang } = Route.useSearch()
-  const locale = normalizeLocale(lang)
-  const { t } = useTrans(locale)
+  const { t } = useTrans()
 
-  const { data, isLoading, isError } = useCompanyTreatment(tenant, slug, locale)
+  const { data, isLoading, isError } = useCompanyTreatment(
+    tenant,
+    slug,
+    DEFAULT_LOCALE,
+  )
 
   const treatment = data?.treatment
   const settings = data?.chrome?.settings ?? null
-  const title = pickTranslatable(treatment?.title, locale)
-  const description = pickTranslatable(treatment?.description, locale)
+  const title = pickTranslatable(treatment?.title, DEFAULT_LOCALE)
+  const description = pickTranslatable(treatment?.description, DEFAULT_LOCALE)
 
   return (
-    <CompanyLocaleProvider locale={locale}>
-      <div className="public-site flex min-h-svh flex-col font-brand">
-        <CompanyHeader
-          tenant={tenant}
-          settings={settings}
-          items={data?.chrome?.navigation.header ?? []}
-          locale={locale}
-          languageLabel={t("company_profile.language")}
-          onLocaleChange={() => {}}
-        />
+    <div className="public-site flex min-h-svh flex-col font-brand">
+      <CompanyHeader
+        tenant={tenant}
+        settings={settings}
+        items={data?.chrome?.navigation.header ?? []}
+      />
 
         {isLoading ? (
           <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-12 sm:px-6">
@@ -76,7 +70,7 @@ function TreatmentDetailPage() {
               </p>
             </div>
             <Button asChild size="sm">
-              <Link to="/$tenant" params={{ tenant }} search={{ lang: locale }}>
+              <Link to="/$tenant" params={{ tenant }}>
                 <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
                 {t("company_profile.see_other_treatments")}
               </Link>
@@ -92,7 +86,7 @@ function TreatmentDetailPage() {
                   size="sm"
                   className="-ml-2 mb-6 text-muted-foreground"
                 >
-                  <Link to="/$tenant" params={{ tenant }} search={{ lang: locale }}>
+                  <Link to="/$tenant" params={{ tenant }}>
                     <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
                     {t("general.back")}
                   </Link>
@@ -197,7 +191,6 @@ function TreatmentDetailPage() {
           }}
         />
       </div>
-    </CompanyLocaleProvider>
   )
 }
 
@@ -289,7 +282,7 @@ function BookingActions({
         size="lg"
         className="transition-transform duration-150 ease-out hover:-translate-y-0.5"
       >
-        <Link to="/$tenant" params={{ tenant }} search={{ lang: undefined }} hash="booking">
+        <Link to="/$tenant" params={{ tenant }} hash="booking">
           {labels.book}
         </Link>
       </Button>

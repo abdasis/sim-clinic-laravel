@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 
 import { CtaLink } from "#/components/company-profile/cta-link.tsx"
-import { useContentLocale, useContentText } from "#/components/company-profile/locale-context.tsx"
 import { MarketingPage } from "#/components/marketing/marketing-breadcrumb.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
 import { Button } from "#/components/ui/button.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { findTreatment } from "#/lib/landing-content.ts"
 
 export const Route = createFileRoute("/_marketing/treatment/$slug")({
@@ -15,9 +15,7 @@ const WHATSAPP = "https://wa.me/6281234567890"
 
 function TreatmentDetailPage() {
   const { slug } = useParams({ from: "/_marketing/treatment/$slug" })
-  const locale = useContentLocale()
-  const text = useContentText()
-  const isEnglish = locale === "en"
+  const text = contentText
 
   const treatment = findTreatment(slug)
 
@@ -25,20 +23,14 @@ function TreatmentDetailPage() {
     return (
       <MarketingPage
         crumbs={[
-          { label: isEnglish ? "Treatments" : "Treatment", href: "/treatments" },
-          { label: isEnglish ? "Not found" : "Tidak ditemukan" },
+          { label: "Treatment", href: "/treatments" },
+          { label: "Tidak ditemukan" },
         ]}
-        title={isEnglish ? "Treatment not found" : "Treatment tidak ditemukan"}
-        description={
-          isEnglish
-            ? "The page you are looking for may have been renamed or removed."
-            : "Halaman yang Anda cari mungkin sudah berganti nama atau dihapus."
-        }
+        title="Treatment tidak ditemukan"
+        description="Halaman yang Anda cari mungkin sudah berganti nama atau dihapus."
       >
         <Button asChild variant="outline">
-          <Link to="/treatments" search={{ lang: locale }}>
-            {isEnglish ? "See all treatments" : "Lihat semua treatment"}
-          </Link>
+          <Link to="/treatments">Lihat semua treatment</Link>
         </Button>
       </MarketingPage>
     )
@@ -49,7 +41,7 @@ function TreatmentDetailPage() {
   return (
     <MarketingPage
       crumbs={[
-        { label: isEnglish ? "Treatments" : "Treatment", href: "/treatments" },
+        { label: "Treatment", href: "/treatments" },
         { label: title },
       ]}
       title={title}
@@ -80,18 +72,9 @@ function TreatmentDetailPage() {
         ) : null}
 
         <div className="grid gap-6 rounded-lg border border-border/50 bg-background p-6 sm:grid-cols-3">
-          <Detail
-            label={isEnglish ? "Duration" : "Durasi"}
-            value={isEnglish ? "45–60 minutes" : "45–60 menit"}
-          />
-          <Detail
-            label={isEnglish ? "Downtime" : "Waktu Pulih"}
-            value={isEnglish ? "Minimal" : "Minimal"}
-          />
-          <Detail
-            label={isEnglish ? "Consultation" : "Konsultasi"}
-            value={isEnglish ? "Free on first visit" : "Gratis kunjungan pertama"}
-          />
+          <Detail label="Durasi" value="45–60 menit" />
+          <Detail label="Waktu Pulih" value="Minimal" />
+          <Detail label="Konsultasi" value="Gratis kunjungan pertama" />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -105,9 +88,7 @@ function TreatmentDetailPage() {
             url={WHATSAPP}
           />
           <Button asChild variant="outline">
-            <Link to="/online-booking" search={{ lang: locale }}>
-              {isEnglish ? "Book this treatment" : "Booking treatment ini"}
-            </Link>
+            <Link to="/online-booking">Booking treatment ini</Link>
           </Button>
         </div>
       </div>

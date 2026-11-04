@@ -17,17 +17,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "#/components/ui/tooltip.tsx"
-import { useContentText } from "#/components/company-profile/locale-context.tsx"
 import type { CompanyNavItem, CompanySettings } from "#/hooks/use-company-profile.ts"
-import { CONTENT_LOCALES, type ContentLocale } from "#/lib/company-locale.ts"
+import { contentText } from "#/lib/company-locale.ts"
 import { cn } from "#/lib/utils.ts"
 
 interface LandingHeaderProps {
   settings: CompanySettings | null
   items: CompanyNavItem[]
-  locale: ContentLocale
   cartCount?: number
-  onLocaleChange: (locale: ContentLocale) => void
 }
 
 /**
@@ -38,11 +35,9 @@ interface LandingHeaderProps {
 export function LandingHeader({
   settings,
   items,
-  locale,
   cartCount = 0,
-  onLocaleChange,
 }: LandingHeaderProps) {
-  const text = useContentText()
+  const text = contentText
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -69,7 +64,6 @@ export function LandingHeader({
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4">
         <Link
           to="/"
-          search={{ lang: locale }}
           className="mr-auto flex items-center gap-2 rounded-sm no-underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
           {settings?.logo_url ? (
@@ -82,11 +76,9 @@ export function LandingHeader({
 
         <nav className="hidden items-center gap-0.5 lg:flex">
           {items.map((item) => (
-            <NavLink key={item.id} item={item} locale={locale} />
+            <NavLink key={item.id} item={item} />
           ))}
         </nav>
-
-        <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -96,7 +88,7 @@ export function LandingHeader({
               size="icon"
               className="relative transition-transform duration-200 ease-[var(--ease-out)] active:scale-[0.96]"
             >
-              <Link to="/cart" search={{ lang: locale }} aria-label="Keranjang">
+              <Link to="/cart" aria-label="Keranjang">
                 <HugeiconsIcon icon={ShoppingCart01Icon} strokeWidth={2} />
                 {cartCount > 0 ? (
                   <Badge className="absolute -top-0.5 -right-0.5 size-4 justify-center rounded-full p-0 text-xxs tabular-nums">
@@ -129,7 +121,6 @@ export function LandingHeader({
                 <NavLink
                   key={item.id}
                   item={item}
-                  locale={locale}
                   onNavigate={() => setOpen(false)}
                 />
               ))}
@@ -149,14 +140,12 @@ const CTA_CLASS =
 
 function NavLink({
   item,
-  locale,
   onNavigate,
 }: {
   item: CompanyNavItem
-  locale: ContentLocale
   onNavigate?: () => void
 }) {
-  const text = useContentText()
+  const text = contentText
 
   if (!item.url) return null
 
@@ -192,45 +181,8 @@ function NavLink({
   // Tujuan di akar situs. Path-nya berasal dari konten, jadi belum tentu
   // termasuk route yang dikenal saat kompilasi — pakai anchor biasa.
   return (
-    <a
-      href={`${item.url}?lang=${locale}`}
-      className={className}
-      onClick={onNavigate}
-    >
+    <a href={item.url} className={className} onClick={onNavigate}>
       {label}
     </a>
-  )
-}
-
-function LocaleSwitcher({
-  locale,
-  onChange,
-}: {
-  locale: ContentLocale
-  onChange: (locale: ContentLocale) => void
-}) {
-  return (
-    <div
-      role="group"
-      aria-label="Bahasa"
-      className="flex items-center gap-0.5 rounded-md border border-border/50 p-0.5"
-    >
-      {CONTENT_LOCALES.map((code) => (
-        <button
-          key={code}
-          type="button"
-          aria-pressed={code === locale}
-          onClick={() => onChange(code)}
-          className={cn(
-            "rounded-sm px-2 py-0.5 text-xs font-medium tracking-wide uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-            code === locale
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {code}
-        </button>
-      ))}
-    </div>
   )
 }

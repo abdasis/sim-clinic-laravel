@@ -8,11 +8,14 @@ export const DEFAULT_LOCALE: ContentLocale = "id"
 /** Peta bahasa seperti tersimpan di database: `{ id: …, en: … }`. */
 export type Translatable<T = string> = Partial<Record<ContentLocale, T>>
 
-/** Nilai apa pun dari URL dipaksa jadi bahasa yang dikenal. */
-export function normalizeLocale(value: unknown): ContentLocale {
-  return CONTENT_LOCALES.includes(value as ContentLocale)
-    ? (value as ContentLocale)
-    : DEFAULT_LOCALE
+/**
+ * Pilih nilai konten untuk UI. UI hanya berbahasa Indonesia, jadi `en`
+ * yang tersimpan di database tidak pernah dipakai di layar.
+ */
+export function contentText<T>(
+  value: Translatable<T> | T | null | undefined,
+): T | undefined {
+  return pickTranslatable(value, DEFAULT_LOCALE)
 }
 
 /**

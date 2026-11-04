@@ -3,23 +3,9 @@ import { describe, expect, it } from "vitest"
 import { render } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { MonthlyUpsell } from "./monthly-upsell.tsx"
 import type { CommissionRow } from "./monthly-types.ts"
 
-setTranslations({
-  report: {
-    upsell_title: "Upselling Penjualan",
-    upsell_note: "Omzet dihitung dari baris nota yang penawarnya tercatat.",
-    upsell_progress: "Progres target",
-    upsell_reached: "Tercapai",
-    upsell_short: "Kurang :amount",
-    upsell_of_target: "dari :amount",
-    upsell_no_target: "Belum ada target yang disetel.",
-    total_upsell: "Total komisi upselling",
-    no_upsell: "Belum ada penjualan yang ditawarkan staf bulan ini.",
-  },
-})
 
 function renderWithProviders(ui: ReactElement) {
   const client = new QueryClient({

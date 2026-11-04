@@ -3,23 +3,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { TooltipProvider } from "#/components/ui/tooltip.tsx"
-import { setTranslations } from "#/utils/trans.ts"
 import type { RoleMatrixResponse } from "#/types/role-matrix.ts"
 import { RoleMatrixGrid } from "./role-matrix-grid.tsx"
 
-const TRANSLATIONS = {
-  role: {
-    module: "Modul",
-    view: "Lihat",
-    manage: "Kelola",
-    view_hint: "Boleh membuka modul ini.",
-    manage_hint: "Boleh mengubah di modul ini.",
-    reset: "Izin peran dikembalikan ke bawaan.",
-    reset_button: "Kembalikan ke bawaan",
-    reset_confirm: "Penyesuaian akan hilang.",
-  },
-  general: { cancel: "Batal", loading: "Memuat..." },
-}
 
 const DATA: RoleMatrixResponse = {
   roles: [
@@ -43,12 +29,9 @@ const DATA: RoleMatrixResponse = {
 }
 
 function mockFetch() {
-  const mock = vi.fn(async (input: unknown, init?: RequestInit) => {
+  const mock = vi.fn(async (_input: unknown, init?: RequestInit) => {
     void init
 
-    if (String(input).includes("/translations")) {
-      return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
-    }
 
     return { ok: true, status: 200, json: async () => ({ data: DATA }) }
   })
@@ -91,7 +74,6 @@ function putUrl(mock: ReturnType<typeof mockFetch>) {
 describe("RoleMatrixGrid", () => {
   beforeEach(() => {
     window.localStorage.setItem("clinic_token", "tok")
-    setTranslations(TRANSLATIONS)
   })
 
   afterEach(cleanup)

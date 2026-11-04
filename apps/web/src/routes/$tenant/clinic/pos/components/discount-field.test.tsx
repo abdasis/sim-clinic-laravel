@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import {
   DiscountField,
   discountAmount,
@@ -10,18 +9,6 @@ import {
 } from "./discount-field.tsx"
 import type { DiscountState } from "./discount-field.tsx"
 
-setTranslations({
-  pos: {
-    discount: "Potongan",
-    discount_type: "Jenis Potongan",
-    discount_value: "Besar Potongan",
-    discount_none: "Tanpa potongan",
-    discount_hint_percent: "Boleh pecahan, mis. 70,5 untuk 70,5%.",
-  },
-  clinic: {
-    discount_type: { percent: "Persen (%)", fixed: "Nominal (Rp)" },
-  },
-})
 
 const state = (kind: DiscountState["kind"], value: string): DiscountState => ({
   kind,

@@ -11,7 +11,7 @@ import {
 } from "#/components/ui/carousel.tsx"
 import type { CompanyTestimonial } from "#/hooks/use-company-profile.ts"
 import { renderRichText } from "#/lib/tiptap-render.tsx"
-import { useContentText } from "./locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { SectionShell, type SectionTone } from "./section-shell.tsx"
 
 interface TestimonialSectionProps {
@@ -62,7 +62,7 @@ export function TestimonialSection({
   items,
   className,
 }: TestimonialSectionProps) {
-  const text = useContentText()
+  const text = contentText
 
   if (items.length === 0) return null
 

@@ -8,7 +8,7 @@ import {
 } from "#/components/ui/tooltip.tsx"
 import type { ChatChannel } from "#/hooks/use-company-profile.ts"
 import { normalizeWhatsapp } from "./cta-link.tsx"
-import { useContentText } from "./locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 
 interface ChatWidgetProps {
   channels: ChatChannel[]
@@ -20,7 +20,7 @@ interface ChatWidgetProps {
  * satu tombol sudah cukup, daftar panjang justru menghalangi konten.
  */
 export function ChatWidget({ channels, fallbackLabel }: ChatWidgetProps) {
-  const text = useContentText()
+  const text = contentText
   const channel = channels[0]
 
   if (!channel?.url) return null

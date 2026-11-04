@@ -1,24 +1,10 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  DEFAULT_LOCALE,
-  normalizeLocale,
-  pickTranslatable,
-} from "./company-locale.ts"
+import { contentText, pickTranslatable } from "./company-locale.ts"
 
-describe("normalizeLocale", () => {
-  it("menerima bahasa yang dikenal", () => {
-    expect(normalizeLocale("id")).toBe("id")
-    expect(normalizeLocale("en")).toBe("en")
-  })
-
-  it("menolak nilai asing dari URL", () => {
-    // ?lang= diisi pengunjung, jadi tidak boleh dipercaya apa adanya.
-    expect(normalizeLocale("fr")).toBe(DEFAULT_LOCALE)
-    expect(normalizeLocale("")).toBe(DEFAULT_LOCALE)
-    expect(normalizeLocale(undefined)).toBe(DEFAULT_LOCALE)
-    expect(normalizeLocale(null)).toBe(DEFAULT_LOCALE)
-    expect(normalizeLocale(42)).toBe(DEFAULT_LOCALE)
+describe("contentText", () => {
+  it("selalu memilih versi Indonesia untuk UI", () => {
+    expect(contentText({ id: "Halo", en: "Hello" })).toBe("Halo")
   })
 })
 

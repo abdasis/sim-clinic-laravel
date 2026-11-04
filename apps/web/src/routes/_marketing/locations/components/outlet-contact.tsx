@@ -9,17 +9,13 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { Button } from "#/components/ui/button.tsx"
-import {
-  useContentLocale,
-  useContentText,
-} from "#/components/company-profile/locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { flatAddress } from "#/lib/clinic-outlet.ts"
 import type { ClinicOutlet } from "#/lib/clinic-outlet.ts"
 
 /** Alamat, kontak, dan aksi — semuanya dalam satu kolom di sebelah peta. */
 export function OutletContact({ outlet }: { outlet: ClinicOutlet }) {
-  const text = useContentText()
-  const isEnglish = useContentLocale() === "en"
+  const text = contentText
 
   const lines = text(outlet.addressLines) ?? []
   const address = flatAddress(lines, outlet.postalCode)
@@ -29,9 +25,7 @@ export function OutletContact({ outlet }: { outlet: ClinicOutlet }) {
       <div>
         {lines.length === 0 ? (
           <p className="text-sm leading-relaxed text-muted-foreground">
-            {isEnglish
-              ? "Tap “Get directions” for the exact spot on Google Maps."
-              : "Ketuk “Petunjuk arah” untuk titik persisnya di Google Maps."}
+            Ketuk “Petunjuk arah” untuk titik persisnya di Google Maps.
           </p>
         ) : (
         <>
@@ -41,7 +35,7 @@ export function OutletContact({ outlet }: { outlet: ClinicOutlet }) {
             strokeWidth={2}
             className="size-3.5"
           />
-          {isEnglish ? "Address" : "Alamat"}
+          Alamat
         </p>
         <address className="text-sm leading-relaxed not-italic text-pretty">
           {lines.map((line) => (
@@ -92,7 +86,6 @@ export function OutletContact({ outlet }: { outlet: ClinicOutlet }) {
  * supaya mata tidak perlu pindah.
  */
 function CopyAddress({ value }: { value: string }) {
-  const isEnglish = useContentLocale() === "en"
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -118,13 +111,7 @@ function CopyAddress({ value }: { value: string }) {
         strokeWidth={2}
         className="size-3.5"
       />
-      {copied
-        ? isEnglish
-          ? "Copied"
-          : "Tersalin"
-        : isEnglish
-          ? "Copy address"
-          : "Salin alamat"}
+      {copied ? "Tersalin" : "Salin alamat"}
     </Button>
   )
 }

@@ -2,7 +2,7 @@ import type { CompanyPromo } from "#/hooks/use-company-profile.ts"
 import { renderRichText } from "#/lib/tiptap-render.tsx"
 import { cn } from "#/lib/utils.ts"
 import { CtaLink } from "./cta-link.tsx"
-import { useContentText } from "./locale-context.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { SectionShell, type SectionTone } from "./section-shell.tsx"
 
 interface PromoSectionProps {
@@ -66,7 +66,7 @@ function PromoCard({
   promo: CompanyPromo
   featured?: boolean
 }) {
-  const text = useContentText()
+  const text = contentText
   const title = text(promo.title)
 
   return (

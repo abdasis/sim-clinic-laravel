@@ -3,16 +3,9 @@ import { describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import type { ScheduleBooking } from "./schedule-grid.tsx"
 import { ScheduleMonth } from "./schedule-month.tsx"
 
-setTranslations({
-  booking: {
-    schedule: "Jadwal",
-    more_bookings: "lagi",
-  },
-})
 
 function renderWithProviders(ui: ReactElement) {
   const client = new QueryClient({

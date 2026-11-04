@@ -3,19 +3,9 @@ import { describe, expect, it } from "vitest"
 import { render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { RecipientPreview } from "./recipient-preview.tsx"
 import type { AudiencePreview } from "./recipient-preview.tsx"
 
-setTranslations({
-  broadcast: {
-    preview_count: ":count penerima",
-    without_phone: ":count tanpa nomor",
-    opted_out: ":count menolak promosi",
-    recipients_hint: "Sudah dikurangi nomor ganda.",
-    no_recipients: "Tidak ada satu pun penerima untuk pilihan ini.",
-  },
-})
 
 function renderWithProviders(ui: ReactElement) {
   const client = new QueryClient({
@@ -96,8 +86,8 @@ describe("RecipientPreview", () => {
 
     const text = container.textContent ?? ""
 
-    expect(text).toContain("3 tanpa nomor")
-    expect(text).toContain("2 menolak promosi")
+    expect(text).toContain("3 pasien tanpa nomor valid")
+    expect(text).toContain("2 pasien tidak menerima promosi")
   })
 
   it("menyembunyikan keterangan yang angkanya nol", () => {
@@ -121,7 +111,7 @@ describe("RecipientPreview", () => {
     )
 
     expect(
-      screen.getByText("Tidak ada satu pun penerima untuk pilihan ini."),
+      screen.getByText("Tidak ada pasien yang cocok dengan pilihan penerima ini."),
     ).toBeTruthy()
   })
 })

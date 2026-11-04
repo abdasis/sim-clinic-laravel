@@ -8,7 +8,7 @@ export default function Header() {
         <h2 className="m-0 flex-shrink-0 text-base font-semibold tracking-tight">
           <Link
             to="/"
-            search={{ lang: undefined }}
+           
             className="inline-flex items-center gap-2 rounded-full border border-chip-line bg-chip-bg px-3 py-1.5 text-sm text-sea-ink no-underline shadow-header sm:px-4 sm:py-2"
           >
             <span className="h-2 w-2 rounded-full bg-gradient-to-r from-lagoon to-lagoon-bright" />
@@ -19,7 +19,7 @@ export default function Header() {
         <div className="order-3 flex w-full flex-wrap items-center gap-x-4 gap-y-1 pb-1 text-sm font-semibold sm:order-none sm:w-auto sm:flex-nowrap sm:pb-0">
           <Link
             to="/"
-            search={{ lang: undefined }}
+           
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
           >

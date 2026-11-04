@@ -2,22 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { AutoReminderDialog } from "./auto-reminder-dialog.tsx"
 
-const TRANSLATIONS = {
-  broadcast: {
-    auto_reminder_title: "Follow-up Otomatis",
-    auto_reminder_hint: "Kirim pesan otomatis ke pasien yang sudah lama tidak datang.",
-    auto_reminder_days: "Kirim setelah (hari)",
-    auto_reminder_active: "Aktif",
-    auto_reminder_saved: "Pengaturan follow-up otomatis tersimpan.",
-    auto_reminder_template: "Template pesan",
-    auto_reminder_default_template: "Pakai templat bawaan",
-    auto_reminder_days_hint: "Dihitung dari rekam medis terakhir.",
-  },
-  general: { save: "Simpan" },
-}
 
 interface Setting {
   days: number | null
@@ -31,9 +17,6 @@ function mockFetch(setting: Setting, templates: { id: number; name: string }[] =
     void init
     const url = String(input)
 
-    if (url.includes("/translations")) {
-      return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
-    }
 
     if (url.includes("/message-templates")) {
       return { ok: true, status: 200, json: async () => ({ data: templates }) }
@@ -78,7 +61,6 @@ function putBody(fetchMock: ReturnType<typeof mockFetch>) {
 describe("AutoReminderDialog", () => {
   beforeEach(() => {
     window.localStorage.setItem("clinic_token", "tok")
-    setTranslations(TRANSLATIONS)
   })
 
   afterEach(cleanup)

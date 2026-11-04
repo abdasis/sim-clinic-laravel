@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { Form } from "#/components/ui/form.tsx"
 import { useForm } from "#/components/forms/use-form.ts"
 import { apiPost } from "#/lib/api.ts"
-import { setTranslations } from "#/utils/trans.ts"
 import {
   BROADCAST_DEFAULTS,
   BroadcastFormFields,
@@ -16,39 +15,6 @@ import {
 import type { BroadcastTemplate } from "./broadcast-types.ts"
 import { templatePayload } from "./template-variables.ts"
 
-const TRANSLATIONS = {
-  broadcast: {
-    section_details: "Detail broadcast",
-    section_details_hint: "Judul hanya terlihat oleh tim klinik.",
-    title_field: "Judul Broadcast",
-    section_audience: "Penerima",
-    section_audience_hint: "Pilih siapa yang menerima.",
-    audience_label: "Penerima",
-    days: "Sudah tidak datang (hari)",
-    section_message: "Pesan",
-    section_message_hint: "Susun pesan yang akan dikirim.",
-    message: "Isi Pesan",
-    template_body_hint: "Sisipkan {{1}}, {{2}} sesuai urutan variabel.",
-    template_param_slot: "Isi bagian :number",
-    template_variable_nama: "Nama pasien",
-    template_variable_klinik: "Nama klinik",
-    template_variable_klinik_telepon: "Telepon klinik",
-    template_variable_layanan_terakhir: "Layanan terakhir",
-    template_variable_tanggal_terakhir: "Tanggal terakhir",
-    template_variable_hari_sejak_kunjungan: "Hari sejak kunjungan",
-    image: "Gambar",
-    image_hint: "Opsional. JPG atau PNG, maksimal 2 MB.",
-    image_remove: "Hapus gambar",
-    template_preview: "Pratinjau pesan",
-    audience: {
-      all: "Semua pasien",
-      inactive: "Pasien yang lama tidak datang",
-      service: "Pernah ambil layanan tertentu",
-      selected: "Kontak terpilih",
-    },
-  },
-  general: { edit: "Ubah" },
-}
 
 /**
  * Wadah kecil yang meniru halaman pembuatan: formulir mengurus isian, state
@@ -95,7 +61,6 @@ function Harness() {
 describe("BroadcastFormFields", () => {
   beforeEach(() => {
     window.localStorage.setItem("clinic_token", "tok")
-    setTranslations(TRANSLATIONS)
   })
 
   afterEach(() => {
@@ -104,12 +69,8 @@ describe("BroadcastFormFields", () => {
   })
 
   it("mengirim body dan parameter tanpa nama/language template", async () => {
-    const fetchMock = vi.fn(async (input: unknown, init?: RequestInit) => {
+    const fetchMock = vi.fn(async (_input: unknown, init?: RequestInit) => {
       void init
-      const url = String(input)
-      if (url.includes("/translations")) {
-        return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
-      }
       return { ok: true, status: 200, json: async () => ({ data: { id: 1 } }) }
     })
     vi.stubGlobal("fetch", fetchMock)

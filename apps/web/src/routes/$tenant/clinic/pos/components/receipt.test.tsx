@@ -2,37 +2,8 @@ import { describe, expect, it } from "vitest"
 import { cleanup, render } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { Receipt, receiptAddress, type ReceiptData } from "./receipt.tsx"
 
-setTranslations({
-  invoice: {
-    receipt: "NOTA / RECEIPT",
-    group_service: "Layanan / Tindakan",
-    group_product: "Produk",
-    item_total: "Subtotal Item",
-    qty: "Jumlah",
-    qty_short: "Jml",
-    description: "Deskripsi",
-    subtotal: "Subtotal",
-    grand_total: "TOTAL",
-    outstanding: "Sisa Bayar",
-    title: "Invoice",
-    item_count: ":count item",
-    paid_amount: "Sudah Dibayar",
-    change: "Kembali",
-    discount: "Diskon Promo",
-    points_redeemed: "Tukar :count poin",
-    points_earned: "Poin didapat",
-    points_unit: "poin",
-    reprint: "Cetak Ulang",
-    cancelled: "Transaksi Dibatalkan",
-    cancelled_note: "Nota ini tidak berlaku sebagai bukti pembayaran.",
-    performers: "Terapis",
-    customer: "Pelanggan",
-    served_by: "Dilayani",
-  },
-})
 
 function renderReceipt(data: ReceiptData, clinic?: Parameters<typeof Receipt>[0]["clinic"]) {
   const client = new QueryClient({

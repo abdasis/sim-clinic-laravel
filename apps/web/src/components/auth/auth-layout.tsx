@@ -107,7 +107,7 @@ export function AuthLayout({
 
           <Link
             to="/"
-            search={{ lang: undefined }}
+           
             className={`rise-in mt-8 inline-flex items-center gap-1.5 rounded-md text-sm text-muted-foreground no-underline transition-colors hover:text-primary ${FOCUS_RING}`}
             style={{ animationDelay: "300ms" }}
           >

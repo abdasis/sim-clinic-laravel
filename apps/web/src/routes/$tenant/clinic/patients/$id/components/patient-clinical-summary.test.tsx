@@ -3,23 +3,9 @@ import { describe, expect, it } from "vitest"
 import { render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { PatientClinicalSummary } from "./patient-clinical-summary.tsx"
 import type { RecordRow } from "./record-types.ts"
 
-setTranslations({
-  medical_record: {
-    allergy_alert: "Riwayat alergi pasien",
-    total_visits: "Kunjungan",
-    last_visit: "Terakhir",
-    total_treatments: "Tindakan",
-    total_treatments_hint: "Seluruh tindakan yang tercatat",
-    products_used: "Produk Dipakai",
-    products_used_hint: "Jumlah item yang pernah ditebus",
-    product_spend: "Belanja Produk",
-    product_spend_hint: "Nilai seluruh pembelian produk",
-  },
-})
 
 function renderWithProviders(ui: ReactElement) {
   const client = new QueryClient({

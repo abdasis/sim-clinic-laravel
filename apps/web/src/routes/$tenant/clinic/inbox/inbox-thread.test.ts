@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { act, renderHook, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import {
   flattenThreadPages,
   groupMessagesByDay,
@@ -126,7 +125,6 @@ describe("groupMessagesByDay", () => {
 describe("useInboxThread", () => {
   beforeEach(() => {
     window.localStorage.setItem("clinic_token", "tok")
-    setTranslations({ inbox: { status: { sent: "Terkirim" }, direction: { out: "Keluar" } } })
   })
 
   afterEach(() => {
@@ -135,13 +133,7 @@ describe("useInboxThread", () => {
 
   /** Gateway baru tidak mengirim reaksi maupun kutipan, jadi payload-nya polos. */
   it("tidak lagi mengirim reaction atau reply_to_message_id", async () => {
-    const fetchMock = vi.fn(async (input: unknown, init?: RequestInit) => {
-      const url = String(input)
-
-      if (url.includes("/translations")) {
-        return { ok: true, status: 200, json: async () => ({ data: {} }) }
-      }
-
+    const fetchMock = vi.fn(async (_input: unknown, init?: RequestInit) => {
       if ((init as RequestInit | undefined)?.method === "POST") {
         return {
           ok: true,

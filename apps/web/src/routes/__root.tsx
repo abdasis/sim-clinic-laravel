@@ -126,7 +126,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   const hideChrome = isAdmin || isMarketing || isTenantProfile || isAuth
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />

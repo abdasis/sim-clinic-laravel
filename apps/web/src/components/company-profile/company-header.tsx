@@ -10,37 +10,29 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "#/components/ui/sheet.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { cn } from "#/lib/utils.ts"
-import { CONTENT_LOCALES, type ContentLocale } from "#/lib/company-locale.ts"
 import type {
   CompanyNavItem,
   CompanySettings,
 } from "#/hooks/use-company-profile.ts"
 import { internalHref } from "./cta-link.tsx"
-import { useContentText } from "./locale-context.tsx"
 
 interface CompanyHeaderProps {
   tenant: string
   settings: CompanySettings | null
   items: CompanyNavItem[]
-  locale: ContentLocale
-  languageLabel: string
-  onLocaleChange: (locale: ContentLocale) => void
 }
 
 /**
- * Header landing: menu dari database, dan pengalih bahasa yang mengubah
- * konten sekaligus label sistem.
+ * Header landing: menu dari database.
  */
 export function CompanyHeader({
   tenant,
   settings,
   items,
-  locale,
-  languageLabel,
-  onLocaleChange,
 }: CompanyHeaderProps) {
-  const text = useContentText()
+  const text = contentText
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -68,7 +60,6 @@ export function CompanyHeader({
         <Link
           to="/$tenant"
           params={{ tenant }}
-          search={{ lang: locale }}
           className="flex items-center gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
           {settings?.logo_url ? (
@@ -83,19 +74,12 @@ export function CompanyHeader({
           ))}
         </nav>
 
-        <LocaleSwitcher
-          locale={locale}
-          label={languageLabel}
-          onChange={onLocaleChange}
-          className="ml-auto md:ml-0"
-        />
-
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="ml-auto md:hidden"
               aria-label={brand}
             >
               <Menu className="size-4" />
@@ -131,7 +115,7 @@ function NavLink({
   item: CompanyNavItem
   onNavigate?: () => void
 }) {
-  const text = useContentText()
+  const text = contentText
 
   if (!item.url) return null
 
@@ -160,45 +144,5 @@ function NavLink({
     >
       {text(item.label)}
     </a>
-  )
-}
-
-function LocaleSwitcher({
-  locale,
-  label,
-  onChange,
-  className,
-}: {
-  locale: ContentLocale
-  label: string
-  onChange: (locale: ContentLocale) => void
-  className?: string
-}) {
-  return (
-    <div
-      role="group"
-      aria-label={label}
-      className={cn(
-        "flex items-center gap-0.5 rounded-md border border-border/50 p-0.5",
-        className,
-      )}
-    >
-      {CONTENT_LOCALES.map((code) => (
-        <button
-          key={code}
-          type="button"
-          aria-pressed={code === locale}
-          onClick={() => onChange(code)}
-          className={cn(
-            "rounded-sm px-2 py-0.5 text-xs font-medium tracking-wide uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-            code === locale
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {code}
-        </button>
-      ))}
-    </div>
   )
 }

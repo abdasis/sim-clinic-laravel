@@ -8,27 +8,8 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { TooltipProvider } from "#/components/ui/tooltip.tsx"
-import { setTranslations } from "#/utils/trans.ts"
 import { DataTable } from "./datatable.tsx"
 
-setTranslations({
-  general: {
-    search: "Cari",
-    no_data: "Tidak ada data",
-    no_data_desc: "Belum ada apa pun di sini.",
-    no_results: "Tidak ada hasil",
-    rows_per_page: "Baris per halaman",
-    pagination_showing: "Menampilkan",
-    pagination_of: "dari",
-    load_failed: "Data gagal dimuat",
-    load_failed_desc: "Server sedang tidak bisa dihubungi.",
-    retry: "Muat ulang",
-    columns: "Kolom",
-    previous_page: "Halaman sebelumnya",
-    next_page: "Halaman berikutnya",
-    columns_hint: "Pilih kolom yang ditampilkan",
-  },
-})
 
 interface Row {
   id: number

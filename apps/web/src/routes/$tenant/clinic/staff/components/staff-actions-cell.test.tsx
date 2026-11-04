@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { StaffActionsCell } from "./staff-actions-cell.tsx"
 import type { StaffRow } from "../index.tsx"
 
@@ -60,7 +59,6 @@ const base: StaffRow = {
  */
 describe("StaffActionsCell", () => {
   beforeEach(() => {
-    setTranslations(TRANSLATIONS)
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({

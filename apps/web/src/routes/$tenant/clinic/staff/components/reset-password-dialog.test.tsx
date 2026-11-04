@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 
 const TRANSLATIONS = {
   general: { save: "Simpan" },
@@ -17,7 +16,6 @@ const TRANSLATIONS = {
   },
 }
 
-setTranslations(TRANSLATIONS)
 
 const apiPut = vi.fn((_path: string, _body: unknown) => Promise.resolve({}))
 

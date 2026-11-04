@@ -2,18 +2,14 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Clock01Icon } from "@hugeicons/core-free-icons"
 
 import { Badge } from "#/components/ui/badge.tsx"
-import {
-  useContentLocale,
-  useContentText,
-} from "#/components/company-profile/locale-context.tsx"
 import { useIsMounted } from "#/hooks/use-is-mounted.ts"
+import { contentText } from "#/lib/company-locale.ts"
 import { cn } from "#/lib/utils.ts"
 import type { OpeningHour } from "#/lib/clinic-outlet.ts"
 import { isOpenAt, todayIndex } from "./opening-hours.ts"
 
 export function OutletHours({ hours }: { hours: OpeningHour[] }) {
-  const text = useContentText()
-  const isEnglish = useContentLocale() === "en"
+  const text = contentText
   // ponytail: status dihitung dari jam perangkat, jadi hanya boleh dirender
   // setelah mount — server dan klien bisa berada di zona waktu berbeda.
   const mounted = useIsMounted()
@@ -31,7 +27,7 @@ export function OutletHours({ hours }: { hours: OpeningHour[] }) {
             strokeWidth={2}
             className="size-4 text-muted-foreground"
           />
-          {isEnglish ? "Opening hours" : "Jam operasional"}
+          Jam operasional
         </h2>
 
         {mounted ? (
@@ -50,13 +46,7 @@ export function OutletHours({ hours }: { hours: OpeningHour[] }) {
                 isOpen ? "bg-primary" : "bg-muted-foreground/60",
               )}
             />
-            {isOpen
-              ? isEnglish
-                ? "Open now"
-                : "Buka sekarang"
-              : isEnglish
-                ? "Closed now"
-                : "Sedang tutup"}
+            {isOpen ? "Buka sekarang" : "Sedang tutup"}
           </Badge>
         ) : null}
       </div>
@@ -77,7 +67,7 @@ export function OutletHours({ hours }: { hours: OpeningHour[] }) {
                 {text(entry.day)}
                 {isToday ? (
                   <span className="ml-1.5 text-2xs font-normal text-muted-foreground">
-                    {isEnglish ? "today" : "hari ini"}
+                    hari ini
                   </span>
                 ) : null}
               </dt>
@@ -88,7 +78,7 @@ export function OutletHours({ hours }: { hours: OpeningHour[] }) {
                   !isToday && entry.hours && "text-muted-foreground",
                 )}
               >
-                {entry.hours ?? (isEnglish ? "Closed" : "Tutup")}
+                {entry.hours ?? "Tutup"}
               </dd>
             </div>
           )

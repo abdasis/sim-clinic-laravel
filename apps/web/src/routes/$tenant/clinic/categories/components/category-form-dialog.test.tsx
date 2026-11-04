@@ -2,36 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { CategoryFormDialog } from "./category-form-dialog.tsx"
 
-const TRANSLATIONS = {
-  category: {
-    add: "Tambah Kategori",
-    edit: "Ubah Kategori",
-    name: "Nama Kategori",
-    type: "Jenis",
-    type_service: "Layanan",
-    type_product: "Produk",
-    type_expense: "Pengeluaran",
-    type_locked: "Jenis tidak bisa diubah setelah kategori dibuat.",
-    description: "Keterangan",
-    status: "Status",
-    created: "Kategori berhasil ditambahkan.",
-    updated: "Kategori berhasil diperbarui.",
-    empty_desc: "Kategori membantu mengelompokkan katalog.",
-  },
-  service: { status_active: "Aktif", status_archived: "Arsip" },
-  general: { save: "Simpan" },
-}
 
 function mockFetch(response: { ok: boolean; status: number; body: unknown }) {
-  const mock = vi.fn(async (input: unknown, init?: RequestInit) => {
+  const mock = vi.fn(async (_input: unknown, init?: RequestInit) => {
     void init
 
-    if (String(input).includes("/translations")) {
-      return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
-    }
 
     return { ok: response.ok, status: response.status, json: async () => response.body }
   })
@@ -63,7 +40,6 @@ function lastWrite(mock: ReturnType<typeof mockFetch>) {
 describe("CategoryFormDialog", () => {
   beforeEach(() => {
     window.localStorage.setItem("clinic_token", "tok")
-    setTranslations(TRANSLATIONS)
   })
 
   afterEach(cleanup)

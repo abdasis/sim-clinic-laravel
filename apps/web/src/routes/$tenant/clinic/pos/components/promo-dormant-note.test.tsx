@@ -3,16 +3,9 @@ import { describe, expect, it } from "vitest"
 import { cleanup, render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { PromoDormantNote } from "./promo-dormant-note.tsx"
 import { toEntry } from "../hooks/use-pos-catalog.ts"
 
-setTranslations({
-  pos: {
-    promo_ended: "Promo berakhir :date · :name",
-    promo_upcoming: "Promo mulai :date · :name",
-  },
-})
 
 function tampil(ui: ReactElement) {
   const client = new QueryClient({

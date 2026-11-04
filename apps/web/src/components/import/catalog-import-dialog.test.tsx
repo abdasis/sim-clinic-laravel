@@ -3,27 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { TooltipProvider } from "#/components/ui/tooltip.tsx"
-import { setTranslations } from "#/utils/trans.ts"
 import { CatalogImportDialog } from "./catalog-import-dialog.tsx"
 
-const TRANSLATIONS = {
-  import: {
-    title: "Impor dari Template",
-    template_hint: "Unduh template, isi, lalu unggah kembali.",
-    download_template: "Unduh Template",
-    upload: "Impor",
-    select_file: "Pilih berkas",
-    imported: "Baru ditambahkan",
-    updated: "Diperbarui",
-    errors: "Baris bermasalah",
-    row: "Baris",
-    field: "Kolom",
-    message: "Keterangan",
-    no_errors: "Semua baris masuk tanpa masalah.",
-    name_conflict_hint: "Nama yang sudah ada akan diperbarui.",
-  },
-  general: { loading: "Memuat..." },
-}
 
 interface Result {
   imported: number
@@ -32,12 +13,9 @@ interface Result {
 }
 
 function mockFetch(result: Result) {
-  const mock = vi.fn(async (input: unknown, init?: RequestInit) => {
+  const mock = vi.fn(async (_input: unknown, init?: RequestInit) => {
     void init
 
-    if (String(input).includes("/translations")) {
-      return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
-    }
 
     return { ok: true, status: 200, json: async () => ({ data: result }) }
   })
@@ -86,7 +64,6 @@ const CLEAN: Result = { imported: 3, updated: 1, errors: [] }
 describe("CatalogImportDialog", () => {
   beforeEach(() => {
     window.localStorage.setItem("clinic_token", "tok")
-    setTranslations(TRANSLATIONS)
   })
 
   afterEach(cleanup)

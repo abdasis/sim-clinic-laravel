@@ -9,27 +9,9 @@ import {
 } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { PromoTargetPicker } from "./promo-target-picker.tsx"
 
-const TRANSLATIONS = {
-  promo: {
-    targets: "Layanan / Produk",
-    targets_count: ":count dipilih",
-    no_targets: "Belum ada yang dipilih",
-    services: "Layanan",
-    products: "Produk",
-    pick_targets: "Cari layanan atau produk",
-    no_target_match: "Tidak ada yang cocok",
-  },
-  general: {
-    delete: "Hapus",
-    load_failed: "Data gagal dimuat",
-    retry: "Muat ulang",
-  },
-}
 
-setTranslations(TRANSLATIONS)
 
 /** Permintaan katalog yang tercatat, untuk memeriksa apa yang dikirim ke server. */
 const panggilan: Array<{ path: string; params: Record<string, unknown> }> = []
@@ -48,11 +30,6 @@ vi.mock("#/lib/api.ts", () => ({
       ? (e as { status: number }).status
       : undefined,
   apiGet: (path: string, params: Record<string, unknown> = {}) => {
-    // useTrans memuat terjemahan lewat jalur yang sama; tanpa dipisah, ia
-    // menimpa seluruh kamus dengan isi katalog.
-    if (path.includes("/translations")) {
-      return Promise.resolve({ data: TRANSLATIONS })
-    }
 
     panggilan.push({ path, params })
 
@@ -127,7 +104,7 @@ describe("PromoTargetPicker", () => {
     // Layanan yang tidak ada di halaman pertama hanya bisa ditemukan server.
     jawab = () => Promise.resolve(katalog(["Peeling Ke-150"]))
 
-    fireEvent.change(screen.getByLabelText("Cari layanan atau produk"), {
+    fireEvent.change(screen.getByLabelText("Pilih layanan atau produk yang ikut promo"), {
       target: { value: "peeling" },
     })
 
@@ -162,7 +139,7 @@ describe("PromoTargetPicker", () => {
     expect(await screen.findByText("Server sedang bermasalah.")).toBeTruthy()
     // Kalimat "kosong" tidak boleh ikut muncul: itu yang dulu membuat
     // kegagalan terbaca sebagai katalog yang memang tidak punya isi.
-    expect(screen.queryByText("Tidak ada yang cocok")).toBeNull()
+    expect(screen.queryByText("Tidak ada layanan atau produk yang cocok dengan pencarian ini.")).toBeNull()
     expect(screen.getByRole("button", { name: "Muat ulang" })).toBeTruthy()
   })
 
@@ -192,7 +169,7 @@ describe("PromoTargetPicker", () => {
     jawab = () => Promise.resolve(katalog([]))
     picker()
 
-    expect(await screen.findByText("Tidak ada yang cocok")).toBeTruthy()
+    expect(await screen.findByText("Tidak ada layanan atau produk yang cocok dengan pencarian ini.")).toBeTruthy()
     expect(screen.queryByText("Data gagal dimuat")).toBeNull()
   })
 

@@ -6,38 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { PosCheckoutPanel, type PatientFormValues } from "./pos-checkout-panel.tsx"
 import { EMPTY_DISCOUNT } from "./discount-field.tsx"
 import { TooltipProvider } from "#/components/ui/tooltip.tsx"
-import { setTranslations } from "#/utils/trans.ts"
 
-setTranslations({
-  general: {
-    loading: "Memuat...",
-    load_failed: "Data gagal dimuat",
-    no_data: "Tidak ada data",
-    search: "Cari",
-  },
-  pos: {
-    patient: "Pasien",
-    total: "Total",
-    empty_cart: "Keranjang kosong",
-    empty_cart_desc: "Pilih layanan dulu",
-    payment: "Pembayaran",
-    method: "Metode",
-    amount: "Jumlah",
-    paid_amount: "Dibayar",
-    outstanding: "Sisa",
-    loyalty_balance: "Poin saat ini",
-    loyalty_points_unit: "poin",
-    points_redeem: "Tukar Poin",
-    points_redeem_all: "Tukar semua",
-    points_redeem_hint: "Tiap poin memotong Rp1.000 dari tagihan.",
-    points_capped: "Poin yang dipakai menyesuaikan tagihan.",
-    cart: { title: "Keranjang" },
-  },
-  patient: {
-    not_member_hint: "Pasien ini belum terdaftar sebagai member.",
-  },
-  commission: { therapist: "Terapis" },
-})
 
 const PATIENTS = [
   { label: "Ibu Sinta", value: "1" },
@@ -229,7 +198,7 @@ describe("PosCheckoutPanel", () => {
 
     expect(screen.queryByText(/\+\d+ poin/)).toBeNull()
     expect(
-      screen.getByText("Pasien ini belum terdaftar sebagai member."),
+      screen.getByText("Pasien ini belum terdaftar sebagai member, jadi transaksinya tidak menghasilkan poin."),
     ).toBeTruthy()
   })
 

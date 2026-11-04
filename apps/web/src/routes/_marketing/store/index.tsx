@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 
-import { useContentLocale, useContentText } from "#/components/company-profile/locale-context.tsx"
 import { MarketingPage } from "#/components/marketing/marketing-breadcrumb.tsx"
 import { Button } from "#/components/ui/button.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { formatCurrency } from "#/lib/format.ts"
 import { STORE_PRODUCTS } from "#/lib/landing-content.ts"
 
@@ -11,25 +11,19 @@ export const Route = createFileRoute("/_marketing/store/")({
 })
 
 function StorePage() {
-  const locale = useContentLocale()
-  const text = useContentText()
-  const isEnglish = locale === "en"
+  const text = contentText
 
   return (
     <MarketingPage
       crumbs={[{ label: "E-Store" }]}
-      title={isEnglish ? "Clinic e-store" : "E-Store klinik"}
-      description={
-        isEnglish
-          ? "The same products we use in the clinic. Prices start from Rp85.000."
-          : "Produk yang sama dengan yang kami pakai di klinik. Harga mulai Rp85.000."
-      }
+      title="E-Store klinik"
+      description="Produk yang sama dengan yang kami pakai di klinik. Harga mulai Rp85.000."
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {STORE_PRODUCTS.map((product) => (
           <article
             key={product.id}
-            className="group flex flex-col overflow-hidden rounded-lg border border-border/50 bg-background transition-all hover:border-border hover:shadow-sm"
+            className="group flex flex-col overflow-hidden rounded-lg border border-border/50 bg-background transition-[border-color,box-shadow] hover:border-border hover:shadow-sm"
           >
             <div className="aspect-square overflow-hidden bg-muted">
               <img
@@ -51,9 +45,7 @@ function StorePage() {
                   {formatCurrency(product.price)}
                 </span>
                 <Button asChild size="sm" variant="outline">
-                  <Link to="/cart" search={{ lang: locale }}>
-                    {isEnglish ? "Add" : "Tambah"}
-                  </Link>
+                  <Link to="/cart">Tambah</Link>
                 </Button>
               </div>
             </div>

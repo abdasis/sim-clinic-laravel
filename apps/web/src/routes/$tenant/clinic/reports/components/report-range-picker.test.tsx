@@ -4,23 +4,8 @@ import { fireEvent, render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { TooltipProvider } from "#/components/ui/tooltip.tsx"
-import { setTranslations } from "#/utils/trans.ts"
 import { ReportRangePicker } from "./report-range-picker.tsx"
 
-setTranslations({
-  report: {
-    from: "Dari Tanggal",
-    to: "Sampai Tanggal",
-    generate: "Tampilkan laporan",
-    generate_hint: "Menampilkan laporan untuk rentang tanggal yang diisi.",
-    range_backwards: "Tanggal awal melewati tanggal akhir.",
-    preset_this_month: "Bulan ini",
-    preset_last_month: "Bulan lalu",
-    preset_last_7: "7 hari",
-    preset_last_30: "30 hari",
-    preset_today: "Hari ini",
-  },
-})
 
 function renderWithProviders(ui: ReactElement) {
   const client = new QueryClient({

@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-import { useContentLocale, useContentText } from "#/components/company-profile/locale-context.tsx"
 import { MarketingPage } from "#/components/marketing/marketing-breadcrumb.tsx"
 import { Badge } from "#/components/ui/badge.tsx"
+import { contentText } from "#/lib/company-locale.ts"
 import { ARTICLES } from "#/lib/landing-content.ts"
 import { formatDate } from "#/lib/format.ts"
 
@@ -11,24 +11,19 @@ export const Route = createFileRoute("/_marketing/artikel/")({
 })
 
 function ArticleListPage() {
-  const text = useContentText()
-  const isEnglish = useContentLocale() === "en"
+  const text = contentText
 
   return (
     <MarketingPage
-      crumbs={[{ label: isEnglish ? "Articles" : "Artikel" }]}
-      title={isEnglish ? "Articles" : "Artikel"}
-      description={
-        isEnglish
-          ? "Notes from our doctors on skin, treatments, and what to expect."
-          : "Catatan dari dokter kami soal kulit, treatment, dan apa yang bisa diharapkan."
-      }
+      crumbs={[{ label: "Artikel" }]}
+      title="Artikel"
+      description="Catatan dari dokter kami soal kulit, treatment, dan apa yang bisa diharapkan."
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ARTICLES.map((article) => (
           <article
             key={article.id}
-            className="group flex flex-col overflow-hidden rounded-lg border border-border/50 bg-background transition-all hover:border-border hover:shadow-sm"
+            className="group flex flex-col overflow-hidden rounded-lg border border-border/50 bg-background transition-[border-color,box-shadow] hover:border-border hover:shadow-sm"
           >
             <div className="aspect-[16/10] overflow-hidden bg-muted">
               <img

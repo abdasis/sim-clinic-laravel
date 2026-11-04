@@ -111,7 +111,7 @@ function DemoDataTableRoute() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/" search={{ lang: undefined }}>
+              <Link to="/">
                 Home
               </Link>
             </BreadcrumbLink>

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
+import { createFileRoute, useParams } from "@tanstack/react-router"
 
 import { BackToTop } from "#/components/company-profile/back-to-top.tsx"
 import { BookingCta } from "#/components/company-profile/booking-cta.tsx"
@@ -9,7 +9,6 @@ import { CompanyHeader } from "#/components/company-profile/company-header.tsx"
 import { ContentBanner } from "#/components/company-profile/content-banner.tsx"
 import { HeroCarousel } from "#/components/company-profile/hero-carousel.tsx"
 import { FaqSection } from "#/components/company-profile/faq-section.tsx"
-import { CompanyLocaleProvider } from "#/components/company-profile/locale-context.tsx"
 import { PromoSection } from "#/components/company-profile/promo-section.tsx"
 import { TestimonialSection } from "#/components/company-profile/testimonial-section.tsx"
 import { TreatmentGrid } from "#/components/company-profile/treatment-grid.tsx"
@@ -17,39 +16,25 @@ import { ValuePropsSection } from "#/components/company-profile/value-props-sect
 import { Skeleton } from "#/components/ui/skeleton.tsx"
 import { useCompanyProfile } from "#/hooks/use-company-profile.ts"
 import { useTrans } from "#/hooks/use-trans.ts"
-import { normalizeLocale, type ContentLocale } from "#/lib/company-locale.ts"
+import { DEFAULT_LOCALE } from "#/lib/company-locale.ts"
 
 export const Route = createFileRoute("/$tenant/")({
   component: CompanyLandingPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    lang: search.lang ? String(search.lang) : undefined,
-  }),
 })
 
 function CompanyLandingPage() {
   const { tenant } = useParams({ from: "/$tenant/" })
-  const { lang } = Route.useSearch()
-  const navigate = useNavigate({ from: "/$tenant/" })
-  const locale = normalizeLocale(lang)
-  // Label sistem ikut bahasa yang dipilih pengunjung, bukan hanya kontennya.
-  const { t } = useTrans(locale)
+  const { t } = useTrans()
 
-  const { data, isLoading } = useCompanyProfile(tenant, locale)
-
-  const switchLocale = (next: ContentLocale) =>
-    navigate({ search: { lang: next }, replace: true })
+  const { data, isLoading } = useCompanyProfile(tenant, DEFAULT_LOCALE)
 
   return (
-    <CompanyLocaleProvider locale={locale}>
-      <div className="public-site flex min-h-svh flex-col font-brand">
-        <CompanyHeader
-          tenant={tenant}
-          settings={data?.settings ?? null}
-          items={data?.navigation.header ?? []}
-          locale={locale}
-          languageLabel={t("company_profile.language")}
-          onLocaleChange={switchLocale}
-        />
+    <div className="public-site flex min-h-svh flex-col font-brand">
+      <CompanyHeader
+        tenant={tenant}
+        settings={data?.settings ?? null}
+        items={data?.navigation.header ?? []}
+      />
 
         {isLoading ? (
           <LandingSkeleton />
@@ -150,7 +135,6 @@ function CompanyLandingPage() {
           </>
         )}
       </div>
-    </CompanyLocaleProvider>
   )
 }
 

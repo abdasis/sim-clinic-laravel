@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { cleanup, render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { setTranslations } from "#/utils/trans.ts"
 import { BroadcastEditForm } from "./broadcast-edit-form.tsx"
 import type { BroadcastDetail, BroadcastTemplate } from "./broadcast-types.ts"
 
@@ -11,15 +10,6 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => vi.fn(),
 }))
 
-const TRANSLATIONS = {
-  broadcast: {
-    title_field: "Judul Broadcast",
-    message: "Isi Pesan",
-    template_param_slot: "Isi bagian :number",
-    template_required: "Susun dulu pesan broadcast ini sebelum dikirim.",
-  },
-  general: { cancel: "Batal", save: "Simpan", loading: "Memuat..." },
-}
 
 function broadcast(): BroadcastDetail {
   return {
@@ -44,16 +34,12 @@ function broadcast(): BroadcastDetail {
 describe("BroadcastEditForm", () => {
   beforeEach(() => {
     window.localStorage.setItem("clinic_token", "tok")
-    setTranslations(TRANSLATIONS)
 
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: unknown) => {
         const url = String(input)
 
-        if (url.includes("/translations")) {
-          return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
-        }
 
         if (url.includes("/audience-preview")) {
           return {

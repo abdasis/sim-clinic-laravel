@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { TooltipProvider } from "#/components/ui/tooltip.tsx"
-import { setTranslations } from "#/utils/trans.ts"
 import { ConnectionDialog } from "./whatsapp-tools.tsx"
 import type { ConnectionState } from "./whatsapp-tools.tsx"
 
@@ -17,8 +16,8 @@ const TRANSLATIONS = {
     session_needs_start: "Sesi WhatsApp klinik sedang mati.",
     reconnect: "Sambungkan ulang",
     reconnect_hint: "Nyalakan ulang sesi WhatsApp klinik.",
-    gateway_error: "Server gateway WhatsApp tidak merespons.",
-    gateway_not_ready: "Gateway WhatsApp belum siap.",
+    gateway_error: "Server gateway WhatsApp tidak merespons. Coba lagi sebentar, atau hubungi pengelola platform.",
+    gateway_not_ready: "WhatsApp klinik belum terhubung ke gateway. Buka menu Koneksi WhatsApp lalu sambungkan nomornya dulu.",
     pairing_phone: "Nomor WhatsApp",
     pairing_request: "Minta kode pairing",
     pairing_code: "Kode pairing",
@@ -53,9 +52,6 @@ function mockFetch(current: ConnectionState) {
       const url = String(input)
       const method = init?.method ?? "GET"
 
-      if (url.includes("/translations")) {
-        return { ok: true, status: 200, json: async () => ({ data: TRANSLATIONS }) }
-      }
 
       if (method === "DELETE" && url.endsWith("/clinic/broadcasts/connection")) {
         calls.deleteSession++
@@ -110,7 +106,6 @@ function open(current: ConnectionState) {
 describe("ConnectionDialog", () => {
   beforeEach(() => {
     window.localStorage.setItem("clinic_token", "tok")
-    setTranslations(TRANSLATIONS)
   })
 
   afterEach(() => {

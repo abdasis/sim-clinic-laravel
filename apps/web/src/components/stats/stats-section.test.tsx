@@ -5,27 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { TooltipProvider } from "#/components/ui/tooltip.tsx"
 
-import { setTranslations } from "#/utils/trans.ts"
 import type { StatsPayload } from "#/hooks/use-stats.ts"
 import { StatsSection } from "./stats-section.tsx"
 import { IndexCta } from "./index-cta.tsx"
 
 // Label datang dari backend, jadi cukup dua kunci yang dipakai komponen.
-setTranslations({
-  stats: {
-    title: "Ringkasan",
-    last_days: "Data :days hari terakhir",
-    refresh: "Muat ulang statistik",
-    refresh_hint: "Ambil ulang angka terbaru",
-    chart_hint: "Arahkan kursor",
-    empty_title: "Belum ada aktivitas",
-    empty_description: "Menunggu data pertama",
-    error_title: "Statistik belum bisa ditampilkan",
-    error_description: "Coba lagi sebentar",
-    retry: "Coba lagi",
-    loading: "Menyiapkan angka...",
-  },
-})
 
 /** useTrans memakai React Query; komponen butuh provider walau datanya lokal. */
 function renderWithProviders(ui: ReactElement) {
