@@ -6,7 +6,6 @@ use App\Enums\ClinicRole;
 use App\Jobs\ProcessInboundMessageJob;
 use App\Models\ChatbotSetting;
 use App\Models\ChatMessage;
-use App\Models\WahaSetting;
 use App\Models\WhatsappSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -26,6 +25,9 @@ class ChatbotDiagnosticsTest extends TestCase
 {
     use InteractsWithTenant, RefreshDatabase;
 
+    /** Dipakai stub status sesi untuk menirukan gateway yang tidak terjangkau. */
+    private bool $gatewayUnreachable = false;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,27 +35,48 @@ class ChatbotDiagnosticsTest extends TestCase
         $this->actingAsClinicUser();
     }
 
-    private function everythingConnected(string $sessionStatus = 'WORKING'): void
+    private function everythingConnected(string $sessionStatus = 'CONNECTED'): void
     {
         ChatbotSetting::factory()->create([
             'tenant_id' => $this->tenant->id,
             'is_active' => true,
         ]);
 
-        WhatsappSetting::create(['tenant_id' => $this->tenant->id, 'session' => 'klinik-uji']);
-        WahaSetting::create(['base_url' => 'https://waha.test', 'api_key' => 'kunci']);
+        $this->gatewaySetting();
 
         config([
+            'whatsapp_gateway.base_url' => 'https://gateway.test',
             'services.deepseek.api_key' => 'kunci-uji',
-            'waha.webhook_token' => 'token-uji',
         ]);
 
         // Disusun sekali di sini: Http::fake yang dipanggil dua kali
         // menambah stub, bukan menggantinya, sehingga stub pertama tetap
         // menang dan status yang hendak diuji tidak pernah terpakai.
         Http::fake([
-            'waha.test/api/sessions/*' => Http::response(['status' => $sessionStatus], 200),
-            'waha.test/*' => Http::response(['id' => 'true_628@c.us'], 201),
+            'gateway.test/api/v1/sessions/*/status' => fn () => $this->gatewayUnreachable
+                ? throw new \RuntimeException('jaringan mati')
+                : Http::response([
+                    'success' => true,
+                    'data' => ['sessionId' => 'klinik-uji', 'status' => $sessionStatus],
+                ], 200),
+            'gateway.test/*' => Http::response(['success' => true, 'data' => []], 202),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function gatewaySetting(array $overrides = []): WhatsappSetting
+    {
+        return WhatsappSetting::create([
+            'tenant_id' => $this->tenant->id,
+            'session' => 'klinik-uji',
+            'gateway_tenant_key' => 'tenant-uji',
+            'gateway_api_key' => 'api-uji',
+            'gateway_webhook_token' => 'token-uji',
+            'gateway_webhook_secret' => 'secret-uji',
+            'gateway_session_id' => '11111111-1111-1111-1111-111111111111',
+            ...$overrides,
         ]);
     }
 
@@ -106,7 +129,7 @@ class ChatbotDiagnosticsTest extends TestCase
     public function test_an_unconfigured_gateway_is_named(): void
     {
         $this->everythingConnected();
-        WahaSetting::query()->delete();
+        config(['whatsapp_gateway.base_url' => null]);
 
         $this->assertFalse($this->checks()['gateway_configured']);
     }
@@ -123,17 +146,16 @@ class ChatbotDiagnosticsTest extends TestCase
     public function test_an_unreachable_gateway_does_not_break_the_page(): void
     {
         $this->everythingConnected();
-
-        Http::fake(['waha.test/*' => fn () => throw new \RuntimeException('jaringan mati')]);
+        $this->gatewayUnreachable = true;
 
         $this->assertFalse($this->checks()['session_connected']);
     }
 
-    /** Tanpa token webhook, pesan pasien tidak pernah sampai ke sistem. */
-    public function test_a_missing_webhook_token_is_named(): void
+    /** Tanpa rahasia webhook, pesan pasien tidak pernah sampai ke sistem. */
+    public function test_a_missing_webhook_secret_is_named(): void
     {
         $this->everythingConnected();
-        config(['waha.webhook_token' => null]);
+        WhatsappSetting::query()->update(['gateway_webhook_secret' => null]);
 
         $this->assertFalse($this->checks()['webhook_configured']);
     }

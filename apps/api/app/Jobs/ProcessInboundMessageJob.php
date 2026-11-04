@@ -5,9 +5,9 @@ namespace App\Jobs;
 use App\Actions\Inbox\RecordOutboundMessageAction;
 use App\Enums\ConversationChannel;
 use App\Models\Tenant;
+use App\Models\WhatsappSetting;
 use App\Services\ChatbotService;
-use App\Support\CloudApiClient;
-use App\Support\WahaClient;
+use App\Support\WhatsappGatewayClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -15,6 +15,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -29,10 +30,8 @@ use Throwable;
  * tidak dibalas sama sekali, dan pesan yang sudah terlanjur terkirim tidak bisa
  * ditarik saat percobaan kedua ikut jalan.
  *
- * Jalur balasnya mengikuti kanal pesan masuk: pesan Cloud API Meta hanya bisa
- * dibalas lewat Cloud API, pesan WAHA lewat sesi WAHA. Menyalurkan semuanya ke
- * satu gateway membuat balasan untuk kanal lain hilang tanpa jejak di layar
- * pasien.
+ * Balasan selalu keluar lewat gateway WhatsApp internal. Kanal pesan masuk
+ * hanya menandai asal percakapan, bukan jalur balasnya.
  */
 class ProcessInboundMessageJob implements ShouldQueue
 {
@@ -82,7 +81,7 @@ class ProcessInboundMessageJob implements ShouldQueue
         // Pendekatan B: indikator dinyalakan sebelum AI bekerja, bukan sekejap
         // sebelum pesan terkirim. Jeda yang perlu ditemani justru jeda
         // penyusunan balasan — itulah detik-detik saat pasien menatap layar
-        // diam. Konsekuensinya stopTyping wajib jalan di semua jalur keluar,
+        // diam. Konsekuensinya "paused" wajib dikirim di semua jalur keluar,
         // termasuk saat balasannya null, jadi seluruh sisa proses dibungkus
         // finally.
         // Chatbot yang mati harus benar-benar diam: memunculkan "sedang
@@ -106,25 +105,19 @@ class ProcessInboundMessageJob implements ShouldQueue
             return;
         }
 
-        // Indikator mengetik hanya ada di WAHA. Cloud API Meta tidak punya
-        // endpoint untuk itu, jadi jalur Cloud API langsung menyusun balasan.
-        $showsTyping = $gateway instanceof WahaClient;
+        [$client, $setting] = $gateway;
 
-        if ($showsTyping) {
-            $gateway->startTyping($this->senderPhone);
-        }
+        $client->presence($setting, 'composing', $this->senderPhone);
 
         try {
-            $this->respond($gateway);
+            $this->respond($client, $setting);
         } finally {
-            if ($showsTyping) {
-                $gateway->stopTyping($this->senderPhone);
-            }
+            $client->presence($setting, 'paused', $this->senderPhone);
         }
     }
 
-    /** Susun balasan lalu kirim; dipanggil di antara start/stop typing. */
-    private function respond(WahaClient|CloudApiClient $gateway): void
+    /** Susun balasan lalu kirim; dipanggil di antara presence composing/paused. */
+    private function respond(WhatsappGatewayClient $client, WhatsappSetting $setting): void
     {
         try {
             $answer = app(ChatbotService::class)->reply($this->senderPhone, $this->body);
@@ -160,43 +153,32 @@ class ProcessInboundMessageJob implements ShouldQueue
             'answer' => $answer,
         ]);
 
-        $this->send($answer, $gateway);
+        $this->send($answer, $client, $setting);
     }
 
     /**
-     * Gateway yang sesuai kanal pesan masuk, atau null bila belum disetel.
-     * Diambil sekali supaya indikator mengetik dan pengiriman memakai sesi
-     * yang sama.
+     * Klien gateway dan pengaturan klinik yang memakainya, atau null bila
+     * klinik belum punya kredensial gateway yang lengkap. Diambil sekali
+     * supaya indikator mengetik dan pengiriman memakai sesi yang sama.
+     *
+     * @return array{0: WhatsappGatewayClient, 1: WhatsappSetting}|null
      */
-    private function gateway(): WahaClient|CloudApiClient|null
+    private function gateway(): ?array
     {
-        if ($this->channel === ConversationChannel::CloudApi) {
-            $client = app(CloudApiClient::class);
+        $setting = WhatsappSetting::query()->first();
 
-            if ($client instanceof CloudApiClient) {
-                return $client;
-            }
-
-            Log::error('Balasan chatbot tidak terkirim: Cloud API Meta belum siap.', [
+        if ($setting === null || ! $setting->provisioned() || blank($setting->gateway_session_id)) {
+            Log::error('Balasan chatbot tidak terkirim: gateway WhatsApp klinik belum siap.', [
                 'tenant_id' => $this->tenantId,
                 'sender_phone' => $this->senderPhone,
+                'channel' => $this->channel->value,
+                'setting_ada' => $setting !== null,
             ]);
 
             return null;
         }
 
-        $client = app(WahaClient::class);
-
-        if (! $client instanceof WahaClient) {
-            Log::error('Balasan chatbot tidak terkirim: gateway WhatsApp belum siap.', [
-                'tenant_id' => $this->tenantId,
-                'sender_phone' => $this->senderPhone,
-            ]);
-
-            return null;
-        }
-
-        return $client;
+        return [app(WhatsappGatewayClient::class), $setting];
     }
 
     private function withinRateLimit(): bool
@@ -217,18 +199,17 @@ class ProcessInboundMessageJob implements ShouldQueue
         return true;
     }
 
-    private function send(string $answer, WahaClient|CloudApiClient $gateway): void
+    private function send(string $answer, WhatsappGatewayClient $client, WhatsappSetting $setting): void
     {
-        $providerMessageId = null;
-
         try {
-            if ($gateway instanceof CloudApiClient) {
-                // Cloud API mengembalikan id pesan; disimpan supaya status
-                // terkirim/terbaca dari webhook Meta bisa dicocokkan nanti.
-                $providerMessageId = $gateway->sendText($this->senderPhone, $answer);
-            } else {
-                $gateway->send($this->senderPhone, $answer);
-            }
+            // Id pesan gateway disimpan supaya status terkirim/terbaca dari
+            // webhook bisa dicocokkan ke baris kotak masuk yang benar.
+            $providerMessageId = $client->sendText(
+                $setting,
+                $this->senderPhone,
+                $answer,
+                'chatbot-'.Str::uuid(),
+            );
         } catch (Throwable $e) {
             Log::error('Balasan chatbot gagal dikirim lewat gateway WhatsApp.', [
                 'exception' => $e,

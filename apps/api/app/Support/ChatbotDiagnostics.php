@@ -4,9 +4,11 @@ namespace App\Support;
 
 use App\Models\ChatbotSetting;
 use App\Models\ChatMessage;
-use App\Models\WahaSetting;
+use App\Models\WhatsappGatewaySetting;
 use App\Models\WhatsappSetting;
+use App\Services\WhatsappGatewaySessionService;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -66,13 +68,13 @@ class ChatbotDiagnostics
 
     private function gatewayConfigured(): array
     {
-        $server = WahaSetting::query()->first();
-        $session = WhatsappSetting::query()->first();
+        $baseUrl = WhatsappGatewaySetting::query()->value('base_url')
+            ?: config('whatsapp_gateway.base_url');
+        $setting = WhatsappSetting::query()->first();
 
         return $this->check(
             'gateway_configured',
-            $server !== null && $server->isConfigured()
-                && $session !== null && $session->isConfigured(),
+            filled($baseUrl) && $setting !== null && $setting->provisioned(),
         );
     }
 
@@ -81,20 +83,20 @@ class ChatbotDiagnostics
      *
      * Menanyakannya berarti menembak gateway, jadi kegagalan jaringan di sini
      * dilaporkan sebagai "tidak tersambung" — bukan dibiarkan melempar dan
-     * menjatuhkan seluruh halaman diagnosa.
+     * menjatuhkan seluruh halaman diagnosa. Layanan sesi sudah menerjemahkan
+     * keadaan gateway menjadi `connected`; diagnostik tidak perlu tahu
+     * bentuk respons mentahnya.
      */
     private function sessionConnected(): array
     {
-        $client = app(WahaClient::class);
-
-        if (! $client instanceof WahaClient) {
-            return $this->check('session_connected', false);
-        }
-
         try {
-            return $this->check('session_connected', $client->isConnected());
+            $state = app(WhatsappGatewaySessionService::class)->state();
+
+            return $this->check('session_connected', (bool) ($state['connected'] ?? false));
         } catch (Throwable $e) {
-            report($e);
+            Log::error('Diagnostik chatbot gagal membaca keadaan sesi gateway WhatsApp.', [
+                'exception' => $e,
+            ]);
 
             return $this->check('session_connected', false);
         }
@@ -102,7 +104,12 @@ class ChatbotDiagnostics
 
     private function webhookConfigured(): array
     {
-        return $this->check('webhook_configured', filled(config('waha.webhook_token')));
+        $setting = WhatsappSetting::query()->first();
+
+        return $this->check(
+            'webhook_configured',
+            $setting !== null && filled($setting->gateway_webhook_secret),
+        );
     }
 
     /**
